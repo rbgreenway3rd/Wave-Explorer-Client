@@ -1,0 +1,23 @@
+.filter-controls-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: fill
+    
+}
+
+.filter-list-container {
+
+}
+
+.filter-save-status {
+    
+}
+
+.selected-filter-list {
+    
+}
+
+.filter-list-order {
+    display: flex;
+    flex-direction: column;
+}

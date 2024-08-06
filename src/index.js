@@ -1,10 +1,12 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
-
-const root = ReactDOM.createRoot(document.getElementById('root'));
+import React from "react";
+import ReactDOM from "react-dom/client";
+import "./index.css";
+import App from "./App";
+import reportWebVitals from "./reportWebVitals";
+import AnalysisFrameProvider from "./components/AnalysisFrames/AnalysisFramesProvider";
+const root = ReactDOM.createRoot(document.getElementById("root"));
+// const cors = require("cors");
+// App.use(cors());
 root.render(
   <React.StrictMode>
     <App />

@@ -1,0 +1,9 @@
+.large-graph{
+    margin-bottom: 0.5em;
+}
+
+.large-graph-canvas{
+    /* position: absolute;
+    height: 100%; */
+    border: solid 0.5em black;
+}

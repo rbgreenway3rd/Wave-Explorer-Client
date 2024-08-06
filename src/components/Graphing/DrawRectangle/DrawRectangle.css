@@ -1,0 +1,15 @@
+.canvas-container-rect {
+    height: 500px;
+    width: 500px;
+    border: 2px solid #000;
+    /* margin-left: 100px;
+    margin-top: 100px; */
+    background: transparent;
+}
+
+.metrics-container {
+    display: grid;
+    grid-template-columns: [first] 70% [line2] auto;
+    grid-template-areas: 
+        "canvas-container-rect metrics-controls";
+}
