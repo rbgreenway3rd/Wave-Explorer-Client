@@ -1,11 +1,18 @@
 import React, { useContext, useEffect, useState } from "react";
 import "../styles/CombinedComponent.css";
 import { DataContext } from "./FileHandling/DataProvider.js";
-
+import { Metrics } from "./Graphing/Metrics/Metrics.js";
 import { LargeGraphOptions } from "./Graphing/LargeGraph/Configuration/LargeGraphOptions.js";
 import { LargeGraph } from "./Graphing/LargeGraph/LargeGraph.js";
 import { MiniGraphGrid } from "./Graphing/MiniGraphGrid/MiniGraphGrid.js";
 import { FileUploader } from "./FileHandling/FileUploader.js";
+// import DrawRectangle from "./Graphing/DrawRectangle/DrawRectangle.js";
+import { FilteredGraph } from "./Graphing/FilteredData/FilteredGraph.js";
+import { FilteredGraphOptions } from "./Graphing/FilteredData/Configuration/FilteredGraphOptions.js";
+import { FilterControls } from "./Graphing/FilteredData/FilterControls.js";
+import { Chart, registerables } from "chart.js";
+
+Chart.register(...registerables); // avoids the error: 'category' is not a registered scale
 
 export const CombinedComponent = () => {
   const { project, extractedIndicatorTimes, analysisData } =
@@ -14,18 +21,10 @@ export const CombinedComponent = () => {
 
   const [wellArraysUpdated, setWellArraysUpdated] = useState(false); // State to track well arrays update
 
-  const [largeCanvasWidth, setLargeCanvasWidth] = useState(
-    window.innerWidth / 2
-  ); // State for large canvas width
-  const [largeCanvasHeight, setLargeCanvasHeight] = useState(
-    window.innerHeight / 2
-  ); // State for large canvas height
-  const [smallCanvasWidth, setSmallCanvasWidth] = useState(
-    window.innerWidth / 56
-  ); // State for small canvas width
-  const [smallCanvasHeight, setSmallCanvasHeight] = useState(
-    window.innerHeight / 40
-  ); // State for small canvas height
+  const [largeCanvasWidth] = useState(window.innerWidth / 2); // State for large canvas width
+  const [largeCanvasHeight] = useState(window.innerHeight / 2); // State for large canvas height
+  const [smallCanvasWidth] = useState(window.innerWidth / 56); // State for small canvas width
+  const [smallCanvasHeight] = useState(window.innerHeight / 40); // State for small canvas height
 
   // Safe access with defaults
   const plate = project?.plate || []; // Access plate from project
@@ -126,6 +125,8 @@ export const CombinedComponent = () => {
     );
   };
 
+  // Handle click & drag well selection
+
   // Prepare data for the large graph
   const graphData = {
     labels: extractedIndicatorTimes,
@@ -140,6 +141,7 @@ export const CombinedComponent = () => {
 
   // Configure options for the large graph
   const largeGraphConfig = LargeGraphOptions(analysisData);
+  const filteredGraphConfig = FilteredGraphOptions(analysisData);
   // console.log("graphData:", graphData);
   // console.log("wellArrays:", wellArrays);
   // console.log("analysisData:", analysisData);
@@ -156,7 +158,7 @@ export const CombinedComponent = () => {
       <div className="main-container">
         {project ? (
           <>
-            <div>Project: {project.title || "No title available"}</div>
+            {/* <div>Project: {project.title || "No title available"}</div>
             <div>Protocol: {project.protocol || "No protocol available"}</div>
             <div>Date: {project.date || "No date available"}</div>
             <div>Time: {project.time || "No time available"}</div>
@@ -165,17 +167,11 @@ export const CombinedComponent = () => {
               {project.plate[0].experiments[0].indicatorConfigurations?.join(
                 ", "
               ) || "No configurations available"}
-            </div>
+            </div> */}
             <div className="file-and-grid-container">
-              <LargeGraph
-                className="large-graph"
-                graphData={graphData}
-                width={largeCanvasWidth}
-                height={largeCanvasHeight}
-                options={largeGraphConfig}
-                style={{ width: "100%", height: "100%" }} // Set size of the large graph
-              />
+              <div className="minigraph-header">All Waves</div>
               <MiniGraphGrid
+                className="minigraph"
                 wellArrays={wellArrays}
                 selectedWellArray={selectedWellArray}
                 timeData={extractedIndicatorTimes}
@@ -191,6 +187,63 @@ export const CombinedComponent = () => {
                 onColumnSelectorClick={handleColumnSelectorClick} // Handle selecting a column
                 onAllSelectorClick={handleAllSelectorClick} // Handle selecting all wells
               />
+              <div className="minigraph-controls">
+                <FilterControls />
+              </div>
+
+              <div className="large-graph-header">Raw Waves</div>
+              <LargeGraph
+                className="large-graph"
+                graphData={graphData}
+                // width={largeCanvasWidth}
+                // height={largeCanvasHeight}
+                options={largeGraphConfig}
+                // style={{ width: "100%", height: "100%" }} // Set size of the large graph
+              />
+              <div className="large-graph-controls">
+                <FilterControls />
+              </div>
+            </div>
+
+            <div className="metrics-and-filter-container">
+              <div className="metrics-header">Metrics</div>
+              <Metrics
+                className="metrics"
+                wellArrays={wellArrays}
+                selectedWellArray={selectedWellArray}
+                timeData={extractedIndicatorTimes}
+                smallCanvasWidth={smallCanvasWidth}
+                smallCanvasHeight={smallCanvasHeight}
+                largeCanvasWidth={largeCanvasWidth}
+                largeCanvasHeight={largeCanvasHeight}
+                columnLabels={columnLabels}
+                rowLabels={rowLabels}
+                analysisData={analysisData}
+                onWellClick={handleWellArrayClick} // Handle clicking on a well
+                onRowSelectorClick={handleRowSelectorClick} // Handle selecting a row
+                onColumnSelectorClick={handleColumnSelectorClick} // Handle selecting a column
+                onAllSelectorClick={handleAllSelectorClick} // Handle selecting all wells
+              />
+              <div className="metrics-controls">
+                <FilterControls />
+              </div>
+              <div className="filters-header">Filtered Waves</div>
+              <FilteredGraph
+                className="filtered-graph"
+                project={project}
+                graphData={graphData}
+                wellArrays={wellArrays}
+                selectedWellArray={selectedWellArray}
+                timeData={extractedIndicatorTimes}
+                columnLabels={columnLabels}
+                rowLabels={rowLabels}
+                // width={largeCanvasWidth}
+                // height={largeCanvasHeight}
+                options={filteredGraphConfig}
+              />
+              <div className="filter-controls">
+                <FilterControls />
+              </div>
             </div>
           </>
         ) : (
