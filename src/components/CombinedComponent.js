@@ -5,6 +5,7 @@ import { Metrics } from "./Graphing/Metrics/Metrics.js";
 import { LargeGraphOptions } from "./Graphing/LargeGraph/Configuration/LargeGraphOptions.js";
 import { LargeGraph } from "./Graphing/LargeGraph/LargeGraph.js";
 import { MiniGraphGrid } from "./Graphing/MiniGraphGrid/MiniGraphGrid.js";
+import { MiniGraphControls } from "./Graphing/MiniGraphGrid/MiniGraphControls.js";
 import { FileUploader } from "./FileHandling/FileUploader.js";
 // import DrawRectangle from "./Graphing/DrawRectangle/DrawRectangle.js";
 import { FilteredGraph } from "./Graphing/FilteredData/FilteredGraph.js";
@@ -188,7 +189,7 @@ export const CombinedComponent = () => {
                 onAllSelectorClick={handleAllSelectorClick} // Handle selecting all wells
               />
               <div className="minigraph-controls">
-                <FilterControls />
+                <MiniGraphControls />
               </div>
 
               <div className="large-graph-header">Raw Waves</div>
@@ -225,7 +226,7 @@ export const CombinedComponent = () => {
                 onAllSelectorClick={handleAllSelectorClick} // Handle selecting all wells
               />
               <div className="metrics-controls">
-                <FilterControls />
+                <MiniGraphControls />
               </div>
               <div className="filters-header">Filtered Waves</div>
               <FilteredGraph
