@@ -14,10 +14,34 @@
 }
 
 .selected-filter-list {
-    
+    padding: 0;
+}
+
+.filter-list-item {
+    display: flex;
+    flex-direction: row;
+}
+
+.filter-list-item-checkbox {
+
+}
+
+.filter-list-item-label {
+    font-size: 0.8em
+}
+
+.filter-list-item-settings-button {
+    text-align: center;
+    border-radius: 100em;
+    padding: 0;
 }
 
 .filter-list-order {
     display: flex;
     flex-direction: column;
+}
+
+.filter-list-order-edit-button{
+    border-radius: 0;
+    padding: 0;
 }
