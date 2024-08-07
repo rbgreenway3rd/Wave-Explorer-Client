@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import ReactDOM from "react-dom";
 import "./Configuration/FilterControls.css";
 import { createPortal } from "react-dom";
@@ -7,6 +7,53 @@ import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import Modal from "@mui/material/Modal";
 import Heatmap from "../Heatmap/Heatmap";
+
+const GridCanvas = () => {
+  // grid width and height
+  const columns = 24;
+  const rows = 16;
+  const cellSize = 25; // size of each cell in the grid
+  const bw = columns * cellSize;
+  const bh = rows * cellSize;
+  // padding around grid
+  const p = 10;
+  // size of canvas
+  const cw = bw + p * 2 + 1;
+  const ch = bh + p * 2 + 1;
+
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+
+    function drawBoard() {
+      for (let x = 0; x <= bw; x += cellSize) {
+        context.moveTo(0.5 + x + p, p);
+        context.lineTo(0.5 + x + p, bh + p);
+      }
+
+      for (let y = 0; y <= bh; y += cellSize) {
+        context.moveTo(p, 0.5 + y + p);
+        context.lineTo(bw + p, 0.5 + y + p);
+      }
+
+      context.strokeStyle = "black";
+      context.stroke();
+    }
+
+    drawBoard();
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      width={cw}
+      height={ch}
+      style={{ border: "1px solid black" }}
+    />
+  );
+};
 
 const style = {
   position: "absolute",
@@ -38,6 +85,7 @@ export default function BasicModal() {
           <Typography id="modal-modal-title" variant="h6" component="h2">
             Text in a modal
           </Typography>
+          <GridCanvas />
         </Box>
       </Modal>
     </div>
