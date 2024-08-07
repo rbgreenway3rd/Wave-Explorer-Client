@@ -4,6 +4,10 @@ export const LargeGraphOptions = (analysisData = []) => {
 
   return {
     normalized: true,
+    animation: {
+      duration: 0,
+    },
+    // animation: false,
     plugins: {
       legend: false, // displays dataset label at top of graph
       decimation: {

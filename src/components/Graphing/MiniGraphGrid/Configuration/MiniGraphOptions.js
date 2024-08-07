@@ -4,7 +4,10 @@ export const MiniGraphOptions = (analysisData) => {
     maintainAspectRatio: false,
     responsive: false,
     spanGaps: true,
-    animation: false,
+    // animation: false,
+    animation: {
+      duration: 0,
+    },
     plugins: {
       legend: false,
       decimation: { enabled: false, algorithm: "lttb", samples: 50 },
@@ -20,7 +23,7 @@ export const MiniGraphOptions = (analysisData) => {
         radius: 0,
       },
       line: {
-        borderWidth: 1.5,
+        borderWidth: 1.2,
       },
     },
     layout: {

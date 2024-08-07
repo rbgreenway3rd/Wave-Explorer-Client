@@ -20,7 +20,7 @@ export const MetricsOptions = (analysisData) => {
         radius: 0,
       },
       line: {
-        borderWidth: 1.5,
+        borderWidth: 1.2,
       },
     },
     layout: {

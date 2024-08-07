@@ -12,6 +12,7 @@ import { FilteredGraph } from "./Graphing/FilteredData/FilteredGraph.js";
 import { FilteredGraphOptions } from "./Graphing/FilteredData/Configuration/FilteredGraphOptions.js";
 import { FilterControls } from "./Graphing/FilteredData/FilterControls.js";
 import { Chart, registerables } from "chart.js";
+import Heatmap from "./Graphing/Heatmap/Heatmap.js";
 
 Chart.register(...registerables); // avoids the error: 'category' is not a registered scale
 
@@ -208,7 +209,20 @@ export const CombinedComponent = () => {
 
             <div className="metrics-and-filter-container">
               <div className="metrics-header">Metrics</div>
-              <Metrics
+              <Heatmap
+                className="metrics"
+                wellArrays={wellArrays}
+                selectedWellArray={selectedWellArray}
+                timeData={extractedIndicatorTimes}
+                smallCanvasWidth={smallCanvasWidth}
+                smallCanvasHeight={smallCanvasHeight}
+                largeCanvasWidth={largeCanvasWidth}
+                largeCanvasHeight={largeCanvasHeight}
+                columnLabels={columnLabels}
+                rowLabels={rowLabels}
+                analysisData={analysisData}
+              />
+              {/* <Metrics
                 className="metrics"
                 wellArrays={wellArrays}
                 selectedWellArray={selectedWellArray}
@@ -224,7 +238,7 @@ export const CombinedComponent = () => {
                 onRowSelectorClick={handleRowSelectorClick} // Handle selecting a row
                 onColumnSelectorClick={handleColumnSelectorClick} // Handle selecting a column
                 onAllSelectorClick={handleAllSelectorClick} // Handle selecting all wells
-              />
+              /> */}
               <div className="metrics-controls">
                 <MiniGraphControls />
               </div>

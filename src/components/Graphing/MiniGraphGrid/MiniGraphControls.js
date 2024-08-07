@@ -15,14 +15,14 @@ export const MiniGraphControls = (
           className="raw-radio"
           value="showRaw"
         />
-        <label for="show-raw">Raw</label>
+        <label htmlFor="show-raw">Raw</label>
         <input
           type="radio"
           id="show-filtered"
           className="filtered-radio"
           value="showFiltered"
         />
-        <label for="show-filtered">Raw</label>
+        <label htmlFor="show-filtered">Filtered</label>
       </div>
       <div className="visibility">
         Visibility
@@ -32,7 +32,7 @@ export const MiniGraphControls = (
           className="visibility-selector"
           value="visibility-selector1"
         />
-        <label for="visibility-selector">Green</label>
+        <label htmlFor="visibility-selector">Green</label>
       </div>
     </div>
   );
