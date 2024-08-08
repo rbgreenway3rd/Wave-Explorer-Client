@@ -257,7 +257,15 @@ export const CombinedComponent = () => {
                 options={filteredGraphConfig}
               />
               <div className="filter-controls">
-                <FilterControls />
+                <FilterControls
+                  project={project}
+                  graphData={graphData}
+                  wellArrays={wellArrays}
+                  selectedWellArray={selectedWellArray}
+                  timeData={extractedIndicatorTimes}
+                  columnLabels={columnLabels}
+                  rowLabels={rowLabels}
+                />
               </div>
             </div>
           </>
