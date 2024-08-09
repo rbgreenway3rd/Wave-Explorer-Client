@@ -15,6 +15,10 @@
 // }) => {
 //   const ref = useRef();
 
+//   // Labels of row and columns
+//   const myGroups = columnLabels;
+//   const myVars = rowLabels;
+
 //   useEffect(() => {
 //     // set the dimensions and margins of the graph
 //     const margin = { top: 30, right: 30, bottom: 30, left: 30 },
@@ -30,19 +34,19 @@
 //       .append("g")
 //       .attr("transform", `translate(${margin.left},${margin.top})`);
 
-//     // Labels of row and columns
-//     const myGroups = columnLabels;
-//     const myVars = rowLabels.reverse();
-
 //     // Build X scales and axis:
 //     const x = d3.scaleBand().range([0, width]).domain(myGroups).padding(0.01);
 //     svg
 //       .append("g")
-//       .attr("transform", `translate(0, ${height})`)
+//       .attr("transform", `translate(0, 0)`) // Move x-axis to the top
 //       .call(d3.axisTop(x));
 
 //     // Build Y scales and axis:
-//     const y = d3.scaleBand().range([height, 0]).domain(myVars).padding(0.01);
+//     const y = d3
+//       .scaleBand()
+//       .range([height, 0])
+//       .domain(myVars.reverse())
+//       .padding(0.01);
 //     svg.append("g").call(d3.axisLeft(y));
 
 //     // Build color scale
@@ -79,7 +83,7 @@
 //       d3.select(ref.current).selectAll("*").remove();
 //       console.log(rowLabels);
 //     };
-//   }, []);
+//   }, [myGroups, myVars]);
 
 //   return <div ref={ref}></div>;
 // };
@@ -102,6 +106,10 @@ const Heatmap = ({
 }) => {
   const ref = useRef();
 
+  // Labels of row and columns
+  const myGroups = columnLabels;
+  const myVars = rowLabels;
+
   useEffect(() => {
     // set the dimensions and margins of the graph
     const margin = { top: 30, right: 30, bottom: 30, left: 30 },
@@ -117,10 +125,6 @@ const Heatmap = ({
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Labels of row and columns
-    const myGroups = columnLabels;
-    const myVars = rowLabels.reverse();
-
     // Build X scales and axis:
     const x = d3.scaleBand().range([0, width]).domain(myGroups).padding(0.01);
     svg
@@ -129,7 +133,11 @@ const Heatmap = ({
       .call(d3.axisTop(x));
 
     // Build Y scales and axis:
-    const y = d3.scaleBand().range([height, 0]).domain(myVars).padding(0.01);
+    const y = d3
+      .scaleBand()
+      .range([height, 0])
+      .domain(myVars.slice().reverse()) // Reverse the order here so 'A' is the first row label and 'P' is the last
+      .padding(0.01);
     svg.append("g").call(d3.axisLeft(y));
 
     // Build color scale
@@ -166,7 +174,7 @@ const Heatmap = ({
       d3.select(ref.current).selectAll("*").remove();
       console.log(rowLabels);
     };
-  }, [columnLabels, rowLabels]);
+  }, [myGroups, myVars]);
 
   return <div ref={ref}></div>;
 };
