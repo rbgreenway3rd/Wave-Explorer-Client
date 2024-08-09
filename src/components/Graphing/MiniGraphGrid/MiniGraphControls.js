@@ -1,4 +1,5 @@
 import React from "react";
+import "./MiniGraphControls.css";
 
 export const MiniGraphControls = (
   {
@@ -9,30 +10,36 @@ export const MiniGraphControls = (
     <div className="minigraph-controls-container">
       <div className="show-raw-or-filtered">
         Show
-        <input
-          type="radio"
-          id="show-raw"
-          className="raw-radio"
-          value="showRaw"
-        />
-        <label htmlFor="show-raw">Raw</label>
-        <input
-          type="radio"
-          id="show-filtered"
-          className="filtered-radio"
-          value="showFiltered"
-        />
-        <label htmlFor="show-filtered">Filtered</label>
+        <div className="show-raw">
+          <input
+            type="radio"
+            id="show-raw"
+            className="raw-radio"
+            value="showRaw"
+          />
+          <label htmlFor="show-raw">Raw</label>
+        </div>
+        <div className="show-filtered">
+          <input
+            type="radio"
+            id="show-filtered"
+            className="filtered-radio"
+            value="showFiltered"
+          />
+          <label htmlFor="show-filtered">Filtered</label>
+        </div>
       </div>
       <div className="visibility">
         Visibility
-        <input
-          type="checkbox"
-          id="visibility-selector"
-          className="visibility-selector"
-          value="visibility-selector1"
-        />
-        <label htmlFor="visibility-selector">Green</label>
+        <div className="visibility-selector1">
+          <input
+            type="checkbox"
+            id="visibility-selector"
+            className="visibility-selector"
+            value="visibility-selector1"
+          />
+          <label htmlFor="visibility-selector">Green</label>
+        </div>
       </div>
     </div>
   );

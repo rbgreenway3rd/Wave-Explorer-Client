@@ -1,0 +1,8 @@
+.minigraph-controls-container {
+    display: flex;
+    flex-direction: column;
+}
+.show-raw-or-filtered {
+    display: flex;
+    flex-direction: column
+}
