@@ -1,9 +1,9 @@
 import React, { Component } from "react";
 import { Line } from "react-chartjs-2";
-import { FilteredGraphOptions } from "./Configuration/FilteredGraphOptions";
+import { FilteredGraphOptions } from "../../../config/FilteredGraphOptions";
 // import "./LargeGraph.css";
 import { FilterControls } from "./FilterControls";
-import "./Configuration/FilteredGraph.css";
+import "../../../styles/FilteredGraph.css";
 
 export const FilteredGraph = ({
   graphData,

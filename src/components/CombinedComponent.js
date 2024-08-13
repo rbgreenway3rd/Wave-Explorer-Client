@@ -2,14 +2,14 @@ import React, { useContext, useEffect, useState } from "react";
 import "../styles/CombinedComponent.css";
 import { DataContext } from "./FileHandling/DataProvider.js";
 import { Metrics } from "./Graphing/Metrics/Metrics.js";
-import { LargeGraphOptions } from "./Graphing/LargeGraph/Configuration/LargeGraphOptions.js";
+import { LargeGraphOptions } from "../config/LargeGraphOptions.js";
 import { LargeGraph } from "./Graphing/LargeGraph/LargeGraph.js";
 import { MiniGraphGrid } from "./Graphing/MiniGraphGrid/MiniGraphGrid.js";
 import { MiniGraphControls } from "./Graphing/MiniGraphGrid/MiniGraphControls.js";
 import { FileUploader } from "./FileHandling/FileUploader.js";
 // import DrawRectangle from "./Graphing/DrawRectangle/DrawRectangle.js";
 import { FilteredGraph } from "./Graphing/FilteredData/FilteredGraph.js";
-import { FilteredGraphOptions } from "./Graphing/FilteredData/Configuration/FilteredGraphOptions.js";
+import { FilteredGraphOptions } from "../config/FilteredGraphOptions.js";
 import { FilterControls } from "./Graphing/FilteredData/FilterControls.js";
 import { Chart, registerables } from "chart.js";
 import Heatmap from "./Graphing/Heatmap/Heatmap.js";
@@ -20,6 +20,10 @@ export const CombinedComponent = () => {
   const { project, extractedIndicatorTimes, analysisData } =
     useContext(DataContext); // Accessing context data
   const [selectedWellArray, setSelectedWellArray] = useState([]); // State for selected wells
+
+  const [selectedFilteredWellArray, setSelectedFilteredWellArray] = useState(
+    []
+  ); // State for selected filtered wells
 
   const [wellArraysUpdated, setWellArraysUpdated] = useState(false); // State to track well arrays update
 
@@ -127,12 +131,27 @@ export const CombinedComponent = () => {
     );
   };
 
+  // Handle selection of filter type
+  const handleFilterSelect = () => {};
+
   // Handle click & drag well selection
 
   // Prepare data for the large graph
   const graphData = {
     labels: extractedIndicatorTimes,
     datasets: selectedWellArray.map((well) => ({
+      label: well.label,
+      data: well.indicators[0]?.rawData,
+      fill: false,
+      borderColor: "rgb(75, 192, 192)",
+      tension: 0.1,
+    })),
+  };
+
+  // Prepare data for the filtered graph
+  const filteredData = {
+    labels: extractedIndicatorTimes,
+    datasets: selectedFilteredWellArray.map((well) => ({
       label: well.label,
       data: well.indicators[0]?.rawData,
       fill: false,
@@ -265,6 +284,8 @@ export const CombinedComponent = () => {
                   timeData={extractedIndicatorTimes}
                   columnLabels={columnLabels}
                   rowLabels={rowLabels}
+                  // onFilterSelect={handleFilterSelect}
+                  // onFilteredWellsSelect={handleFilteredWellsSelect}
                 />
               </div>
             </div>

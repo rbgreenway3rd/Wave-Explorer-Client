@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import { Line } from "react-chartjs-2";
 import { FilterControls } from "../FilteredData/FilterControls";
-import "./LargeGraph.css";
+import "../../../styles/LargeGraph.css";
 
 export const LargeGraph = ({
   graphData,

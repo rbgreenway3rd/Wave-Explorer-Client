@@ -1,7 +1,7 @@
 import React from "react";
 import { Line } from "react-chartjs-2";
-import { MiniGraphOptions } from "./Configuration/MiniGraphOptions";
-import "./MiniGraphGrid.css";
+import { MiniGraphOptions } from "../../../config/MiniGraphOptions";
+import "../../../styles/MiniGraphGrid.css";
 import { FilterControls } from "../FilteredData/FilterControls";
 
 export const MiniGraphGrid = ({
