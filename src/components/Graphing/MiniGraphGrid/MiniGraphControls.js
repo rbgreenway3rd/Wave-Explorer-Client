@@ -1,5 +1,5 @@
 import React from "react";
-import "./MiniGraphControls.css";
+import "../../../styles/MiniGraphControls.css";
 
 export const MiniGraphControls = (
   {

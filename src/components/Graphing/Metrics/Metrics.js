@@ -1,7 +1,7 @@
 import React from "react";
 import { Line } from "react-chartjs-2";
-import { MetricsOptions } from "./Configuration/MetricsOptions";
-import "./Metrics.css";
+import { MetricsOptions } from "../../../config/MetricsOptions";
+import "../../../styles/Metrics.css";
 import { FilterControls } from "../FilteredData/FilterControls";
 
 export const Metrics = ({
