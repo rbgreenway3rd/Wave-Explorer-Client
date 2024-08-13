@@ -19,6 +19,7 @@ export const DataProvider = ({ children }) => {
   const [extractedIndicatorTimes, setExtractedIndicatorTimes] = useState([]);
   const [analysisData, setAnalysisData] = useState([]);
   const [project, setProject] = useState(null);
+  const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
 
   // Function to extract project title from content
   const extractProjectTitle = (content) => {
@@ -194,6 +195,8 @@ export const DataProvider = ({ children }) => {
         analysisData,
         project,
         setProject,
+        wellArraysUpdated,
+        setWellArraysUpdated,
       }}
     >
       {children} {/* Provide context to children components */}
