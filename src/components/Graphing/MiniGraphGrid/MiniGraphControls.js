@@ -16,6 +16,7 @@ export const MiniGraphControls = (
             id="show-raw"
             className="raw-radio"
             value="showRaw"
+            name="radio-group-1"
           />
           <label htmlFor="show-raw">Raw</label>
         </div>
@@ -25,6 +26,7 @@ export const MiniGraphControls = (
             id="show-filtered"
             className="filtered-radio"
             value="showFiltered"
+            name="radio-group-1"
           />
           <label htmlFor="show-filtered">Filtered</label>
         </div>

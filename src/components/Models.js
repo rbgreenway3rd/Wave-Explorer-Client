@@ -38,11 +38,11 @@ export class Well {
 }
 
 export class Indicator {
-  constructor(rawData, filteredData, isDisplayed) {
+  constructor(rawData, filteredData, time, isDisplayed) {
     // this.key = key;
     this.rawData = rawData;
     this.filteredData = filteredData;
-    // this.time = time;
+    this.time = time;
     this.isDisplayed = isDisplayed; // boolean
   }
 }

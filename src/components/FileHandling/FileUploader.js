@@ -96,7 +96,12 @@ export const FileUploader = ({ setWellArraysUpdated }) => {
         ) {
           data.push(analysisData[y]); // Populate well data
         }
-        const indicator = new Indicator(data, data, true); // Create new indicator
+        const indicator = new Indicator(
+          data,
+          [...data],
+          extractedIndicatorTimes,
+          true
+        ); // Create new indicator
         newWell.indicators.push(indicator);
         newExperiment.wells.push(newWell); // Add well to experiment
         newWellArrays.push(newWell); // Add well to array
@@ -119,7 +124,8 @@ export const FileUploader = ({ setWellArraysUpdated }) => {
       reader.onload = async (e) => {
         const fileContent = e.target.result;
 
-        const allData = await extractAllData(fileContent); // Extract all data from file
+        // const allData = await extractAllData(fileContent);
+        await extractAllData(fileContent); // Extract all data from file
 
         setDataExtracted(true); // Set state to trigger data distribution
       };

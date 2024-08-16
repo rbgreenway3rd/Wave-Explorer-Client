@@ -82,3 +82,28 @@ export const handleColumnSelectorClick = (
       : [...selectedWellArray, ...wellsInCol]
   );
 };
+
+export const filterSelectedWells = (selectedCells, wellArrays) => {
+  const newFilteredArray = [];
+  selectedCells.forEach((selectedCell) => {
+    wellArrays.forEach((well) => {
+      if (well.row === selectedCell.row && well.column === selectedCell.col) {
+        newFilteredArray.push(well);
+      }
+    });
+  });
+  console.log("new filtered array: ", newFilteredArray);
+  return newFilteredArray;
+};
+
+// export const handleRubberbandSelection = (wellArrays, rubberbandCells, filteredWellArray, setFilteredWellArray ) => {
+//   const newFilteredWellArray = [];
+//   const matchedWell = wellArrays.find((well)=> )
+
+// }
+// export const handleRubberbandSelection = (wellArrays, rubberbandCells, filteredWellArray, setFilteredWellArray ) => {
+//   let newFilteredWellArray = [];
+//   for (let i = 0; newFilteredWellArray.length < rubberbandCells.length; i++) {
+
+//   }
+// }

@@ -5,7 +5,7 @@ const OverlayCanvas = ({ width, height, onSelect }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const [currentPos, setCurrentPos] = useState({ x: 0, y: 0 });
-  const [rubberbandedWells, setRubberbandedWells] = useState([]);
+  const [rubberbandedCells, setRubberbandedCells] = useState([]);
   const overlayCanvasRef = useRef(null);
 
   const handleMouseDown = (e) => {
@@ -50,7 +50,7 @@ const OverlayCanvas = ({ width, height, onSelect }) => {
         }
       }
     }
-    setRubberbandedWells(cells);
+    setRubberbandedCells(cells);
     onSelect(cells);
   };
 

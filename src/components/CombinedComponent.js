@@ -24,15 +24,17 @@ export const CombinedComponent = () => {
   const { project, extractedIndicatorTimes, analysisData } =
     useContext(DataContext);
   const [selectedWellArray, setSelectedWellArray] = useState([]);
-  const [selectedFilteredWellArray, setSelectedFilteredWellArray] = useState(
-    []
-  );
+  const [filteredWellArray, setFilteredWellArray] = useState([]);
   const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
 
   const [largeCanvasWidth] = useState(window.innerWidth / 2);
   const [largeCanvasHeight] = useState(window.innerHeight / 2);
   const [smallCanvasWidth] = useState(window.innerWidth / 56);
   const [smallCanvasHeight] = useState(window.innerHeight / 40);
+
+  const handleFilterUpdate = (newFilteredArray) => {
+    setFilteredWellArray(newFilteredArray);
+  };
 
   const plate = project?.plate || [];
   const experiment = plate[0]?.experiments[0] || {};
@@ -77,9 +79,9 @@ export const CombinedComponent = () => {
     })),
   };
 
-  const filteredData = {
+  const filteredResult = {
     labels: extractedIndicatorTimes,
-    datasets: selectedFilteredWellArray.map((well) => ({
+    datasets: filteredWellArray.map((well) => ({
       label: well.label,
       data: well.indicators[0]?.rawData,
       fill: false,
@@ -87,7 +89,8 @@ export const CombinedComponent = () => {
       tension: 0.1,
     })),
   };
-
+  console.log("graph data: ", graphData);
+  console.log("selected well array: ", selectedWellArray);
   const largeGraphConfig = LargeGraphOptions(analysisData);
   const filteredGraphConfig = FilteredGraphOptions(analysisData);
 
@@ -174,17 +177,20 @@ export const CombinedComponent = () => {
               </div>
               <div className="filters-header">Filtered Waves</div>
               <FilteredGraph
-                project={project}
-                graphData={filteredData}
-                wellArrays={wellArrays}
-                selectedWellArray={selectedFilteredWellArray}
-                timeData={extractedIndicatorTimes}
-                columnLabels={columnLabels}
-                rowLabels={rowLabels}
+                // project={project}
+                filteredData={filteredResult}
+                // wellArrays={wellArrays}
+                // selectedWellArray={selectedFilteredWellArray}
+                // timeData={extractedIndicatorTimes}
+                // columnLabels={columnLabels}
+                // rowLabels={rowLabels}
                 options={filteredGraphConfig}
               />
               <div className="filter-controls">
-                <FilterControls />
+                <FilterControls
+                  wellArrays={wellArrays}
+                  onFilterUpdate={handleFilterUpdate}
+                />
               </div>
             </div>
           </>
