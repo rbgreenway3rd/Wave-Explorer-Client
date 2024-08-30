@@ -56,32 +56,34 @@ const Heatmap = ({
       .domain([1, 100]);
 
     // Read the data
-    d3.csv(
-      "https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/heatmap_data.csv"
-    ).then(function (data) {
-      svg
-        .selectAll()
-        .data(data, function (d) {
-          return d.group + ":" + d.variable;
-        })
-        .join("rect")
-        .attr("x", function (d) {
-          return x(d.group);
-        })
-        .attr("y", function (d) {
-          return y(d.variable);
-        })
-        .attr("width", x.bandwidth())
-        .attr("height", y.bandwidth())
-        .style("fill", function (d) {
-          return myColor(d.value);
-        });
-    });
+    d3
+      .csv
+      // "https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/heatmap_data.csv"
+      ()
+      .then(function (data) {
+        svg
+          .selectAll()
+          .data(data, function (d) {
+            return d.group + ":" + d.variable;
+          })
+          .join("rect")
+          .attr("x", function (d) {
+            return x(d.group);
+          })
+          .attr("y", function (d) {
+            return y(d.variable);
+          })
+          .attr("width", x.bandwidth())
+          .attr("height", y.bandwidth())
+          .style("fill", function (d) {
+            return myColor(d.value);
+          });
+      });
 
     // Cleanup function
     return () => {
       d3.select(ref.current).selectAll("*").remove();
-      console.log(rowLabels);
+      // console.log(rowLabels);
     };
   }, [myGroups, myVars]);
 
