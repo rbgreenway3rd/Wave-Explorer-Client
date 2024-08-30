@@ -45,7 +45,7 @@ const WellSelectionModal = ({ onFilterApply }) => {
 
   return (
     <div>
-      <Button onClick={handleOpen}>Settings</Button>
+      <Button onClick={handleOpen}>Select Wells</Button>
       <Modal
         open={open}
         onClose={handleClose}
@@ -77,7 +77,7 @@ const WellSelectionModal = ({ onFilterApply }) => {
               onSelect={handleSelection}
             />
           </Box>
-          <Button onClick={handleClose}>Apply Filters</Button>
+          <Button onClick={handleClose}>Confirm Well Selection</Button>
         </Box>
       </Modal>
     </div>

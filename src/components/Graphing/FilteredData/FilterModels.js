@@ -9,23 +9,6 @@ export class DataFilter {
   executeFilter() {}
 }
 
-export class TestFilter extends DataFilter {
-  constructor(type, name, desc, isEnabled, sourceWells, destWells) {
-    super(type, name, desc, isEnabled);
-    this.sourceWells = sourceWells;
-    this.destWells = destWells;
-  }
-  executeFilter(data) {
-    data.forEach((well) => {
-      well.forEach((value) => {
-        value = value / 2;
-        console.log("filtered: ", value);
-        return value;
-      });
-    });
-  }
-}
-
 // class Car {
 //   constructor(brand) {
 //     this.carname = brand;

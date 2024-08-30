@@ -1,7 +1,4 @@
-export const FilteredGraphOptions = (analysisData = []) => {
-  const minValue = analysisData.length > 0 ? Math.min(...analysisData) : 0;
-  const maxValue = analysisData.length > 0 ? Math.max(...analysisData) : 100; // Adjust default max value as needed
-
+export const FilteredGraphOptions = (minValue, maxValue) => {
   return {
     normalized: true,
     animation: {

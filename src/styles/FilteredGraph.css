@@ -1,6 +1,13 @@
-/* .filtered-graph-and-controls-container{
-    display: grid;
-    grid-template-areas: 
-        "filtered-graph-container filter-controls";
-    grid-template-columns: [first] 70% [line2] auto;
+/* .filtered-graph{
+    display: grid;  
+}
+
+.filtered-graph-canvas{
+    grid-column: 1 / span 3;
+    grid-row: 1;
+}
+
+.filter-controls {
+    grid-column: 4;
+    grid-row: 1;
 } */
