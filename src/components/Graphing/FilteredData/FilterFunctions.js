@@ -7,10 +7,11 @@ export const listOfFilters = [
         ...well,
         indicators: well.indicators.map((indicator) => ({
           ...indicator,
-          filteredData: indicator.filteredData.map((value) => value / 2),
+          filteredData: indicator.filteredData.map((value) => value.y / 2),
         })),
       })),
   },
+
   {
     name: "filter2",
     label: "Multiply values by 4",
@@ -19,7 +20,7 @@ export const listOfFilters = [
         ...well,
         indicators: well.indicators.map((indicator) => ({
           ...indicator,
-          filteredData: indicator.filteredData.map((value) => value * 4),
+          filteredData: indicator.filteredData.map((value) => value.y * 4),
         })),
       })),
   },
@@ -30,7 +31,7 @@ export const listOfFilters = [
       data.map((well) => ({
         ...well,
         indicators: well.indicators.map((indicator) => {
-          const maxVal = Math.max(...indicator.filteredData);
+          const maxVal = Math.max(...indicator.filteredData); // does not work with tuple structure data
           const minVal = Math.min(...indicator.filteredData);
           return {
             ...indicator,
