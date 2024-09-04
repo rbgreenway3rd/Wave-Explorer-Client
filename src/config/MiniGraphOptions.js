@@ -1,4 +1,4 @@
-import { Chart, registerables, TimeScale } from "chart.js";
+import { Chart, registerables } from "chart.js";
 import "chartjs-adapter-date-fns";
 Chart.register(...registerables);
 

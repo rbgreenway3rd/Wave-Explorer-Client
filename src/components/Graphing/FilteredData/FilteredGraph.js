@@ -12,7 +12,7 @@ export const FilteredGraph = ({ filteredWellArray, options }) => {
 
   const applyFilters = (data) => {
     if (!Array.isArray(data)) {
-      console.error("Expected data to be an array, but received:", data);
+      console.error("Expected data to be an array, but received:", data); // error handling
       return [];
     }
 

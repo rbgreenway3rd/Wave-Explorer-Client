@@ -2,8 +2,6 @@ import React, { memo, useMemo } from "react";
 import { Line } from "react-chartjs-2";
 import { MiniGraphOptions } from "../../../config/MiniGraphOptions";
 import "../../../styles/MiniGraphGrid.css";
-import { FilterControls } from "../FilteredData/FilterControls";
-import { useCallback } from "react";
 import { debounce } from "lodash";
 import "chartjs-adapter-date-fns";
 
@@ -23,19 +21,20 @@ export const MiniGraphGrid = ({
   onColumnSelectorClick,
   onAllSelectorClick,
 }) => {
-  const handleWellClick = useCallback(debounce(onWellClick, 200), [
-    onWellClick,
-  ]);
-  const handleRowSelectorClick = useCallback(
-    debounce(onRowSelectorClick, 200),
+  const handleWellClick = useMemo(
+    () => debounce(onWellClick, 200),
+    [onWellClick]
+  );
+  const handleRowSelectorClick = useMemo(
+    () => debounce(onRowSelectorClick, 200),
     [onRowSelectorClick]
   );
-  const handleColumnSelectorClick = useCallback(
-    debounce(onColumnSelectorClick, 200),
+  const handleColumnSelectorClick = useMemo(
+    () => debounce(onColumnSelectorClick, 200),
     [onColumnSelectorClick]
   );
-  const handleAllSelectorClick = useCallback(
-    debounce(onAllSelectorClick, 200),
+  const handleAllSelectorClick = useMemo(
+    () => debounce(onAllSelectorClick, 200),
     [onAllSelectorClick]
   );
 
@@ -115,31 +114,16 @@ export const MiniGraphGrid = ({
               }
               key={well.id}
               data={{
-                // labels: timeData,
                 datasets: [
                   {
                     data: well.indicators[0].rawData,
-                    // backgroundColor: "aqua",
+
                     borderColor: "black",
                     pointBorderWidth: 0,
                     pointBorderRadius: 0,
                   },
                 ],
               }}
-              // data={{
-              //   labels: timeData,
-              //   datasets: [
-              //     {
-              //       data: well.indicators[0].rawData,
-              //       backgroundColor: "aqua",
-              //       borderColor: "black",
-              //       pointBorderWidth: 0,
-              //       pointBorderRadius: 0,
-              //       graph_data: {x:timeData,y:well.indicators[0].rawData},
-              //     },
-              //   ],
-              // }}
-
               width={smallCanvasWidth}
               height={smallCanvasHeight}
               options={options}
@@ -148,7 +132,6 @@ export const MiniGraphGrid = ({
           ))}
         </div>
       </div>
-      {/* <FilterControls className="minigraph-controls" /> */}
     </div>
   );
 };
