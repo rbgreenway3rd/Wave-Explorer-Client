@@ -1,16 +1,26 @@
-export const MiniGraphOptions = (analysisData) => {
+import { Chart, registerables, TimeScale } from "chart.js";
+import "chartjs-adapter-date-fns";
+Chart.register(...registerables);
+
+export const MiniGraphOptions = (analysisData, timeData) => {
   return {
     normalized: true,
-    maintainAspectRatio: false,
+    maintainAspectRatio: true,
     responsive: false,
     spanGaps: true,
     // animation: false,
     animation: {
       duration: 0,
     },
+    parsing: false,
     plugins: {
       legend: false,
-      decimation: { enabled: false, algorithm: "lttb", samples: 50 },
+      decimation: {
+        enabled: true,
+        algorithm: "lttb",
+        samples: 20,
+        threshold: 80,
+      },
       tooltip: {
         enabled: false, // set to FALSE if using an external function for tooltip
         mode: "nearest",
@@ -35,6 +45,9 @@ export const MiniGraphOptions = (analysisData) => {
     },
     scales: {
       x: {
+        type: "time",
+        min: Math.min(...timeData),
+        max: Math.max(...timeData),
         ticks: {
           display: false,
         },

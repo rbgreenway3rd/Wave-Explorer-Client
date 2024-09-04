@@ -27,7 +27,7 @@ export const handleWellArrayClick = (
   selectedWellArray,
   setSelectedWellArray
 ) => {
-  const well = wellArrays[index];
+  const well = wellArrays[index - 1];
   if (selectedWellArray.includes(well)) {
     handleDeselectWell(well, selectedWellArray, setSelectedWellArray);
   } else {

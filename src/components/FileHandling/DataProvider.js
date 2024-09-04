@@ -126,7 +126,9 @@ export const DataProvider = ({ children }) => {
     let analysisData = []; // Datapoints to be sorted by well; pulled from extractedLines
     for (let i = 0; i < elements.length; i++) {
       if (i % 385 === 0) {
-        extractedIndicatorTimes.push(parseFloat(elements[i].replace("\r", "")));
+        extractedIndicatorTimes.push(
+          parseFloat(elements[i].replace("\r", "") * 1000)
+        );
       } else {
         analysisData.push(parseFloat(elements[i]));
       }

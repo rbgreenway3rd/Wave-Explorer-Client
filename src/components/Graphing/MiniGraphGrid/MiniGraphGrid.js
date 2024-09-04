@@ -1,8 +1,11 @@
-import React from "react";
+import React, { memo, useMemo } from "react";
 import { Line } from "react-chartjs-2";
 import { MiniGraphOptions } from "../../../config/MiniGraphOptions";
 import "../../../styles/MiniGraphGrid.css";
 import { FilterControls } from "../FilteredData/FilterControls";
+import { useCallback } from "react";
+import { debounce } from "lodash";
+import "chartjs-adapter-date-fns";
 
 export const MiniGraphGrid = ({
   wellArrays,
@@ -20,29 +23,43 @@ export const MiniGraphGrid = ({
   onColumnSelectorClick,
   onAllSelectorClick,
 }) => {
+  const handleWellClick = useCallback(debounce(onWellClick, 200), [
+    onWellClick,
+  ]);
+  const handleRowSelectorClick = useCallback(
+    debounce(onRowSelectorClick, 200),
+    [onRowSelectorClick]
+  );
+  const handleColumnSelectorClick = useCallback(
+    debounce(onColumnSelectorClick, 200),
+    [onColumnSelectorClick]
+  );
+  const handleAllSelectorClick = useCallback(
+    debounce(onAllSelectorClick, 200),
+    [onAllSelectorClick]
+  );
+
+  const options = useMemo(
+    () => MiniGraphOptions(analysisData, timeData),
+    [analysisData, timeData]
+  );
+
+  let minigraphWellArrays = [...wellArrays];
+
   return (
     <div className="minigraph-and-controls-container">
-      <div
-        className="minigraph-container"
-        style={
-          {
-            // width: largeCanvasWidth,
-            // height: largeCanvasHeight,
-          }
-        }
-      >
+      <div className="minigraph-container">
         <div
           className="all-selector"
           style={{
-            width: smallCanvasWidth, // Set width to match row selectors
-            height: smallCanvasHeight, // Set height to match column selectors
+            width: smallCanvasWidth,
+            height: smallCanvasHeight,
           }}
         >
           <button
             id="allButton"
             className="all-button"
-            key="allButton"
-            onClick={() => onAllSelectorClick()}
+            onClick={handleAllSelectorClick}
           >
             all
           </button>
@@ -62,7 +79,7 @@ export const MiniGraphGrid = ({
                 width: smallCanvasWidth,
                 height: "100%",
               }}
-              onClick={() => onColumnSelectorClick(columnLabel)}
+              onClick={() => handleColumnSelectorClick(columnLabel)}
             >
               {columnLabel}
             </button>
@@ -79,43 +96,55 @@ export const MiniGraphGrid = ({
               id="rowButton"
               className="row-button"
               key={rowLabel}
-              onClick={() => onRowSelectorClick(rowLabel)}
+              onClick={() => handleRowSelectorClick(rowLabel)}
             >
               {rowLabel}
             </button>
           ))}
         </div>
         <div className="minigraph-grid">
-          {wellArrays.map((well, index) => (
+          {minigraphWellArrays.map((well) => (
             <Line
+              type="line"
               id="minigraphCanvas"
               className="minigraph-canvas"
               style={
                 selectedWellArray.includes(well)
-                  ? { border: "solid 2px red" }
-                  : { color: "black" }
+                  ? { border: "solid 2px red" } // styling for selected wells
+                  : {} // styling for un-selected wells
               }
-              key={well.id} // Ensure each well has a unique key property
+              key={well.id}
               data={{
-                labels: timeData,
+                // labels: timeData,
                 datasets: [
                   {
-                    labels: timeData,
                     data: well.indicators[0].rawData,
-                    backgroundColor: "aqua",
+                    // backgroundColor: "aqua",
                     borderColor: "black",
                     pointBorderWidth: 0,
                     pointBorderRadius: 0,
                   },
                 ],
               }}
+              // data={{
+              //   labels: timeData,
+              //   datasets: [
+              //     {
+              //       data: well.indicators[0].rawData,
+              //       backgroundColor: "aqua",
+              //       borderColor: "black",
+              //       pointBorderWidth: 0,
+              //       pointBorderRadius: 0,
+              //       graph_data: {x:timeData,y:well.indicators[0].rawData},
+              //     },
+              //   ],
+              // }}
+
               width={smallCanvasWidth}
               height={smallCanvasHeight}
-              options={MiniGraphOptions(analysisData)}
-              onClick={() => onWellClick(index)}
-            >
-              {/* <span id="tooltip-text">{well.id}</span> */}
-            </Line>
+              options={options}
+              onClick={() => handleWellClick(well.id)}
+            />
           ))}
         </div>
       </div>
@@ -123,3 +152,5 @@ export const MiniGraphGrid = ({
     </div>
   );
 };
+
+export default memo(MiniGraphGrid);

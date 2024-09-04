@@ -89,12 +89,15 @@ export const FileUploader = ({ setWellArraysUpdated }) => {
           rowIndex
         ); // Create new well
         let data = [];
+        let i = 0;
         for (
           let y = rowIndex * extractedColumns + (colIndex - 1);
           y < analysisData.length;
           y += extractedRows * extractedColumns
         ) {
-          data.push(analysisData[y]); // Populate well data
+          // data.push(analysisData[y]); // Populate well data
+          data.push({ x: extractedIndicatorTimes[i], y: analysisData[y] });
+          i++;
         }
         const indicator = new Indicator(
           data,

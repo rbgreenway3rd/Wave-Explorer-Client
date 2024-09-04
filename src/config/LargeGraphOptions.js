@@ -11,9 +11,10 @@ export const LargeGraphOptions = (analysisData = []) => {
     plugins: {
       legend: false, // displays dataset label at top of graph
       decimation: {
-        enabled: false,
+        enabled: true,
         algorithm: "lttb",
         samples: 50,
+        threshold: 100,
       },
       tooltip: {
         enabled: false, // set to FALSE if using an external function for tooltip
