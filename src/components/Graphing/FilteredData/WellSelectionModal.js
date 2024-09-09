@@ -41,9 +41,32 @@ const WellSelectionModal = ({ onFilterApply }) => {
     // console.log("selected cells: ", selectedCells);
   };
 
-  const handleSelection = (cells) => {
-    setSelectedCells(cells);
-    // console.log("modalSize: ", modalSize);
+  // const handleSelection = (cells) => {
+  //   setSelectedCells(cells);
+  //   // console.log("modalSize: ", modalSize);
+  // };
+  const handleSelection = (newCells) => {
+    setSelectedCells((prevSelectedCells) => {
+      // Create a copy of the previously selected cells
+      const updatedCells = [...prevSelectedCells];
+      // Iterate through the newly selected cells
+      newCells.forEach((newCell) => {
+        // Check if the cell already exists in the selectedCells array
+        const cellIndex = updatedCells.findIndex(
+          (cell) => cell.row === newCell.row && cell.col === newCell.col
+        );
+
+        // If the cell exists, remove it
+        if (cellIndex !== -1) {
+          updatedCells.splice(cellIndex, 1);
+        } else {
+          // If the cell doesn't exist, add it
+          updatedCells.push(newCell);
+        }
+      });
+
+      return updatedCells; // Return the updated array
+    });
   };
 
   return (

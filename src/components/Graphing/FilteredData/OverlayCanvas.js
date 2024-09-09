@@ -38,8 +38,40 @@ const OverlayCanvas = ({ width, height, onSelect }) => {
     // currentPos.y = e.clientY - rect.top;
   };
 
+  // const handleMouseUp = () => {
+  //   setIsDragging(false);
+  //   const cellWidth = width / 24;
+  //   const cellHeight = height / 16;
+  //   const x1 = Math.min(startPos.x, currentPos.x);
+  //   const y1 = Math.min(startPos.y, currentPos.y);
+  //   const x2 = Math.max(startPos.x, currentPos.x);
+  //   const y2 = Math.max(startPos.y, currentPos.y);
+
+  //   const cells = [];
+  //   for (let row = 0; row < 16; row++) {
+  //     for (let col = 0; col < 24; col++) {
+  //       const cellX = col * cellWidth;
+  //       const cellY = row * cellHeight;
+  //       if (
+  //         cellX < x2 &&
+  //         cellX + cellWidth > x1 &&
+  //         cellY < y2 &&
+  //         cellY + cellHeight > y1
+  //       ) {
+  //         cells.push({ row, col });
+  //       }
+  //     }
+  //   }
+
+  //   onSelect(cells);
+  //   console.log("mouseUp: ", currentPos);
+  //   console.log("selected wells: ", cells);
+  //   // setStartPos({ x: 0, y: 0 });
+  // };
+
   const handleMouseUp = () => {
     setIsDragging(false);
+
     const cellWidth = width / 24;
     const cellHeight = height / 16;
     const x1 = Math.min(startPos.x, currentPos.x);
@@ -47,7 +79,7 @@ const OverlayCanvas = ({ width, height, onSelect }) => {
     const x2 = Math.max(startPos.x, currentPos.x);
     const y2 = Math.max(startPos.y, currentPos.y);
 
-    const cells = [];
+    const newCells = [];
     for (let row = 0; row < 16; row++) {
       for (let col = 0; col < 24; col++) {
         const cellX = col * cellWidth;
@@ -58,15 +90,13 @@ const OverlayCanvas = ({ width, height, onSelect }) => {
           cellY < y2 &&
           cellY + cellHeight > y1
         ) {
-          cells.push({ row, col });
+          newCells.push({ row, col });
         }
       }
     }
-    setRubberbandedCells(cells);
-    onSelect(cells);
-    console.log("mouseUp: ", currentPos);
-    console.log("selected wells: ", cells);
-    // setStartPos({ x: 0, y: 0 });
+
+    // onSelect function passes the new cells to WellSelectionModal
+    onSelect(newCells);
   };
 
   useEffect(() => {
