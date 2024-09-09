@@ -31,20 +31,12 @@ const WellSelectionModal = ({ onFilterApply }) => {
     const modalWidth = window.innerWidth * 0.7;
     const modalHeight = window.innerHeight * 0.7;
     setModalSize({ width: modalWidth, height: modalHeight });
-
-    // console.log("modalSize: ", modalSize);
   };
 
   const handleClose = () => {
     setOpen(false);
     onFilterApply(selectedCells);
-    // console.log("selected cells: ", selectedCells);
   };
-
-  // const handleSelection = (cells) => {
-  //   setSelectedCells(cells);
-  //   // console.log("modalSize: ", modalSize);
-  // };
   const handleSelection = (newCells) => {
     setSelectedCells((prevSelectedCells) => {
       // Create a copy of the previously selected cells
@@ -55,7 +47,6 @@ const WellSelectionModal = ({ onFilterApply }) => {
         const cellIndex = updatedCells.findIndex(
           (cell) => cell.row === newCell.row && cell.col === newCell.col
         );
-
         // If the cell exists, remove it
         if (cellIndex !== -1) {
           updatedCells.splice(cellIndex, 1);
@@ -64,8 +55,7 @@ const WellSelectionModal = ({ onFilterApply }) => {
           updatedCells.push(newCell);
         }
       });
-
-      return updatedCells; // Return the updated array
+      return updatedCells;
     });
   };
 
