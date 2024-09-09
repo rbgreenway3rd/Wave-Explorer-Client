@@ -40,5 +40,38 @@ export const listOfFilters = [
         }),
       })),
   },
+  {
+    name: "filter4",
+    label: "Static Ratio",
+    apply: (data) =>
+      data.map((well) => ({
+        ...well,
+        indicators: well.indicators.map((indicator) => {
+          let newFilteredData = [];
+          let start = 2;
+          let end = 6;
+          let sum = 0.0;
+          for (let i = start; i <= end; i++) {
+            sum += indicator.filteredData[i].y;
+          }
+          let NV = sum / (end - start + 1);
+          for (let i = 0; i < indicator.filteredData.length; i++) {
+            // indicator.filteredData[i].y = indicator.filteredData[i].y / NV;
+            newFilteredData.push(indicator.filteredData[i].y / NV);
+          }
+
+          // return indicator.filteredData;
+          console.log("static ratio res: ", indicator.filteredData);
+          console.log("NV: ", NV);
+          console.log("newFilteredData: ", newFilteredData);
+          return {
+            ...indicator,
+            filteredData: newFilteredData,
+          };
+        }),
+      })),
+
+    // }),
+  },
   // Add more filters here
 ];

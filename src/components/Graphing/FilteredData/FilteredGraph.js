@@ -24,6 +24,7 @@ export const FilteredGraph = ({ filteredWellArray, options }) => {
 
   const filteredWells = applyFilters(filteredWellArray) || [];
 
+  console.log("applyFilters res: ", filteredWells);
   const chartData = {
     labels: extractedIndicatorTimes,
     datasets: filteredWells.map((well) => ({

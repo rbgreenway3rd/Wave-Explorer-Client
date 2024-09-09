@@ -8,17 +8,17 @@ import OverlayCanvas from "./OverlayCanvas";
 
 const modalStyle = {
   position: "absolute",
-  top: "50%",
-  left: "50%",
-  transform: "translate(-50%, -50%)",
-  width: "80%",
-  maxWidth: 800,
+  // top: "50%",
+  // left: "50%",
+  // transform: "translate(-50%, -50%)",
+  // width: "80%",
+  // maxWidth: 800,
   bgcolor: "background.paper",
   border: "2px solid #000",
   boxShadow: 24,
   display: "flex",
   flexDirection: "column",
-  p: 2,
+  p: 2, // padding
 };
 
 const WellSelectionModal = ({ onFilterApply }) => {
@@ -31,6 +31,8 @@ const WellSelectionModal = ({ onFilterApply }) => {
     const modalWidth = window.innerWidth * 0.7;
     const modalHeight = window.innerHeight * 0.7;
     setModalSize({ width: modalWidth, height: modalHeight });
+
+    // console.log("modalSize: ", modalSize);
   };
 
   const handleClose = () => {
@@ -41,6 +43,7 @@ const WellSelectionModal = ({ onFilterApply }) => {
 
   const handleSelection = (cells) => {
     setSelectedCells(cells);
+    // console.log("modalSize: ", modalSize);
   };
 
   return (
@@ -61,6 +64,9 @@ const WellSelectionModal = ({ onFilterApply }) => {
               position: "relative",
               width: "100%",
               height: "100%",
+              // position: "unset",
+              // width: "auto",
+              // height: "auto",
               display: "flex",
               justifyContent: "center",
               alignItems: "center",

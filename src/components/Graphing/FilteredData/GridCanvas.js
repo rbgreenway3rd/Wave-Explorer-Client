@@ -34,6 +34,7 @@ const GridCanvas = ({ width, height, selectedCells }) => {
       const y = row * cellHeight;
       context.fillRect(x, y, cellWidth, cellHeight);
     });
+    // console.log("grid canvas canvasSize: ", canvasSize);
   }, [canvasSize, selectedCells]);
 
   return (
@@ -41,7 +42,16 @@ const GridCanvas = ({ width, height, selectedCells }) => {
       ref={canvasRef}
       width={canvasSize.width}
       height={canvasSize.height}
-      style={{ border: "1px solid black", width: "100%", height: "100%" }}
+      // style={{ border: "1px solid black", width: "auto", height: "auto" }}
+      style={{
+        // border: "1px solid black",
+        width: "100%",
+        height: "100%",
+        top: 0,
+        left: 0,
+        // position: "unset",
+        // position: "absolute",
+      }}
     />
   );
 };

@@ -14,7 +14,17 @@ const OverlayCanvas = ({ width, height, onSelect }) => {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
     });
+    setCurrentPos({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
+    // startPos.x = e.clientX - rect.left;
+    // startPos.y = e.clientY - rect.top;
+    // currentPos.x = e.clientX - rect.left;
+    // currentPos.y = e.clientY - rect.top;
     setIsDragging(true);
+    console.log("mouseDown: ", startPos);
+    console.log("Canvas: ", rect.x, rect.y, rect.width, rect.height);
   };
 
   const handleMouseMove = (e) => {
@@ -24,6 +34,8 @@ const OverlayCanvas = ({ width, height, onSelect }) => {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
     });
+    // currentPos.x = e.clientX - rect.left;
+    // currentPos.y = e.clientY - rect.top;
   };
 
   const handleMouseUp = () => {
@@ -52,18 +64,27 @@ const OverlayCanvas = ({ width, height, onSelect }) => {
     }
     setRubberbandedCells(cells);
     onSelect(cells);
+    console.log("mouseUp: ", currentPos);
+    console.log("selected wells: ", cells);
+    // setStartPos({ x: 0, y: 0 });
   };
 
   useEffect(() => {
     setOverlayCanvasSize({ width, height });
+    console.log("overlayCanvasSize: ", overlayCanvasSize);
   }, [width, height]);
 
   useEffect(() => {
-    const overlayCanvas = overlayCanvasRef.current;
-    const context = overlayCanvas.getContext("2d");
+    // const overlayCanvas = overlayCanvasRef.current;
+    const context = overlayCanvasRef.current.getContext("2d");
 
     function drawRubberband() {
-      context.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+      context.clearRect(
+        0,
+        0,
+        overlayCanvasRef.current.width,
+        overlayCanvasRef.current.height
+      );
       if (isDragging) {
         const x = Math.min(startPos.x, currentPos.x);
         const y = Math.min(startPos.y, currentPos.y);
@@ -73,6 +94,13 @@ const OverlayCanvas = ({ width, height, onSelect }) => {
         context.strokeRect(x, y, width, height);
       }
     }
+    // console.log(
+    //   "Drawing: ",
+    //   startPos,
+    //   currentPos,
+    //   overlayCanvasRef.current.width,
+    //   overlayCanvasRef.current.height
+    // );
 
     drawRubberband();
   }, [isDragging, startPos, currentPos]);
@@ -82,12 +110,16 @@ const OverlayCanvas = ({ width, height, onSelect }) => {
       ref={overlayCanvasRef}
       width={overlayCanvasSize.width}
       height={overlayCanvasSize.height}
+      // position: "absolute",
       style={{
         position: "absolute",
+        // position: "unset",
         top: 0,
         left: 0,
         border: "none",
         pointerEvents: "auto",
+        // width: "auto",
+        // height: "auto",
         width: "100%",
         height: "100%",
       }}

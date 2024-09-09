@@ -121,6 +121,10 @@ export const FilterControls = ({
     }
   };
 
+  const handleChangeFilterOrderUp = () => {};
+
+  const handleChangeFilterOrderDown = () => {};
+
   const filterSelectedWells = (selectedCells) => {
     const newFilteredArray = wellArrays.filter((well) => {
       return selectedCells.some(
