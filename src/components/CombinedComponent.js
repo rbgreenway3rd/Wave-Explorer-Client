@@ -1,4 +1,10 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, {
+  useContext,
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+} from "react";
 import "../styles/CombinedComponent.css";
 import { DataContext } from "./FileHandling/DataProvider.js";
 import { LargeGraphOptions } from "../config/LargeGraphOptions.js";
@@ -18,12 +24,21 @@ import {
   handleRowSelectorClick,
   handleColumnSelectorClick,
 } from "../utilities/Helpers.js";
+import deepEqual from "fast-deep-equal"; // for 'deep comparison'
 
 Chart.register(...registerables);
 
 export const CombinedComponent = () => {
-  const { project, extractedIndicatorTimes, analysisData } =
-    useContext(DataContext);
+  const {
+    project,
+    setProject,
+    extractedIndicatorTimes,
+    analysisData,
+    dispatch,
+    showFiltered,
+    setShowFiltered,
+  } = useContext(DataContext);
+  const prevProjectRef = useRef(null); // To store the previous project state
   const [selectedWellArray, setSelectedWellArray] = useState([]);
   const [filteredWellArray, setFilteredWellArray] = useState([]);
   const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
@@ -44,6 +59,7 @@ export const CombinedComponent = () => {
   const plate = project?.plate || [];
   const experiment = plate[0]?.experiments[0] || {};
   const wellArrays = experiment.wells || [];
+
   const columnLabels = Array.from(
     { length: plate[0]?.numberOfColumns || 0 },
     (_, i) => i + 1
@@ -68,10 +84,19 @@ export const CombinedComponent = () => {
   ];
 
   useEffect(() => {
-    if (extractedIndicatorTimes.length > 0) {
+    if (!deepEqual(prevProjectRef.current, project)) {
       console.log("Project Data:", project);
+      prevProjectRef.current = project; // Update the previous project reference only if there's a change
     }
-  }, [extractedIndicatorTimes, analysisData, project]);
+  }, [project]);
+
+  // useEffect(() => {
+  //   const plate = project?.plate;
+  //   if (!deepEqual(prevProjectRef.current?.plate, plate)) {
+  //     console.log("Project Plate Data:", plate);
+  //     prevProjectRef.current = { ...prevProjectRef.current, plate }; // Update only the part you care about
+  //   }
+  // }, [project?.plate]);
 
   const graphData = {
     labels: extractedIndicatorTimes,
@@ -138,9 +163,9 @@ export const CombinedComponent = () => {
                   )
                 }
               />
-              <div className="minigraph-controls">
+              {/* <div className="minigraph-controls">
                 <MiniGraphControls />
-              </div>
+              </div> */}
               <div className="large-graph-header">Raw Waves</div>
               <LargeGraph
                 className="large-graph"
@@ -162,11 +187,12 @@ export const CombinedComponent = () => {
                 rowLabels={rowLabels}
                 analysisData={analysisData}
               />
-              <div className="metrics-controls">
+              {/* <div className="metrics-controls">
                 <MiniGraphControls />
-              </div>
+              </div> */}
               <div className="filters-header">Filtered Waves</div>
               <FilteredGraph
+                project={project}
                 wellArrays={wellArrays}
                 filteredWellArray={filteredWellArray}
                 onFilterUpdate={handleFilterUpdate}

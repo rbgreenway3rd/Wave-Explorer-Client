@@ -1,4 +1,5 @@
-import React, { memo, useMemo } from "react";
+import React, { memo, useMemo, useContext } from "react";
+import { DataContext } from "../../FileHandling/DataProvider";
 import { Line } from "react-chartjs-2";
 import { MiniGraphOptions } from "../../../config/MiniGraphOptions";
 import "../../../styles/MiniGraphGrid.css";
@@ -15,12 +16,22 @@ export const MiniGraphGrid = ({
   largeCanvasHeight,
   columnLabels,
   rowLabels,
-  analysisData,
+  // analysisData,
   onWellClick,
   onRowSelectorClick,
   onColumnSelectorClick,
   onAllSelectorClick,
 }) => {
+  const {
+    project,
+    setProject,
+    extractedIndicatorTimes,
+    analysisData,
+    dispatch,
+    showFiltered,
+    setShowFiltered,
+  } = useContext(DataContext);
+
   const handleWellClick = useMemo(
     () => debounce(onWellClick, 200),
     [onWellClick]
@@ -38,12 +49,18 @@ export const MiniGraphGrid = ({
     [onAllSelectorClick]
   );
 
+  const handleToggleDataShown = () => {
+    if (showFiltered === false) {
+      setShowFiltered(true);
+    } else {
+      setShowFiltered(false);
+    }
+  };
+
   const options = useMemo(
     () => MiniGraphOptions(analysisData, timeData),
     [analysisData, timeData]
   );
-
-  let minigraphWellArrays = [...wellArrays];
 
   return (
     <div className="minigraph-and-controls-container">
@@ -102,7 +119,7 @@ export const MiniGraphGrid = ({
           ))}
         </div>
         <div className="minigraph-grid">
-          {minigraphWellArrays.map((well) => (
+          {wellArrays.map((well) => (
             <Line
               type="line"
               id="minigraphCanvas"
@@ -116,8 +133,10 @@ export const MiniGraphGrid = ({
               data={{
                 datasets: [
                   {
-                    data: well.indicators[0].rawData,
-
+                    data:
+                      showFiltered === true
+                        ? well.indicators[0].filteredData
+                        : well.indicators[0].rawData,
                     borderColor: "black",
                     pointBorderWidth: 0,
                     pointBorderRadius: 0,
@@ -130,6 +149,46 @@ export const MiniGraphGrid = ({
               onClick={() => handleWellClick(well.id)}
             />
           ))}
+        </div>
+      </div>
+      <div className="minigraph-controls-container">
+        <div className="show-raw-or-filtered">
+          Show
+          <div className="show-raw">
+            <input
+              type="radio"
+              id="show-raw"
+              className="raw-radio"
+              value="showRaw"
+              name="radio-group-1"
+              defaultChecked={true}
+              onClick={() => handleToggleDataShown()}
+            />
+            <label htmlFor="show-raw">Raw</label>
+          </div>
+          <div className="show-filtered">
+            <input
+              type="radio"
+              id="show-filtered"
+              className="filtered-radio"
+              value="showFiltered"
+              name="radio-group-1"
+              onClick={() => handleToggleDataShown()}
+            />
+            <label htmlFor="show-filtered">Filtered</label>
+          </div>
+        </div>
+        <div className="visibility">
+          Visibility
+          <div className="visibility-selector1">
+            <input
+              type="checkbox"
+              id="visibility-selector"
+              className="visibility-selector"
+              value="visibility-selector1"
+            />
+            <label htmlFor="visibility-selector">Green</label>
+          </div>
         </div>
       </div>
     </div>

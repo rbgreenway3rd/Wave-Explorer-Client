@@ -1,9 +1,10 @@
-import React, { createContext, useState } from "react";
+import React, { createContext, useState, useReducer } from "react";
 
 // Create context for data
 export const DataContext = createContext();
 
 export const DataProvider = ({ children }) => {
+  // const [state, dispatch] = useReducer(dataReducer, initialState);
   // State variables to store extracted data
   const [extractedLines, setExtractedLines] = useState([]);
   const [extractedRows, setExtractedRows] = useState(0);
@@ -20,6 +21,15 @@ export const DataProvider = ({ children }) => {
   const [analysisData, setAnalysisData] = useState([]);
   const [project, setProject] = useState(null);
   const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
+  const [showFiltered, setShowFiltered] = useState(false);
+
+  //dispatch for reducer - update project
+  // const updateProject = (updatedData) => {
+  //   dispatch({
+  //     type: UPDATE_PROJECT,
+  //     payload: updatedData, // This can be the updated wells or any part of the project
+  //   });
+  // };
 
   // Function to extract project title from content
   const extractProjectTitle = (content) => {
@@ -199,6 +209,10 @@ export const DataProvider = ({ children }) => {
         setProject,
         wellArraysUpdated,
         setWellArraysUpdated,
+        showFiltered,
+        setShowFiltered,
+        // ...state,
+        // dispatch,
       }}
     >
       {children} {/* Provide context to children components */}

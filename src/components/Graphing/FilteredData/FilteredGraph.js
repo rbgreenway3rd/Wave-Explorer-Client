@@ -1,34 +1,33 @@
-import React from "react";
+import React, {
+  useContext,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
 import { Line } from "react-chartjs-2";
 import "../../../styles/FilteredGraph.css";
-import { useFilters } from "./FilterContext";
-import { useContext } from "react";
+import { FilterContext } from "./FilterContext";
 import { DataContext } from "../../FileHandling/DataProvider";
-import { listOfFilters } from "./FilterFunctions";
+// import { listOfFilters } from "./FilterFunctions";
+import deepEqual from "fast-deep-equal"; // Use deep-equal to avoid shallow comparison issues
 
-export const FilteredGraph = ({ filteredWellArray, options }) => {
-  const { activeFilters } = useFilters();
-  const { extractedIndicatorTimes } = useContext(DataContext);
+export const FilteredGraph = ({
+  wellArrays,
+  filteredWellArray = [],
+  options,
+}) => {
+  // const { activeFilters } = useContext(FilterContext);
+  const { extractedIndicatorTimes, project, setProject } =
+    useContext(DataContext);
 
-  const applyFilters = (data) => {
-    if (!Array.isArray(data)) {
-      console.error("Expected data to be an array, but received:", data); // error handling
-      return [];
-    }
+  // Reference to store previous filteredWells
+  const prevFilteredWellsRef = useRef([]);
 
-    return activeFilters.reduce((filteredData, filterName) => {
-      const filter = listOfFilters.find((f) => f.name === filterName);
-      return filter ? filter.apply(filteredData) : filteredData;
-    }, data);
-  };
-
-  const filteredWells = applyFilters(filteredWellArray) || [];
-
-  console.log("applyFilters res: ", filteredWells);
   const chartData = {
-    labels: extractedIndicatorTimes,
-    datasets: filteredWells.map((well) => ({
-      label: well.label,
+    labels: extractedIndicatorTimes || [],
+    datasets: filteredWellArray.map((well) => ({
+      label: well.label || "No Label",
       data: well.indicators[0]?.filteredData || [],
       fill: false,
       borderColor: "rgb(75, 192, 192)",

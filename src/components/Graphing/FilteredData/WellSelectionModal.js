@@ -8,17 +8,12 @@ import OverlayCanvas from "./OverlayCanvas";
 
 const modalStyle = {
   position: "absolute",
-  // top: "50%",
-  // left: "50%",
-  // transform: "translate(-50%, -50%)",
-  // width: "80%",
-  // maxWidth: 800,
   bgcolor: "background.paper",
   border: "2px solid #000",
   boxShadow: 24,
   display: "flex",
   flexDirection: "column",
-  p: 2, // padding
+  p: 2,
 };
 
 const WellSelectionModal = ({ onFilterApply }) => {
@@ -37,21 +32,17 @@ const WellSelectionModal = ({ onFilterApply }) => {
     setOpen(false);
     onFilterApply(selectedCells);
   };
+
   const handleSelection = (newCells) => {
     setSelectedCells((prevSelectedCells) => {
-      // Create a copy of the previously selected cells
       const updatedCells = [...prevSelectedCells];
-      // Iterate through the newly selected cells
       newCells.forEach((newCell) => {
-        // Check if the cell already exists in the selectedCells array
         const cellIndex = updatedCells.findIndex(
           (cell) => cell.row === newCell.row && cell.col === newCell.col
         );
-        // If the cell exists, remove it
         if (cellIndex !== -1) {
           updatedCells.splice(cellIndex, 1);
         } else {
-          // If the cell doesn't exist, add it
           updatedCells.push(newCell);
         }
       });
@@ -62,14 +53,9 @@ const WellSelectionModal = ({ onFilterApply }) => {
   return (
     <div>
       <Button onClick={handleOpen}>Select Wells</Button>
-      <Modal
-        open={open}
-        onClose={handleClose}
-        aria-labelledby="modal-modal-title"
-        aria-describedby="modal-modal-description"
-      >
+      <Modal open={open} onClose={handleClose}>
         <Box sx={modalStyle}>
-          <Typography id="modal-modal-title" variant="h6" component="h2">
+          <Typography variant="h6" component="h2">
             Well Selection
           </Typography>
           <Box
@@ -77,9 +63,6 @@ const WellSelectionModal = ({ onFilterApply }) => {
               position: "relative",
               width: "100%",
               height: "100%",
-              // position: "unset",
-              // width: "auto",
-              // height: "auto",
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
