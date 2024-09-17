@@ -98,11 +98,21 @@ export const CombinedComponent = () => {
   //   }
   // }, [project?.plate]);
 
-  const graphData = {
+  const rawGraphData = {
     labels: extractedIndicatorTimes,
     datasets: selectedWellArray.map((well) => ({
       label: well.label,
       data: well.indicators[0]?.rawData,
+      fill: false,
+      borderColor: "rgb(75, 192, 192)",
+      tension: 0.1,
+    })),
+  };
+  const filteredGraphData = {
+    labels: extractedIndicatorTimes,
+    datasets: selectedWellArray.map((well) => ({
+      label: well.label,
+      data: well.indicators[0]?.filteredData,
       fill: false,
       borderColor: "rgb(75, 192, 192)",
       tension: 0.1,
@@ -169,7 +179,7 @@ export const CombinedComponent = () => {
               <div className="large-graph-header">Raw Waves</div>
               <LargeGraph
                 className="large-graph"
-                graphData={graphData}
+                rawGraphData={rawGraphData}
                 options={largeGraphConfig}
               />
             </div>
@@ -194,7 +204,8 @@ export const CombinedComponent = () => {
               <FilteredGraph
                 project={project}
                 wellArrays={wellArrays}
-                filteredWellArray={filteredWellArray}
+                // filteredWellArray={filteredWellArray}
+                filteredGraphData={filteredGraphData}
                 onFilterUpdate={handleFilterUpdate}
                 options={filteredGraphConfig}
               />

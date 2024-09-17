@@ -22,7 +22,7 @@ export const FilterControls = ({
   const [selectedWells, setSelectedWells] = useState([]);
   const [enabledFilters, setEnabledFilters] = useState([]);
   const [selectedFilters, setSelectedFilters] = useState([]);
-  const [highlightedFilters, setHighlightedFilters] = useState([]);
+  const [highlightedFilter, setHighlightedFilter] = useState({});
   // const { filters, toggleFilter } = useContext(FilterContext);
   const [open, setOpen] = useState(false);
   // const { selectedFilters, addFilter, removeFilter } = useFilters();
@@ -49,79 +49,6 @@ export const FilterControls = ({
     console.log("Updated selectedFilters: ", selectedFilters);
   }, [selectedFilters]);
 
-  // Memoize selectedFilters and enabledFilters to avoid unnecessary re-renders
-  const memoizedSelectedFilters = useMemo(
-    () => selectedFilters,
-    [selectedFilters]
-  );
-  const memoizedEnabledFilters = useMemo(
-    () => enabledFilters,
-    [enabledFilters]
-  );
-
-  // Use callback to prevent recreating debounced function on every render
-  const debouncedUpdate = useCallback(
-    debounce((filteredData) => {
-      onFilterUpdate(filteredData);
-    }, 300),
-    [onFilterUpdate]
-  );
-
-  const updateProjectWells = (filteredWells) => {
-    if (project) {
-      const updatedProject = {
-        ...project,
-        plate: {
-          ...project.plate,
-          experiments: [
-            {
-              ...project.plate.experiments[0],
-              wells: filteredWells,
-            },
-          ],
-        },
-      };
-      setProject(updatedProject);
-    }
-  };
-
-  // Memoize handleFilterApply and handleWellSelection to avoid recreating them on each render
-  const handleFilterApply = useCallback((selectedFilterNames) => {
-    setSelectedFilters(selectedFilterNames);
-  }, []);
-
-  const handleWellSelection = useCallback(
-    (selectedCells) => {
-      const newFilteredArray = wellArrays.filter((well) =>
-        selectedCells.some(
-          (selectedCell) =>
-            well.row === selectedCell.row && well.column === selectedCell.col
-        )
-      );
-      setSelectedWells(newFilteredArray);
-      onSelectedWellsUpdate(newFilteredArray);
-    },
-    [wellArrays, onSelectedWellsUpdate]
-  );
-
-  // const handleCheckboxChange = (filter) => {
-  //   if (enabledFilters.includes(filter)) {
-  //     filter.isEnabled = false;
-  //     setEnabledFilters((prevEnabledFilters) =>
-  //       prevEnabledFilters.filter((name) => name.id !== filter)
-  //     );
-  //   } else {
-  //     filter.isEnabled = true;
-  //     setEnabledFilters((prevEnabledFilters) => [
-  //       ...prevEnabledFilters,
-  //       filter,
-  //     ]);
-  //     toggleFilter(filter);
-  //   }
-  //   console.log(filter);
-  //   console.log("enabledFilters: ", enabledFilters);
-  // };
-
   const handleCheckboxChange = (filter) => {
     const updatedFilter = { ...filter, isEnabled: !filter.isEnabled };
 
@@ -147,14 +74,12 @@ export const FilterControls = ({
     console.log(updatedFilter);
   };
 
-  const handleFilterHighlight = (filterName) => {
-    setHighlightedFilters((prevHighlightedFilters) => {
-      if (prevHighlightedFilters.includes(filterName)) {
-        return prevHighlightedFilters.filter((name) => name !== filterName);
-      } else {
-        return [...prevHighlightedFilters, filterName];
-      }
-    });
+  const handleFilterHighlight = (filter) => {
+    if (highlightedFilter === filter) {
+      setHighlightedFilter({});
+    } else {
+      setHighlightedFilter(filter);
+    }
   };
 
   const toggleFilter = (filter) => {
@@ -169,31 +94,60 @@ export const FilterControls = ({
     }
   };
 
-  const handleRemoveHighlightedFilters = () => {
-    if (highlightedFilters.length > 0) {
-      highlightedFilters.forEach((filter) => {
-        // Deactivate the filter if it is enabled
-        if (enabledFilters.includes(filter)) {
-          setEnabledFilters((prevEnabledFilters) =>
-            prevEnabledFilters.filter((name) => name.id !== filter)
-          );
-          toggleFilter(filter);
+  const handleRemoveHighlightedFilter = () => {
+    if (highlightedFilter && highlightedFilter.id) {
+      // Set the highlighted filter's isEnabled to false
+      const updatedSelectedFilters = selectedFilters.map((filter) => {
+        if (filter.id === highlightedFilter.id) {
+          return { ...filter, isEnabled: false };
         }
-
-        // Remove the filter from the selected filters
-        setSelectedFilters((prevSelectedFilters) =>
-          prevSelectedFilters.filter((name) => name.id !== filter)
-        );
+        return filter;
       });
 
-      // Clear highlighted filters after removing them
-      setHighlightedFilters([]);
+      // Remove the highlighted filter from the selectedFilters array
+      const newSelectedFilters = updatedSelectedFilters.filter(
+        (filter) => filter.id !== highlightedFilter.id
+      );
+
+      // Update the selectedFilters state
+      setSelectedFilters(newSelectedFilters);
+
+      // Reset the highlighted filter
+      setHighlightedFilter({});
     }
   };
 
-  const handleChangeFilterOrderUp = () => {};
+  const handleChangeFilterOrderUp = () => {
+    const index = selectedFilters.findIndex(
+      (filter) => filter.id === highlightedFilter.id
+    );
 
-  const handleChangeFilterOrderDown = () => {};
+    if (index > 0) {
+      // Swap the highlighted filter with the one preceding it
+      const updatedFilters = [...selectedFilters];
+      const temp = updatedFilters[index - 1];
+      updatedFilters[index - 1] = updatedFilters[index];
+      updatedFilters[index] = temp;
+
+      setSelectedFilters(updatedFilters);
+    }
+  };
+
+  const handleChangeFilterOrderDown = () => {
+    const index = selectedFilters.findIndex(
+      (filter) => filter.id === highlightedFilter.id
+    );
+
+    if (index < selectedFilters.length - 1) {
+      // Swap the highlighted filter with the one following it
+      const updatedFilters = [...selectedFilters];
+      const temp = updatedFilters[index + 1];
+      updatedFilters[index + 1] = updatedFilters[index];
+      updatedFilters[index] = temp;
+
+      setSelectedFilters(updatedFilters);
+    }
+  };
 
   const filterSelectedWells = (selectedCells) => {
     const newFilteredArray = wellArrays.filter((well) => {
@@ -326,11 +280,21 @@ export const FilterControls = ({
             </Box>
           </Modal>
         </div>
-        <button className="filter-order-button-up">^</button>
-        <button className="filter-order-button-down">v</button>
+        <button
+          className="filter-order-button-up"
+          onClick={handleChangeFilterOrderUp}
+        >
+          ^
+        </button>
+        <button
+          className="filter-order-button-down"
+          onClick={handleChangeFilterOrderDown}
+        >
+          v
+        </button>
         <button
           className="filter-order-button-remove"
-          onClick={handleRemoveHighlightedFilters}
+          onClick={handleRemoveHighlightedFilter}
         >
           x
         </button>
@@ -341,9 +305,10 @@ export const FilterControls = ({
               <div
                 key={filter.id}
                 style={{
-                  backgroundColor: highlightedFilters.includes(filter.id)
-                    ? "yellow"
-                    : "transparent",
+                  backgroundColor:
+                    highlightedFilter.id === filter.id
+                      ? "yellow"
+                      : "transparent",
                 }}
                 // onClick={() => handleFilterHighlight(filter.id)}
               >
@@ -352,7 +317,7 @@ export const FilterControls = ({
                   checked={filter.isEnabled || false} // Control filter enabling/disabling
                   onChange={() => handleCheckboxChange(filter)} // Toggle filter state
                 />
-                <label onClick={() => handleFilterHighlight(filter.id)}>
+                <label onClick={() => handleFilterHighlight(filter)}>
                   {filter.name}
                 </label>
               </div>

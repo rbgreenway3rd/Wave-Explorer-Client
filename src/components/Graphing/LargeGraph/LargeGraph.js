@@ -3,10 +3,14 @@ import { Line } from "react-chartjs-2";
 
 import "../../../styles/LargeGraph.css";
 
-export const LargeGraph = ({ graphData, options }) => {
+export const LargeGraph = ({ rawGraphData, options }) => {
   return (
     <div className="large-graph">
-      <Line className="large-graph-canvas" data={graphData} options={options} />
+      <Line
+        className="large-graph-canvas"
+        data={rawGraphData}
+        options={options}
+      />
     </div>
   );
 };

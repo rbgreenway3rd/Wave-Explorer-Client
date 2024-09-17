@@ -12,34 +12,27 @@ import { DataContext } from "../../FileHandling/DataProvider";
 // import { listOfFilters } from "./FilterFunctions";
 import deepEqual from "fast-deep-equal"; // Use deep-equal to avoid shallow comparison issues
 
-export const FilteredGraph = ({
-  wellArrays,
-  filteredWellArray = [],
-  options,
-}) => {
+export const FilteredGraph = ({ wellArrays, filteredGraphData, options }) => {
   // const { activeFilters } = useContext(FilterContext);
   const { extractedIndicatorTimes, project, setProject } =
     useContext(DataContext);
 
-  // Reference to store previous filteredWells
-  const prevFilteredWellsRef = useRef([]);
-
-  const chartData = {
-    labels: extractedIndicatorTimes || [],
-    datasets: filteredWellArray.map((well) => ({
-      label: well.label || "No Label",
-      data: well.indicators[0]?.filteredData || [],
-      fill: false,
-      borderColor: "rgb(75, 192, 192)",
-      tension: 0.1,
-    })),
-  };
+  // const chartData = {
+  //   labels: extractedIndicatorTimes || [],
+  //   datasets: filteredWells.map((well) => ({
+  //     label: well.label || "No Label",
+  //     data: well.indicators[0]?.filteredData || [],
+  //     fill: false,
+  //     borderColor: "rgb(75, 192, 192)",
+  //     tension: 0.1,
+  //   })),
+  // };
 
   return (
     <div className="filtered-graph">
       <Line
         className="filtered-graph-canvas"
-        data={chartData}
+        data={filteredGraphData}
         options={options}
       />
     </div>
