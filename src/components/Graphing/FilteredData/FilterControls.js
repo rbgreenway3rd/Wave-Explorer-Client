@@ -50,29 +50,55 @@ export const FilterControls = ({
   }, [selectedFilters]);
 
   const handleCheckboxChange = (filter) => {
-    const updatedFilter = { ...filter, isEnabled: !filter.isEnabled };
+    // Toggle the isEnabled value directly on the instance
+    filter.setEnabled(!filter.isEnabled);
 
     // Update selectedFilters immutably
     const updatedSelectedFilters = selectedFilters.map((f) =>
-      f.id === updatedFilter.id ? updatedFilter : f
+      f.id === filter.id ? filter : f
     );
 
     setSelectedFilters(updatedSelectedFilters);
 
     // Update enabledFilters based on isEnabled
-    if (updatedFilter.isEnabled) {
+    if (filter.isEnabled) {
       setEnabledFilters((prevEnabledFilters) => [
         ...prevEnabledFilters,
-        updatedFilter,
+        filter,
       ]);
     } else {
       setEnabledFilters((prevEnabledFilters) =>
-        prevEnabledFilters.filter((f) => f.id !== updatedFilter.id)
+        prevEnabledFilters.filter((f) => f.id !== filter.id)
       );
     }
 
-    console.log(updatedFilter);
+    console.log(filter);
   };
+
+  // const handleCheckboxChange = (filter) => {
+  //   const updatedFilter = { ...filter, isEnabled: !filter.isEnabled };
+
+  //   // Update selectedFilters immutably
+  //   const updatedSelectedFilters = selectedFilters.map((f) =>
+  //     f.id === updatedFilter.id ? updatedFilter : f
+  //   );
+
+  //   setSelectedFilters(updatedSelectedFilters);
+
+  //   // Update enabledFilters based on isEnabled
+  //   if (updatedFilter.isEnabled) {
+  //     setEnabledFilters((prevEnabledFilters) => [
+  //       ...prevEnabledFilters,
+  //       updatedFilter,
+  //     ]);
+  //   } else {
+  //     setEnabledFilters((prevEnabledFilters) =>
+  //       prevEnabledFilters.filter((f) => f.id !== updatedFilter.id)
+  //     );
+  //   }
+
+  //   console.log(updatedFilter);
+  // };
 
   const handleFilterHighlight = (filter) => {
     if (highlightedFilter === filter) {
@@ -280,24 +306,24 @@ export const FilterControls = ({
             </Box>
           </Modal>
         </div>
-        <button
+        <Button
           className="filter-order-button-up"
           onClick={handleChangeFilterOrderUp}
         >
           ^
-        </button>
-        <button
+        </Button>
+        <Button
           className="filter-order-button-down"
           onClick={handleChangeFilterOrderDown}
         >
           v
-        </button>
-        <button
+        </Button>
+        <Button
           className="filter-order-button-remove"
           onClick={handleRemoveHighlightedFilter}
         >
           x
-        </button>
+        </Button>
         <div>
           <h3>Selected Filters</h3>
           {selectedFilters.length > 0 ? (
@@ -320,6 +346,12 @@ export const FilterControls = ({
                 <label onClick={() => handleFilterHighlight(filter)}>
                   {filter.name}
                 </label>
+                <button
+                  className="edit-params-button"
+                  onClick={() => filter.editParams()}
+                >
+                  ...
+                </button>
               </div>
             ))
           ) : (
@@ -332,10 +364,8 @@ export const FilterControls = ({
           variant="contained"
           color="primary"
           onClick={() => {
-            setSelectedWells([]);
-            onSelectedWellsUpdate([]);
             setEnabledFilters([]); // Clear enabled filters on reset
-            onFilterUpdate([]); // Update graph data after reset
+            setSelectedFilters([]);
           }}
         >
           Reset Filters

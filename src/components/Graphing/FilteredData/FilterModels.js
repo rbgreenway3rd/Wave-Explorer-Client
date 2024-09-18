@@ -12,7 +12,11 @@ export class StaticRatio_Filter {
     this.start = 0;
     this.end = 5;
   }
+  setEnabled(value) {
+    this.isEnabled = value;
+  }
   editParams() {
+    console.log("edit params clicked");
     // opens dialog to edit start and end values
     // if "ok" pressed, set start and end to values set in dialog
     // else leave start and end as they were
@@ -45,9 +49,6 @@ export class StaticRatio_Filter {
   }
   setEnd(value) {
     this.end = value;
-  }
-  setEnabled(value) {
-    this.isEnabled = value;
   }
 }
 

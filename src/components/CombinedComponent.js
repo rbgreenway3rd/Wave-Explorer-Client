@@ -48,13 +48,13 @@ export const CombinedComponent = () => {
   const [smallCanvasWidth] = useState(window.innerWidth / 56);
   const [smallCanvasHeight] = useState(window.innerHeight / 40);
 
-  const handleFilterUpdate = (newFilteredArray) => {
-    setFilteredWellArray(newFilteredArray);
-  };
+  // const handleFilterUpdate = (newFilteredArray) => {
+  //   setFilteredWellArray(newFilteredArray);
+  // };
 
-  const handleSelectedWellsUpdate = (selectedWells) => {
-    setSelectedWellArray(selectedWells);
-  };
+  // const handleSelectedWellsUpdate = (selectedWells) => {
+  //   setSelectedWellArray(selectedWells);
+  // };
 
   const plate = project?.plate || [];
   const experiment = plate[0]?.experiments[0] || {};
@@ -206,15 +206,15 @@ export const CombinedComponent = () => {
                 wellArrays={wellArrays}
                 // filteredWellArray={filteredWellArray}
                 filteredGraphData={filteredGraphData}
-                onFilterUpdate={handleFilterUpdate}
+                // onFilterUpdate={handleFilterUpdate}
                 options={filteredGraphConfig}
               />
               <div className="filter-controls">
                 <FilterControls
                   wellArrays={wellArrays}
                   filteredWells={filteredWellArray}
-                  onFilterUpdate={handleFilterUpdate}
-                  onSelectedWellsUpdate={handleSelectedWellsUpdate}
+                  // onFilterUpdate={handleFilterUpdate}
+                  // onSelectedWellsUpdate={handleSelectedWellsUpdate}
                 />
               </div>
             </div>

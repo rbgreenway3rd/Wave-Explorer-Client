@@ -23,14 +23,6 @@ export const DataProvider = ({ children }) => {
   const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
   const [showFiltered, setShowFiltered] = useState(false);
 
-  //dispatch for reducer - update project
-  // const updateProject = (updatedData) => {
-  //   dispatch({
-  //     type: UPDATE_PROJECT,
-  //     payload: updatedData, // This can be the updated wells or any part of the project
-  //   });
-  // };
-
   // Function to extract project title from content
   const extractProjectTitle = (content) => {
     const lines = content.split("\n");
