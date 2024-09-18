@@ -48,14 +48,6 @@ export const CombinedComponent = () => {
   const [smallCanvasWidth] = useState(window.innerWidth / 56);
   const [smallCanvasHeight] = useState(window.innerHeight / 40);
 
-  // const handleFilterUpdate = (newFilteredArray) => {
-  //   setFilteredWellArray(newFilteredArray);
-  // };
-
-  // const handleSelectedWellsUpdate = (selectedWells) => {
-  //   setSelectedWellArray(selectedWells);
-  // };
-
   const plate = project?.plate || [];
   const experiment = plate[0]?.experiments[0] || {};
   const wellArrays = experiment.wells || [];
@@ -89,14 +81,6 @@ export const CombinedComponent = () => {
       prevProjectRef.current = project; // Update the previous project reference only if there's a change
     }
   }, [project]);
-
-  // useEffect(() => {
-  //   const plate = project?.plate;
-  //   if (!deepEqual(prevProjectRef.current?.plate, plate)) {
-  //     console.log("Project Plate Data:", plate);
-  //     prevProjectRef.current = { ...prevProjectRef.current, plate }; // Update only the part you care about
-  //   }
-  // }, [project?.plate]);
 
   const rawGraphData = {
     labels: extractedIndicatorTimes,
@@ -212,7 +196,7 @@ export const CombinedComponent = () => {
               <div className="filter-controls">
                 <FilterControls
                   wellArrays={wellArrays}
-                  filteredWells={filteredWellArray}
+                  // filteredWells={filteredWellArray}
                   // onFilterUpdate={handleFilterUpdate}
                   // onSelectedWellsUpdate={handleSelectedWellsUpdate}
                 />

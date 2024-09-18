@@ -4,22 +4,30 @@
 // Filters.push(f)
 
 export class StaticRatio_Filter {
-  constructor(num) {
+  constructor(num, onEdit) {
     this.id = "staticRatio_" + JSON.stringify(num);
     this.name = "Static Ratio";
     this.desc = "Static Ratio filter";
     this.isEnabled = false;
     this.start = 0;
     this.end = 5;
+    this.onEdit = onEdit; // Callback to open the modal
   }
+
   setEnabled(value) {
     this.isEnabled = value;
   }
+
   editParams() {
     console.log("edit params clicked");
-    // opens dialog to edit start and end values
-    // if "ok" pressed, set start and end to values set in dialog
-    // else leave start and end as they were
+    if (this.onEdit) {
+      this.onEdit(this.start, this.end, this.setParams.bind(this)); // Open the modal and pass the setter callback
+    }
+  }
+
+  setParams(start, end) {
+    this.start = start;
+    this.end = end;
   }
   execute(wells) {
     // wells - wells element from the data context
@@ -42,13 +50,6 @@ export class StaticRatio_Filter {
         }
       }
     }
-  }
-
-  setStart(value) {
-    this.start = value;
-  }
-  setEnd(value) {
-    this.end = value;
   }
 }
 
