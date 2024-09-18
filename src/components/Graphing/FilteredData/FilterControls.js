@@ -3,6 +3,12 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import Modal from "@mui/material/Modal";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogTitle from "@mui/material/DialogTitle";
+import TextField from "@mui/material/TextField";
 import FilterSelectionModal from "./FilterSelectionModal";
 import { FilterContext } from "./FilterContext";
 import { DataContext } from "../../FileHandling/DataProvider";
@@ -23,10 +29,15 @@ export const FilterControls = ({
   const [enabledFilters, setEnabledFilters] = useState([]);
   const [selectedFilters, setSelectedFilters] = useState([]);
   const [highlightedFilter, setHighlightedFilter] = useState({});
-  // const { filters, toggleFilter } = useContext(FilterContext);
   const [open, setOpen] = useState(false);
-  // const { selectedFilters, addFilter, removeFilter } = useFilters();
   const [selectedValue, setSelectedValue] = useState("staticRatio");
+
+  // state for editParams dialogue
+  const [openDialog, setOpenDialog] = useState(false);
+  const [currentFilter, setCurrentFilter] = useState(null);
+  const [startValue, setStartValue] = useState(0);
+  const [endValue, setEndValue] = useState(5);
+  // // //
 
   const { project, setProject } = useContext(DataContext);
 
@@ -43,6 +54,18 @@ export const FilterControls = ({
     display: "flex",
     flexDirection: "column",
     p: 2,
+  };
+
+  const handleEditParams = (start, end, setParams) => {
+    setStartValue(start);
+    setEndValue(end);
+    setCurrentFilter({ setParams });
+    setOpenDialog(true);
+  };
+
+  const handleSaveParams = () => {
+    currentFilter.setParams(startValue, endValue);
+    setOpenDialog(false);
   };
 
   useEffect(() => {
@@ -74,31 +97,6 @@ export const FilterControls = ({
 
     console.log(filter);
   };
-
-  // const handleCheckboxChange = (filter) => {
-  //   const updatedFilter = { ...filter, isEnabled: !filter.isEnabled };
-
-  //   // Update selectedFilters immutably
-  //   const updatedSelectedFilters = selectedFilters.map((f) =>
-  //     f.id === updatedFilter.id ? updatedFilter : f
-  //   );
-
-  //   setSelectedFilters(updatedSelectedFilters);
-
-  //   // Update enabledFilters based on isEnabled
-  //   if (updatedFilter.isEnabled) {
-  //     setEnabledFilters((prevEnabledFilters) => [
-  //       ...prevEnabledFilters,
-  //       updatedFilter,
-  //     ]);
-  //   } else {
-  //     setEnabledFilters((prevEnabledFilters) =>
-  //       prevEnabledFilters.filter((f) => f.id !== updatedFilter.id)
-  //     );
-  //   }
-
-  //   console.log(updatedFilter);
-  // };
 
   const handleFilterHighlight = (filter) => {
     if (highlightedFilter === filter) {
@@ -197,29 +195,60 @@ export const FilterControls = ({
     if (selectedValue === "staticRatio") {
       // create instance of static ratio filter
       const newStaticRatioFilter = new StaticRatio_Filter(
-        selectedFilters.length
+        selectedFilters.length,
+        handleEditParams
       );
       // append it to filter list
-      selectedFilters.push(newStaticRatioFilter);
       console.log(newStaticRatioFilter);
+      setSelectedFilters([...selectedFilters, newStaticRatioFilter]);
     } else if (selectedValue === "dynamicRatio") {
       // create instance of dynamic ratio filter
       const newDynamicRatioFilter = new DynamicRatio_Filter(
         selectedFilters.length
       );
       // append newDynamicRatioFilter to selectedFilters array
-      selectedFilters.push(newDynamicRatioFilter);
       console.log(newDynamicRatioFilter);
+      setSelectedFilters([...selectedFilters, newDynamicRatioFilter]);
     } else if (selectedValue === "divFilter") {
       // create instance of div filter
       const newDivFilter = new Div_Filter(selectedFilters.length);
       // append to selectedFilters array
-      selectedFilters.push(newDivFilter);
       console.log(newDivFilter);
+      setSelectedFilters([...selectedFilters, newDivFilter]);
     }
 
     // Apply the list of selected filters
   };
+  // const handleConfirm = () => {
+  //   setOpen(false);
+  //   // addFilterToList(selectedValue)
+  //   if (selectedValue === "staticRatio") {
+  //     // create instance of static ratio filter
+  //     const newStaticRatioFilter = new StaticRatio_Filter(
+  //       selectedFilters.length,
+  //       handleEditParams
+  //     );
+  //     // append it to filter list
+  //     selectedFilters.push(newStaticRatioFilter);
+  //     console.log(newStaticRatioFilter);
+  //   } else if (selectedValue === "dynamicRatio") {
+  //     // create instance of dynamic ratio filter
+  //     const newDynamicRatioFilter = new DynamicRatio_Filter(
+  //       selectedFilters.length
+  //     );
+  //     // append newDynamicRatioFilter to selectedFilters array
+  //     selectedFilters.push(newDynamicRatioFilter);
+  //     console.log(newDynamicRatioFilter);
+  //   } else if (selectedValue === "divFilter") {
+  //     // create instance of div filter
+  //     const newDivFilter = new Div_Filter(selectedFilters.length);
+  //     // append to selectedFilters array
+  //     selectedFilters.push(newDivFilter);
+  //     console.log(newDivFilter);
+  //   }
+
+  //   // Apply the list of selected filters
+  // };
 
   // handle radio button check in filter selection modal
   const handleRadioCheck = (event) => {
@@ -336,7 +365,6 @@ export const FilterControls = ({
                       ? "yellow"
                       : "transparent",
                 }}
-                // onClick={() => handleFilterHighlight(filter.id)}
               >
                 <input
                   type="checkbox"
@@ -373,6 +401,40 @@ export const FilterControls = ({
       </Box>
       <WellSelectionModal onFilterApply={filterSelectedWells} />
       {/* Additional filter controls or components can be added here */}
+      {/* Dialog for editing Static Ratio Filter parameters */}
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+        <DialogTitle>Edit Static Ratio Filter Parameters</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Adjust the start and end values for the static ratio filter.
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Start Value"
+            type="number"
+            fullWidth
+            value={startValue}
+            onChange={(e) => setStartValue(Number(e.target.value))}
+          />
+          <TextField
+            margin="dense"
+            label="End Value"
+            type="number"
+            fullWidth
+            value={endValue}
+            onChange={(e) => setEndValue(Number(e.target.value))}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDialog(false)} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleSaveParams} color="primary">
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
