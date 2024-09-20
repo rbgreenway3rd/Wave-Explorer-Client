@@ -12,21 +12,21 @@ import { DataContext } from "../../FileHandling/DataProvider";
 // import { listOfFilters } from "./FilterFunctions";
 import deepEqual from "fast-deep-equal"; // Use deep-equal to avoid shallow comparison issues
 
-export const FilteredGraph = ({ wellArrays, filteredGraphData, options }) => {
+export const FilteredGraph = ({ wellArrays, selectedWellArray, options }) => {
   // const { activeFilters } = useContext(FilterContext);
   const { extractedIndicatorTimes, project, setProject } =
     useContext(DataContext);
 
-  // const chartData = {
-  //   labels: extractedIndicatorTimes || [],
-  //   datasets: filteredWells.map((well) => ({
-  //     label: well.label || "No Label",
-  //     data: well.indicators[0]?.filteredData || [],
-  //     fill: false,
-  //     borderColor: "rgb(75, 192, 192)",
-  //     tension: 0.1,
-  //   })),
-  // };
+  const filteredGraphData = {
+    labels: extractedIndicatorTimes,
+    datasets: selectedWellArray.map((well) => ({
+      label: well.label,
+      data: well.indicators[0]?.filteredData,
+      fill: false,
+      borderColor: "rgb(75, 192, 192)",
+      tension: 0.1,
+    })),
+  };
 
   return (
     <div className="filtered-graph">

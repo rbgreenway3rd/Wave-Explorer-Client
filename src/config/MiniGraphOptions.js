@@ -2,7 +2,12 @@ import { Chart, registerables } from "chart.js";
 import "chartjs-adapter-date-fns";
 Chart.register(...registerables);
 
-export const MiniGraphOptions = (analysisData, timeData) => {
+export const MiniGraphOptions = (
+  analysisData,
+  timeData,
+  wellArrays,
+  yValues
+) => {
   return {
     normalized: true,
     maintainAspectRatio: true,
@@ -27,7 +32,6 @@ export const MiniGraphOptions = (analysisData, timeData) => {
         intersect: false,
       },
     },
-
     elements: {
       point: {
         radius: 0,
@@ -55,10 +59,9 @@ export const MiniGraphOptions = (analysisData, timeData) => {
           display: false,
         },
       },
-
       y: {
-        min: Math.min(...analysisData),
-        max: Math.max(...analysisData),
+        min: Math.min(...yValues),
+        max: Math.max(...yValues),
         ticks: {
           display: false,
         },

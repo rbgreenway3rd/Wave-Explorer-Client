@@ -42,7 +42,8 @@ export const CombinedComponent = () => {
   const [selectedWellArray, setSelectedWellArray] = useState([]);
   const [filteredWellArray, setFilteredWellArray] = useState([]);
   const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
-
+  const [selectedFilters, setSelectedFilters] = useState([]);
+  const [enabledFilters, setEnabledFilters] = useState([]);
   const [largeCanvasWidth] = useState(window.innerWidth / 2);
   const [largeCanvasHeight] = useState(window.innerHeight / 2);
   const [smallCanvasWidth] = useState(window.innerWidth / 56);
@@ -74,6 +75,46 @@ export const CombinedComponent = () => {
     "O",
     "P",
   ];
+
+  console.log("enabledFilters: ", enabledFilters);
+
+  const applyEnabledFilters = () => {
+    const updatedWellArrays = wellArrays.map((well) => {
+      const updatedIndicators = well.indicators.map((indicator) => {
+        let filteredData = [...indicator.rawData]; // start with raw data
+        enabledFilters.forEach((filter) => {
+          if (filter.isEnabled) filteredData = filter.execute(filteredData);
+        });
+        return { ...indicator, filteredData };
+      });
+      return { ...well, indicators: updatedIndicators };
+    });
+    // Update the project
+    const updatedProject = {
+      ...project,
+      plate: project.plate.map((plate, index) => {
+        if (index === 0) {
+          return {
+            ...plate,
+            experiments: plate.experiments.map((experiment, expIndex) => {
+              if (expIndex === 0) {
+                return {
+                  ...experiment,
+                  wells: updatedWellArrays,
+                };
+              }
+              return experiment;
+            }),
+          };
+        }
+        return plate;
+      }),
+    };
+
+    // Set the updated project in the context
+    setProject(updatedProject);
+    console.log("updated project: ", updatedProject);
+  };
 
   useEffect(() => {
     if (!deepEqual(prevProjectRef.current, project)) {
@@ -115,7 +156,7 @@ export const CombinedComponent = () => {
             <div className="file-and-grid-container">
               <div className="minigraph-header">All Waves</div>
               <MiniGraphGrid
-                wellArrays={wellArrays}
+                // wellArrays={wellArrays}
                 selectedWellArray={selectedWellArray}
                 timeData={extractedIndicatorTimes}
                 smallCanvasWidth={smallCanvasWidth}
@@ -188,7 +229,7 @@ export const CombinedComponent = () => {
               <FilteredGraph
                 project={project}
                 wellArrays={wellArrays}
-                // filteredWellArray={filteredWellArray}
+                selectedWellArray={selectedWellArray}
                 filteredGraphData={filteredGraphData}
                 // onFilterUpdate={handleFilterUpdate}
                 options={filteredGraphConfig}
@@ -199,6 +240,11 @@ export const CombinedComponent = () => {
                   // filteredWells={filteredWellArray}
                   // onFilterUpdate={handleFilterUpdate}
                   // onSelectedWellsUpdate={handleSelectedWellsUpdate}
+                  selectedFilters={selectedFilters} // Pass selectedFilters as props
+                  setSelectedFilters={setSelectedFilters} // Pass setSelectedFilters as props
+                  enabledFilters={enabledFilters}
+                  setEnabledFilters={setEnabledFilters}
+                  applyEnabledFilters={applyEnabledFilters} // Pass function to FilterControls
                 />
               </div>
             </div>

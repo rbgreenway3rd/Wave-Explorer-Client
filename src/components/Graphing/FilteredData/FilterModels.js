@@ -29,27 +29,41 @@ export class StaticRatio_Filter {
     this.start = start;
     this.end = end;
   }
-  execute(wells) {
-    // wells - wells element from the data context
-    for (let j = 0; j < wells.length; j++) {
-      for (let k = 0; k < wells[j].indicator.length; k++) {
-        let sum = 0.0;
 
-        // find normalizing value (NV)
-        for (let i = this.start; i <= this.end; i++) {
-          sum += wells[j].indicator[k].filteredData[i].y;
-        }
-        let NV = sum / (this.end - this.start + 1);
+  execute(filteredData) {
+    // Ensure there's enough data in the filteredData array
+    if (filteredData.length <= this.end) {
+      console.error(
+        `filteredData array does not have enough data points. Start: ${this.start}, End: ${this.end}`
+      );
+      return filteredData;
+    }
 
-        // normalize all wells with NV (i.e. divide all values by NV)
-        for (let i = 0; i < wells[j].indicator[k].filteredData.length; i++) {
-          wells[j].indicator[k].filteredData[i] = {
-            x: wells[j].indicator[k].filteredData[i].x,
-            y: wells[j].indicator[k].filteredData[i].y / NV,
-          };
-        }
+    let sum = 0.0;
+
+    // Calculate normalizing value (NV) based on the specified range
+    for (let i = this.start; i <= this.end; i++) {
+      if (filteredData[i] && typeof filteredData[i].y === "number") {
+        sum += filteredData[i].y;
+      } else {
+        console.error(`Invalid data point at index ${i}`);
+        return filteredData; // Return early if there's invalid data
       }
     }
+
+    const NV = sum / (this.end - this.start + 1);
+
+    // Normalize the data using the NV
+    return filteredData.map((dataPoint) => {
+      if (dataPoint && typeof dataPoint.y === "number") {
+        return {
+          x: dataPoint.x,
+          y: dataPoint.y / NV,
+        };
+      }
+      console.error(`Invalid data point during normalization`);
+      return dataPoint; // Return the original point if something goes wrong
+    });
   }
 }
 
@@ -80,27 +94,49 @@ export class Div_Filter {
     this.name = "Divide Filter";
     this.desc = "Divide filter";
     this.isEnabled = false;
-    this.divisor = 2;
+    this.divisor = 20;
   }
   editParams() {
     // opens dialog to edit start and end values
     // if "ok" pressed, set start and end to values set in dialog
     // else leave start and end as they were
   }
-  execute(wells) {
-    // wells - wells element from the data context
-    for (let j = 0; j < wells.length; j++) {
-      for (let k = 0; k < wells[j].indicator.length; k++) {
-        // normalize all wells with NV (i.e. divide all values by NV)
-        for (let i = 0; i < wells[j].indicator[k].filteredData.length; i++) {
-          wells[j].indicator[k].filteredData[i] = {
-            x: wells[j].indicator[k].filteredData[i].x,
-            y: wells[j].indicator[k].filteredData[i].y / this.divisor,
-          };
-        }
-      }
+  execute(data) {
+    let newData = [];
+    for (let i = 0; i < data.length; i++) {
+      newData.push({
+        x: data[i].x,
+        y: data[i].y / this.divisor,
+      });
     }
+
+    return newData;
+
+    // wells - wells element from the data context
+    // for (let j = 0; j < wells.length; j++) {
+    //   // normalize all wells with NV (i.e. divide all values by NV)
+    //   for (let i = 0; i < wells[j].indicators[0].filteredData.length; i++) {
+    //     wells[j].indicators[0].filteredData[i] = {
+    //       x: wells[j].indicators[0].filteredData[i].x,
+    //       y: wells[j].indicator[0].filteredData[i].y / this.divisor,
+    //     };
+    //   }
+    // }
   }
+  // execute(wells) {
+  //   // wells - wells element from the data context
+  //   for (let j = 0; j < wells.length; j++) {
+  //     for (let k = 0; k < wells[j].indicator.length; k++) {
+  //       // normalize all wells with NV (i.e. divide all values by NV)
+  //       for (let i = 0; i < wells[j].indicator[k].filteredData.length; i++) {
+  //         wells[j].indicator[k].filteredData[i] = {
+  //           x: wells[j].indicator[k].filteredData[i].x,
+  //           y: wells[j].indicator[k].filteredData[i].y / this.divisor,
+  //         };
+  //       }
+  //     }
+  //   }
+  // }
 
   setDivisor(value) {
     this.divisor = value;

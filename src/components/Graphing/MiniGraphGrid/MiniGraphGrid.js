@@ -1,4 +1,4 @@
-import React, { memo, useMemo, useContext } from "react";
+import React, { memo, useMemo, useContext, useEffect } from "react";
 import { DataContext } from "../../FileHandling/DataProvider";
 import { Line } from "react-chartjs-2";
 import { MiniGraphOptions } from "../../../config/MiniGraphOptions";
@@ -7,7 +7,7 @@ import { debounce } from "lodash";
 import "chartjs-adapter-date-fns";
 
 export const MiniGraphGrid = ({
-  wellArrays,
+  // wellArrays,
   selectedWellArray,
   timeData,
   smallCanvasWidth,
@@ -31,6 +31,10 @@ export const MiniGraphGrid = ({
     showFiltered,
     setShowFiltered,
   } = useContext(DataContext);
+
+  const plate = project?.plate || [];
+  const experiment = plate[0]?.experiments[0] || {};
+  const wellArrays = experiment.wells || [];
 
   const handleWellClick = useMemo(
     () => debounce(onWellClick, 200),
@@ -57,10 +61,17 @@ export const MiniGraphGrid = ({
     }
   };
 
-  const options = useMemo(
-    () => MiniGraphOptions(analysisData, timeData),
-    [analysisData, timeData]
-  );
+  const options = useMemo(() => {
+    // Collect yValues based on whether showFiltered is true or not
+    const yValues = wellArrays.flatMap((well) =>
+      showFiltered
+        ? well.indicators[0]?.filteredData?.map((point) => point.y) || []
+        : well.indicators[0]?.rawData?.map((point) => point.y) || []
+    );
+
+    // Return the options object instead of the yValues
+    return MiniGraphOptions(analysisData, timeData, wellArrays, yValues);
+  }, [analysisData, timeData, wellArrays, showFiltered]);
 
   return (
     <div className="minigraph-and-controls-container">
@@ -135,8 +146,8 @@ export const MiniGraphGrid = ({
                   {
                     data:
                       showFiltered === true
-                        ? well.indicators[0].filteredData
-                        : well.indicators[0].rawData,
+                        ? well.indicators[0]?.filteredData
+                        : well.indicators[0]?.rawData,
                     borderColor: "black",
                     pointBorderWidth: 0,
                     pointBorderRadius: 0,

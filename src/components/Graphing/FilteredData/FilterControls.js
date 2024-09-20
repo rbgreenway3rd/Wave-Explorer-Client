@@ -22,12 +22,15 @@ import {
 
 export const FilterControls = ({
   wellArrays,
-  onFilterUpdate,
-  onSelectedWellsUpdate,
+  selectedFilters,
+  setSelectedFilters,
+  enabledFilters,
+  setEnabledFilters,
+  applyEnabledFilters,
 }) => {
   const [selectedWells, setSelectedWells] = useState([]);
-  const [enabledFilters, setEnabledFilters] = useState([]);
-  const [selectedFilters, setSelectedFilters] = useState([]);
+  // const [enabledFilters, setEnabledFilters] = useState([]);
+  // const [selectedFilters, setSelectedFilters] = useState([]);
   const [highlightedFilter, setHighlightedFilter] = useState({});
   const [open, setOpen] = useState(false);
   const [selectedValue, setSelectedValue] = useState("staticRatio");
@@ -96,6 +99,7 @@ export const FilterControls = ({
     }
 
     console.log(filter);
+    // console.log("enabledFilters: ", enabledFilters);
   };
 
   const handleFilterHighlight = (filter) => {
@@ -123,7 +127,17 @@ export const FilterControls = ({
       // Set the highlighted filter's isEnabled to false
       const updatedSelectedFilters = selectedFilters.map((filter) => {
         if (filter.id === highlightedFilter.id) {
-          return { ...filter, isEnabled: false };
+          filter.setEnabled(!filter.isEnabled);
+        }
+        if (filter.isEnabled) {
+          setEnabledFilters((prevEnabledFilters) => [
+            ...prevEnabledFilters,
+            filter,
+          ]);
+        } else {
+          setEnabledFilters((prevEnabledFilters) =>
+            prevEnabledFilters.filter((f) => f.id !== filter.id)
+          );
         }
         return filter;
       });
@@ -219,36 +233,6 @@ export const FilterControls = ({
 
     // Apply the list of selected filters
   };
-  // const handleConfirm = () => {
-  //   setOpen(false);
-  //   // addFilterToList(selectedValue)
-  //   if (selectedValue === "staticRatio") {
-  //     // create instance of static ratio filter
-  //     const newStaticRatioFilter = new StaticRatio_Filter(
-  //       selectedFilters.length,
-  //       handleEditParams
-  //     );
-  //     // append it to filter list
-  //     selectedFilters.push(newStaticRatioFilter);
-  //     console.log(newStaticRatioFilter);
-  //   } else if (selectedValue === "dynamicRatio") {
-  //     // create instance of dynamic ratio filter
-  //     const newDynamicRatioFilter = new DynamicRatio_Filter(
-  //       selectedFilters.length
-  //     );
-  //     // append newDynamicRatioFilter to selectedFilters array
-  //     selectedFilters.push(newDynamicRatioFilter);
-  //     console.log(newDynamicRatioFilter);
-  //   } else if (selectedValue === "divFilter") {
-  //     // create instance of div filter
-  //     const newDivFilter = new Div_Filter(selectedFilters.length);
-  //     // append to selectedFilters array
-  //     selectedFilters.push(newDivFilter);
-  //     console.log(newDivFilter);
-  //   }
-
-  //   // Apply the list of selected filters
-  // };
 
   // handle radio button check in filter selection modal
   const handleRadioCheck = (event) => {
@@ -267,6 +251,7 @@ export const FilterControls = ({
       <Typography variant="h5" gutterBottom>
         Filter Controls
       </Typography>
+      <button onClick={applyEnabledFilters}>Apply Filters</button>
       <div className="filter-selection-buttons">
         {/* <FilterSelectionModal onFilterApply={handleFilterApply} /> */}
         <div>
