@@ -61,6 +61,8 @@ export const MiniGraphGrid = ({
     }
   };
 
+  console.log(selectedWellArray);
+
   const options = useMemo(() => {
     // Collect yValues based on whether showFiltered is true or not
     const yValues = wellArrays.flatMap((well) =>
@@ -136,7 +138,9 @@ export const MiniGraphGrid = ({
               id="minigraphCanvas"
               className="minigraph-canvas"
               style={
-                selectedWellArray.includes(well)
+                selectedWellArray.some(
+                  (selectedWell) => selectedWell.id === well.id
+                )
                   ? { border: "solid 2px red" } // styling for selected wells
                   : {} // styling for un-selected wells
               }

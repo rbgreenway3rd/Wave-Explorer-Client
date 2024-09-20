@@ -79,6 +79,7 @@ export const CombinedComponent = () => {
   console.log("enabledFilters: ", enabledFilters);
 
   const applyEnabledFilters = () => {
+    // Step 1: Apply filters to wellArrays and update indicators
     const updatedWellArrays = wellArrays.map((well) => {
       const updatedIndicators = well.indicators.map((indicator) => {
         let filteredData = [...indicator.rawData]; // start with raw data
@@ -89,7 +90,8 @@ export const CombinedComponent = () => {
       });
       return { ...well, indicators: updatedIndicators };
     });
-    // Update the project
+
+    // Step 2: Update the project with the new wellArrays
     const updatedProject = {
       ...project,
       plate: project.plate.map((plate, index) => {
@@ -111,9 +113,21 @@ export const CombinedComponent = () => {
       }),
     };
 
-    // Set the updated project in the context
+    // Step 3: Set the updated project in the context
     setProject(updatedProject);
+
+    // Step 4: Sync selectedWellArray with the newly filtered wellArrays
+    const updatedSelectedWellArray = selectedWellArray.map(
+      (selectedWell) =>
+        updatedWellArrays.find((well) => well.id === selectedWell.id) ||
+        selectedWell
+    );
+
+    // Step 5: Update the selectedWellArray state with the updated wells
+    setSelectedWellArray(updatedSelectedWellArray);
+
     console.log("updated project: ", updatedProject);
+    console.log("updated selectedWellArray: ", updatedSelectedWellArray);
   };
 
   useEffect(() => {
@@ -227,7 +241,7 @@ export const CombinedComponent = () => {
               </div> */}
               <div className="filters-header">Filtered Waves</div>
               <FilteredGraph
-                project={project}
+                // project={project}
                 wellArrays={wellArrays}
                 selectedWellArray={selectedWellArray}
                 filteredGraphData={filteredGraphData}
