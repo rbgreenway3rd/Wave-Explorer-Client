@@ -14,6 +14,7 @@ import { FilterContext } from "./FilterContext";
 import { DataContext } from "../../FileHandling/DataProvider";
 import { debounce } from "lodash";
 import { useCallback, useMemo, useState, useEffect, useContext } from "react";
+import { StaticRatioModal, SmoothingFilterModal } from "./ParameterModals";
 import {
   StaticRatio_Filter,
   DynamicRatio_Filter,
@@ -29,6 +30,8 @@ export const FilterControls = ({
   setEnabledFilters,
   applyEnabledFilters,
 }) => {
+  const { project, setProject } = useContext(DataContext);
+
   const [selectedWells, setSelectedWells] = useState([]);
   // const [enabledFilters, setEnabledFilters] = useState([]);
   // const [selectedFilters, setSelectedFilters] = useState([]);
@@ -41,9 +44,9 @@ export const FilterControls = ({
   const [currentFilter, setCurrentFilter] = useState(null);
   const [startValue, setStartValue] = useState(0);
   const [endValue, setEndValue] = useState(5);
+  const [windowWidth, setWindowWidth] = useState(0);
+  const [editModalType, setEditModalType] = useState(null);
   // // //
-
-  const { project, setProject } = useContext(DataContext);
 
   const modalStyle = {
     position: "absolute",
@@ -60,17 +63,53 @@ export const FilterControls = ({
     p: 2,
   };
 
-  const handleEditParams = (start, end, setParams) => {
+  // const handleEditParams = (start, end, setParams) => {
+  //   setStartValue(start);
+  //   setEndValue(end);
+  //   setCurrentFilter({ setParams });
+  //   setOpenDialog(true);
+  // };
+
+  const handleEditStaticRatioParams = (start, end, setParams) => {
     setStartValue(start);
     setEndValue(end);
     setCurrentFilter({ setParams });
+    setEditModalType("staticRatio");
     setOpenDialog(true);
   };
 
+  const handleEditDynamicRatioParams = (setParams) => {
+    // Dynamic Ratio filter
+  };
+
+  const handleEditDivFilterParams = (setParams) => {
+    //  Div Filter
+  };
+
+  const handleEditSmoothingFilterParams = (windowWidth, setParams) => {
+    setWindowWidth(windowWidth);
+    setCurrentFilter({ setParams });
+    setEditModalType("smoothingFilter");
+    setOpenDialog(true);
+
+    console.log(currentFilter);
+  };
+
   const handleSaveParams = () => {
-    currentFilter.setParams(startValue, endValue);
+    // Save logic depending on the filter type
+    if (editModalType === "staticRatio") {
+      currentFilter.setParams(startValue, endValue);
+    } else if (editModalType === "smoothingFilter") {
+      currentFilter.setParams(windowWidth);
+    }
+    // Other filter types...
     setOpenDialog(false);
   };
+
+  // const handleSaveParams = () => {
+  //   currentFilter.setParams(startValue, endValue);
+  //   setOpenDialog(false);
+  // };
 
   useEffect(() => {
     console.log("Updated selectedFilters: ", selectedFilters);
@@ -211,7 +250,7 @@ export const FilterControls = ({
       // create instance of static ratio filter
       const newStaticRatioFilter = new StaticRatio_Filter(
         selectedFilters.length,
-        handleEditParams
+        handleEditStaticRatioParams
       );
       // append it to filter list
       console.log(newStaticRatioFilter);
@@ -232,7 +271,10 @@ export const FilterControls = ({
       setSelectedFilters([...selectedFilters, newDivFilter]);
     } else if (selectedValue === "smoothingFilter") {
       // create instance of smoothing filter
-      const newSmoothingFilter = new Smoothing_Filter(selectedFilters.length); // need to figure out how to initialize windowWidth
+      const newSmoothingFilter = new Smoothing_Filter(
+        selectedFilters.length,
+        handleEditSmoothingFilterParams
+      ); // need to figure out how to initialize windowWidth
       // append newSmoothingFilter to selectedFilters array
       console.log(newSmoothingFilter);
       setSelectedFilters([...selectedFilters, newSmoothingFilter]);
@@ -407,39 +449,27 @@ export const FilterControls = ({
       <WellSelectionModal onFilterApply={filterSelectedWells} />
       {/* Additional filter controls or components can be added here */}
       {/* Dialog for editing Static Ratio Filter parameters */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-        <DialogTitle>Edit Static Ratio Filter Parameters</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Adjust the start and end values for the static ratio filter.
-          </DialogContentText>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Start Value"
-            type="number"
-            fullWidth
-            value={startValue}
-            onChange={(e) => setStartValue(Number(e.target.value))}
-          />
-          <TextField
-            margin="dense"
-            label="End Value"
-            type="number"
-            fullWidth
-            value={endValue}
-            onChange={(e) => setEndValue(Number(e.target.value))}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDialog(false)} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={handleSaveParams} color="primary">
-            Save
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {editModalType === "staticRatio" && (
+        <StaticRatioModal
+          open={openDialog}
+          onClose={() => setOpenDialog(false)}
+          startValue={startValue}
+          setStartValue={setStartValue}
+          endValue={endValue}
+          setEndValue={setEndValue}
+          onSave={handleSaveParams}
+        />
+      )}
+
+      {editModalType === "smoothingFilter" && (
+        <SmoothingFilterModal
+          open={openDialog}
+          onClose={() => setOpenDialog(false)}
+          windowWidth={windowWidth}
+          setWindowWidth={setWindowWidth}
+          onSave={handleSaveParams}
+        />
+      )}
     </Box>
   );
 };

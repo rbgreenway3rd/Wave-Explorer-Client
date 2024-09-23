@@ -118,21 +118,28 @@ export class Div_Filter {
 }
 
 export class Smoothing_Filter {
-  constructor(num, windowWidth) {
+  constructor(num, onEdit) {
     this.id = "smoothingFilter_" + JSON.stringify(num);
     this.name = "Smoothing Filter";
     this.desc = "Applies a moving average filter to smooth the data curve.";
     this.isEnabled = false;
     this.windowWidth = 5; // Moving window width
+    this.onEdit = onEdit;
   }
 
   setEnabled(value) {
     this.isEnabled = value;
   }
 
-  editParams(newWindowWidth) {
-    this.windowWidth = newWindowWidth;
-    console.log("Window width updated to: ${this.windowWidth}");
+  editParams() {
+    if (this.onEdit) {
+      this.onEdit(this.windowWidth, this.setParams.bind(this)); // Open the modal and pass the setter callback
+    }
+    console.log("Window width updated to:" + this.windowWidth);
+  }
+
+  setParams(windowWidth) {
+    this.windowWidth = windowWidth;
   }
 
   execute(data) {
