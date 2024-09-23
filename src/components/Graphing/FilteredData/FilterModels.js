@@ -1,8 +1,3 @@
-// Filters = []
-
-// let f = new StatiRatio_Filter()
-// Filters.push(f)
-
 export class StaticRatio_Filter {
   constructor(num, onEdit) {
     this.id = "staticRatio_" + JSON.stringify(num);
@@ -34,7 +29,7 @@ export class StaticRatio_Filter {
     // Ensure there's enough data in the filteredData array
     if (filteredData.length <= this.end) {
       console.error(
-        `filteredData array does not have enough data points. Start: ${this.start}, End: ${this.end}`
+        "filteredData array does not have enough data points. Start: ${this.start}, End: , ${this.end}"
       );
       return filteredData;
     }
@@ -46,7 +41,7 @@ export class StaticRatio_Filter {
       if (filteredData[i] && typeof filteredData[i].y === "number") {
         sum += filteredData[i].y;
       } else {
-        console.error(`Invalid data point at index ${i}`);
+        console.error("Invalid data point at index", { i });
         return filteredData; // Return early if there's invalid data
       }
     }
@@ -61,7 +56,7 @@ export class StaticRatio_Filter {
           y: dataPoint.y / NV,
         };
       }
-      console.error(`Invalid data point during normalization`);
+      console.error("Invalid data point during normalization");
       return dataPoint; // Return the original point if something goes wrong
     });
   }
@@ -111,32 +106,7 @@ export class Div_Filter {
     }
 
     return newData;
-
-    // wells - wells element from the data context
-    // for (let j = 0; j < wells.length; j++) {
-    //   // normalize all wells with NV (i.e. divide all values by NV)
-    //   for (let i = 0; i < wells[j].indicators[0].filteredData.length; i++) {
-    //     wells[j].indicators[0].filteredData[i] = {
-    //       x: wells[j].indicators[0].filteredData[i].x,
-    //       y: wells[j].indicator[0].filteredData[i].y / this.divisor,
-    //     };
-    //   }
-    // }
   }
-  // execute(wells) {
-  //   // wells - wells element from the data context
-  //   for (let j = 0; j < wells.length; j++) {
-  //     for (let k = 0; k < wells[j].indicator.length; k++) {
-  //       // normalize all wells with NV (i.e. divide all values by NV)
-  //       for (let i = 0; i < wells[j].indicator[k].filteredData.length; i++) {
-  //         wells[j].indicator[k].filteredData[i] = {
-  //           x: wells[j].indicator[k].filteredData[i].x,
-  //           y: wells[j].indicator[k].filteredData[i].y / this.divisor,
-  //         };
-  //       }
-  //     }
-  //   }
-  // }
 
   setDivisor(value) {
     this.divisor = value;
@@ -144,5 +114,57 @@ export class Div_Filter {
 
   setEnabled(value) {
     this.isEnabled = value;
+  }
+}
+
+export class Smoothing_Filter {
+  constructor(num, windowWidth) {
+    this.id = "smoothingFilter_" + JSON.stringify(num);
+    this.name = "Smoothing Filter";
+    this.desc = "Applies a moving average filter to smooth the data curve.";
+    this.isEnabled = false;
+    this.windowWidth = 5; // Moving window width
+  }
+
+  setEnabled(value) {
+    this.isEnabled = value;
+  }
+
+  editParams(newWindowWidth) {
+    this.windowWidth = newWindowWidth;
+    console.log("Window width updated to: ${this.windowWidth}");
+  }
+
+  execute(data) {
+    // Ensure there's enough data for the moving average
+    if (data.length < this.windowWidth) {
+      console.error(
+        "Insufficient data points for moving average. Required: ${this.windowWidth}, Available: ${data.length}"
+      );
+      return data; // Return original data if not enough points
+    }
+
+    const yFiltered = new Array(data.length).fill({ x: 0, y: 0 });
+    let windowSum = 0;
+
+    for (let i = 0; i < data.length; ++i) {
+      if (i < this.windowWidth) {
+        // Sum up values in the initial window
+        windowSum += data[i].y;
+        yFiltered[i] = {
+          x: data[i].x,
+          y: windowSum / (i + 1),
+        };
+      } else {
+        // Sliding window: subtract the value that's exiting the window and add the new one
+        windowSum = windowSum - data[i - this.windowWidth].y + data[i].y;
+        yFiltered[i] = {
+          x: data[i].x,
+          y: windowSum / this.windowWidth,
+        };
+      }
+    }
+
+    return yFiltered; // Return the smoothed array
   }
 }

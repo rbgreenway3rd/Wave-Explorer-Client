@@ -18,6 +18,7 @@ import {
   StaticRatio_Filter,
   DynamicRatio_Filter,
   Div_Filter,
+  Smoothing_Filter,
 } from "./FilterModels";
 
 export const FilterControls = ({
@@ -229,6 +230,12 @@ export const FilterControls = ({
       // append to selectedFilters array
       console.log(newDivFilter);
       setSelectedFilters([...selectedFilters, newDivFilter]);
+    } else if (selectedValue === "smoothingFilter") {
+      // create instance of smoothing filter
+      const newSmoothingFilter = new Smoothing_Filter(selectedFilters.length); // need to figure out how to initialize windowWidth
+      // append newSmoothingFilter to selectedFilters array
+      console.log(newSmoothingFilter);
+      setSelectedFilters([...selectedFilters, newSmoothingFilter]);
     }
 
     // Apply the list of selected filters
@@ -255,6 +262,7 @@ export const FilterControls = ({
       <div className="filter-selection-buttons">
         {/* <FilterSelectionModal onFilterApply={handleFilterApply} /> */}
         <div>
+          {/* opens filter selection modal */}
           <Button onClick={handleOpen}>+</Button>
           <Modal
             open={open}
@@ -308,6 +316,18 @@ export const FilterControls = ({
                     onChange={handleRadioCheck}
                   />
                   <label htmlFor="div-filter">Divide by 2</label>
+                </div>
+                <div className="smoothing-filter">
+                  <input
+                    type="radio"
+                    id="smoothing-filter"
+                    className="smothing-filter-radio"
+                    value="smoothingFilter"
+                    name="radio-group-2"
+                    checked={selectedValue === "smoothingFilter"}
+                    onChange={handleRadioCheck}
+                  />
+                  <label htmlFor="smoothing-filter">Smoothing</label>
                 </div>
               </Box>
               <Button
