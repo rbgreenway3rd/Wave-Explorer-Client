@@ -1,4 +1,4 @@
-import React, { memo, useMemo, useContext, useEffect } from "react";
+import React, { memo, useMemo, useContext, useState } from "react";
 import { DataContext } from "../../FileHandling/DataProvider";
 import { Line } from "react-chartjs-2";
 import { MiniGraphOptions } from "../../../config/MiniGraphOptions";
@@ -8,30 +8,22 @@ import "chartjs-adapter-date-fns";
 import Button from "@mui/material/Button";
 
 export const MiniGraphGrid = ({
-  // wellArrays,
   selectedWellArray,
   timeData,
   smallCanvasWidth,
   smallCanvasHeight,
-  largeCanvasWidth,
-  largeCanvasHeight,
   columnLabels,
   rowLabels,
-  // analysisData,
   onWellClick,
   onRowSelectorClick,
   onColumnSelectorClick,
   onAllSelectorClick,
 }) => {
-  const {
-    project,
-    setProject,
-    extractedIndicatorTimes,
-    analysisData,
-    dispatch,
-    showFiltered,
-    setShowFiltered,
-  } = useContext(DataContext);
+  const { project, analysisData, showFiltered, setShowFiltered } =
+    useContext(DataContext);
+
+  // Local state for managing which data to show
+  const [isFiltered, setIsFiltered] = useState(false); // Default is raw data (false)
 
   const plate = project?.plate || [];
   const experiment = plate[0]?.experiments[0] || {};
@@ -54,20 +46,22 @@ export const MiniGraphGrid = ({
     [onAllSelectorClick]
   );
 
+  // const handleToggleDataShown = () => {
+  //   if (showFiltered === false) {
+  //     setShowFiltered(true);
+  //   } else {
+  //     setShowFiltered(false);
+  //   }
+  // };
   const handleToggleDataShown = () => {
-    if (showFiltered === false) {
-      setShowFiltered(true);
-    } else {
-      setShowFiltered(false);
-    }
+    setIsFiltered((prev) => !prev); // Toggle the filter state
+    setShowFiltered((prev) => !prev); // Update context state as well
   };
-
-  // console.log(selectedWellArray);
 
   const options = useMemo(() => {
     // Collect yValues based on whether showFiltered is true or not
     const yValues = wellArrays.flatMap((well) =>
-      showFiltered
+      isFiltered
         ? well.indicators[0]?.filteredData?.map((point) => point.y) || []
         : well.indicators[0]?.rawData?.map((point) => point.y) || []
     );
@@ -150,7 +144,8 @@ export const MiniGraphGrid = ({
                 datasets: [
                   {
                     data:
-                      showFiltered === true
+                      // showFiltered === true
+                      isFiltered
                         ? well.indicators[0]?.filteredData
                         : well.indicators[0]?.rawData,
                     borderColor: "black",
@@ -177,9 +172,9 @@ export const MiniGraphGrid = ({
               className="minigraph-and-controls__raw-radio"
               value="showRaw"
               name="radio-group-1"
-              defaultChecked={true}
-              checked={!showFiltered}
-              onClick={() => handleToggleDataShown()}
+              // defaultChecked={true}
+              checked={!isFiltered}
+              onChange={() => handleToggleDataShown()}
             />
             <label htmlFor="show-raw">Raw</label>
           </div>
@@ -190,8 +185,8 @@ export const MiniGraphGrid = ({
               className="minigraph-and-controls__filtered-radio"
               value="showFiltered"
               name="radio-group-1"
-              checked={showFiltered}
-              onClick={() => handleToggleDataShown()}
+              checked={isFiltered}
+              onChange={() => handleToggleDataShown()}
             />
             <label htmlFor="show-filtered">Filtered</label>
           </div>
