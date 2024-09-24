@@ -1,16 +1,9 @@
-import React, {
-  useContext,
-  useEffect,
-  useState,
-  useRef,
-  useCallback,
-} from "react";
+import React, { useContext, useEffect, useState, useRef } from "react";
 import "../styles/CombinedComponent.css";
 import { DataContext } from "./FileHandling/DataProvider.js";
 import { LargeGraphOptions } from "../config/LargeGraphOptions.js";
 import { LargeGraph } from "./Graphing/LargeGraph/LargeGraph.js";
 import { MiniGraphGrid } from "./Graphing/MiniGraphGrid/MiniGraphGrid.js";
-import { MiniGraphControls } from "./Graphing/MiniGraphGrid/MiniGraphControls.js";
 import { FileUploader } from "./FileHandling/FileUploader.js";
 import { FilteredGraph } from "./Graphing/FilteredData/FilteredGraph.js";
 import { FilteredGraphOptions } from "../config/FilteredGraphOptions.js";

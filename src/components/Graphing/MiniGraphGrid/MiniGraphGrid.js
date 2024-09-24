@@ -177,6 +177,7 @@ export const MiniGraphGrid = ({
               value="showRaw"
               name="radio-group-1"
               defaultChecked={true}
+              checked={!showFiltered}
               onClick={() => handleToggleDataShown()}
             />
             <label htmlFor="show-raw">Raw</label>
@@ -188,6 +189,7 @@ export const MiniGraphGrid = ({
               className="filtered-radio"
               value="showFiltered"
               name="radio-group-1"
+              checked={showFiltered}
               onClick={() => handleToggleDataShown()}
             />
             <label htmlFor="show-filtered">Filtered</label>

@@ -288,169 +288,457 @@ export const FilterControls = ({
     setSelectedValue(event.target.value);
   };
 
+  // return (
+  //   <Box
+  //     sx={{
+  //       padding: 0,
+  //       display: "flex",
+  //       flexDirection: "column",
+  //       alignItems: "center",
+  //       width: "100%",
+  //     }}
+  //   >
+  //     {/* Apply Filters Button */}
+  //     <Button
+  //       variant="contained"
+  //       color="primary"
+  //       onClick={applyEnabledFilters}
+  //       sx={{ mb: 2 }}
+  //     >
+  //       Apply Filters
+  //     </Button>
+
+  //     <div className="filter-selection-controls" style={{ width: "100%" }}>
+  //       {/* Modal Trigger for Adding Filters */}
+  //       <Button onClick={handleOpen} variant="outlined" color="primary">
+  //         + Add Filter
+  //       </Button>
+
+  //       {/* Order Up Button */}
+  //       <Button
+  //         className="filter-order-button-up"
+  //         onClick={handleChangeFilterOrderUp}
+  //         variant="outlined"
+  //         sx={{ ml: 1 }}
+  //       >
+  //         ↑
+  //       </Button>
+
+  //       {/* Remove Filter Button */}
+  //       <Button
+  //         className="filter-order-button-remove"
+  //         onClick={handleRemoveHighlightedFilter}
+  //         variant="outlined"
+  //         color="error"
+  //         sx={{ ml: 1 }}
+  //       >
+  //         x Remove Filter
+  //       </Button>
+
+  //       {/* Order Down Button */}
+  //       <Button
+  //         className="filter-order-button-down"
+  //         onClick={handleChangeFilterOrderDown}
+  //         variant="outlined"
+  //         sx={{ ml: 1 }}
+  //       >
+  //         ↓
+  //       </Button>
+  //     </div>
+
+  //     {/* Selected Filters List */}
+  //     <Box
+  //       sx={{
+  //         width: "100%",
+  //         mt: 3,
+  //         border: "1px solid #ccc",
+  //         borderRadius: 2,
+  //         padding: 2,
+  //       }}
+  //     >
+  //       <Typography variant="h6">Selected Filters</Typography>
+  //       {selectedFilters.length > 0 ? (
+  //         selectedFilters.map((filter) => (
+  //           <Box
+  //             key={filter.id}
+  //             sx={{
+  //               display: "flex",
+  //               alignItems: "center",
+  //               justifyContent: "space-between",
+  //               padding: 1,
+  //               backgroundColor:
+  //                 highlightedFilter.id === filter.id ? "yellow" : "transparent",
+  //               borderBottom: "1px solid #ddd",
+  //             }}
+  //           >
+  //             <Box sx={{ display: "flex", alignItems: "center" }}>
+  //               {/* Enable/Disable Checkbox */}
+  //               <input
+  //                 type="checkbox"
+  //                 checked={filter.isEnabled || false}
+  //                 onChange={() => handleCheckboxChange(filter)}
+  //               />
+  //               {/* Filter Name (Clickable for Highlighting) */}
+  //               <Typography
+  //                 variant="body1"
+  //                 sx={{
+  //                   ml: 1,
+  //                   cursor: "pointer",
+  //                   fontWeight:
+  //                     highlightedFilter.id === filter.id ? "bold" : "normal",
+  //                 }}
+  //                 onClick={() => handleFilterHighlight(filter)}
+  //               >
+  //                 {filter.name}
+  //               </Typography>
+  //             </Box>
+  //             {/* Edit Params Button */}
+  //             <Button
+  //               variant="outlined"
+  //               size="small"
+  //               onClick={() => filter.editParams()}
+  //               sx={{ ml: 2 }}
+  //             >
+  //               Edit
+  //             </Button>
+  //           </Box>
+  //         ))
+  //       ) : (
+  //         <Typography variant="body2">No filters selected.</Typography>
+  //       )}
+  //     </Box>
+
+  //     {/* Reset Filters Button */}
+  //     <Box sx={{ mt: 2 }}>
+  //       <Button
+  //         variant="contained"
+  //         color="secondary"
+  //         onClick={() => {
+  //           setEnabledFilters([]);
+  //           setSelectedFilters([]);
+  //         }}
+  //       >
+  //         Reset Filters
+  //       </Button>
+  //     </Box>
+
+  //     {/* Well Selection Modal */}
+  //     <WellSelectionModal onFilterApply={filterSelectedWells} />
+
+  //     {/* Modal for Filter Selection */}
+  //     <Modal open={open} onClose={handleClose}>
+  //       <Box sx={modalStyle}>
+  //         <Typography id="modal-modal-title" variant="h6" component="h2">
+  //           Select Filters
+  //         </Typography>
+  //         <Box sx={{ marginTop: 2, display: "flex", flexDirection: "column" }}>
+  //           {/* Radio Buttons for Filter Selection */}
+  //           {[
+  //             {
+  //               id: "static-ratio",
+  //               label: "Static Ratio",
+  //               value: "staticRatio",
+  //             },
+  //             {
+  //               id: "dynamic-ratio",
+  //               label: "Dynamic Ratio",
+  //               value: "dynamicRatio",
+  //             },
+  //             { id: "div-filter", label: "Divide by 2", value: "divFilter" },
+  //             {
+  //               id: "smoothing-filter",
+  //               label: "Smoothing",
+  //               value: "smoothingFilter",
+  //             },
+  //           ].map(({ id, label, value }) => (
+  //             <Box key={id} sx={{ mb: 1 }}>
+  //               <input
+  //                 type="radio"
+  //                 id={id}
+  //                 value={value}
+  //                 name="filter-radio"
+  //                 checked={selectedValue === value}
+  //                 onChange={handleRadioCheck}
+  //               />
+  //               <label htmlFor={id}>{label}</label>
+  //             </Box>
+  //           ))}
+  //         </Box>
+  //         <Button
+  //           onClick={handleConfirm}
+  //           variant="contained"
+  //           sx={{ marginTop: 2, alignSelf: "flex-end" }}
+  //         >
+  //           Confirm Filter Selection
+  //         </Button>
+  //       </Box>
+  //     </Modal>
+
+  //     {/* Parameter Modals for Editing Filters */}
+  //     {editModalType === "staticRatio" && (
+  //       <StaticRatioModal
+  //         open={openDialog}
+  //         onClose={() => setOpenDialog(false)}
+  //         startValue={startValue}
+  //         setStartValue={setStartValue}
+  //         endValue={endValue}
+  //         setEndValue={setEndValue}
+  //         onSave={handleSaveParams}
+  //       />
+  //     )}
+
+  //     {editModalType === "smoothingFilter" && (
+  //       <SmoothingFilterModal
+  //         open={openDialog}
+  //         onClose={() => setOpenDialog(false)}
+  //         windowWidth={windowWidth}
+  //         setWindowWidth={setWindowWidth}
+  //         onSave={handleSaveParams}
+  //       />
+  //     )}
+  //   </Box>
+
+  // );
   return (
     <Box
+      className="filter-controls"
       sx={{
         padding: 0,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
+        width: "100%",
       }}
     >
-      <Typography variant="h5" gutterBottom>
-        Filter Controls
-      </Typography>
-      <button onClick={applyEnabledFilters}>Apply Filters</button>
-      <div className="filter-selection-buttons">
-        {/* <FilterSelectionModal onFilterApply={handleFilterApply} /> */}
-        <div>
-          {/* opens filter selection modal */}
-          <Button onClick={handleOpen}>+</Button>
-          <Modal
-            open={open}
-            onClose={handleClose}
-            aria-labelledby="modal-modal-title"
-            aria-describedby="modal-modal-description"
-          >
-            <Box sx={modalStyle}>
-              <Typography id="modal-modal-title" variant="h6" component="h2">
-                Select Filters
-              </Typography>
+      {/* Apply Filters Button */}
+      <Button
+        className="filter-controls__apply-button"
+        variant="contained"
+        color="primary"
+        onClick={applyEnabledFilters}
+        sx={{ mb: 2 }}
+      >
+        Apply Filters
+      </Button>
+
+      <div
+        className="filter-controls__selection-controls"
+        style={{ width: "100%" }}
+      >
+        {/* Modal Trigger for Adding Filters */}
+        <Button
+          className="filter-controls__add-filter-button"
+          onClick={handleOpen}
+          variant="outlined"
+          color="primary"
+        >
+          + Add Filter
+        </Button>
+
+        {/* Order Up Button */}
+        <Button
+          className="filter-controls__order-up-button"
+          onClick={handleChangeFilterOrderUp}
+          variant="outlined"
+          sx={{ ml: 1 }}
+        >
+          ↑
+        </Button>
+
+        {/* Remove Filter Button */}
+        <Button
+          className="filter-controls__remove-filter-button"
+          onClick={handleRemoveHighlightedFilter}
+          variant="outlined"
+          color="error"
+          sx={{ ml: 1 }}
+        >
+          x Remove Filter
+        </Button>
+
+        {/* Order Down Button */}
+        <Button
+          className="filter-controls__order-down-button"
+          onClick={handleChangeFilterOrderDown}
+          variant="outlined"
+          sx={{ ml: 1 }}
+        >
+          ↓
+        </Button>
+      </div>
+
+      {/* Selected Filters List */}
+      <Box
+        className="filter-controls__selected-filters"
+        sx={{
+          width: "100%",
+          mt: 3,
+          border: "1px solid #ccc",
+          borderRadius: 2,
+          padding: 2,
+        }}
+      >
+        <Typography
+          className="filter-controls__selected-filters-title"
+          variant="h6"
+        >
+          Selected Filters
+        </Typography>
+        {selectedFilters.length > 0 ? (
+          selectedFilters.map((filter) => (
+            <Box
+              key={filter.id}
+              className={`filter-controls__filter-item ${
+                highlightedFilter.id === filter.id
+                  ? "filter-controls__filter-item--highlighted"
+                  : ""
+              }`}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: 1,
+                borderBottom: "1px solid #ddd",
+              }}
+            >
               <Box
-                sx={{
-                  marginTop: 2,
-                  display: "flex",
-                  flexDirection: "column",
-                }}
+                className="filter-controls__filter-item-info"
+                sx={{ display: "flex", alignItems: "center" }}
               >
-                <div className="static-ratio">
-                  <input
-                    type="radio"
-                    id="static-ratio"
-                    className="static-ratio-radio"
-                    value="staticRatio"
-                    name="radio-group-2"
-                    checked={selectedValue === "staticRatio"}
-                    onChange={handleRadioCheck}
-                  />
-                  <label htmlFor="static-ratio">Static Ratio</label>
-                </div>
-                <div className="dynamic-ratio">
-                  <input
-                    type="radio"
-                    id="dynamic-ratio"
-                    className="dynamic-ratio-radio"
-                    value="dynamicRatio"
-                    name="radio-group-2"
-                    checked={selectedValue === "dynamicRatio"}
-                    onChange={handleRadioCheck}
-                  />
-                  <label htmlFor="dynamic-ratio">Dynamic Ratio</label>
-                </div>
-                <div className="div-filter">
-                  <input
-                    type="radio"
-                    id="div-filter"
-                    className="div-filter-radio"
-                    value="divFilter"
-                    name="radio-group-2"
-                    checked={selectedValue === "divFilter"}
-                    onChange={handleRadioCheck}
-                  />
-                  <label htmlFor="div-filter">Divide by 2</label>
-                </div>
-                <div className="smoothing-filter">
-                  <input
-                    type="radio"
-                    id="smoothing-filter"
-                    className="smothing-filter-radio"
-                    value="smoothingFilter"
-                    name="radio-group-2"
-                    checked={selectedValue === "smoothingFilter"}
-                    onChange={handleRadioCheck}
-                  />
-                  <label htmlFor="smoothing-filter">Smoothing</label>
-                </div>
+                {/* Enable/Disable Checkbox */}
+                <input
+                  className="filter-controls__checkbox"
+                  type="checkbox"
+                  checked={filter.isEnabled || false}
+                  onChange={() => handleCheckboxChange(filter)}
+                />
+                {/* Filter Name (Clickable for Highlighting) */}
+                <Typography
+                  className="filter-controls__filter-name"
+                  variant="body1"
+                  sx={{
+                    ml: 1,
+                    cursor: "pointer",
+                    fontWeight:
+                      highlightedFilter.id === filter.id ? "bold" : "normal",
+                    backgroundColor:
+                      highlightedFilter.id === filter.id
+                        ? "yellow"
+                        : "transparent",
+                  }}
+                  onClick={() => handleFilterHighlight(filter)}
+                >
+                  {filter.name}
+                </Typography>
               </Box>
+              {/* Edit Params Button */}
               <Button
-                onClick={handleConfirm}
-                variant="contained"
-                sx={{ marginTop: 2, alignSelf: "flex-end" }}
+                className="filter-controls__edit-button"
+                variant="outlined"
+                size="small"
+                onClick={() => filter.editParams()}
+                sx={{ ml: 2 }}
               >
-                Confirm Filter Selection
+                Edit
               </Button>
             </Box>
-          </Modal>
-        </div>
+          ))
+        ) : (
+          <Typography className="filter-controls__no-filters" variant="body2">
+            No filters selected.
+          </Typography>
+        )}
+      </Box>
+
+      {/* Reset Filters Button */}
+      <Box className="filter-controls__reset-button-wrapper" sx={{ mt: 2 }}>
         <Button
-          className="filter-order-button-up"
-          onClick={handleChangeFilterOrderUp}
-        >
-          ^
-        </Button>
-        <Button
-          className="filter-order-button-down"
-          onClick={handleChangeFilterOrderDown}
-        >
-          v
-        </Button>
-        <Button
-          className="filter-order-button-remove"
-          onClick={handleRemoveHighlightedFilter}
-        >
-          x
-        </Button>
-        <div>
-          <h3>Selected Filters</h3>
-          {selectedFilters.length > 0 ? (
-            selectedFilters.map((filter) => (
-              <div
-                key={filter.id}
-                style={{
-                  backgroundColor:
-                    highlightedFilter.id === filter.id
-                      ? "yellow"
-                      : "transparent",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={filter.isEnabled || false} // Control filter enabling/disabling
-                  onChange={() => handleCheckboxChange(filter)} // Toggle filter state
-                />
-                <label onClick={() => handleFilterHighlight(filter)}>
-                  {filter.name}
-                </label>
-                <button
-                  className="edit-params-button"
-                  onClick={() => filter.editParams()}
-                >
-                  ...
-                </button>
-              </div>
-            ))
-          ) : (
-            <Typography variant="body2">No filters selected.</Typography>
-          )}
-        </div>
-      </div>
-      <Box sx={{ mb: 0 }}>
-        <Button
+          className="filter-controls__reset-button"
           variant="contained"
-          color="primary"
+          color="secondary"
           onClick={() => {
-            setEnabledFilters([]); // Clear enabled filters on reset
+            setEnabledFilters([]);
             setSelectedFilters([]);
           }}
         >
           Reset Filters
         </Button>
       </Box>
-      <WellSelectionModal onFilterApply={filterSelectedWells} />
-      {/* Additional filter controls or components can be added here */}
-      {/* Dialog for editing Static Ratio Filter parameters */}
+
+      {/* Well Selection Modal */}
+      <WellSelectionModal
+        className="filter-controls__well-selection-modal"
+        onFilterApply={filterSelectedWells}
+      />
+
+      {/* Modal for Filter Selection */}
+      <Modal
+        className="filter-controls__filter-selection-modal"
+        open={open}
+        onClose={handleClose}
+      >
+        <Box
+          className="filter-controls__filter-selection-modal-content"
+          sx={modalStyle}
+        >
+          <Typography id="modal-modal-title" variant="h6" component="h2">
+            Select Filters
+          </Typography>
+          <Box sx={{ marginTop: 2, display: "flex", flexDirection: "column" }}>
+            {/* Radio Buttons for Filter Selection */}
+            {[
+              {
+                id: "static-ratio",
+                label: "Static Ratio",
+                value: "staticRatio",
+              },
+              {
+                id: "dynamic-ratio",
+                label: "Dynamic Ratio",
+                value: "dynamicRatio",
+              },
+              { id: "div-filter", label: "Divide by 2", value: "divFilter" },
+              {
+                id: "smoothing-filter",
+                label: "Smoothing",
+                value: "smoothingFilter",
+              },
+            ].map(({ id, label, value }) => (
+              <Box
+                key={id}
+                className="filter-controls__filter-radio"
+                sx={{ mb: 1 }}
+              >
+                <input
+                  className="filter-controls__radio-input"
+                  type="radio"
+                  id={id}
+                  value={value}
+                  name="filter-radio"
+                  checked={selectedValue === value}
+                  onChange={handleRadioCheck}
+                />
+                <label className="filter-controls__radio-label" htmlFor={id}>
+                  {label}
+                </label>
+              </Box>
+            ))}
+          </Box>
+          <Button
+            className="filter-controls__confirm-selection-button"
+            onClick={handleConfirm}
+            variant="contained"
+            sx={{ marginTop: 2, alignSelf: "flex-end" }}
+          >
+            Confirm Filter Selection
+          </Button>
+        </Box>
+      </Modal>
+
+      {/* Parameter Modals for Editing Filters */}
       {editModalType === "staticRatio" && (
         <StaticRatioModal
+          className="filter-controls__static-ratio-modal"
           open={openDialog}
           onClose={() => setOpenDialog(false)}
           startValue={startValue}
@@ -463,6 +751,7 @@ export const FilterControls = ({
 
       {editModalType === "smoothingFilter" && (
         <SmoothingFilterModal
+          className="filter-controls__smoothing-filter-modal"
           open={openDialog}
           onClose={() => setOpenDialog(false)}
           windowWidth={windowWidth}
