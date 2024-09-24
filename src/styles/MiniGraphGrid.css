@@ -1,19 +1,4 @@
-/* .minigraph-and-controls-container {
-    display: grid;
-        grid-template-columns: 4fr 0.5fr;
-        
-        grid-template-areas:
-            "minigraph-header minigraph-header"
-            "minigraph-container minigraph-controls";
-} */
-
-/* .minigraph-header{
-    grid-area: "minigraph-header";
-
-} */
-
-.minigraph-container {
-    /* width: 50vw; */
+/* .minigraph-container {
     border: solid 0.5em black;
     background: rgb(220, 220, 220);
     display: grid;
@@ -22,7 +7,6 @@
         "row-selectors minigraph-grid";
     grid-template-columns: auto 1fr;
     grid-template-rows: auto 1fr;
-    /*template for */
     margin-bottom: 0.5em;
 }
 
@@ -77,6 +61,71 @@
 
 .row-button,
 .column-button {
+    width: 100%;
+    height: 100%;
+} */
+
+.minigraph-and-controls {
+    display: flex;
+}
+
+.minigraph-and-controls__minigraph-container {
+    border: solid 0.5em black;
+    background: rgb(220, 220, 220);
+    display: grid;
+    grid-template-areas:
+        "minigraph-and-controls__all-selector minigraph-and-controls__column-selectors"
+        "minigraph-and-controls__row-selectors minigraph-and-controls__minigraph-grid";
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto 1fr;
+    margin-bottom: 0.5em;
+}
+
+.minigraph-and-controls__minigraph-canvas {
+    padding: 1px;
+    background: rgb(220, 220, 220);
+}
+
+.minigraph-and-controls__minigraph-canvas:hover {
+    background: rgb(210, 210, 210);
+    border: solid 1.5px rgb(100, 100, 100);
+}
+
+.minigraph-and-controls__minigraph-grid {
+    display: grid;
+    grid-area: minigraph-and-controls__minigraph-grid;
+    grid-column: 2 / span 1;
+    grid-row: 2 / span 1;
+    grid-template-columns: repeat(24, 1fr);
+    grid-template-rows: repeat(16, 1fr);
+}
+
+.minigraph-and-controls__all-selector {
+    grid-area: minigraph-and-controls__all-selector;
+    display: flex;
+}
+
+.minigraph-and-controls__all-button {
+    width: 100%;
+    height: 100%;
+}
+
+.minigraph-and-controls__column-selectors {
+    grid-column: 2 / span 1;
+    grid-row: 1 / span 1;
+    display: grid;
+    grid-template-columns: repeat(24, 1fr);
+}
+
+.minigraph-and-controls__row-selectors {
+    grid-column: 1 / span 1;
+    grid-row: 2 / span 1;
+    display: grid;
+    grid-template-rows: repeat(16, 1fr);
+}
+
+.minigraph-and-controls__row-button,
+.minigraph-and-controls__column-button {
     width: 100%;
     height: 100%;
 }

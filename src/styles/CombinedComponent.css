@@ -1,86 +1,75 @@
-
-.file-and-grid-container {
+.combined-component__wave-container {
     display: grid;
-    
+    grid-template-columns: 1fr 1fr; /* Two columns */
+    grid-template-rows: auto auto; /* Two rows for header and content */
     border-bottom: 0.5em solid gray;
-    
+    gap: 1em; /* Space between elements */
 }
 
-.minigraph-header {
-    grid-column: 1 / span 2;
+.combined-component__minigraph-header {
+    grid-column: 1;
     grid-row: 1;
     text-align: center;
-    border-right: 0.5em solid gray;
-    padding-right: 0.5em
+    padding-right: 0.5em;
 }
 
-.large-graph-header {
-    grid-column: 3 / span 2;
-    grid-row: 1;
-    text-align: center;
-}
-
-.minigraph {
-    grid-column: 1 ;
-    grid-row: 2;
-    
-}
-
-.minigraph-controls{
-    grid-column: 2;
-    grid-row: 2;
-    border-right: 0.5em solid gray;
-    padding-right: 0.5em
-}
-
-.large-graph {
-    grid-column: 3;
-    grid-row: 2;
-    margin-left: 0.5em;
-}
-
-.large-graph-controls {
-    grid-column: 4;
-    grid-row: 2;
-}
-
-.metrics-and-filter-container {
-    display: grid;
-}
-
-.metrics-header {
-    grid-column: 1 / span 2;
-    grid-row: 1;
-    text-align: center;
-    border-right: 0.5em solid gray;
-    padding-right: 0.5em
-}
-
-.filters-header {
-    grid-column: 3 / span 2;
-    grid-row: 1;
-    text-align: center;
-}
-
-.metrics {
+.combined-component__minigraph {
     grid-column: 1;
     grid-row: 2;
 }
 
-.metrics-controls {
+/* .combined-component__minigraph-controls {
     grid-column: 2;
     grid-row: 2;
     border-right: 0.5em solid gray;
-    padding-right: 0.5em
+    padding-right: 0.5em;
+} */
+
+.combined-component__large-graph-header {
+    grid-column: 2;
+    grid-row: 1;
+    text-align: center;
 }
 
-.filtered-graph {
-    grid-column: 3;
+.combined-component__large-graph {
+    grid-column: 2;
     grid-row: 2;
     margin-left: 0.5em;
 }
 
-.filter-controls {
-    grid-column: 4;
+.combined-component__metrics-filter-container {
+    display: grid;
+    grid-template-columns: 3fr 3fr 1fr; /* Three columns */
+    grid-template-rows: auto auto; /* Two rows for header and content */
+    /* border-bottom: 0.5em solid gray; */
+    gap: 1em; /* Space between elements */
+}
+
+.combined-component__metrics-header {
+    grid-column: 1;
+    grid-row: 1;
+    text-align: center;
+    padding-right: 0.5em;
+}
+
+.combined-component__metrics {
+    grid-column: 1;
     grid-row: 2;
+}
+
+.combined-component__filters-header {
+    grid-column: 2;
+    grid-row: 1;
+    text-align: center;
+}
+
+.combined-component__filtered-graph {
+    grid-column: 2;
+    grid-row: 2;
+    margin-left: 0.5em;
+}
+
+.combined-component__filter-controls {
+    grid-column: 3;
+    grid-row: 1/span 2;
 }

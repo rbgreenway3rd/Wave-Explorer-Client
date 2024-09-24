@@ -5,6 +5,7 @@ import { MiniGraphOptions } from "../../../config/MiniGraphOptions";
 import "../../../styles/MiniGraphGrid.css";
 import { debounce } from "lodash";
 import "chartjs-adapter-date-fns";
+import Button from "@mui/material/Button";
 
 export const MiniGraphGrid = ({
   // wellArrays,
@@ -61,7 +62,7 @@ export const MiniGraphGrid = ({
     }
   };
 
-  console.log(selectedWellArray);
+  // console.log(selectedWellArray);
 
   const options = useMemo(() => {
     // Collect yValues based on whether showFiltered is true or not
@@ -76,10 +77,10 @@ export const MiniGraphGrid = ({
   }, [analysisData, timeData, wellArrays, showFiltered]);
 
   return (
-    <div className="minigraph-and-controls-container">
-      <div className="minigraph-container">
+    <section className="minigraph-and-controls">
+      <div className="minigraph-and-controls__minigraph-container">
         <div
-          className="all-selector"
+          className="minigraph-and-controls__all-selector"
           style={{
             width: smallCanvasWidth,
             height: smallCanvasHeight,
@@ -87,14 +88,14 @@ export const MiniGraphGrid = ({
         >
           <button
             id="allButton"
-            className="all-button"
+            className="minigraph-and-controls__all-button"
             onClick={handleAllSelectorClick}
           >
             all
           </button>
         </div>
         <div
-          className="column-selectors"
+          className="minigraph-and-controls__column-selectors"
           style={{
             height: smallCanvasHeight,
           }}
@@ -102,7 +103,7 @@ export const MiniGraphGrid = ({
           {columnLabels.map((columnLabel) => (
             <button
               id="columnButton"
-              className="column-button"
+              className="minigraph-and-controls__column-button"
               key={columnLabel}
               style={{
                 width: smallCanvasWidth,
@@ -115,7 +116,7 @@ export const MiniGraphGrid = ({
           ))}
         </div>
         <div
-          className="row-selectors"
+          className="minigraph-and-controls__row-selectors"
           style={{
             width: smallCanvasWidth / 2,
           }}
@@ -123,7 +124,7 @@ export const MiniGraphGrid = ({
           {rowLabels.map((rowLabel) => (
             <button
               id="rowButton"
-              className="row-button"
+              className="minigraph-and-controls__row-button"
               key={rowLabel}
               onClick={() => handleRowSelectorClick(rowLabel)}
             >
@@ -131,12 +132,12 @@ export const MiniGraphGrid = ({
             </button>
           ))}
         </div>
-        <div className="minigraph-grid">
+        <div className="minigraph-and-controls__minigraph-grid">
           {wellArrays.map((well) => (
             <Line
               type="line"
               id="minigraphCanvas"
-              className="minigraph-canvas"
+              className="minigraph-and-controls__minigraph-canvas"
               style={
                 selectedWellArray.some(
                   (selectedWell) => selectedWell.id === well.id
@@ -166,14 +167,14 @@ export const MiniGraphGrid = ({
           ))}
         </div>
       </div>
-      <div className="minigraph-controls-container">
-        <div className="show-raw-or-filtered">
+      <div className="minigraph-and-controls__controls-container">
+        <div className="minigraph-and-controls__show-raw-or-filtered">
           Show
-          <div className="show-raw">
+          <div className="minigraph-and-controls__show-raw">
             <input
               type="radio"
               id="show-raw"
-              className="raw-radio"
+              className="minigraph-and-controls__raw-radio"
               value="showRaw"
               name="radio-group-1"
               defaultChecked={true}
@@ -182,11 +183,11 @@ export const MiniGraphGrid = ({
             />
             <label htmlFor="show-raw">Raw</label>
           </div>
-          <div className="show-filtered">
+          <div className="minigraph-and-controls__show-filtered">
             <input
               type="radio"
               id="show-filtered"
-              className="filtered-radio"
+              className="minigraph-and-controls__filtered-radio"
               value="showFiltered"
               name="radio-group-1"
               checked={showFiltered}
@@ -195,20 +196,20 @@ export const MiniGraphGrid = ({
             <label htmlFor="show-filtered">Filtered</label>
           </div>
         </div>
-        <div className="visibility">
+        <div className="minigraph-and-controls__visibility">
           Visibility
-          <div className="visibility-selector1">
+          <div className="minigraph-and-controls__visibility-selector1">
             <input
               type="checkbox"
               id="visibility-selector"
-              className="visibility-selector"
+              className="minigraph-and-controls__visibility-selector"
               value="visibility-selector1"
             />
             <label htmlFor="visibility-selector">Green</label>
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 
