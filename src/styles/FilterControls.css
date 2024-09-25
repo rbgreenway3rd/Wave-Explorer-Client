@@ -1,47 +1,34 @@
-.filter-controls-container {
-    display: flex;
-    flex-direction: row;
-    justify-content: fill
-    
+.filter-controls{
+  padding-top: 0.25em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%; 
+  margin: 0; /* Center horizontally */
+  height: 100%; /* Ensure full height for vertical centering */
 }
 
-.filter-list-container {
-
+.filter-controls__selection-controls {
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Centers horizontally */
+  align-items: center;     /* Centers vertically */
+  /* width: 100%;             */
 }
 
-.filter-save-status {
-    
+.filter-controls__selected-filters {
+  width: 100%;
+  /* margin-top: 3em; */
+  border: 1px solid #101010;
+  border-radius: 5px;
 }
 
-.selected-filter-list {
-    padding: 0;
-}
-
-.filter-list-item {
-    display: flex;
-    flex-direction: row;
-}
-
-.filter-list-item-checkbox {
-
-}
-
-.filter-list-item-label {
-    font-size: 0.8em
-}
-
-.filter-list-item-settings-button {
-    text-align: center;
-    border-radius: 100em;
-    padding: 0;
-}
-
-.filter-list-order {
-    display: flex;
-    flex-direction: column;
-}
-
-.filter-list-order-edit-button{
-    border-radius: 0;
-    padding: 0;
+.filter-controls__selected-filters-title {
+  font-weight: bold;
+  font-size: 1em;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Centers horizontally */
+  align-items: center;     /* Centers vertically */
 }

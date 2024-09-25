@@ -1,3 +1,8 @@
+.combined-component {
+    padding-left: 0.25em;
+    padding-right: 0.25em;
+}
+
 .combined-component__wave-container {
     display: grid;
     grid-template-columns: 1fr 1fr; /* Two columns */
@@ -39,7 +44,7 @@
 
 .combined-component__metrics-filter-container {
     display: grid;
-    grid-template-columns: 3fr 3fr 1fr; /* Three columns */
+    grid-template-columns: 5fr 5fr 1fr; /* Three columns */
     grid-template-rows: auto auto; /* Two rows for header and content */
     /* border-bottom: 0.5em solid gray; */
     gap: 1em; /* Space between elements */
@@ -72,4 +77,13 @@
 .combined-component__filter-controls {
     grid-column: 3;
     grid-row: 1/span 2;
+    display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  margin: 0 auto; /* Center horizontally */
+  padding: 0;
+  height: 100%; /* Ensure full height for vertical centering */
+
 }

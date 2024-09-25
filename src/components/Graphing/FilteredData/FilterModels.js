@@ -120,7 +120,7 @@ export class Div_Filter {
 export class Smoothing_Filter {
   constructor(num, onEdit) {
     this.id = "smoothingFilter_" + JSON.stringify(num);
-    this.name = "Smoothing Filter";
+    this.name = "Smoothing";
     this.desc = "Applies a moving average filter to smooth the data curve.";
     this.isEnabled = false;
     this.windowWidth = 5; // Moving window width
