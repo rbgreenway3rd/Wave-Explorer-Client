@@ -18,8 +18,10 @@ import {
   handleColumnSelectorClick,
 } from "../utilities/Helpers.js";
 import deepEqual from "fast-deep-equal"; // for 'deep comparison'
+import DynamicAnnotationChart from "./Graphing/FilteredData/DynamicAnnotationChart.js";
+import annotationPlugin from "chartjs-plugin-annotation";
 
-Chart.register(...registerables);
+Chart.register(...registerables, annotationPlugin);
 
 export const CombinedComponent = () => {
   const {
@@ -238,6 +240,7 @@ export const CombinedComponent = () => {
               <header className="combined-component__filters-header">
                 Filtered Waves
               </header>
+
               <FilteredGraph
                 className="combined-component__filtered-graph"
                 wellArrays={wellArrays}
@@ -255,6 +258,7 @@ export const CombinedComponent = () => {
                   applyEnabledFilters={applyEnabledFilters}
                 />
               </div>
+              <DynamicAnnotationChart />
             </section>
           </>
         ) : (

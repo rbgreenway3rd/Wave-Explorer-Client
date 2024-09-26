@@ -290,13 +290,14 @@ export const FilterControls = ({
     <Box
       sx={{
         position: "relative",
-        width: isCollapsed ? 30 : 150, // Adjust width when collapsed (40px to fit the icon)
+        width: isCollapsed ? 30 : 200, // Adjust width when collapsed (40px to fit the icon)
         overflow: "hidden", // Hide content when collapsed
         transition: "width 0.3s ease",
         transformOrigin: "right",
         height: "100%",
         border: isCollapsed ? "none" : "1px solid #ccc", // Border only when expanded
         display: "flex", // Flexbox to ensure icon and content align correctly
+        margin: 0,
       }}
     >
       {/* Collapse/Expand Toggle Icon */}
@@ -310,6 +311,8 @@ export const FilterControls = ({
           width: "40px", // Consistent width to prevent layout shift
           // backgroundColor: isCollapsed ? "primary.main" : "transparent", // Optionally highlight when collapsed
           zIndex: 1, // Ensure icon stays on top of everything
+          margin: 0,
+          padding: 0,
         }}
       >
         {isCollapsed ? <ArrowForwardIcon /> : <ArrowBackIcon />}
@@ -319,12 +322,13 @@ export const FilterControls = ({
       <Box
         sx={{
           position: "relative", // To ensure it collapses without affecting other layout elements
-          width: isCollapsed ? 0 : 150, // Dynamically adjust the width
+          width: isCollapsed ? 0 : 155, // Dynamically adjust the width
           overflow: "hidden", // Hide content when collapsed
           transition: "width 0.3s ease", // Only animate the width for a clean collapse
           transformOrigin: "left", // Collapse the width starting from the left
           height: "100%", // Full height of its parent
           border: isCollapsed ? "none" : "1px solid #ccc", // Optional: show border only when expanded
+          margin: 0,
         }}
       >
         {/* Filter Controls Content */}
@@ -390,21 +394,13 @@ export const FilterControls = ({
           </div>
 
           {/* Selected Filters List */}
-          <Box
-            className="filter-controls__selected-filters"
-            // sx={{
-            //   width: "100%",
-            //   mt: 3,
-            //   border: "1px solid #ccc",
-            //   borderRadius: 2,
-            //   // padding: 2,
-            // }}
-          >
+          <Box className="filter-controls__selected-filters">
             <Typography
               className="filter-controls__selected-filters-title"
               variant="h8"
+              sx={{ textDecoration: "underline" }}
             >
-              Selected Filters:
+              Filters:
             </Typography>
             {selectedFilters.length > 0 ? (
               selectedFilters.map((filter) => (
@@ -445,6 +441,7 @@ export const FilterControls = ({
                           highlightedFilter.id === filter.id
                             ? "bold"
                             : "normal",
+                        fontSize: "0.95em",
                         backgroundColor:
                           highlightedFilter.id === filter.id
                             ? "yellow"

@@ -16,6 +16,9 @@ export const FilteredGraphOptions = (minValue, maxValue) => {
         mode: "nearest",
         intersect: false,
       },
+      annotation: {
+        annotations: [],
+      },
     },
     maintainAspectRatio: false,
     responsive: true,

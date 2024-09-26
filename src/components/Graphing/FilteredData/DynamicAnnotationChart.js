@@ -1,34 +1,51 @@
-import React, { useEffect, useState, useRef } from "react";
-import { Line } from "react-chartjs-2";
+import React, { useRef, useState } from "react";
 import {
   Chart as ChartJS,
   LineElement,
   CategoryScale,
   LinearScale,
   PointElement,
-  registerables,
 } from "chart.js";
+import { Line } from "react-chartjs-2";
 import annotationPlugin from "chartjs-plugin-annotation";
-
+// Register required Chart.js components
 ChartJS.register(
-  ...registerables,
   LineElement,
   CategoryScale,
   LinearScale,
   PointElement,
   annotationPlugin
 );
-
-export const FilteredGraph = ({ filteredGraphData, options }) => {
+const DynamicAnnotationChart = () => {
   const chartRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const [endPos, setEndPos] = useState({ x: 0, y: 0 });
-
-  useEffect(() => {
-    console.log("Filtered graph data:", filteredGraphData);
-  }, [filteredGraphData, options]);
-
+  // Sample chart data
+  const data = {
+    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+    datasets: [
+      {
+        label: "Sales",
+        data: [12, 19, 3, 5, 2, 3],
+        fill: false,
+        borderColor: "rgb(75, 192, 192)",
+        tension: 0.1,
+      },
+    ],
+  };
+  // Chart options including the annotation plugin
+  const options = {
+    plugins: {
+      annotation: {
+        annotations: [],
+      },
+    },
+    scales: {
+      x: { beginAtZero: true },
+      y: { beginAtZero: true },
+    },
+  };
   // Handle mouse down event to start drawing
   const handleMouseDown = (event) => {
     const chart = chartRef.current;
@@ -69,13 +86,11 @@ export const FilteredGraph = ({ filteredGraphData, options }) => {
   const handleMouseUp = () => {
     setIsDragging(false);
   };
-
   return (
-    <div className="filtered-graph">
+    <div>
       <Line
         ref={chartRef}
-        className="filtered-graph-canvas"
-        data={filteredGraphData}
+        data={data}
         options={options}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -84,3 +99,4 @@ export const FilteredGraph = ({ filteredGraphData, options }) => {
     </div>
   );
 };
+export default DynamicAnnotationChart;

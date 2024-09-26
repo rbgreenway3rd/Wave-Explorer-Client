@@ -1,93 +1,223 @@
-import React, { useEffect, useRef } from "react";
+// import React, { useEffect, useRef, useState } from "react";
+// import * as d3 from "d3";
+// import "./Heatmap.css"; // Import a CSS file for tooltip styling
+
+// const Heatmap = ({ wellArrays }) => {
+//   const svgRef = useRef();
+//   const [tooltip, setTooltip] = useState({
+//     display: false,
+//     x: 0,
+//     y: 0,
+//     label: "",
+//   });
+
+//   useEffect(() => {
+//     const width = 800; // Adjust as needed
+//     const height = 600; // Adjust as needed
+//     const cols = 24;
+//     const rows = 16;
+//     const cellSize = Math.min(width / cols, height / rows);
+
+//     // Clear previous SVG
+//     d3.select(svgRef.current).selectAll("*").remove();
+
+//     const svg = d3
+//       .select(svgRef.current)
+//       .attr("width", width)
+//       .attr("height", height);
+
+//     // Compute all values from wellArrays
+//     const allValues = wellArrays.flatMap(
+//       (well) => well.indicators[0]?.filteredData.map((d) => d.y) || []
+//     );
+
+//     // Define the color scale using quantization
+//     const colorScale = d3
+//       .scaleQuantize()
+//       .domain(d3.extent(allValues)) // Using extent for better min/max
+//       .range(["black", "blue", "green", "yellow", "orange", "red"]); // Define the discrete color range
+
+//     // Draw rectangles for each well
+//     svg
+//       .selectAll("rect")
+//       .data(wellArrays)
+//       .enter()
+//       .append("rect")
+//       .attr("x", (d, i) => (i % cols) * cellSize)
+//       .attr("y", (d, i) => Math.floor(i / cols) * cellSize)
+//       .attr("width", cellSize)
+//       .attr("height", cellSize)
+//       .attr("fill", (d) => {
+//         const filteredData = d.indicators[0]?.filteredData || [];
+//         const maxValueForWell = d3.max(filteredData, (d) => d.y) || 0; // Use 0 as a fallback
+//         return colorScale(maxValueForWell); // Get the color based on the well's maximum value
+//       })
+//       .attr("stroke", "#fff")
+//       .on("mouseover", (event, d) => {
+//         // Show tooltip on mouseover
+//         setTooltip({
+//           display: true,
+//           x: event.pageX,
+//           y: event.pageY,
+//           label: d.label,
+//         });
+//       })
+//       .on("mousemove", (event) => {
+//         // Update tooltip position
+//         setTooltip((prev) => ({ ...prev, x: event.pageX, y: event.pageY }));
+//       })
+//       .on("mouseout", () => {
+//         // Hide tooltip on mouseout
+//         setTooltip({ display: false, x: 0, y: 0, label: "" });
+//       });
+
+//     // Draw labels for each well
+//     svg
+//       .selectAll("text")
+//       .data(wellArrays)
+//       .enter()
+//       .append("text")
+//       .attr("x", (d, i) => (i % cols) * cellSize + cellSize / 2)
+//       .attr("y", (d, i) => Math.floor(i / cols) * cellSize + cellSize / 2)
+//       .attr("dy", ".35em")
+//       .attr("text-anchor", "middle")
+//       .text((d) => d.label) // Adjust to your well object property for display
+//       .attr("fill", "#000")
+//       .attr("pointer-events", "none"); // Prevent text from capturing mouse events
+//   }, [wellArrays]);
+
+//   return (
+//     <>
+//       <svg ref={svgRef}></svg>
+//       {tooltip.display && (
+//         <div
+//           className="tooltip"
+//           style={{
+//             left: tooltip.x + 10, // Offset for better visibility
+//             top: tooltip.y - 30, // Offset for better visibility
+//           }}
+//         >
+//           {tooltip.label} <br />
+//           {tooltip.y}
+//         </div>
+//       )}
+//     </>
+//   );
+// };
+
+// export default Heatmap;
+import React, { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
+import "./Heatmap.css"; // Import a CSS file for tooltip styling
 
-const Heatmap = ({
-  wellArrays,
-  selectedWellArray,
-  timeData,
-  smallCanvasWidth,
-  smallCanvasHeight,
-  largeCanvasWidth,
-  largeCanvasHeight,
-  columnLabels,
-  rowLabels,
-  analysisData,
-}) => {
-  const ref = useRef();
-
-  // Labels of row and columns
-  const myGroups = columnLabels;
-  const myVars = rowLabels;
+const Heatmap = ({ wellArrays }) => {
+  const svgRef = useRef();
+  const [tooltip, setTooltip] = useState({
+    display: false,
+    x: 0,
+    y: 0,
+    label: "",
+    value: "",
+  });
 
   useEffect(() => {
-    // set the dimensions and margins of the graph
-    const margin = { top: 30, right: 30, bottom: 30, left: 30 },
-      width = 450 - margin.left - margin.right,
-      height = 450 - margin.top - margin.bottom;
+    const width = 800; // Adjust as needed
+    const height = 600; // Adjust as needed
+    const cols = 24;
+    const rows = 16;
+    const cellSize = Math.min(width / cols, height / rows);
 
-    // select the div and append the svg object to it
+    // Clear previous SVG
+    d3.select(svgRef.current).selectAll("*").remove();
+
     const svg = d3
-      .select(ref.current)
-      .append("svg")
-      .attr("width", width + margin.left + margin.right)
-      .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
+      .select(svgRef.current)
+      .attr("width", width)
+      .attr("height", height);
 
-    // Build X scales and axis:
-    const x = d3.scaleBand().range([0, width]).domain(myGroups).padding(0.01);
+    // Compute all values from wellArrays
+    const allValues = wellArrays.flatMap(
+      (well) => well.indicators[0]?.filteredData.map((d) => d.y) || []
+    );
+
+    // Define the color scale using quantization
+    const colorScale = d3
+      .scaleQuantize()
+      .domain(d3.extent(allValues)) // Using extent for better min/max
+      .range(["black", "blue", "green", "yellow", "orange", "red"]); // Define the discrete color range
+
+    // Draw rectangles for each well
     svg
-      .append("g")
-      .attr("transform", `translate(0, 0)`) // Move x-axis to the top
-      .call(d3.axisTop(x));
+      .selectAll("rect")
+      .data(wellArrays)
+      .enter()
+      .append("rect")
+      .attr("x", (d, i) => (i % cols) * cellSize)
+      .attr("y", (d, i) => Math.floor(i / cols) * cellSize)
+      .attr("width", cellSize)
+      .attr("height", cellSize)
+      .attr("fill", (d) => {
+        const filteredData = d.indicators[0]?.filteredData || [];
+        const maxValueForWell = d3.max(filteredData, (d) => d.y) || 0; // Use 0 as a fallback
+        return colorScale(maxValueForWell); // Get the color based on the well's maximum value
+      })
+      .attr("stroke", "#fff")
+      .on("mouseover", (event, d) => {
+        // Get the maximum value for the hovered well
+        const filteredData = d.indicators[0]?.filteredData || [];
+        const maxValueForWell = d3.max(filteredData, (d) => d.y) || 0; // Use 0 as a fallback
 
-    // Build Y scales and axis:
-    const y = d3
-      .scaleBand()
-      .range([height, 0])
-      .domain(myVars.slice().reverse()) // Reverse the order here so 'A' is the first row label and 'P' is the last
-      .padding(0.01);
-    svg.append("g").call(d3.axisLeft(y));
-
-    // Build color scale
-    const myColor = d3
-      .scaleLinear()
-      .range(["white", "#69b3a2"])
-      .domain([1, 100]);
-
-    // Read the data
-    d3
-      .csv
-      // "https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/heatmap_data.csv"
-      ()
-      .then(function (data) {
-        svg
-          .selectAll()
-          .data(data, function (d) {
-            return d.group + ":" + d.variable;
-          })
-          .join("rect")
-          .attr("x", function (d) {
-            return x(d.group);
-          })
-          .attr("y", function (d) {
-            return y(d.variable);
-          })
-          .attr("width", x.bandwidth())
-          .attr("height", y.bandwidth())
-          .style("fill", function (d) {
-            return myColor(d.value);
-          });
+        // Show tooltip on mouseover
+        setTooltip({
+          display: true,
+          x: event.pageX,
+          y: event.pageY,
+          label: d.label,
+          value: maxValueForWell, // Set the value to display in the tooltip
+        });
+      })
+      .on("mousemove", (event) => {
+        // Update tooltip position
+        setTooltip((prev) => ({ ...prev, x: event.pageX, y: event.pageY }));
+      })
+      .on("mouseout", () => {
+        // Hide tooltip on mouseout
+        setTooltip({ display: false, x: 0, y: 0, label: "", value: "" });
       });
 
-    // Cleanup function
-    return () => {
-      d3.select(ref.current).selectAll("*").remove();
-      // console.log(rowLabels);
-    };
-  }, [myGroups, myVars]);
+    // Draw labels for each well
+    svg
+      .selectAll("text")
+      .data(wellArrays)
+      .enter()
+      .append("text")
+      .attr("x", (d, i) => (i % cols) * cellSize + cellSize / 2)
+      .attr("y", (d, i) => Math.floor(i / cols) * cellSize + cellSize / 2)
+      .attr("dy", ".35em")
+      .attr("text-anchor", "middle")
+      .text((d) => d.label) // Adjust to your well object property for display
+      .attr("fill", "#000")
+      .attr("pointer-events", "none"); // Prevent text from capturing mouse events
+  }, [wellArrays]);
 
-  return <div ref={ref}></div>;
+  return (
+    <>
+      <svg ref={svgRef}></svg>
+      {tooltip.display && (
+        <div
+          className="tooltip"
+          style={{
+            left: tooltip.x + 10, // Offset for better visibility
+            top: tooltip.y - 30, // Offset for better visibility
+          }}
+        >
+          {tooltip.label}
+          <br />
+          {tooltip.value} {/* Display the value assigned to the well */}
+        </div>
+      )}
+    </>
+  );
 };
 
 export default Heatmap;

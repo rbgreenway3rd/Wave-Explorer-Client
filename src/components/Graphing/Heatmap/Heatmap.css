@@ -1,0 +1,9 @@
+.tooltip {
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 5px;
+  border-radius: 3px;
+  pointer-events: none; /* Prevent tooltip from blocking mouse events */
+  z-index: 10; /* Ensure tooltip is above other elements */
+}
