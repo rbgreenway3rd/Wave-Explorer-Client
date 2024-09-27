@@ -21,7 +21,25 @@ export const DataProvider = ({ children }) => {
   const [analysisData, setAnalysisData] = useState([]);
   const [project, setProject] = useState(null);
   const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
+  const [selectedWellArray, setSelectedWellArray] = useState([]);
+
+  // state determining what data is shown in minigraph-grid (rawData or filteredData)
   const [showFiltered, setShowFiltered] = useState(false);
+
+  // functions handling selectedWellArray management
+  const handleSelectWell = (well) => {
+    setSelectedWellArray((prevArray) => [...prevArray, well]);
+  };
+
+  const handleDeselectWell = (wellToRemove) => {
+    setSelectedWellArray((prevArray) =>
+      prevArray.filter((well) => well !== wellToRemove)
+    );
+  };
+
+  const handleClearSelectedWells = () => {
+    setSelectedWellArray([]);
+  };
 
   // Function to extract project title from content
   const extractProjectTitle = (content) => {
@@ -182,15 +200,6 @@ export const DataProvider = ({ children }) => {
     };
   }
 
-  // run resetProject when a new file is uploaded
-  // const resetProject = () => {
-  //   setProject({});
-  //   setExtractedIndicatorTimes([]);
-  //   setAnalysisData(null);
-  //   setShowFiltered(false);
-  // Reset any other states here
-  // };
-
   return (
     <DataContext.Provider
       value={{
@@ -212,7 +221,11 @@ export const DataProvider = ({ children }) => {
         setWellArraysUpdated,
         showFiltered,
         setShowFiltered,
-        // resetProject,
+        selectedWellArray,
+        setSelectedWellArray,
+        handleSelectWell,
+        handleDeselectWell,
+        handleClearSelectedWells,
       }}
     >
       {children} {/* Provide context to children components */}

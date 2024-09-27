@@ -8,13 +8,13 @@ export const MiniGraphOptions = (
   wellArrays,
   yValues
 ) => {
-  const minValue =
-    analysisData.length > 0
-      ? analysisData.reduce((min, val) => (val < min ? val : min), Infinity)
+  const minYValue =
+    yValues.length > 0
+      ? yValues.reduce((min, val) => (val < min ? val : min), Infinity)
       : 0;
-  const maxValue =
-    analysisData.length > 0
-      ? analysisData.reduce((max, val) => (val > max ? val : max), -Infinity)
+  const maxYValue =
+    yValues.length > 0
+      ? yValues.reduce((max, val) => (val > max ? val : max), -Infinity)
       : 100;
   return {
     normalized: true,
@@ -68,10 +68,8 @@ export const MiniGraphOptions = (
         },
       },
       y: {
-        // min: Math.min(...yValues),
-        // max: Math.max(...yValues),
-        min: minValue,
-        max: maxValue,
+        min: minYValue,
+        max: maxYValue,
 
         ticks: {
           display: false,
