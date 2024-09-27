@@ -8,8 +8,9 @@ import { FileUploader } from "./FileHandling/FileUploader.js";
 import { FilteredGraph } from "./Graphing/FilteredData/FilteredGraph.js";
 import { FilteredGraphOptions } from "../config/FilteredGraphOptions.js";
 import { FilterControls } from "./Graphing/FilteredData/FilterControls.js";
+import { MetricsControls } from "./Graphing/Metrics/MetricsControls.js";
 import { Chart, registerables } from "chart.js";
-import Heatmap from "./Graphing/Heatmap/Heatmap.js";
+import Heatmap from "./Graphing/Metrics/Heatmap.js";
 import "chartjs-adapter-date-fns";
 import {
   handleWellArrayClick,
@@ -236,6 +237,7 @@ export const CombinedComponent = () => {
                   rowLabels={rowLabels}
                   analysisData={analysisData}
                 />
+                <MetricsControls />
               </div>
               <header className="combined-component__filters-header">
                 Filtered Waves

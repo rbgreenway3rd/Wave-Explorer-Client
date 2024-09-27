@@ -78,7 +78,7 @@ const Heatmap = ({
         const maxValueForWell = d3.max(filteredData, (d) => d.y) || 0; // Find the max y value for the well.
         return colorScale(maxValueForWell); // Use the color scale to determine the cell's color.
       })
-      .attr("stroke", "#fff") // Set a white border for each cell.
+      .attr("stroke", "#808080") // Set a grey border for each cell.
       .on("mouseover", (event, d) => {
         // Event listener for when the mouse is over a cell.
         const filteredData = d.indicators[0]?.filteredData || [];

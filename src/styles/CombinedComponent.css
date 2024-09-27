@@ -7,7 +7,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr; /* Two columns */
     grid-template-rows: auto auto; /* Two rows for header and content */
-    border-bottom: 0.5em solid gray;
+    border-bottom: 0.5em solid #808080;
     gap: 1em; /* Space between elements */
 }
 
