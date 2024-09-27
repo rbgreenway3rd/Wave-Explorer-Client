@@ -3,24 +3,33 @@ import { DataContext } from "../../FileHandling/DataProvider";
 import { Line } from "react-chartjs-2";
 import { MiniGraphOptions } from "../../../config/MiniGraphOptions";
 import "../../../styles/MiniGraphGrid.css";
-import { debounce } from "lodash";
+import {
+  handleAllSelectorClick,
+  handleRowSelectorClick,
+  handleColumnSelectorClick,
+} from "../../../utilities/Helpers";
 import "chartjs-adapter-date-fns";
 import Button from "@mui/material/Button";
 
 export const MiniGraphGrid = ({
-  selectedWellArray,
   timeData,
   smallCanvasWidth,
   smallCanvasHeight,
   columnLabels,
   rowLabels,
-  onWellClick,
-  onRowSelectorClick,
-  onColumnSelectorClick,
-  onAllSelectorClick,
 }) => {
-  const { project, analysisData, showFiltered, setShowFiltered } =
-    useContext(DataContext);
+  const {
+    project,
+    analysisData,
+    showFiltered,
+    setShowFiltered,
+    selectedWellArray,
+    handleSelectWell,
+    handleDeselectWell,
+    handleClearSelectedWells,
+  } = useContext(DataContext);
+
+  console.log(selectedWellArray);
 
   // Local state for managing which data to show
   const [isFiltered, setIsFiltered] = useState(false); // Default is raw data (false)
@@ -29,30 +38,15 @@ export const MiniGraphGrid = ({
   const experiment = plate[0]?.experiments[0] || {};
   const wellArrays = experiment.wells || [];
 
-  const handleWellClick = useMemo(
-    () => debounce(onWellClick, 200),
-    [onWellClick]
-  );
-  const handleRowSelectorClick = useMemo(
-    () => debounce(onRowSelectorClick, 200),
-    [onRowSelectorClick]
-  );
-  const handleColumnSelectorClick = useMemo(
-    () => debounce(onColumnSelectorClick, 200),
-    [onColumnSelectorClick]
-  );
-  const handleAllSelectorClick = useMemo(
-    () => debounce(onAllSelectorClick, 200),
-    [onAllSelectorClick]
-  );
+  const handleWellClick = (wellId) => {
+    const well = wellArrays.find((well) => well.id === wellId);
+    if (selectedWellArray.includes(well)) {
+      handleDeselectWell(well);
+    } else {
+      handleSelectWell(well);
+    }
+  };
 
-  // const handleToggleDataShown = () => {
-  //   if (showFiltered === false) {
-  //     setShowFiltered(true);
-  //   } else {
-  //     setShowFiltered(false);
-  //   }
-  // };
   const handleToggleDataShown = () => {
     setIsFiltered((prev) => !prev); // Toggle the filter state
     setShowFiltered((prev) => !prev); // Update context state as well
@@ -68,7 +62,7 @@ export const MiniGraphGrid = ({
 
     // Return the options object instead of the yValues
     return MiniGraphOptions(analysisData, timeData, wellArrays, yValues);
-  }, [analysisData, timeData, wellArrays, showFiltered]);
+  }, [analysisData, timeData, wellArrays, showFiltered, isFiltered]);
 
   return (
     <section className="minigraph-and-controls">
@@ -83,7 +77,14 @@ export const MiniGraphGrid = ({
           <button
             id="allButton"
             className="minigraph-and-controls__all-button"
-            onClick={handleAllSelectorClick}
+            onClick={() =>
+              handleAllSelectorClick(
+                wellArrays,
+                selectedWellArray,
+                handleSelectWell,
+                handleClearSelectedWells
+              )
+            }
           >
             all
           </button>
@@ -103,7 +104,15 @@ export const MiniGraphGrid = ({
                 width: smallCanvasWidth,
                 height: "100%",
               }}
-              onClick={() => handleColumnSelectorClick(columnLabel)}
+              onClick={() =>
+                handleColumnSelectorClick(
+                  columnLabel,
+                  wellArrays,
+                  selectedWellArray,
+                  handleSelectWell,
+                  handleDeselectWell
+                )
+              }
             >
               {columnLabel}
             </button>
@@ -120,46 +129,53 @@ export const MiniGraphGrid = ({
               id="rowButton"
               className="minigraph-and-controls__row-button"
               key={rowLabel}
-              onClick={() => handleRowSelectorClick(rowLabel)}
+              onClick={() =>
+                handleRowSelectorClick(
+                  rowLabel,
+                  wellArrays,
+                  selectedWellArray,
+                  handleSelectWell,
+                  handleDeselectWell
+                )
+              }
             >
               {rowLabel}
             </button>
           ))}
         </div>
         <div className="minigraph-and-controls__minigraph-grid">
-          {wellArrays.map((well) => (
-            <Line
-              type="line"
-              id="minigraphCanvas"
-              className="minigraph-and-controls__minigraph-canvas"
-              style={
-                selectedWellArray.some(
-                  (selectedWell) => selectedWell.id === well.id
-                )
-                  ? { border: "solid 2px red" } // styling for selected wells
-                  : {} // styling for un-selected wells
-              }
-              key={well.id}
-              data={{
-                datasets: [
-                  {
-                    data:
-                      // showFiltered === true
-                      isFiltered
+          {wellArrays?.length > 0 &&
+            wellArrays.map((well) => (
+              <Line
+                type="line"
+                id="minigraphCanvas"
+                className="minigraph-and-controls__minigraph-canvas"
+                style={
+                  selectedWellArray?.some(
+                    (selectedWell) => selectedWell.id === well.id
+                  )
+                    ? { border: "solid 2px red" } // styling for selected wells
+                    : {} // styling for un-selected wells
+                }
+                key={well.id}
+                data={{
+                  datasets: [
+                    {
+                      data: isFiltered
                         ? well.indicators[0]?.filteredData
                         : well.indicators[0]?.rawData,
-                    borderColor: "black",
-                    pointBorderWidth: 0,
-                    pointBorderRadius: 0,
-                  },
-                ],
-              }}
-              width={smallCanvasWidth}
-              height={smallCanvasHeight}
-              options={options}
-              onClick={() => handleWellClick(well.id)}
-            />
-          ))}
+                      borderColor: "black",
+                      pointBorderWidth: 0,
+                      pointBorderRadius: 0,
+                    },
+                  ],
+                }}
+                width={smallCanvasWidth}
+                height={smallCanvasHeight}
+                options={options}
+                onClick={() => handleWellClick(well.id)}
+              />
+            ))}
         </div>
       </div>
       <div className="minigraph-and-controls__controls-container">
@@ -172,7 +188,6 @@ export const MiniGraphGrid = ({
               className="minigraph-and-controls__raw-radio"
               value="showRaw"
               name="radio-group-1"
-              // defaultChecked={true}
               checked={!isFiltered}
               onChange={() => handleToggleDataShown()}
             />

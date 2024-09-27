@@ -33,10 +33,10 @@ export const CombinedComponent = () => {
     dispatch,
     showFiltered,
     setShowFiltered,
+    selectedWellArray,
+    setSelectedWellArray,
   } = useContext(DataContext);
   const prevProjectRef = useRef(null); // To store the previous project state
-  const [selectedWellArray, setSelectedWellArray] = useState([]);
-  const [filteredWellArray, setFilteredWellArray] = useState([]);
   const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState([]);
   const [enabledFilters, setEnabledFilters] = useState([]);

@@ -35,16 +35,24 @@ export const handleWellArrayClick = (
   }
 };
 
-// Handle clicking the "select all" button
 export const handleAllSelectorClick = (
   wellArrays,
   selectedWellArray,
-  setSelectedWellArray
+  handleSelectWell,
+  handleClearSelectedWells
 ) => {
   const allSelected = wellArrays.every((well) =>
     selectedWellArray.includes(well)
   );
-  setSelectedWellArray(allSelected ? [] : [...wellArrays]);
+  if (allSelected) {
+    handleClearSelectedWells();
+  } else {
+    wellArrays.forEach((well) => {
+      if (!selectedWellArray.includes(well)) {
+        handleSelectWell(well);
+      }
+    });
+  }
 };
 
 // Handle selecting a row of wells
@@ -52,17 +60,23 @@ export const handleRowSelectorClick = (
   rowLabel,
   wellArrays,
   selectedWellArray,
-  setSelectedWellArray
+  handleSelectWell,
+  handleDeselectWell
 ) => {
   const wellsInRow = wellArrays.filter((well) => well.key.startsWith(rowLabel));
   const allSelected = wellsInRow.every((well) =>
     selectedWellArray.includes(well)
   );
-  setSelectedWellArray(
-    allSelected
-      ? selectedWellArray.filter((well) => !wellsInRow.includes(well))
-      : [...selectedWellArray, ...wellsInRow]
-  );
+
+  if (allSelected) {
+    wellsInRow.forEach((well) => handleDeselectWell(well));
+  } else {
+    wellsInRow.forEach((well) => {
+      if (!selectedWellArray.includes(well)) {
+        handleSelectWell(well);
+      }
+    });
+  }
 };
 
 // Handle selecting a column of wells
@@ -70,40 +84,21 @@ export const handleColumnSelectorClick = (
   colIndex,
   wellArrays,
   selectedWellArray,
-  setSelectedWellArray
+  handleSelectWell,
+  handleDeselectWell
 ) => {
   const wellsInCol = wellArrays.filter((well) => well.column + 1 === colIndex);
   const allSelected = wellsInCol.every((well) =>
     selectedWellArray.includes(well)
   );
-  setSelectedWellArray(
-    allSelected
-      ? selectedWellArray.filter((well) => !wellsInCol.includes(well))
-      : [...selectedWellArray, ...wellsInCol]
-  );
+
+  if (allSelected) {
+    wellsInCol.forEach((well) => handleDeselectWell(well));
+  } else {
+    wellsInCol.forEach((well) => {
+      if (!selectedWellArray.includes(well)) {
+        handleSelectWell(well);
+      }
+    });
+  }
 };
-
-// export const filterSelectedWells = (selectedCells, wellArrays) => {
-//   const newFilteredArray = [];
-//   selectedCells.forEach((selectedCell) => {
-//     wellArrays.forEach((well) => {
-//       if (well.row === selectedCell.row && well.column === selectedCell.col) {
-//         newFilteredArray.push(well);
-//       }
-//     });
-//   });
-//   console.log("new filtered array: ", newFilteredArray);
-//   return newFilteredArray;
-// };
-
-// export const handleRubberbandSelection = (wellArrays, rubberbandCells, filteredWellArray, setFilteredWellArray ) => {
-//   const newFilteredWellArray = [];
-//   const matchedWell = wellArrays.find((well)=> )
-
-// }
-// export const handleRubberbandSelection = (wellArrays, rubberbandCells, filteredWellArray, setFilteredWellArray ) => {
-//   let newFilteredWellArray = [];
-//   for (let i = 0; newFilteredWellArray.length < rubberbandCells.length; i++) {
-
-//   }
-// }
