@@ -2,7 +2,15 @@ import React, { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import "./Heatmap.css"; // Import a CSS file for tooltip styling
 
-const Heatmap = ({ wellArrays }) => {
+const Heatmap = ({
+  wellArrays,
+  columnLabels,
+  rowLabels,
+  largeCanvasWidth,
+  largeCanvasHeight,
+  smallCanvasWidth,
+  smallCanvasHeight,
+}) => {
   const svgRef = useRef();
   const [tooltip, setTooltip] = useState({
     display: false,
@@ -12,12 +20,17 @@ const Heatmap = ({ wellArrays }) => {
     value: "",
   });
 
+  console.log("cl", columnLabels);
+  console.log("rl", rowLabels);
+
   useEffect(() => {
-    const width = 800; // Adjust as needed
-    const height = 600; // Adjust as needed
-    const cols = 24;
-    const rows = 16;
-    const cellSize = Math.min(width / cols, height / rows);
+    const width = largeCanvasWidth; // Adjust as needed
+    const height = largeCanvasHeight; // Adjust as needed
+    const cols = columnLabels.length;
+    const rows = rowLabels.length;
+    const cellWidth = width / cols; // Width of each rectangular cell
+    const cellHeight = height / rows; // Height of each rectangular cell
+    // const cellSize = Math.min(width / cols, height / rows);
 
     // Clear previous SVG
     d3.select(svgRef.current).selectAll("*").remove();
@@ -51,42 +64,38 @@ const Heatmap = ({ wellArrays }) => {
         "red", // 10: Red
       ]);
 
-    // Draw rectangles for each well
+    // Draw rectangles for each well (rectangular cells)
     svg
       .selectAll("rect")
       .data(wellArrays)
       .enter()
       .append("rect")
-      .attr("x", (d, i) => (i % cols) * cellSize)
-      .attr("y", (d, i) => Math.floor(i / cols) * cellSize)
-      .attr("width", cellSize)
-      .attr("height", cellSize)
+      .attr("x", (d, i) => (i % cols) * cellWidth)
+      .attr("y", (d, i) => Math.floor(i / cols) * cellHeight)
+      .attr("width", cellWidth)
+      .attr("height", cellHeight)
       .attr("fill", (d) => {
         const filteredData = d.indicators[0]?.filteredData || [];
         const maxValueForWell = d3.max(filteredData, (d) => d.y) || 0; // Use 0 as a fallback
-        return colorScale(maxValueForWell); // Get the color based on the well's maximum value
+        return colorScale(maxValueForWell);
       })
       .attr("stroke", "#fff")
       .on("mouseover", (event, d) => {
-        // Get the maximum value for the hovered well
         const filteredData = d.indicators[0]?.filteredData || [];
-        const maxValueForWell = d3.max(filteredData, (d) => d.y) || 0; // Use 0 as a fallback
+        const maxValueForWell = d3.max(filteredData, (d) => d.y) || 0;
 
-        // Show tooltip on mouseover
         setTooltip({
           display: true,
           x: event.pageX,
           y: event.pageY,
           label: d.label,
-          value: maxValueForWell, // Set the value to display in the tooltip
+          value: maxValueForWell,
         });
       })
       .on("mousemove", (event) => {
-        // Update tooltip position
         setTooltip((prev) => ({ ...prev, x: event.pageX, y: event.pageY }));
       })
       .on("mouseout", () => {
-        // Hide tooltip on mouseout
         setTooltip({ display: false, x: 0, y: 0, label: "", value: "" });
       });
 
@@ -96,11 +105,11 @@ const Heatmap = ({ wellArrays }) => {
       .data(wellArrays)
       .enter()
       .append("text")
-      .attr("x", (d, i) => (i % cols) * cellSize + cellSize / 2)
-      .attr("y", (d, i) => Math.floor(i / cols) * cellSize + cellSize / 2)
+      .attr("x", (d, i) => (i % cols) * cellWidth + cellWidth / 2)
+      .attr("y", (d, i) => Math.floor(i / cols) * cellHeight + cellHeight / 2)
       .attr("dy", ".35em")
       .attr("text-anchor", "middle")
-      .text((d) => d.label) // Adjust to your well object property for display
+      .text((d) => d.label)
       .attr("fill", "#000")
       .attr("pointer-events", "none"); // Prevent text from capturing mouse events
   }, [wellArrays]);

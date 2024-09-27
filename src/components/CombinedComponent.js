@@ -258,7 +258,6 @@ export const CombinedComponent = () => {
                   applyEnabledFilters={applyEnabledFilters}
                 />
               </div>
-              <DynamicAnnotationChart />
             </section>
           </>
         ) : (
