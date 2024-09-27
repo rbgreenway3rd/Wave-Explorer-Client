@@ -1,6 +1,14 @@
 export const LargeGraphOptions = (analysisData = []) => {
-  const minValue = analysisData.length > 0 ? Math.min(...analysisData) : 0;
-  const maxValue = analysisData.length > 0 ? Math.max(...analysisData) : 100; // Adjust default max value as needed
+  // const minValue = analysisData.length > 0 ? Math.min(...analysisData) : 0;
+  // const maxValue = analysisData.length > 0 ? Math.max(...analysisData) : 100; // Adjust default max value as needed
+  const minValue =
+    analysisData.length > 0
+      ? analysisData.reduce((min, val) => (val < min ? val : min), Infinity)
+      : 0;
+  const maxValue =
+    analysisData.length > 0
+      ? analysisData.reduce((max, val) => (val > max ? val : max), -Infinity)
+      : 100;
 
   return {
     normalized: true,

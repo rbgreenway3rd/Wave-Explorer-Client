@@ -8,6 +8,14 @@ export const MiniGraphOptions = (
   wellArrays,
   yValues
 ) => {
+  const minValue =
+    analysisData.length > 0
+      ? analysisData.reduce((min, val) => (val < min ? val : min), Infinity)
+      : 0;
+  const maxValue =
+    analysisData.length > 0
+      ? analysisData.reduce((max, val) => (val > max ? val : max), -Infinity)
+      : 100;
   return {
     normalized: true,
     maintainAspectRatio: true,
@@ -60,8 +68,11 @@ export const MiniGraphOptions = (
         },
       },
       y: {
-        min: Math.min(...yValues),
-        max: Math.max(...yValues),
+        // min: Math.min(...yValues),
+        // max: Math.max(...yValues),
+        min: minValue,
+        max: maxValue,
+
         ticks: {
           display: false,
         },

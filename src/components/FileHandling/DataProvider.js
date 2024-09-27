@@ -182,6 +182,15 @@ export const DataProvider = ({ children }) => {
     };
   }
 
+  // run resetProject when a new file is uploaded
+  // const resetProject = () => {
+  //   setProject({});
+  //   setExtractedIndicatorTimes([]);
+  //   setAnalysisData(null);
+  //   setShowFiltered(false);
+  // Reset any other states here
+  // };
+
   return (
     <DataContext.Provider
       value={{
@@ -203,8 +212,7 @@ export const DataProvider = ({ children }) => {
         setWellArraysUpdated,
         showFiltered,
         setShowFiltered,
-        // ...state,
-        // dispatch,
+        // resetProject,
       }}
     >
       {children} {/* Provide context to children components */}
