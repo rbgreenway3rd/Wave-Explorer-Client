@@ -9,7 +9,6 @@ import {
   handleColumnSelectorClick,
 } from "../../../utilities/Helpers";
 import "chartjs-adapter-date-fns";
-import Button from "@mui/material/Button";
 
 export const MiniGraphGrid = ({
   timeData,

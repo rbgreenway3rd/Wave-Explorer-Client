@@ -18,37 +18,46 @@ import {
   handleRowSelectorClick,
   handleColumnSelectorClick,
 } from "../utilities/Helpers.js";
-import deepEqual from "fast-deep-equal"; // for 'deep comparison'
-import DynamicAnnotationChart from "./Graphing/FilteredData/DynamicAnnotationChart.js";
+import deepEqual from "fast-deep-equal"; // for deep comparison of project state
 import annotationPlugin from "chartjs-plugin-annotation";
 
+// Register Chart.js components and plugins
 Chart.register(...registerables, annotationPlugin);
 
+// CombinedComponent: Main component that integrates various functionalities
 export const CombinedComponent = () => {
+  // Context to manage shared data across components
   const {
     project,
     setProject,
     extractedIndicatorTimes,
     analysisData,
-    dispatch,
     showFiltered,
     setShowFiltered,
     selectedWellArray,
     setSelectedWellArray,
   } = useContext(DataContext);
-  const prevProjectRef = useRef(null); // To store the previous project state
+
+  // Ref to store the previous project state for comparison
+  const prevProjectRef = useRef(null);
+
+  // State variables for well arrays and filter management
   const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState([]);
   const [enabledFilters, setEnabledFilters] = useState([]);
+
+  // Canvas dimensions for graphs
   const [largeCanvasWidth] = useState(window.innerWidth / 2);
   const [largeCanvasHeight] = useState(window.innerHeight / 2);
   const [smallCanvasWidth] = useState(window.innerWidth / 56);
   const [smallCanvasHeight] = useState(window.innerHeight / 40);
 
+  // Extracting plate and experiment data from the project
   const plate = project?.plate || [];
   const experiment = plate[0]?.experiments[0] || {};
   const wellArrays = experiment.wells || [];
 
+  // Generating labels for columns and rows
   const columnLabels = Array.from(
     { length: plate[0]?.numberOfColumns || 0 },
     (_, i) => i + 1
@@ -74,6 +83,7 @@ export const CombinedComponent = () => {
 
   console.log("enabledFilters: ", enabledFilters);
 
+  // Function to apply enabled filters to well arrays
   const applyEnabledFilters = () => {
     // Step 1: Apply filters to wellArrays and update indicators
     const updatedWellArrays = wellArrays.map((well) => {
@@ -126,6 +136,7 @@ export const CombinedComponent = () => {
     console.log("updated selectedWellArray: ", updatedSelectedWellArray);
   };
 
+  // Effect to track changes in project state
   useEffect(() => {
     if (!deepEqual(prevProjectRef.current, project)) {
       console.log("Project Data:", project);
@@ -133,6 +144,7 @@ export const CombinedComponent = () => {
     }
   }, [project]);
 
+  // Preparing graph data for raw and filtered graphs
   const rawGraphData = {
     labels: extractedIndicatorTimes,
     datasets: selectedWellArray.map((well) => ({
@@ -143,6 +155,7 @@ export const CombinedComponent = () => {
       tension: 0.1,
     })),
   };
+
   const filteredGraphData = {
     labels: extractedIndicatorTimes,
     datasets: selectedWellArray.map((well) => ({
@@ -154,15 +167,19 @@ export const CombinedComponent = () => {
     })),
   };
 
+  // Configuration objects for graph options
   const largeGraphConfig = LargeGraphOptions(analysisData);
   const filteredGraphConfig = FilteredGraphOptions(analysisData);
 
+  // Render the component
   return (
     <div className="combined-component">
+      {/* File uploader to upload project data */}
       <FileUploader setWellArraysUpdated={setWellArraysUpdated} />
       <div className="combined-component__main-container">
         {project ? (
           <>
+            {/* Main graphing section */}
             <section className="combined-component__wave-container">
               <header className="combined-component__minigraph-header">
                 All Waves
@@ -220,6 +237,7 @@ export const CombinedComponent = () => {
               />
             </section>
 
+            {/* Metrics and filtering section */}
             <section className="combined-component__metrics-filter-container">
               <header className="combined-component__metrics-header">
                 Metrics
@@ -246,6 +264,7 @@ export const CombinedComponent = () => {
               <FilteredGraph
                 className="combined-component__filtered-graph"
                 wellArrays={wellArrays}
+                extractedIndicatorTimes={extractedIndicatorTimes}
                 selectedWellArray={selectedWellArray}
                 filteredGraphData={filteredGraphData}
                 options={filteredGraphConfig}
@@ -253,23 +272,24 @@ export const CombinedComponent = () => {
               <div className="combined-component__filter-controls">
                 <FilterControls
                   wellArrays={wellArrays}
+                  extractedIndicatorTimes={extractedIndicatorTimes}
                   selectedFilters={selectedFilters}
                   setSelectedFilters={setSelectedFilters}
                   enabledFilters={enabledFilters}
                   setEnabledFilters={setEnabledFilters}
                   applyEnabledFilters={applyEnabledFilters}
+                  showFiltered={showFiltered}
+                  setShowFiltered={setShowFiltered}
                 />
               </div>
             </section>
           </>
         ) : (
           <div className="combined-component__no-data">
-            No project data available.
+            No project data available. Please upload a file.
           </div>
         )}
       </div>
     </div>
   );
 };
-
-export default CombinedComponent;
