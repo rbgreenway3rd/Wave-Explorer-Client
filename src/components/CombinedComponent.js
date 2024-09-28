@@ -255,6 +255,8 @@ export const CombinedComponent = () => {
                   rowLabels={rowLabels}
                   analysisData={analysisData}
                 />
+              </div>
+              <div className="combined-component__metrics-controls">
                 <MetricsControls />
               </div>
               <header className="combined-component__filters-header">

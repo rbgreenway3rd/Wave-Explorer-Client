@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState, useRef } from "react";
-
+import "./MetricsControls.css";
 export const MetricsControls = () => {
   return (
     <div className="metrics__controls-container">

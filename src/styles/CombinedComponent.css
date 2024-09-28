@@ -8,7 +8,8 @@
     grid-template-columns: 1fr 1fr; /* Two columns */
     grid-template-rows: auto auto; /* Two rows for header and content */
     border-bottom: 0.5em solid #808080;
-    gap: 1em; /* Space between elements */
+    /* gap: 1em;  */
+    /* Space between elements */
 }
 
 .combined-component__minigraph-header {
@@ -44,14 +45,15 @@
 
 .combined-component__metrics-filter-container {
     display: grid;
-    grid-template-columns: 5fr 5fr 1fr; /* Three columns */
+    grid-template-columns: 5fr 1fr 5fr 1fr; /* Four columns */
     grid-template-rows: auto auto; /* Two rows for header and content */
     /* border-bottom: 0.5em solid gray; */
-    gap: 1em; /* Space between elements */
+    /* gap: 1em; */
+     /* Space between elements */
 }
 
 .combined-component__metrics-header {
-    grid-column: 1;
+    grid-column: 1 /span 2;
     grid-row: 1;
     text-align: center;
     padding-right: 0.5em;
@@ -62,21 +64,26 @@
     grid-row: 2;
 }
 
-.combined-component__filters-header {
+.combined-component__metrics-controls {
     grid-column: 2;
+    grid-row: 2;
+}
+
+.combined-component__filters-header {
+    grid-column: 3/ span 2;
     grid-row: 1;
     text-align: center;
 }
 
 .combined-component__filtered-graph {
-    grid-column: 2;
+    grid-column: 3;
     grid-row: 2;
     margin-left: 0.5em;
 }
 
 .combined-component__filter-controls {
-    grid-column: 3;
-    grid-row: 1/span 2;
+    grid-column: 4;
+    grid-row: 1/ span 2;
     display: flex;
   flex-direction: column;
   align-items: center;
