@@ -54,10 +54,10 @@ const Heatmap = ({
         "blue", // Blue
         "#007d5b", // Blue-Green
         "green", // Green
-        "#b8ff2f", // Green-Yellow
+        "#a1ff37", // Green-Yellow
         "yellow", // Yellow
-        "#FFC700", // Gold (yellow + orange)
-        "orange", // Orange
+        "#ffb600", // Gold (yellow + orange)
+        "#ff9000", // Orange
         "#ff6100", // Orange-Red
         "red", // End of the color range (hottest values).
       ]);
