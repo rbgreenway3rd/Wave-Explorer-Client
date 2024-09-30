@@ -54,7 +54,7 @@ const Heatmap = ({
         "blue", // Blue
         "#007d5b", // Blue-Green
         "green", // Green
-        "#a1ff37", // Green-Yellow
+        "#9ce237", // Green-Yellow
         "yellow", // Yellow
         "#ffb600", // Gold (yellow + orange)
         "#ff9000", // Orange
