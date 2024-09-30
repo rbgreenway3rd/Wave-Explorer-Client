@@ -4,6 +4,7 @@ import { DataContext } from "./FileHandling/DataProvider.js";
 import { LargeGraphOptions } from "../config/LargeGraphOptions.js";
 import { LargeGraph } from "./Graphing/LargeGraph/LargeGraph.js";
 import { MiniGraphGrid } from "./Graphing/MiniGraphGrid/MiniGraphGrid.js";
+import { MiniGraphControls } from "./Graphing/MiniGraphGrid/MiniGraphControls.js";
 import { FileUploader } from "./FileHandling/FileUploader.js";
 import { FilteredGraph } from "./Graphing/FilteredData/FilteredGraph.js";
 import { FilteredGraphOptions } from "../config/FilteredGraphOptions.js";
@@ -227,6 +228,7 @@ export const CombinedComponent = () => {
                   )
                 }
               />
+              {/* <MiniGraphControls /> */}
               <header className="combined-component__large-graph-header">
                 Raw Waves
               </header>
