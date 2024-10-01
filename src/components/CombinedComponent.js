@@ -314,8 +314,6 @@ export const CombinedComponent = () => {
                   analysisData={analysisData}
                   extractedIndicatorTimes={extractedIndicatorTimes}
                   largeGraphConfig={largeGraphConfig}
-                  // largeCanvasHeight={largeCanvasHeight}
-                  // largeCanvasWidth={largeCanvasWidth}
                 />
               </div>
               <div className="combined-component__large-graph-controls">

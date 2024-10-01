@@ -124,8 +124,8 @@ const Heatmap = ({
   ]);
 
   return (
-    <>
-      <svg ref={svgRef}></svg>{" "}
+    <div className="heatmap-container">
+      <svg ref={svgRef} className="heatmap-svg"></svg>{" "}
       {/* The SVG element where the heatmap will be rendered. */}
       {tooltip.display && (
         <div
@@ -141,7 +141,7 @@ const Heatmap = ({
           {/* Show the max y value of the well in the tooltip. */}
         </div>
       )}
-    </>
+    </div>
   );
 };
 

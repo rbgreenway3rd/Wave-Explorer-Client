@@ -175,3 +175,36 @@ export class Smoothing_Filter {
     return yFiltered; // Return the smoothed array
   }
 }
+
+// Control Subtraction Filter
+// // get control_well_list and apply_well_list from your filter dialog
+// control_well_list = [(r,c),(r,c),...]
+// apply_well_list = [(r,c),(r,c),...]
+// // calculate average data for control wells
+// average_control_curve = []
+// for (int i = 0; i < num_points; i++) // iterate through all the points, i.e. each curve has num_points number of values
+// {
+// 	control_avg = 0.0
+// 	for (int j = 0; j < control_well_list.length; j++) // iterate through the control wells
+// 	{
+// 		// convert (r,c) to array index
+// 		int ndx = control_well_list[j].r * number_of_columns  + control_well_list[j].c
+
+// 		control_avg += wells[ndx].y[i]  // assuming that "wells" is part of your context
+// 	}
+// 	control_avg = control_avg / control_well_list.length
+
+// 	average_control_curve.append(control_avg)
+// }
+// // subtract average_control_curve from each apply wells
+// for (int i = 0; i < apply_well_list.length; i++)
+// {
+// 	// convert (r,c) to array index
+// 	int ndx = control_well_list[j].r * number_of_columns  + control_well_list[j].c
+
+// 	for (int j=0; j < well[i].y.length ; j++)
+// 	{
+// 		well[i] = well[i] - average_control_curve[i]
+// 	}
+
+// }

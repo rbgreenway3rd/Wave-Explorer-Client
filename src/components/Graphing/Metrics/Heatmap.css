@@ -1,3 +1,9 @@
+.heatmap-svg {
+  border: solid 0.5em grey;
+  height: auto;
+  justify-content:center
+}
+
 .tooltip {
   position: absolute;
   background-color: rgba(0, 0, 0, 0.8);

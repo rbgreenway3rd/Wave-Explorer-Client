@@ -67,7 +67,8 @@
 }
 
 .combined-component__metrics {
-    border: solid 0.5em black;
+    
+    /* border: solid 0.5em black; */
     grid-column: 1;
     grid-row: 2;
 }
@@ -75,6 +76,7 @@
 .combined-component__metrics-controls {
     grid-column: 2;
     grid-row: 2;
+    padding-right: 0.5em;
 }
 
 .combined-component__filters-header {
@@ -103,3 +105,4 @@
   height: 100%; /* Ensure full height for vertical centering */
 
 }
+
