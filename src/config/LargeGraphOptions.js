@@ -1,13 +1,36 @@
-export const LargeGraphOptions = (analysisData = []) => {
-  // const minValue = analysisData.length > 0 ? Math.min(...analysisData) : 0;
-  // const maxValue = analysisData.length > 0 ? Math.max(...analysisData) : 100; // Adjust default max value as needed
-  const minValue =
+import { Chart } from "chart.js";
+import zoomPlugin from "chartjs-plugin-zoom";
+Chart.register(zoomPlugin);
+
+export const LargeGraphOptions = (
+  analysisData = [],
+  extractedIndicatorTimes = [],
+  zoomState,
+  zoomMode,
+  panState,
+  panMode
+) => {
+  const minYValue =
     analysisData.length > 0
       ? analysisData.reduce((min, val) => (val < min ? val : min), Infinity)
       : 0;
-  const maxValue =
+  const maxYValue =
     analysisData.length > 0
       ? analysisData.reduce((max, val) => (val > max ? val : max), -Infinity)
+      : 100;
+  const minXValue =
+    extractedIndicatorTimes.length > 0
+      ? extractedIndicatorTimes.reduce(
+          (min, val) => (val < min ? val : min),
+          Infinity
+        )
+      : 0;
+  const maxXValue =
+    extractedIndicatorTimes.length > 0
+      ? extractedIndicatorTimes.reduce(
+          (max, val) => (val > max ? val : max),
+          -Infinity
+        )
       : 100;
 
   return {
@@ -15,9 +38,8 @@ export const LargeGraphOptions = (analysisData = []) => {
     animation: {
       duration: 0,
     },
-    // animation: false,
     plugins: {
-      legend: false, // displays dataset label at top of graph
+      legend: false,
       decimation: {
         enabled: true,
         algorithm: "lttb",
@@ -25,32 +47,64 @@ export const LargeGraphOptions = (analysisData = []) => {
         threshold: 100,
       },
       tooltip: {
-        enabled: false, // set to FALSE if using an external function for tooltip
+        enabled: false,
         mode: "nearest",
         intersect: false,
+      },
+      zoom: {
+        pan: {
+          enabled: panState,
+          mode: panMode,
+          threshold: 50,
+        },
+        zoom: {
+          wheel: {
+            enabled: zoomState,
+          },
+          pinch: {
+            enabled: false,
+          },
+          drag: {
+            enabled: false,
+            modifierKey: "shift",
+          },
+          mode: zoomMode,
+          rangeMin: {
+            x: minXValue,
+            y: minYValue,
+          },
+          rangeMax: {
+            x: maxXValue,
+            y: maxYValue,
+          },
+        },
       },
     },
     maintainAspectRatio: false,
     responsive: true,
+
     scales: {
       x: {
-        display: false,
+        display: false, // Completely hides the x axis
         ticks: {
-          display: false,
+          display: false, // Hides x-axis labels
         },
         grid: {
-          display: false,
+          display: false, // Hides x-axis grid lines
         },
+        min: minXValue,
+        max: maxXValue,
       },
       y: {
+        display: false, // Completely hides the y axis
         ticks: {
-          display: false,
+          display: false, // Hides y-axis labels
         },
         grid: {
-          display: false,
+          display: false, // Hides y-axis grid lines
         },
-        min: minValue,
-        max: maxValue,
+        min: minYValue,
+        max: maxYValue,
       },
     },
     elements: {
