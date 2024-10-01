@@ -1,10 +1,12 @@
-import React, { useContext, useEffect, useState, useRef } from "react";
+import React, { useContext, useEffect, useState, useRef, useMemo } from "react";
 import "../styles/CombinedComponent.css";
 import { DataContext } from "./FileHandling/DataProvider.js";
-// import { LargeGraphOptions } from "../config/LargeGraphOptions.js";
+import { LargeGraphOptions } from "../config/LargeGraphOptions.js";
 import { LargeGraph } from "./Graphing/LargeGraph/LargeGraph.js";
+import { LargeGraphControls } from "./Graphing/LargeGraph/LargeGraphControls.js";
 import { MiniGraphGrid } from "./Graphing/MiniGraphGrid/MiniGraphGrid.js";
 import { MiniGraphControls } from "./Graphing/MiniGraphGrid/MiniGraphControls.js";
+import { MiniGraphOptions } from "../config/MiniGraphOptions.js";
 import { FileUploader } from "./FileHandling/FileUploader.js";
 import { FilteredGraph } from "./Graphing/FilteredData/FilteredGraph.js";
 import { FilteredGraphOptions } from "../config/FilteredGraphOptions.js";
@@ -43,10 +45,13 @@ export const CombinedComponent = () => {
   // Ref to store the previous project state for comparison
   const prevProjectRef = useRef(null);
 
-  // State variables for well arrays and filter management
-  const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
-  const [selectedFilters, setSelectedFilters] = useState([]);
-  const [enabledFilters, setEnabledFilters] = useState([]);
+  // Zoom and Pan state for LargeGraph
+  const [zoomState, setZoomState] = useState(true);
+  const [zoomMode, setZoomMode] = useState("xy");
+  const [panState, setPanState] = useState(true);
+  const [panMode, setPanMode] = useState("xy");
+  // Ref to access LargeGraph's chart instance
+  const largeGraphRef = useRef(null);
 
   // Canvas dimensions for graphs
   const [largeCanvasWidth] = useState(window.innerWidth / 2);
@@ -54,7 +59,15 @@ export const CombinedComponent = () => {
   const [smallCanvasWidth] = useState(window.innerWidth / 56);
   const [smallCanvasHeight] = useState(window.innerHeight / 40);
 
-  // Extracting plate and experiment data from the project
+  // State for MiniGraph management
+  const [isFiltered, setIsFiltered] = useState(false); // Default is raw data (false)
+
+  // State variables for well arrays and filter management
+  const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
+  const [selectedFilters, setSelectedFilters] = useState([]);
+  const [enabledFilters, setEnabledFilters] = useState([]);
+
+  // Extracted plate and experiment data from the project
   const plate = project?.plate || [];
   const experiment = plate[0]?.experiments[0] || {};
   const wellArrays = experiment.wells || [];
@@ -83,7 +96,30 @@ export const CombinedComponent = () => {
     "P",
   ];
 
-  console.log("enabledFilters: ", enabledFilters);
+  // Functions to handle zoom state changes
+  const toggleZoomState = (currentZoomState) => {
+    setZoomState(!currentZoomState);
+  };
+
+  const changeZoomMode = (mode) => {
+    setZoomMode(mode);
+  };
+
+  // Functions to handle pan state changes
+  const togglePanState = (currentPanState) => {
+    setPanState(!currentPanState);
+  };
+
+  const changePanMode = (mode) => {
+    setPanMode(mode);
+  };
+
+  // Reset zoom handler
+  const resetZoom = () => {
+    if (largeGraphRef.current) {
+      largeGraphRef.current.resetZoom(); // Call resetZoom on the chart instance
+    }
+  };
 
   // Function to apply enabled filters to well arrays
   const applyEnabledFilters = () => {
@@ -170,14 +206,40 @@ export const CombinedComponent = () => {
   };
 
   // Configuration objects for graph options
-  // const largeGraphConfig = LargeGraphOptions(
-  //   analysisData,
-  //   extractedIndicatorTimes
-  // );
+  const largeGraphConfig = LargeGraphOptions(
+    analysisData,
+    extractedIndicatorTimes,
+    zoomState,
+    zoomMode,
+    panState,
+    panMode
+  );
   const filteredGraphConfig = FilteredGraphOptions(
     analysisData,
     extractedIndicatorTimes
   );
+
+  const handleToggleDataShown = () => {
+    setIsFiltered((prev) => !prev); // Toggle the filter state
+    setShowFiltered((prev) => !prev); // Update context state as well
+  };
+
+  const minigraphOptions = useMemo(() => {
+    // Collect yValues based on whether showFiltered is true or not
+    const yValues = wellArrays.flatMap((well) =>
+      showFiltered
+        ? well.indicators[0]?.filteredData?.map((point) => point.y) || []
+        : well.indicators[0]?.rawData?.map((point) => point.y) || []
+    );
+
+    // Return the options object instead of the yValues
+    return MiniGraphOptions(
+      analysisData,
+      extractedIndicatorTimes,
+      wellArrays,
+      yValues
+    );
+  }, [analysisData, extractedIndicatorTimes, wellArrays, showFiltered]);
 
   // Render the component
   return (
@@ -192,60 +254,79 @@ export const CombinedComponent = () => {
               <header className="combined-component__minigraph-header">
                 All Waves
               </header>
-              <MiniGraphGrid
-                className="combined-component__minigraph"
-                selectedWellArray={selectedWellArray}
-                timeData={extractedIndicatorTimes}
-                smallCanvasWidth={smallCanvasWidth}
-                smallCanvasHeight={smallCanvasHeight}
-                largeCanvasWidth={largeCanvasWidth}
-                largeCanvasHeight={largeCanvasHeight}
-                columnLabels={columnLabels}
-                rowLabels={rowLabels}
-                analysisData={analysisData}
-                onWellClick={(index) =>
-                  handleWellArrayClick(
-                    index,
-                    wellArrays,
-                    selectedWellArray,
-                    setSelectedWellArray
-                  )
-                }
-                onRowSelectorClick={(rowLabel) =>
-                  handleRowSelectorClick(
-                    rowLabel,
-                    wellArrays,
-                    selectedWellArray,
-                    setSelectedWellArray
-                  )
-                }
-                onColumnSelectorClick={(colIndex) =>
-                  handleColumnSelectorClick(
-                    colIndex,
-                    wellArrays,
-                    selectedWellArray,
-                    setSelectedWellArray
-                  )
-                }
-                onAllSelectorClick={() =>
-                  handleAllSelectorClick(
-                    wellArrays,
-                    selectedWellArray,
-                    setSelectedWellArray
-                  )
-                }
-              />
-              {/* <MiniGraphControls /> */}
+              <div className="combined-component__minigraph">
+                <MiniGraphGrid
+                  minigraphOptions={minigraphOptions}
+                  smallCanvasWidth={smallCanvasWidth}
+                  smallCanvasHeight={smallCanvasHeight}
+                  columnLabels={columnLabels}
+                  rowLabels={rowLabels}
+                  onWellClick={(index) =>
+                    handleWellArrayClick(
+                      index,
+                      wellArrays,
+                      selectedWellArray,
+                      setSelectedWellArray
+                    )
+                  }
+                  onRowSelectorClick={(rowLabel) =>
+                    handleRowSelectorClick(
+                      rowLabel,
+                      wellArrays,
+                      selectedWellArray,
+                      setSelectedWellArray
+                    )
+                  }
+                  onColumnSelectorClick={(colIndex) =>
+                    handleColumnSelectorClick(
+                      colIndex,
+                      wellArrays,
+                      selectedWellArray,
+                      setSelectedWellArray
+                    )
+                  }
+                  onAllSelectorClick={() =>
+                    handleAllSelectorClick(
+                      wellArrays,
+                      selectedWellArray,
+                      setSelectedWellArray
+                    )
+                  }
+                />
+              </div>
+              <div className="combined-component__minigraph-controls">
+                <MiniGraphControls
+                  handleToggleDataShown={handleToggleDataShown}
+                  isFiltered={isFiltered}
+                />
+              </div>
               <header className="combined-component__large-graph-header">
                 Raw Waves
               </header>
-              <LargeGraph
-                className="combined-component__large-graph"
-                rawGraphData={rawGraphData}
-                analysisData={analysisData}
-                extractedIndicatorTimes={extractedIndicatorTimes}
-                // options={largeGraphConfig}
-              />
+              <div className="combined-component__large-graph">
+                <LargeGraph
+                  ref={largeGraphRef}
+                  zoomState={zoomState}
+                  zoomMode={zoomMode}
+                  panState={panState}
+                  panMode={panMode}
+                  rawGraphData={rawGraphData}
+                  analysisData={analysisData}
+                  extractedIndicatorTimes={extractedIndicatorTimes}
+                  largeGraphConfig={largeGraphConfig}
+                />
+              </div>
+              <div className="combined-component__large-graph-controls">
+                <LargeGraphControls
+                  resetZoom={resetZoom}
+                  zoomState={zoomState}
+                  toggleZoomState={toggleZoomState}
+                  changeZoomMode={changeZoomMode}
+                  panState={panState}
+                  togglePanState={togglePanState}
+                  changePanMode={changePanMode}
+                />
+              </div>
             </section>
 
             {/* Metrics and filtering section */}

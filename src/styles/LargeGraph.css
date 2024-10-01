@@ -1,10 +1,18 @@
 .large-graph{
     margin-bottom: 0.5em;
-    display: flex;
+    display: grid;
+    grid-template-columns: 5fr 1fr;
+    grid-template-rows: 1fr;
 }
 
 .large-graph-canvas{
     /* position: absolute;
     height: 100%; */
+    grid-column: 1;
+    
     border: solid 0.5em black;
+}
+
+.large-graph-controls {
+    grid-column: 2;
 }

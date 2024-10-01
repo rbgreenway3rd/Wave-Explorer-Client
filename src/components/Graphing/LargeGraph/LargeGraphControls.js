@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { Chart } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
 

@@ -1,6 +1,7 @@
 import React, { memo, useMemo, useContext, useState } from "react";
 import { DataContext } from "../../FileHandling/DataProvider";
 import { Line } from "react-chartjs-2";
+import { MiniGraphControls } from "./MiniGraphControls";
 import { MiniGraphOptions } from "../../../config/MiniGraphOptions";
 import "../../../styles/MiniGraphGrid.css";
 import {
@@ -11,7 +12,7 @@ import {
 import "chartjs-adapter-date-fns";
 
 export const MiniGraphGrid = ({
-  timeData,
+  minigraphOptions,
   smallCanvasWidth,
   smallCanvasHeight,
   columnLabels,
@@ -19,9 +20,7 @@ export const MiniGraphGrid = ({
 }) => {
   const {
     project,
-    analysisData,
     showFiltered,
-    setShowFiltered,
     selectedWellArray,
     handleSelectWell,
     handleDeselectWell,
@@ -46,22 +45,22 @@ export const MiniGraphGrid = ({
     }
   };
 
-  const handleToggleDataShown = () => {
-    setIsFiltered((prev) => !prev); // Toggle the filter state
-    setShowFiltered((prev) => !prev); // Update context state as well
-  };
+  // const handleToggleDataShown = () => {
+  //   setIsFiltered((prev) => !prev); // Toggle the filter state
+  //   setShowFiltered((prev) => !prev); // Update context state as well
+  // };
 
-  const options = useMemo(() => {
-    // Collect yValues based on whether showFiltered is true or not
-    const yValues = wellArrays.flatMap((well) =>
-      isFiltered
-        ? well.indicators[0]?.filteredData?.map((point) => point.y) || []
-        : well.indicators[0]?.rawData?.map((point) => point.y) || []
-    );
+  // const options = useMemo(() => {
+  //   // Collect yValues based on whether showFiltered is true or not
+  //   const yValues = wellArrays.flatMap((well) =>
+  //     showFiltered
+  //       ? well.indicators[0]?.filteredData?.map((point) => point.y) || []
+  //       : well.indicators[0]?.rawData?.map((point) => point.y) || []
+  //   );
 
-    // Return the options object instead of the yValues
-    return MiniGraphOptions(analysisData, timeData, wellArrays, yValues);
-  }, [analysisData, timeData, wellArrays, showFiltered, isFiltered]);
+  //   // Return the options object instead of the yValues
+  //   return MiniGraphOptions(analysisData, timeData, wellArrays, yValues);
+  // }, [analysisData, timeData, wellArrays, showFiltered]);
 
   return (
     <section className="minigraph-and-controls">
@@ -160,7 +159,7 @@ export const MiniGraphGrid = ({
                 data={{
                   datasets: [
                     {
-                      data: isFiltered
+                      data: showFiltered
                         ? well.indicators[0]?.filteredData
                         : well.indicators[0]?.rawData,
                       borderColor: "black",
@@ -171,55 +170,62 @@ export const MiniGraphGrid = ({
                 }}
                 width={smallCanvasWidth}
                 height={smallCanvasHeight}
-                options={options}
+                options={minigraphOptions}
                 onClick={() => handleWellClick(well.id)}
               />
             ))}
         </div>
       </div>
-      <div className="minigraph-and-controls__controls-container">
-        <div className="minigraph-and-controls__show-raw-or-filtered">
-          Show
-          <div className="minigraph-and-controls__show-raw">
-            <input
-              type="radio"
-              id="show-raw"
-              className="minigraph-and-controls__raw-radio"
-              value="showRaw"
-              name="radio-group-1"
-              checked={!isFiltered}
-              onChange={() => handleToggleDataShown()}
-            />
-            <label htmlFor="show-raw">Raw</label>
-          </div>
-          <div className="minigraph-and-controls__show-filtered">
-            <input
-              type="radio"
-              id="show-filtered"
-              className="minigraph-and-controls__filtered-radio"
-              value="showFiltered"
-              name="radio-group-1"
-              checked={isFiltered}
-              onChange={() => handleToggleDataShown()}
-            />
-            <label htmlFor="show-filtered">Filtered</label>
-          </div>
-        </div>
-        <div className="minigraph-and-controls__visibility">
-          Visibility
-          <div className="minigraph-and-controls__visibility-selector1">
-            <input
-              type="checkbox"
-              id="visibility-selector"
-              className="minigraph-and-controls__visibility-selector"
-              value="visibility-selector1"
-            />
-            <label htmlFor="visibility-selector">Green</label>
-          </div>
-        </div>
-      </div>
+      {/* <MiniGraphControls
+        handleToggleDataShown={handleToggleDataShown}
+        isFiltered={isFiltered}
+      /> */}
     </section>
   );
 };
 
 export default memo(MiniGraphGrid);
+
+{
+  /* <div className="minigraph-and-controls__controls-container">
+          <div className="minigraph-and-controls__show-raw-or-filtered">
+            Show
+            <div className="minigraph-and-controls__show-raw">
+              <input
+                type="radio"
+                id="show-raw"
+                className="minigraph-and-controls__raw-radio"
+                value="showRaw"
+                name="radio-group-1"
+                checked={!isFiltered}
+                onChange={() => handleToggleDataShown()}
+              />
+              <label htmlFor="show-raw">Raw</label>
+            </div>
+            <div className="minigraph-and-controls__show-filtered">
+              <input
+                type="radio"
+                id="show-filtered"
+                className="minigraph-and-controls__filtered-radio"
+                value="showFiltered"
+                name="radio-group-1"
+                checked={isFiltered}
+                onChange={() => handleToggleDataShown()}
+              />
+              <label htmlFor="show-filtered">Filtered</label>
+            </div>
+          </div>
+          <div className="minigraph-and-controls__visibility">
+            Visibility
+            <div className="minigraph-and-controls__visibility-selector1">
+              <input
+                type="checkbox"
+                id="visibility-selector"
+                className="minigraph-and-controls__visibility-selector"
+                value="visibility-selector1"
+              />
+              <label htmlFor="visibility-selector">Green</label>
+            </div>
+          </div>
+        </div> */
+}

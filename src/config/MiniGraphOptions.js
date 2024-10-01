@@ -4,7 +4,7 @@ Chart.register(...registerables);
 
 export const MiniGraphOptions = (
   analysisData,
-  timeData,
+  extractedIndicatorTimes,
   wellArrays,
   yValues
 ) => {
@@ -58,8 +58,8 @@ export const MiniGraphOptions = (
     scales: {
       x: {
         type: "time",
-        min: Math.min(...timeData),
-        max: Math.max(...timeData),
+        min: Math.min(...extractedIndicatorTimes),
+        max: Math.max(...extractedIndicatorTimes),
         ticks: {
           display: false,
         },

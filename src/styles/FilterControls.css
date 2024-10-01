@@ -4,11 +4,13 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 90%; 
+  /* width: 90%;  */
   margin-top: 0; /* Center horizontally */
   margin-bottom: 0; /* Center horizontally */
-  margin-left: 0.5em; /* Center horizontally */
-  margin-right: 0.5em; /* Center horizontally */
+  /* margin-left: 0.5em;  */
+  /* Center horizontally */
+  /* margin-right: 0.5em;  */
+  /* Center horizontally */
   height: 100%; /* Ensure full height for vertical centering */
 }
 
@@ -24,7 +26,7 @@
   width: 100%;
   /* margin-top: 3em; */
   border: 1px solid #101010;
-  border-radius: 5px;
+  
 
 }
 
