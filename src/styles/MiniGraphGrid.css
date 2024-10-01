@@ -82,7 +82,7 @@
 }
 
 .minigraph-and-controls__minigraph-canvas {
-    padding: 1px;
+    /* padding: 1px; */
     background: rgb(220, 220, 220);
 }
 

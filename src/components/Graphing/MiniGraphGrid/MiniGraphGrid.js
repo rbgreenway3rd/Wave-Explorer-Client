@@ -13,6 +13,8 @@ import "chartjs-adapter-date-fns";
 
 export const MiniGraphGrid = ({
   minigraphOptions,
+  largeCanvasWidth,
+  largeCanvasHeight,
   smallCanvasWidth,
   smallCanvasHeight,
   columnLabels,
@@ -63,124 +65,139 @@ export const MiniGraphGrid = ({
   // }, [analysisData, timeData, wellArrays, showFiltered]);
 
   return (
-    <section className="minigraph-and-controls">
-      <div className="minigraph-and-controls__minigraph-container">
-        <div
-          className="minigraph-and-controls__all-selector"
+    // <section
+    //   className="minigraph-and-controls"
+    //   style={{ width: largeCanvasWidth, height: largeCanvasHeight }}
+    // >
+    <div
+      className="minigraph-and-controls__minigraph-container"
+      style={{ width: largeCanvasWidth, height: largeCanvasHeight }}
+    >
+      <div
+        className="minigraph-and-controls__all-selector"
+        style={{
+          width: smallCanvasWidth,
+          height: smallCanvasHeight,
+        }}
+      >
+        <button
+          id="allButton"
+          className="minigraph-and-controls__all-button"
           style={{
             width: smallCanvasWidth,
             height: smallCanvasHeight,
           }}
+          onClick={() =>
+            handleAllSelectorClick(
+              wellArrays,
+              selectedWellArray,
+              handleSelectWell,
+              handleClearSelectedWells
+            )
+          }
         >
+          all
+        </button>
+      </div>
+      <div
+        className="minigraph-and-controls__column-selectors"
+        style={{
+          height: smallCanvasHeight,
+        }}
+      >
+        {columnLabels.map((columnLabel) => (
           <button
-            id="allButton"
-            className="minigraph-and-controls__all-button"
+            id="columnButton"
+            className="minigraph-and-controls__column-button"
+            key={columnLabel}
+            style={{
+              width: "100%",
+              height: "100%",
+            }}
             onClick={() =>
-              handleAllSelectorClick(
+              handleColumnSelectorClick(
+                columnLabel,
                 wellArrays,
                 selectedWellArray,
                 handleSelectWell,
-                handleClearSelectedWells
+                handleDeselectWell
               )
             }
           >
-            all
+            {columnLabel}
           </button>
-        </div>
-        <div
-          className="minigraph-and-controls__column-selectors"
-          style={{
-            height: smallCanvasHeight,
-          }}
-        >
-          {columnLabels.map((columnLabel) => (
-            <button
-              id="columnButton"
-              className="minigraph-and-controls__column-button"
-              key={columnLabel}
-              style={{
-                width: smallCanvasWidth,
-                height: "100%",
-              }}
-              onClick={() =>
-                handleColumnSelectorClick(
-                  columnLabel,
-                  wellArrays,
-                  selectedWellArray,
-                  handleSelectWell,
-                  handleDeselectWell
-                )
-              }
-            >
-              {columnLabel}
-            </button>
-          ))}
-        </div>
-        <div
-          className="minigraph-and-controls__row-selectors"
-          style={{
-            width: smallCanvasWidth / 2,
-          }}
-        >
-          {rowLabels.map((rowLabel) => (
-            <button
-              id="rowButton"
-              className="minigraph-and-controls__row-button"
-              key={rowLabel}
-              onClick={() =>
-                handleRowSelectorClick(
-                  rowLabel,
-                  wellArrays,
-                  selectedWellArray,
-                  handleSelectWell,
-                  handleDeselectWell
-                )
-              }
-            >
-              {rowLabel}
-            </button>
-          ))}
-        </div>
-        <div className="minigraph-and-controls__minigraph-grid">
-          {wellArrays?.length > 0 &&
-            wellArrays.map((well) => (
-              <Line
-                type="line"
-                id="minigraphCanvas"
-                className="minigraph-and-controls__minigraph-canvas"
-                style={
-                  selectedWellArray?.some(
-                    (selectedWell) => selectedWell.id === well.id
-                  )
-                    ? { border: "solid 2px red" } // styling for selected wells
-                    : {} // styling for un-selected wells
-                }
-                key={well.id}
-                data={{
-                  datasets: [
-                    {
-                      data: showFiltered
-                        ? well.indicators[0]?.filteredData
-                        : well.indicators[0]?.rawData,
-                      borderColor: "black",
-                      pointBorderWidth: 0,
-                      pointBorderRadius: 0,
-                    },
-                  ],
-                }}
-                width={smallCanvasWidth}
-                height={smallCanvasHeight}
-                options={minigraphOptions}
-                onClick={() => handleWellClick(well.id)}
-              />
-            ))}
-        </div>
+        ))}
       </div>
-      {/* <MiniGraphControls
-        handleToggleDataShown={handleToggleDataShown}
-        isFiltered={isFiltered}
-      /> */}
-    </section>
+      <div
+        className="minigraph-and-controls__row-selectors"
+        // style={{
+        //   width: smallCanvasWidth / 2,
+        // }}
+        style={{
+          width: "100%",
+          height: "100%",
+        }}
+      >
+        {rowLabels.map((rowLabel) => (
+          <button
+            id="rowButton"
+            className="minigraph-and-controls__row-button"
+            key={rowLabel}
+            style={{
+              width: "100%",
+              height: "100%",
+            }}
+            onClick={() =>
+              handleRowSelectorClick(
+                rowLabel,
+                wellArrays,
+                selectedWellArray,
+                handleSelectWell,
+                handleDeselectWell
+              )
+            }
+          >
+            {rowLabel}
+          </button>
+        ))}
+      </div>
+      <div className="minigraph-and-controls__minigraph-grid">
+        {wellArrays?.length > 0 &&
+          wellArrays.map((well) => (
+            <Line
+              type="line"
+              id="minigraphCanvas"
+              className="minigraph-and-controls__minigraph-canvas"
+              style={
+                selectedWellArray?.some(
+                  (selectedWell) => selectedWell.id === well.id
+                )
+                  ? { border: "solid 2px red" } // styling for selected wells
+                  : {} // styling for un-selected wells
+              }
+              key={well.id}
+              data={{
+                datasets: [
+                  {
+                    data: showFiltered
+                      ? well.indicators[0]?.filteredData
+                      : well.indicators[0]?.rawData,
+                    borderColor: "black",
+                    pointBorderWidth: 0,
+                    pointBorderRadius: 0,
+                  },
+                ],
+              }}
+              width={smallCanvasWidth}
+              height={smallCanvasHeight}
+              options={minigraphOptions}
+              onClick={() => handleWellClick(well.id)}
+            />
+          ))}
+      </div>
+    </div>
+
+    // </section>
   );
 };
 

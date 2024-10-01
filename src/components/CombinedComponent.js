@@ -54,10 +54,12 @@ export const CombinedComponent = () => {
   const largeGraphRef = useRef(null);
 
   // Canvas dimensions for graphs
-  const [largeCanvasWidth] = useState(window.innerWidth / 2);
-  const [largeCanvasHeight] = useState(window.innerHeight / 2);
-  const [smallCanvasWidth] = useState(window.innerWidth / 56);
-  const [smallCanvasHeight] = useState(window.innerHeight / 40);
+  const [largeCanvasWidth] = useState(window.innerWidth / 2.2);
+  const [largeCanvasHeight] = useState(window.innerHeight / 2.2);
+  // const [smallCanvasWidth] = useState(window.innerWidth / 56);
+  const [smallCanvasWidth] = useState(window.innerWidth / 61.6); // increased by 1.1
+  // const [smallCanvasHeight] = useState(window.innerHeight / 40);
+  const [smallCanvasHeight] = useState(window.innerHeight / 44); // increased by 1.1
 
   // State for MiniGraph management
   const [isFiltered, setIsFiltered] = useState(false); // Default is raw data (false)
@@ -254,9 +256,14 @@ export const CombinedComponent = () => {
               <header className="combined-component__minigraph-header">
                 All Waves
               </header>
-              <div className="combined-component__minigraph">
+              <div
+                className="combined-component__minigraph"
+                style={{ width: largeCanvasWidth, height: largeCanvasHeight }}
+              >
                 <MiniGraphGrid
                   minigraphOptions={minigraphOptions}
+                  largeCanvasWidth={largeCanvasWidth}
+                  largeCanvasHeight={largeCanvasHeight}
                   smallCanvasWidth={smallCanvasWidth}
                   smallCanvasHeight={smallCanvasHeight}
                   columnLabels={columnLabels}
@@ -334,20 +341,21 @@ export const CombinedComponent = () => {
               <header className="combined-component__metrics-header">
                 Metrics
               </header>
-              <div className="combined-component__metrics">
-                <Heatmap
-                  wellArrays={wellArrays}
-                  selectedWellArray={selectedWellArray}
-                  timeData={extractedIndicatorTimes}
-                  smallCanvasWidth={smallCanvasWidth}
-                  smallCanvasHeight={smallCanvasHeight}
-                  largeCanvasWidth={largeCanvasWidth}
-                  largeCanvasHeight={largeCanvasHeight}
-                  columnLabels={columnLabels}
-                  rowLabels={rowLabels}
-                  analysisData={analysisData}
-                />
-              </div>
+              {/* <div className="combined-component__metrics"> */}
+              <Heatmap
+                className="combined-component__metrics"
+                wellArrays={wellArrays}
+                selectedWellArray={selectedWellArray}
+                timeData={extractedIndicatorTimes}
+                smallCanvasWidth={smallCanvasWidth}
+                smallCanvasHeight={smallCanvasHeight}
+                largeCanvasWidth={largeCanvasWidth}
+                largeCanvasHeight={largeCanvasHeight}
+                columnLabels={columnLabels}
+                rowLabels={rowLabels}
+                analysisData={analysisData}
+              />
+              {/* </div> */}
               <div className="combined-component__metrics-controls">
                 <MetricsControls />
               </div>

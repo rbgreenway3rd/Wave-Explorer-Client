@@ -68,7 +68,7 @@
 
 .combined-component__metrics {
     
-    /* border: solid 0.5em black; */
+    border: solid 0.5em black;
     grid-column: 1;
     grid-row: 2;
 }
