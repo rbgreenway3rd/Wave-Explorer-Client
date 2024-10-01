@@ -7,7 +7,10 @@ import zoomPlugin from "chartjs-plugin-zoom";
 Chart.register(zoomPlugin);
 
 export const LargeGraph = forwardRef(
-  ({ rawGraphData, largeGraphConfig }, ref) => {
+  (
+    { rawGraphData, largeGraphConfig, largeCanvasHeight, largeCanvasWidth },
+    ref
+  ) => {
     const chartRef = useRef(null);
 
     // Expose resetZoom function to parent via ref
@@ -20,11 +23,14 @@ export const LargeGraph = forwardRef(
     }));
 
     return (
-      <div className="large-graph">
-        <section className="large-graph-canvas">
-          <Line data={rawGraphData} options={largeGraphConfig} ref={chartRef} />
-        </section>
-      </div>
+      // <div className="large-graph">
+      <Line
+        data={rawGraphData}
+        options={largeGraphConfig}
+        ref={chartRef}
+        style={{ border: "solid 0.5em black" }}
+      />
+      // </div>
     );
   }
 );

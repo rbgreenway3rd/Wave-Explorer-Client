@@ -5,7 +5,7 @@
 
 .combined-component__wave-container {
     display: grid;
-    grid-template-columns: 1fr 1fr; /* Two columns */
+    grid-template-columns: 5fr 1fr 5fr 1fr; /* Four columns */
     grid-template-rows: auto auto; /* Two rows for header and content */
     border-bottom: 0.5em solid #808080;
     /* gap: 1em;  */
@@ -13,34 +13,41 @@
 }
 
 .combined-component__minigraph-header {
-    grid-column: 1;
+    grid-column: 1 /span 2;
     grid-row: 1;
     text-align: center;
     padding-right: 0.5em;
 }
 
 .combined-component__minigraph {
+    border: solid 0.5em black;
     grid-column: 1;
     grid-row: 2;
 }
 
-/* .combined-component__minigraph-controls {
+.combined-component__minigraph-controls {
     grid-column: 2;
     grid-row: 2;
     border-right: 0.5em solid gray;
     padding-right: 0.5em;
-} */
+}
 
 .combined-component__large-graph-header {
-    grid-column: 2;
+    grid-column: 3 /span 2;
     grid-row: 1;
     text-align: center;
 }
 
 .combined-component__large-graph {
-    grid-column: 2;
-    grid-row: 2;
+    
+    grid-column: 3;
+    grid-row: 2 /span 2;
     margin-left: 0.5em;
+}
+
+.combined-component__large-graph-controls {
+    grid-column: 4;
+    grid-row: 2;
 }
 
 .combined-component__metrics-filter-container {
@@ -60,7 +67,7 @@
 }
 
 .combined-component__metrics {
-    
+    border: solid 0.5em black;
     grid-column: 1;
     grid-row: 2;
 }
@@ -77,7 +84,7 @@
 }
 
 .combined-component__filtered-graph {
-    
+    border: solid 0.5em black;
     grid-column: 3;
     grid-row: 2;
     /* margin-left: 0.5em; */

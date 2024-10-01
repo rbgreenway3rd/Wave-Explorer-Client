@@ -133,16 +133,14 @@ export const FilteredGraph = ({
   };
 
   return (
-    <div className="filtered-graph">
-      <Line
-        ref={chartRef}
-        className="filtered-graph-canvas"
-        data={filteredGraphData}
-        options={options}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-      />
-    </div>
+    <Line
+      ref={chartRef}
+      className="filtered-graph-canvas"
+      data={filteredGraphData}
+      options={options}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+    />
   );
 };

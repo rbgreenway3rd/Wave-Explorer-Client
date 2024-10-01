@@ -314,6 +314,8 @@ export const CombinedComponent = () => {
                   analysisData={analysisData}
                   extractedIndicatorTimes={extractedIndicatorTimes}
                   largeGraphConfig={largeGraphConfig}
+                  // largeCanvasHeight={largeCanvasHeight}
+                  // largeCanvasWidth={largeCanvasWidth}
                 />
               </div>
               <div className="combined-component__large-graph-controls">
@@ -354,15 +356,15 @@ export const CombinedComponent = () => {
               <header className="combined-component__filters-header">
                 Filtered Waves
               </header>
-
-              <FilteredGraph
-                className="combined-component__filtered-graph"
-                wellArrays={wellArrays}
-                extractedIndicatorTimes={extractedIndicatorTimes}
-                selectedWellArray={selectedWellArray}
-                filteredGraphData={filteredGraphData}
-                options={filteredGraphConfig}
-              />
+              <div className="combined-component__filtered-graph">
+                <FilteredGraph
+                  wellArrays={wellArrays}
+                  extractedIndicatorTimes={extractedIndicatorTimes}
+                  selectedWellArray={selectedWellArray}
+                  filteredGraphData={filteredGraphData}
+                  options={filteredGraphConfig}
+                />
+              </div>
               <div className="combined-component__filter-controls">
                 <FilterControls
                   wellArrays={wellArrays}
