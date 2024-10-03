@@ -176,31 +176,102 @@ export class Smoothing_Filter {
   }
 }
 
-// Control Subtraction Filter
-// // get control_well_list and apply_well_list from your filter dialog
-// control_well_list = [(r,c),(r,c),...]
-// apply_well_list = [(r,c),(r,c),...]
+export class ControlSubtraction_Filter {
+  constructor(num, onEdit, number_of_columns) {
+    this.id = "controlSubtraction_" + JSON.stringify(num);
+    this.name = "Control Subtraction";
+    this.desc = "Subtracts the average control curve from apply wells.";
+    this.isEnabled = false;
+    this.controlWellArray = []; // list of {row, col} for control wells
+    this.applyWellArray = []; // list of {row, col} for apply wells
+    this.number_of_columns = number_of_columns; // Total columns in the grid layout (e.g., 24 for a 24x16 grid)
+    this.onEdit = onEdit; // Callback to open the modal
+  }
+
+  setEnabled(value) {
+    this.isEnabled = value;
+  }
+
+  editParams() {
+    if (this.onEdit) {
+      // Opens a dialog to set controlWellArray and applyWellArray
+      this.onEdit(
+        this.controlWellArray,
+        this.applyWellArray,
+        this.setParams.bind(this)
+      );
+    }
+  }
+
+  setParams(controlWellArray, applyWellArray) {
+    this.controlWellArray = controlWellArray;
+    this.applyWellArray = applyWellArray;
+  }
+
+  execute(wells) {
+    if (!this.controlWellArray.length || !this.applyWellArray.length) {
+      console.error("Control or apply well list is empty.");
+      return wells; // Return early if lists are empty
+    }
+
+    const num_points = wells[0].y.length; // Assuming each well has the same number of data points (y-values)
+    const average_control_curve = new Array(num_points).fill(0); // Initialize control average curve
+
+    // Calculate the average data for control wells
+    for (let i = 0; i < num_points; i++) {
+      let control_avg = 0.0;
+
+      for (let j = 0; j < this.controlWellArray.length; j++) {
+        // Convert (row, col) to array index
+        const { row, col } = this.controlWellArray[j];
+        const ndx = row * this.number_of_columns + col;
+
+        control_avg += wells[ndx].y[i]; // Add the data point for each control well
+      }
+
+      control_avg = control_avg / this.controlWellArray.length; // Calculate the average
+      average_control_curve[i] = control_avg; // Store the average in the curve
+    }
+
+    // Subtract the average control curve from each apply well
+    for (let i = 0; i < this.applyWellArray.length; i++) {
+      const { row, col } = this.applyWellArray[i];
+      const ndx = row * this.number_of_columns + col;
+
+      for (let j = 0; j < wells[ndx].y.length; j++) {
+        wells[ndx].y[j] = wells[ndx].y[j] - average_control_curve[j]; // Subtract the control average from each point
+      }
+    }
+
+    return wells; // Return the modified well data
+  }
+}
+
+// // Control Subtraction Filter
+// // get controlWellArray and applyWellArray from your filter dialog
+// controlWellArray = [(r,c),(r,c),...]
+// applyWellArray = [(r,c),(r,c),...]
 // // calculate average data for control wells
 // average_control_curve = []
 // for (int i = 0; i < num_points; i++) // iterate through all the points, i.e. each curve has num_points number of values
 // {
 // 	control_avg = 0.0
-// 	for (int j = 0; j < control_well_list.length; j++) // iterate through the control wells
+// 	for (int j = 0; j < controlWellArray.length; j++) // iterate through the control wells
 // 	{
 // 		// convert (r,c) to array index
-// 		int ndx = control_well_list[j].r * number_of_columns  + control_well_list[j].c
+// 		int ndx = controlWellArray[j].r * number_of_columns  + controlWellArray[j].c
 
 // 		control_avg += wells[ndx].y[i]  // assuming that "wells" is part of your context
 // 	}
-// 	control_avg = control_avg / control_well_list.length
+// 	control_avg = control_avg / controlWellArray.length
 
 // 	average_control_curve.append(control_avg)
 // }
 // // subtract average_control_curve from each apply wells
-// for (int i = 0; i < apply_well_list.length; i++)
+// for (int i = 0; i < applyWellArray.length; i++)
 // {
 // 	// convert (r,c) to array index
-// 	int ndx = control_well_list[j].r * number_of_columns  + control_well_list[j].c
+// 	int ndx = controlWellArray[j].r * number_of_columns  + controlWellArray[j].c
 
 // 	for (int j=0; j < well[i].y.length ; j++)
 // 	{

@@ -18,12 +18,17 @@ import {
 } from "@mui/icons-material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { useState, useEffect } from "react";
-import { StaticRatioModal, SmoothingFilterModal } from "./ParameterModals";
+import {
+  StaticRatioModal,
+  SmoothingFilterModal,
+  ControlSubtractionModal,
+} from "./ParameterModals";
 import {
   StaticRatio_Filter,
   DynamicRatio_Filter,
   Div_Filter,
   Smoothing_Filter,
+  ControlSubtraction_Filter,
 } from "./FilterModels";
 
 export const FilterControls = ({
@@ -41,10 +46,15 @@ export const FilterControls = ({
   // state for editParams dialogue
   const [openDialog, setOpenDialog] = useState(false);
   const [currentFilter, setCurrentFilter] = useState(null);
+  const [editModalType, setEditModalType] = useState(null);
+  // state for static ratio filter params
   const [startValue, setStartValue] = useState(0);
   const [endValue, setEndValue] = useState(5);
+  // state for smoothing filter params
   const [windowWidth, setWindowWidth] = useState(0);
-  const [editModalType, setEditModalType] = useState(null);
+  // state for control subtraction filter params
+  const [controlWellArray, setControlWellArray] = useState([]);
+  const [applyWellArray, setApplyWellArray] = useState([]);
 
   // state for drawer - collapsing controls
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -80,17 +90,25 @@ export const FilterControls = ({
     // Dynamic Ratio filter
   };
 
-  const handleEditDivFilterParams = (setParams) => {
-    //  Div Filter
-  };
-
   const handleEditSmoothingFilterParams = (windowWidth, setParams) => {
     setWindowWidth(windowWidth);
     setCurrentFilter({ setParams });
     setEditModalType("smoothingFilter");
     setOpenDialog(true);
 
-    console.log(currentFilter);
+    // console.log(currentFilter);
+  };
+
+  const handleEditControlSubtractionFilterParams = (
+    controlWellArray,
+    applyWellArray,
+    setParams
+  ) => {
+    setControlWellArray(controlWellArray);
+    setApplyWellArray(applyWellArray);
+    setCurrentFilter({ setParams });
+    setEditModalType("controlSubtractionFilter");
+    setOpenDialog(true);
   };
 
   const handleSaveParams = () => {
@@ -99,6 +117,8 @@ export const FilterControls = ({
       currentFilter.setParams(startValue, endValue);
     } else if (editModalType === "smoothingFilter") {
       currentFilter.setParams(windowWidth);
+    } else if (editModalType === "controlSubtractionFilter") {
+      currentFilter.setParams(controlWellArray, applyWellArray);
     }
     // Other filter types...
     setOpenDialog(false);
@@ -276,6 +296,13 @@ export const FilterControls = ({
       // append newSmoothingFilter to selectedFilters array
       console.log(newSmoothingFilter);
       setSelectedFilters([...selectedFilters, newSmoothingFilter]);
+    } else if (selectedValue === "controlSubtraction") {
+      const newControlSubtractionFilter = new ControlSubtraction_Filter(
+        selectedFilters.length,
+        handleEditControlSubtractionFilterParams
+      );
+      console.log(newControlSubtractionFilter);
+      setSelectedFilters([...selectedFilters, newControlSubtractionFilter]);
     }
 
     // Apply the list of selected filters
@@ -466,6 +493,11 @@ export const FilterControls = ({
                 label: "Smoothing",
                 value: "smoothingFilter",
               },
+              {
+                id: "control-subtraction-filter",
+                label: "Control Subtraction",
+                value: "controlSubtraction",
+              },
             ].map(({ id, label, value }) => (
               <Box
                 key={id}
@@ -519,6 +551,19 @@ export const FilterControls = ({
           onClose={() => setOpenDialog(false)}
           windowWidth={windowWidth}
           setWindowWidth={setWindowWidth}
+          onSave={handleSaveParams}
+        />
+      )}
+
+      {editModalType === "controlSubtractionFilter" && (
+        <ControlSubtractionModal
+          className="filter-controls__control-subtraction-filter-modal"
+          open={openDialog}
+          onClose={() => setOpenDialog(false)}
+          controlWellArray={controlWellArray}
+          setControlWellArray={setControlWellArray}
+          applyWellArray={applyWellArray}
+          setApplyWellArray={setApplyWellArray}
           onSave={handleSaveParams}
         />
       )}
