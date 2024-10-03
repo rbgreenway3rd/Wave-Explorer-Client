@@ -382,6 +382,8 @@ export const CombinedComponent = () => {
                   applyEnabledFilters={applyEnabledFilters}
                   showFiltered={showFiltered}
                   setShowFiltered={setShowFiltered}
+                  columnLabels={columnLabels}
+                  rowLabels={rowLabels}
                 />
               </div>
             </section>

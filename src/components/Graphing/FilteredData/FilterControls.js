@@ -37,6 +37,8 @@ export const FilterControls = ({
   setSelectedFilters,
   setEnabledFilters,
   applyEnabledFilters,
+  columnLabels,
+  rowLabels,
 }) => {
   const [selectedWells, setSelectedWells] = useState([]);
   const [highlightedFilter, setHighlightedFilter] = useState({});

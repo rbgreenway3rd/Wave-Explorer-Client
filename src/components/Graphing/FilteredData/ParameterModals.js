@@ -104,6 +104,7 @@ export const ControlSubtractionModal = ({
     setApplyWellArray([...applyWellArray, { row, col }]);
     setRow(0);
     setCol(0);
+    console.log(applyWellArray);
   };
 
   const handleRemoveControlWell = (index) => {
