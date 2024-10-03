@@ -35,8 +35,6 @@ export const FilteredGraph = ({
     console.log("Filtered graph data:", filteredGraphData);
   }, [filteredGraphData, options]);
 
-  console.log(wellArrays);
-
   // Handle mouse down event to start drawing
   const handleMouseDown = (event) => {
     const chart = chartRef.current;

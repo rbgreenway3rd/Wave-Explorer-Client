@@ -1,5 +1,5 @@
 import React, { useRef, forwardRef, useImperativeHandle } from "react";
-import "../../../styles/LargeGraph.css";
+// import "../../../styles/LargeGraph.css";
 import { Line } from "react-chartjs-2";
 import { Chart } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
@@ -28,7 +28,7 @@ export const LargeGraph = forwardRef(
         data={rawGraphData}
         options={largeGraphConfig}
         ref={chartRef}
-        style={{ border: "solid 0.5em black" }}
+        // style={{ border: "solid 0.5em black" }}
       />
       // </div>
     );
