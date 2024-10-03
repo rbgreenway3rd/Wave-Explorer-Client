@@ -301,7 +301,8 @@ export const FilterControls = ({
     } else if (selectedValue === "controlSubtraction") {
       const newControlSubtractionFilter = new ControlSubtraction_Filter(
         selectedFilters.length,
-        handleEditControlSubtractionFilterParams
+        handleEditControlSubtractionFilterParams,
+        columnLabels.length
       );
       console.log(newControlSubtractionFilter);
       setSelectedFilters([...selectedFilters, newControlSubtractionFilter]);
