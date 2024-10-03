@@ -1,8 +1,27 @@
 .navbar-container {
     background-color: rgb(175 175 175);
     padding: 0.25em;
+    display: flex;
+    flex-direction: row;
+}
+
+.navbar-left {
+    display: flex;
 }
 
 .logo {
-    margin: 0;
+    margin-bottom: 0;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0.15em;
+}
+
+.wave-explorer-icon {
+    width: 2.5em;
+    height: 2.5em
+}
+
+.wavefront-logo {
+    width: 15em;
+    height: 5em
 }
