@@ -1,6 +1,6 @@
 import React, { useContext, useState } from "react";
 import { DataContext } from "../../FileHandling/DataProvider";
-// import "../../../styles/MiniGraphControls.css";
+import "../../../styles/MiniGraphControls.css";
 
 export const MiniGraphControls = ({ handleToggleDataShown, isFiltered }) => {
   const {
@@ -67,7 +67,10 @@ export const MiniGraphControls = ({ handleToggleDataShown, isFiltered }) => {
           <label htmlFor="visibility-selector">Green</label>
         </div>
       </div>
-      <button onClick={() => handleClearSelectedWells()}>
+      <button
+        className="clear-selections-button"
+        onClick={() => handleClearSelectedWells()}
+      >
         Clear Selections
       </button>
     </div>

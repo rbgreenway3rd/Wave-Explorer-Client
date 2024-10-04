@@ -1,11 +1,11 @@
 .combined-component {
-    padding-left: 0.25em;
-    padding-right: 0.25em;
+    /* padding-left: 0.25em;
+    padding-right: 0.25em; */
 }
 
 .combined-component__wave-container {
     display: grid;
-    grid-template-columns: 5fr 1fr 5fr 1fr; /* Four columns */
+    grid-template-columns: 6fr 1fr 6fr 1fr; /* Four columns */
     grid-template-rows: auto auto; /* Two rows for header and content */
     border-bottom: 0.5em solid #808080;
     /* gap: 1em;  */
@@ -29,8 +29,10 @@
 .combined-component__minigraph-controls {
     grid-column: 2;
     grid-row: 2;
-    border-right: 0.5em solid gray;
-    padding-right: 0.5em;
+    /* border-right: 0.5em solid gray; */
+    /* padding-right: 0.5em; */
+    height: 100%;
+    box-sizing: border-box; /* Include padding and border in button width */
 }
 
 .combined-component__large-graph-header {
@@ -43,18 +45,19 @@
 .combined-component__large-graph {
     border: solid 0.5em black;
     grid-column: 3;
-    grid-row: 2 /span 2;
+    grid-row: 2;
     /* margin-left: 0.5em; */
 }
 
 .combined-component__large-graph-controls {
     grid-column: 4;
     grid-row: 2;
+    box-sizing: border-box; /* Include padding and border in button width */
 }
 
 .combined-component__metrics-filter-container {
     display: grid;
-    grid-template-columns: 5fr 1fr 5fr 1fr; /* Four columns */
+    grid-template-columns: 6fr 1fr 6fr 1fr; /* Four columns */
     grid-template-rows: auto auto; /* Two rows for header and content */
     /* border-bottom: 0.5em solid gray; */
     /* gap: 1em; */

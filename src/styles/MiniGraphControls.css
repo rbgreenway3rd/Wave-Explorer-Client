@@ -1,8 +1,18 @@
-.minigraph-controls-container {
+.minigraph-and-controls__controls-container {
     display: flex;
     flex-direction: column;
+    position: relative;
+    box-sizing: border-box; /* Include padding and border in button width */
+    height: 100%;
 }
-.show-raw-or-filtered {
+.minigraph-and-controls__show-raw-or-filtered {
     display: flex;
     flex-direction: column
+}
+
+.clear-selections-button {
+    position: absolute;
+    width: 100%;
+    bottom: 0;
+    right: 0
 }

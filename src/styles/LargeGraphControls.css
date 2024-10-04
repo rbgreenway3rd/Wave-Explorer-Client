@@ -1,0 +1,23 @@
+.large-graph-controls {
+    display: flex;
+    flex-direction: column
+}
+
+.zoom-controls {
+    display: flex;
+    flex-direction: column;
+}
+
+.zoom-controls-radios {
+    display: flex;
+    flex-direction: column
+}
+.pan-controls {
+    display: flex;
+    flex-direction: column;
+}
+
+.pan-controls-radios {
+    display: flex;
+    flex-direction: column
+}

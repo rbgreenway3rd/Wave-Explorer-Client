@@ -71,7 +71,7 @@ export const MiniGraphGrid = ({
     // >
     <div
       className="minigraph-and-controls__minigraph-container"
-      style={{ height: largeCanvasHeight }}
+      style={{ height: largeCanvasHeight, width: largeCanvasWidth }}
     >
       {/* <div
         className="minigraph-and-controls__all-selector"
