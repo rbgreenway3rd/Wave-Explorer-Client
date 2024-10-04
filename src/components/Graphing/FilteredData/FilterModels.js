@@ -217,6 +217,7 @@ export class ControlSubtraction_Filter {
 
     const num_points = data[0].y.length; // Assuming each well has the same number of data points (y-values)
     const average_control_curve = new Array(num_points).fill(0); // Initialize control average curve
+    const yFiltered = new Array(data.length).fill({ x: 0, y: 0 });
 
     // Calculate the average data for control wells
     for (let i = 0; i < num_points; i++) {
@@ -243,7 +244,7 @@ export class ControlSubtraction_Filter {
         data[ndx].y[j] = data[ndx].y[j] - average_control_curve[j]; // Subtract the control average from each point
       }
     }
-    console.log(data);
+
     return data; // Return the modified well data
   }
 }

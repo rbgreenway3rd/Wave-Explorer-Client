@@ -74,8 +74,10 @@
 
 .combined-component__metrics {
     align-items: center;
-  justify-content: center;
+    justify-content: center;
     border: solid 0.5em black;
+    padding-top: 0.25em;
+    background-color: grey;
     grid-column: 1;
     grid-row: 2;
 }
