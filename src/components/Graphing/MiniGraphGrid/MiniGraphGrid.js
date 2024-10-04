@@ -100,6 +100,7 @@ export const MiniGraphGrid = ({
         style={{
           // width: smallCanvasWidth,
           width: "100%",
+
           height: smallCanvasHeight,
         }}
       >
@@ -161,7 +162,13 @@ export const MiniGraphGrid = ({
           </button>
         ))}
       </div>
-      <div className="minigraph-and-controls__minigraph-grid">
+      <div
+        className="minigraph-and-controls__minigraph-grid"
+        style={{
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         {wellArrays?.length > 0 &&
           wellArrays.map((well) => (
             <Line
@@ -172,7 +179,9 @@ export const MiniGraphGrid = ({
                 selectedWellArray?.some(
                   (selectedWell) => selectedWell.id === well.id
                 )
-                  ? { border: "solid 2px red" } // styling for selected wells
+                  ? {
+                      border: "solid 2px red",
+                    } // styling for selected wells
                   : {} // styling for un-selected wells
               }
               key={well.id}
@@ -202,47 +211,3 @@ export const MiniGraphGrid = ({
 };
 
 export default memo(MiniGraphGrid);
-
-{
-  /* <div className="minigraph-and-controls__controls-container">
-          <div className="minigraph-and-controls__show-raw-or-filtered">
-            Show
-            <div className="minigraph-and-controls__show-raw">
-              <input
-                type="radio"
-                id="show-raw"
-                className="minigraph-and-controls__raw-radio"
-                value="showRaw"
-                name="radio-group-1"
-                checked={!isFiltered}
-                onChange={() => handleToggleDataShown()}
-              />
-              <label htmlFor="show-raw">Raw</label>
-            </div>
-            <div className="minigraph-and-controls__show-filtered">
-              <input
-                type="radio"
-                id="show-filtered"
-                className="minigraph-and-controls__filtered-radio"
-                value="showFiltered"
-                name="radio-group-1"
-                checked={isFiltered}
-                onChange={() => handleToggleDataShown()}
-              />
-              <label htmlFor="show-filtered">Filtered</label>
-            </div>
-          </div>
-          <div className="minigraph-and-controls__visibility">
-            Visibility
-            <div className="minigraph-and-controls__visibility-selector1">
-              <input
-                type="checkbox"
-                id="visibility-selector"
-                className="minigraph-and-controls__visibility-selector"
-                value="visibility-selector1"
-              />
-              <label htmlFor="visibility-selector">Green</label>
-            </div>
-          </div>
-        </div> */
-}

@@ -32,6 +32,7 @@
     /* border-right: 0.5em solid gray; */
     /* padding-right: 0.5em; */
     height: 100%;
+    /* width: 90%; */
     box-sizing: border-box; /* Include padding and border in button width */
 }
 
@@ -81,7 +82,7 @@
 .combined-component__metrics-controls {
     grid-column: 2;
     grid-row: 2;
-    border-right: 0.5em solid gray;
+    /* border-right: 0.5em solid gray; */
     padding-right: 0.5em;
 }
 

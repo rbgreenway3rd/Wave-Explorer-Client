@@ -71,7 +71,8 @@
 
 .minigraph-and-controls__minigraph-container {
     /* border: solid 0.5em black; */
-    background: rgb(220, 220, 220);
+    /* background: rgb(220, 220, 220);  */ /* match canvas background */
+    background: rgb(212, 212, 212);
     display: grid;
     grid-template-areas:
         "minigraph-and-controls__all-selector minigraph-and-controls__column-selectors"
@@ -79,11 +80,14 @@
     grid-template-columns: auto 1fr;
     grid-template-rows: auto 1fr;
     /* margin-bottom: 0.5em; */
+    gap: 0
 }
 
 .minigraph-and-controls__minigraph-canvas {
     /* padding: 1px; */
     background: rgb(220, 220, 220);
+    justify-self: center;
+    
 }
 
 .minigraph-and-controls__minigraph-canvas:hover {
