@@ -1,6 +1,8 @@
 .large-graph-controls {
     display: flex;
-    flex-direction: column
+    flex-direction: column;
+    position: relative;
+    height: 100%
 }
 
 .zoom-controls {
@@ -20,4 +22,11 @@
 .pan-controls-radios {
     display: flex;
     flex-direction: column
+}
+
+.reset-zoom-button {
+    position: absolute;
+    width: 100%;
+    bottom: 0;
+    right: 0
 }
