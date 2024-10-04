@@ -67,6 +67,9 @@ export const MiniGraphControls = ({ handleToggleDataShown, isFiltered }) => {
           <label htmlFor="visibility-selector">Green</label>
         </div>
       </div>
+      <button onClick={() => handleClearSelectedWells()}>
+        Clear Selections
+      </button>
     </div>
   );
 };

@@ -341,21 +341,21 @@ export const CombinedComponent = () => {
               <header className="combined-component__metrics-header">
                 Metrics
               </header>
-              {/* <div className="combined-component__metrics"> */}
-              <Heatmap
-                className="combined-component__metrics"
-                wellArrays={wellArrays}
-                selectedWellArray={selectedWellArray}
-                timeData={extractedIndicatorTimes}
-                smallCanvasWidth={smallCanvasWidth}
-                smallCanvasHeight={smallCanvasHeight}
-                largeCanvasWidth={largeCanvasWidth}
-                largeCanvasHeight={largeCanvasHeight}
-                columnLabels={columnLabels}
-                rowLabels={rowLabels}
-                analysisData={analysisData}
-              />
-              {/* </div> */}
+              <div className="combined-component__metrics">
+                <Heatmap
+                  // className="combined-component__metrics"
+                  wellArrays={wellArrays}
+                  selectedWellArray={selectedWellArray}
+                  timeData={extractedIndicatorTimes}
+                  smallCanvasWidth={smallCanvasWidth}
+                  smallCanvasHeight={smallCanvasHeight}
+                  largeCanvasWidth={largeCanvasWidth}
+                  largeCanvasHeight={largeCanvasHeight}
+                  columnLabels={columnLabels}
+                  rowLabels={rowLabels}
+                  analysisData={analysisData}
+                />
+              </div>
               <div className="combined-component__metrics-controls">
                 <MetricsControls />
               </div>
