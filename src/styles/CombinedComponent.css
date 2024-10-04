@@ -73,8 +73,9 @@
 }
 
 .combined-component__metrics {
-    
-    /* border: solid 0.5em black; */
+    align-items: center;
+  justify-content: center;
+    border: solid 0.5em black;
     grid-column: 1;
     grid-row: 2;
 }

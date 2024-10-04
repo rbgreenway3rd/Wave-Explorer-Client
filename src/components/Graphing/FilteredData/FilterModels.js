@@ -177,7 +177,7 @@ export class Smoothing_Filter {
 }
 
 export class ControlSubtraction_Filter {
-  constructor(num, onEdit, number_of_columns) {
+  constructor(num, onEdit, number_of_columns, number_of_rows) {
     this.id = "controlSubtraction_" + JSON.stringify(num);
     this.name = "Control Subtraction";
     this.desc = "Subtracts the average control curve from apply wells.";
@@ -185,6 +185,7 @@ export class ControlSubtraction_Filter {
     this.controlWellArray = []; // list of {row, col} for control wells
     this.applyWellArray = []; // list of {row, col} for apply wells
     this.number_of_columns = number_of_columns; // Total columns in the grid layout (e.g., 24 for a 24x16 grid)
+    this.number_of_rows = number_of_rows;
     this.onEdit = onEdit; // Callback to open the modal
   }
 
@@ -208,13 +209,13 @@ export class ControlSubtraction_Filter {
     this.applyWellArray = applyWellArray;
   }
 
-  execute(wells) {
+  execute(data) {
     if (!this.controlWellArray.length || !this.applyWellArray.length) {
       console.error("Control or apply well list is empty.");
-      return wells; // Return early if lists are empty
+      return data; // Return early if lists are empty
     }
 
-    const num_points = wells[0].y.length; // Assuming each well has the same number of data points (y-values)
+    const num_points = data[0].y.length; // Assuming each well has the same number of data points (y-values)
     const average_control_curve = new Array(num_points).fill(0); // Initialize control average curve
 
     // Calculate the average data for control wells
@@ -226,7 +227,7 @@ export class ControlSubtraction_Filter {
         const { row, col } = this.controlWellArray[j];
         const ndx = row * this.number_of_columns + col;
 
-        control_avg += wells[ndx].y[i]; // Add the data point for each control well
+        control_avg += data[ndx].y[i]; // Add the data point for each control well
       }
 
       control_avg = control_avg / this.controlWellArray.length; // Calculate the average
@@ -238,12 +239,12 @@ export class ControlSubtraction_Filter {
       const { row, col } = this.applyWellArray[i];
       const ndx = row * this.number_of_columns + col;
 
-      for (let j = 0; j < wells[ndx].y.length; j++) {
-        wells[ndx].y[j] = wells[ndx].y[j] - average_control_curve[j]; // Subtract the control average from each point
+      for (let j = 0; j < data[ndx].y.length; j++) {
+        data[ndx].y[j] = data[ndx].y[j] - average_control_curve[j]; // Subtract the control average from each point
       }
     }
-    console.log(wells);
-    return wells; // Return the modified well data
+    console.log(data);
+    return data; // Return the modified well data
   }
 }
 

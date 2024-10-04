@@ -174,6 +174,7 @@ export const CombinedComponent = () => {
 
     console.log("updated project: ", updatedProject);
     console.log("updated selectedWellArray: ", updatedSelectedWellArray);
+    console.log("filters: ", enabledFilters);
   };
 
   // Effect to track changes in project state

@@ -31,6 +31,7 @@ const Heatmap = ({
     // Calculate exact width and height for cells so they fill up the entire canvas
     const cellWidth = largeCanvasWidth / numColumns;
     const cellHeight = largeCanvasHeight / numRows;
+    // const cellHeight = smallCanvasHeight;
 
     // Clear the entire canvas before drawing
     context.clearRect(0, 0, largeCanvasWidth, largeCanvasHeight);
@@ -138,12 +139,13 @@ const Heatmap = ({
   return (
     <>
       <canvas
+        className="heatmap-canvas"
         ref={canvasRef}
         width={largeCanvasWidth} // Use the full large canvas width
         height={largeCanvasHeight} // Use the full large canvas height
         onMouseLeave={handleMouseLeave}
         onMouseMove={handleMouseMove}
-        style={{ border: "solid 0.5em black" }}
+        // style={{ border: "solid 0.5em black" }}
       />
       {tooltip.visible && (
         <div

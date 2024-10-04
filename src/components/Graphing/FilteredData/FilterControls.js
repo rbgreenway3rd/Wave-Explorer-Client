@@ -302,7 +302,8 @@ export const FilterControls = ({
       const newControlSubtractionFilter = new ControlSubtraction_Filter(
         selectedFilters.length,
         handleEditControlSubtractionFilterParams,
-        columnLabels.length
+        columnLabels.length,
+        rowLabels.length
       );
       console.log(newControlSubtractionFilter);
       setSelectedFilters([...selectedFilters, newControlSubtractionFilter]);
@@ -567,6 +568,8 @@ export const FilterControls = ({
           setControlWellArray={setControlWellArray}
           applyWellArray={applyWellArray}
           setApplyWellArray={setApplyWellArray}
+          number_of_rows={rowLabels.length}
+          number_of_columns={columnLabels.length}
           onSave={handleSaveParams}
         />
       )}

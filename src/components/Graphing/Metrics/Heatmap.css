@@ -1,7 +1,9 @@
-.heatmap-svg {
-  border: solid 0.5em grey;
-  height: auto;
-  justify-content:center
+.heatmap-canvas {
+  /* border: solid 0.5em grey; */
+  /* height: 100%; */
+  margin-top: 1em;
+  justify-self:center;
+  box-sizing: border-box;
 }
 
 .tooltip {
