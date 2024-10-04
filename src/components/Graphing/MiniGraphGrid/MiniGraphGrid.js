@@ -71,37 +71,35 @@ export const MiniGraphGrid = ({
     // >
     <div
       className="minigraph-and-controls__minigraph-container"
-      style={{ width: largeCanvasWidth, height: largeCanvasHeight }}
+      style={{ height: largeCanvasHeight }}
     >
-      <div
+      {/* <div
         className="minigraph-and-controls__all-selector"
         style={{
           width: smallCanvasWidth,
           height: smallCanvasHeight,
         }}
+      > */}
+      <button
+        id="allButton"
+        className="minigraph-and-controls__all-button"
+        onClick={() =>
+          handleAllSelectorClick(
+            wellArrays,
+            selectedWellArray,
+            handleSelectWell,
+            handleClearSelectedWells
+          )
+        }
       >
-        <button
-          id="allButton"
-          className="minigraph-and-controls__all-button"
-          style={{
-            width: smallCanvasWidth,
-            height: smallCanvasHeight,
-          }}
-          onClick={() =>
-            handleAllSelectorClick(
-              wellArrays,
-              selectedWellArray,
-              handleSelectWell,
-              handleClearSelectedWells
-            )
-          }
-        >
-          all
-        </button>
-      </div>
+        all
+      </button>
+      {/* </div> */}
       <div
         className="minigraph-and-controls__column-selectors"
         style={{
+          // width: smallCanvasWidth,
+          width: "100%",
           height: smallCanvasHeight,
         }}
       >
@@ -112,7 +110,9 @@ export const MiniGraphGrid = ({
             key={columnLabel}
             style={{
               width: "100%",
-              height: "100%",
+              // height: "100%",
+              // width: smallCanvasWidth,
+              height: smallCanvasHeight,
             }}
             onClick={() =>
               handleColumnSelectorClick(
