@@ -47,22 +47,7 @@ export const MiniGraphGrid = ({
     }
   };
 
-  // const handleToggleDataShown = () => {
-  //   setIsFiltered((prev) => !prev); // Toggle the filter state
-  //   setShowFiltered((prev) => !prev); // Update context state as well
-  // };
-
-  // const options = useMemo(() => {
-  //   // Collect yValues based on whether showFiltered is true or not
-  //   const yValues = wellArrays.flatMap((well) =>
-  //     showFiltered
-  //       ? well.indicators[0]?.filteredData?.map((point) => point.y) || []
-  //       : well.indicators[0]?.rawData?.map((point) => point.y) || []
-  //   );
-
-  //   // Return the options object instead of the yValues
-  //   return MiniGraphOptions(analysisData, timeData, wellArrays, yValues);
-  // }, [analysisData, timeData, wellArrays, showFiltered]);
+  console.log("sch: ", smallCanvasHeight, "smw: ", smallCanvasWidth);
 
   return (
     // <section
@@ -167,6 +152,10 @@ export const MiniGraphGrid = ({
         style={{
           alignItems: "center",
           justifyContent: "center",
+          // width: { largeCanvasWidth },
+          // height: { largeCanvasHeight },
+          // width: { smallCanvasWidth },
+          // height: { smallCanvasHeight },
         }}
       >
         {wellArrays?.length > 0 &&
@@ -197,6 +186,8 @@ export const MiniGraphGrid = ({
                   },
                 ],
               }}
+              // width={"100%"}
+              // height={"100%"}
               width={smallCanvasWidth}
               height={smallCanvasHeight}
               options={minigraphOptions}

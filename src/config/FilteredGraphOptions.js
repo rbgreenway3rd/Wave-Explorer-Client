@@ -1,4 +1,32 @@
-export const FilteredGraphOptions = (minValue, maxValue) => {
+export const FilteredGraphOptions = (
+  // minValue,
+  // maxValue,
+  analysisData = [],
+  extractedIndicatorTimes = []
+) => {
+  const minYValue =
+    analysisData.length > 0
+      ? analysisData.reduce((min, val) => (val < min ? val : min), Infinity)
+      : 0;
+  const maxYValue =
+    analysisData.length > 0
+      ? analysisData.reduce((max, val) => (val > max ? val : max), -Infinity)
+      : 100;
+  const minXValue =
+    extractedIndicatorTimes.length > 0
+      ? extractedIndicatorTimes.reduce(
+          (min, val) => (val < min ? val : min),
+          Infinity
+        )
+      : 0;
+  const maxXValue =
+    extractedIndicatorTimes.length > 0
+      ? extractedIndicatorTimes.reduce(
+          (max, val) => (val > max ? val : max),
+          -Infinity
+        )
+      : 100;
+
   return {
     normalized: true,
     animation: {
@@ -31,6 +59,8 @@ export const FilteredGraphOptions = (minValue, maxValue) => {
         grid: {
           display: false,
         },
+        min: minXValue,
+        max: maxXValue,
       },
       y: {
         ticks: {
@@ -39,8 +69,10 @@ export const FilteredGraphOptions = (minValue, maxValue) => {
         grid: {
           display: false,
         },
-        min: minValue,
-        max: maxValue,
+        min: minYValue,
+        max: maxYValue,
+        // min: minValue,
+        // max: maxValue,
       },
     },
     elements: {

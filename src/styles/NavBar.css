@@ -1,12 +1,20 @@
 .navbar-container {
-    background-color: rgb(175 175 175);
+    /* background-color: rgb(175 175 175); */
+    background-color: rgb(255, 255, 255);
     padding: 0.25em;
     display: flex;
     flex-direction: row;
+    justify-content: space-between;
 }
 
 .navbar-left {
     display: flex;
+    
+}
+
+.navbar-right {
+    align-items: center;
+    float: right;
 }
 
 .logo {
@@ -22,6 +30,6 @@
 }
 
 .wavefront-logo {
-    width: 15em;
-    height: 5em
+    width: 14em;
+    height: 4em
 }

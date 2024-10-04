@@ -242,7 +242,7 @@ export class ControlSubtraction_Filter {
         wells[ndx].y[j] = wells[ndx].y[j] - average_control_curve[j]; // Subtract the control average from each point
       }
     }
-
+    console.log(wells);
     return wells; // Return the modified well data
   }
 }
