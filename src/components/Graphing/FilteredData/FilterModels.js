@@ -248,36 +248,3 @@ export class ControlSubtraction_Filter {
     return data; // Return the modified well data
   }
 }
-
-// // Control Subtraction Filter
-// // get controlWellArray and applyWellArray from your filter dialog
-// controlWellArray = [(r,c),(r,c),...]
-// applyWellArray = [(r,c),(r,c),...]
-// // calculate average data for control wells
-// average_control_curve = []
-// for (int i = 0; i < num_points; i++) // iterate through all the points, i.e. each curve has num_points number of values
-// {
-// 	control_avg = 0.0
-// 	for (int j = 0; j < controlWellArray.length; j++) // iterate through the control wells
-// 	{
-// 		// convert (r,c) to array index
-// 		int ndx = controlWellArray[j].r * number_of_columns  + controlWellArray[j].c
-
-// 		control_avg += wells[ndx].y[i]  // assuming that "wells" is part of your context
-// 	}
-// 	control_avg = control_avg / controlWellArray.length
-
-// 	average_control_curve.append(control_avg)
-// }
-// // subtract average_control_curve from each apply wells
-// for (int i = 0; i < applyWellArray.length; i++)
-// {
-// 	// convert (r,c) to array index
-// 	int ndx = controlWellArray[j].r * number_of_columns  + controlWellArray[j].c
-
-// 	for (int j=0; j < well[i].y.length ; j++)
-// 	{
-// 		well[i] = well[i] - average_control_curve[i]
-// 	}
-
-// }

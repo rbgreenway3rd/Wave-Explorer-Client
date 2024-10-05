@@ -18,15 +18,12 @@ const Heatmap = ({
     label: "",
     value: "",
   });
-  const numColumns = 24;
-  const numRows = 16;
+  const numColumns = columnLabels.length;
+  const numRows = rowLabels.length;
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
-
-    // const numColumns = 24;
-    // const numRows = 16;
 
     // Calculate exact width and height for cells so they fill up the entire canvas
     const cellWidth = largeCanvasWidth / numColumns;
@@ -128,14 +125,6 @@ const Heatmap = ({
     setTooltip((prev) => ({ ...prev, visible: false }));
   };
 
-  // return (
-  //   <canvas
-  //     ref={canvasRef}
-  //     width={largeCanvasWidth} // Use the full large canvas width
-  //     height={largeCanvasHeight} // Use the full large canvas height
-  //     style={{ border: "solid 0.5em black" }}
-  //   />
-  // );
   return (
     <>
       <canvas

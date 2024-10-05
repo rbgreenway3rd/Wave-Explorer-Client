@@ -85,8 +85,6 @@ export const FilteredGraph = ({
   );
 
   // Handle mouse up to finalize the annotation and log times
-  // Handle mouse up to finalize the annotation and log times
-  // Handle mouse up to finalize the annotation and log times
   const handleMouseUp = (event) => {
     setIsDragging(false);
     if (animationFrameId.current) {
