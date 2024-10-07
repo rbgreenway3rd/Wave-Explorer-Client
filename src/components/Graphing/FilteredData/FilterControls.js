@@ -452,14 +452,15 @@ export const FilterControls = ({
           setSelectedFilters([]);
         }}
       >
-        Reset Filters
+        Reset <br />
+        Filters
       </button>
 
       {/* Well Selection Modal */}
-      <WellSelectionModal
+      {/* <WellSelectionModal
         className="filter-controls__well-selection-modal"
         onFilterApply={filterSelectedWells}
-      />
+      /> */}
 
       {/* Modal for Filter Selection */}
       <Modal

@@ -114,7 +114,8 @@ export const LargeGraphControls = ({
         </div>
       </section>
       <button className="reset-zoom-button" onClick={resetZoom}>
-        Reset Zoom
+        Reset <br />
+        Zoom
       </button>
     </div>
   );

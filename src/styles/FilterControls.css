@@ -12,6 +12,7 @@
   /* margin-right: 0.5em;  */
   /* Center horizontally */
   height: 100%; /* Ensure full height for vertical centering */
+  position: relative;
 }
 
 .filter-controls__selection-controls {
@@ -37,4 +38,10 @@
   flex-direction: column;
   justify-content: center; /* Centers horizontally */
   align-items: center;     /* Centers vertically */
+}
+
+.filter-controls__reset-button {
+  position: absolute;
+  bottom: 0;
+  width: 100%
 }
