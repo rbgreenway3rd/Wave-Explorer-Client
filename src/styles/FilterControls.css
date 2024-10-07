@@ -40,6 +40,11 @@
   align-items: center;     /* Centers vertically */
 }
 
+.filter-controls__apply-button {
+  position: absolute;
+  top: 0
+}
+
 .filter-controls__reset-button {
   position: absolute;
   bottom: 0;
