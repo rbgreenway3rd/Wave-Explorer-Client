@@ -62,8 +62,8 @@ export const FilteredGraph = ({
         const xMin = Math.min(startPos.x, x);
         const xMax = Math.max(startPos.x, x);
 
-        const yMin = chart.scales.y.min; // Use the entire y-range
-        const yMax = chart.scales.y.max; // Use the entire y-range
+        const yMin = chart.scales.y.min; // Use the proper y-range
+        const yMax = chart.scales.y.max; // Use the proper y-range
 
         // Update annotation dynamically
         chart.options.plugins.annotation.annotations = [
