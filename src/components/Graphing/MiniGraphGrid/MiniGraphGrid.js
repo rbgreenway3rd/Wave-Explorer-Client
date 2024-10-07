@@ -1,15 +1,14 @@
 import React, { memo, useMemo, useContext, useState } from "react";
 import { DataContext } from "../../FileHandling/DataProvider";
-import { Line } from "react-chartjs-2";
-import { MiniGraphControls } from "./MiniGraphControls";
-import { MiniGraphOptions } from "../../../config/MiniGraphOptions";
 import "../../../styles/MiniGraphGrid.css";
+import "chartjs-adapter-date-fns";
+import { Line } from "react-chartjs-2";
 import {
   handleAllSelectorClick,
   handleRowSelectorClick,
   handleColumnSelectorClick,
 } from "../../../utilities/Helpers";
-import "chartjs-adapter-date-fns";
+import RubberbandSelector from "./RubberbandSelector";
 
 export const MiniGraphGrid = ({
   minigraphOptions,
@@ -29,10 +28,9 @@ export const MiniGraphGrid = ({
     handleClearSelectedWells,
   } = useContext(DataContext);
 
-  console.log(selectedWellArray);
+  const [isRubberbanding, setIsRubberbanding] = useState(false);
 
-  // Local state for managing which data to show
-  const [isFiltered, setIsFiltered] = useState(false); // Default is raw data (false)
+  console.log(selectedWellArray);
 
   const plate = project?.plate || [];
   const experiment = plate[0]?.experiments[0] || {};
@@ -47,24 +45,33 @@ export const MiniGraphGrid = ({
     }
   };
 
-  console.log("sch: ", smallCanvasHeight, "smw: ", smallCanvasWidth);
+  // Handle when the user starts/stops dragging the rubberband
+  const handleMouseDown = () => setIsRubberbanding(true);
+  const handleMouseUp = () => setIsRubberbanding(false);
+
+  const handleSelectionComplete = (selectionBox) => {
+    // Logic to select wells within the selectionBox
+    console.log("Selection completed: ", selectionBox);
+    // You can calculate which wells fall into this box using the coordinates
+  };
+
+  // console.log("sch: ", smallCanvasHeight, "smw: ", smallCanvasWidth);
 
   return (
-    // <section
-    //   className="minigraph-and-controls"
-    //   style={{ width: largeCanvasWidth, height: largeCanvasHeight }}
+    // <RubberbandSelector
+    //   onSelectionComplete={handleSelectionComplete}
+    //   onMouseDown={handleMouseDown}
+    //   onMouseUp={handleMouseUp}
+    //   isRubberbanding={isRubberbanding}
+    //   width={largeCanvasWidth}
+    //   height={largeCanvasHeight}
+    //   smallCanvasHeight={smallCanvasHeight}
+    //   smallCanvasWidth={smallCanvasWidth}
     // >
     <div
       className="minigraph-and-controls__minigraph-container"
       style={{ height: largeCanvasHeight, width: largeCanvasWidth }}
     >
-      {/* <div
-        className="minigraph-and-controls__all-selector"
-        style={{
-          width: smallCanvasWidth,
-          height: smallCanvasHeight,
-        }}
-      > */}
       <button
         id="allButton"
         className="minigraph-and-controls__all-button"
@@ -83,9 +90,7 @@ export const MiniGraphGrid = ({
       <div
         className="minigraph-and-controls__column-selectors"
         style={{
-          // width: smallCanvasWidth,
           width: "100%",
-
           height: smallCanvasHeight,
         }}
       >
@@ -96,8 +101,6 @@ export const MiniGraphGrid = ({
             key={columnLabel}
             style={{
               width: "100%",
-              // height: "100%",
-              // width: smallCanvasWidth,
               height: smallCanvasHeight,
             }}
             onClick={() =>
@@ -116,9 +119,6 @@ export const MiniGraphGrid = ({
       </div>
       <div
         className="minigraph-and-controls__row-selectors"
-        // style={{
-        //   width: smallCanvasWidth / 2,
-        // }}
         style={{
           width: "100%",
           height: "100%",
@@ -152,10 +152,6 @@ export const MiniGraphGrid = ({
         style={{
           alignItems: "center",
           justifyContent: "center",
-          // width: { largeCanvasWidth },
-          // height: { largeCanvasHeight },
-          // width: { smallCanvasWidth },
-          // height: { smallCanvasHeight },
         }}
       >
         {wellArrays?.length > 0 &&
@@ -186,8 +182,6 @@ export const MiniGraphGrid = ({
                   },
                 ],
               }}
-              // width={"100%"}
-              // height={"100%"}
               width={smallCanvasWidth}
               height={smallCanvasHeight}
               options={minigraphOptions}
@@ -196,8 +190,7 @@ export const MiniGraphGrid = ({
           ))}
       </div>
     </div>
-
-    // </section>
+    // </RubberbandSelector>
   );
 };
 
