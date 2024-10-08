@@ -28,7 +28,10 @@ export const FilteredGraph = ({
 }) => {
   const chartRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [startPos, setStartPos] = useState({ x: 0, y: 0 });
+  const [annotationStartPos, setAnnotationStartPos] = useState({ x: 0, y: 0 });
+  const [rangeStart, setRangeStart] = useState(0);
+  const [rangeEnd, setRangeEnd] = useState(extractedIndicatorTimes.length);
+
   const animationFrameId = useRef(null);
 
   useEffect(() => {
@@ -40,8 +43,15 @@ export const FilteredGraph = ({
     const chart = chartRef.current;
     const rect = chart.canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
-    setStartPos({ x, y: 0 }); // No need to track y for height control
+    let rangeStartIndex = chart.scales.x.getValueForPixel(x);
+    setAnnotationStartPos({ x, y: 0 }); // No need to track y for height control
     setIsDragging(true);
+
+    console.log("rangeStart (Index): ", rangeStartIndex);
+    console.log(
+      "rangeStart value: ",
+      chart.scales.x.getLabelForValue(rangeStartIndex)
+    );
   };
 
   // Handle mouse move event to dynamically update the annotation (with throttling)
@@ -59,11 +69,11 @@ export const FilteredGraph = ({
         const rect = chart.canvas.getBoundingClientRect();
         const x = event.clientX - rect.left;
 
-        const xMin = Math.min(startPos.x, x);
-        const xMax = Math.max(startPos.x, x);
+        const xMin = Math.min(annotationStartPos.x, x);
+        const xMax = Math.max(annotationStartPos.x, x);
 
-        const yMin = chart.scales.y.min; // Use the proper y-range
-        const yMax = chart.scales.y.max; // Use the proper y-range
+        const yMin = chart.scales.y.min; // Define proper y-range
+        const yMax = chart.scales.y.max; // Define proper y-range
 
         // Update annotation dynamically
         chart.options.plugins.annotation.annotations = [
@@ -71,8 +81,8 @@ export const FilteredGraph = ({
             type: "box",
             xMin: chart.scales.x.getValueForPixel(xMin),
             xMax: chart.scales.x.getValueForPixel(xMax),
-            yMin: yMin, // Use the full y-range
-            yMax: yMax, // Use the full y-range
+            yMin: yMin, // Use the full designated y-range
+            yMax: yMax, // Use the full designated y-range
             backgroundColor: "rgba(0, 255, 0, 0.2)",
             borderColor: "rgba(0, 255, 0, 1)",
             borderWidth: 2,
@@ -81,7 +91,7 @@ export const FilteredGraph = ({
         chart.update("none"); // "none" ensures no animations for smoother update
       });
     },
-    [isDragging, startPos]
+    [isDragging, annotationStartPos]
   );
 
   // Handle mouse up to finalize the annotation and log times
@@ -93,39 +103,35 @@ export const FilteredGraph = ({
 
     const chart = chartRef.current;
     const rect = chart.canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left; // end position
+    let rangeEndIndex = chart.scales.x.getValueForPixel(x);
 
-    // Get the pixel positions of the mouse at the time of mouse up
-    const xMinPixel = startPos.x; // starting position
-    const xMaxPixel = event.clientX - rect.left; // ending position
-
-    // Get the ticks array from the x scale
-    const ticks = chart.scales.x.getTicks(); // Use getTicks() to obtain ticks
-
-    // Determine min and max indices from the ticks
-    const minIndex = ticks.findIndex((tick) => tick && tick.value >= xMinPixel);
-    const maxIndex = ticks.findIndex((tick) => tick && tick.value >= xMaxPixel);
-
-    // Ensure that indices are valid
-    const validMinIndex = minIndex === -1 ? 0 : minIndex; // Fallback to 0 if not found
-    const validMaxIndex = maxIndex === -1 ? ticks.length - 1 : maxIndex; // Fallback to last index if not found
-
-    // Extract the corresponding labels (indicator times) based on the indices
-    const filteredTimes = extractedIndicatorTimes.slice(
-      validMinIndex,
-      validMaxIndex + 1
-    );
-
+    console.log("rangeEnd (Index): ", rangeEndIndex);
     console.log(
-      "Filtered extractedIndicatorTimes within bounds:",
-      filteredTimes
-    );
-    const matchingWells = wellArrays.filter((well) =>
-      well.indicators[0]?.filteredData.some((dataPoint) =>
-        filteredTimes.includes(dataPoint.x)
-      )
+      "rangeEnd value: ",
+      chart.scales.x.getLabelForValue(rangeEndIndex)
     );
 
-    console.log("Matching wells:", matchingWells);
+    // // Get the pixel positions of the mouse at the time of mouse up
+    // const xMinPixel = annotationStartPos.x; // starting position
+    // const xMaxPixel = event.clientX - rect.left; // ending position
+
+    // // Get the ticks array from the x scale
+    // const ticks = chart.scales.x.getTicks(); // Use getTicks() to obtain ticks
+
+    // // Determine min and max indices from the ticks
+    // const minIndex = ticks.findIndex((tick) => tick && tick.value >= xMinPixel);
+    // const maxIndex = ticks.findIndex((tick) => tick && tick.value >= xMaxPixel);
+
+    // // Ensure that indices are valid
+    // const validMinIndex = minIndex === -1 ? 0 : minIndex; // Fallback to 0 if not found
+    // const validMaxIndex = maxIndex === -1 ? ticks.length - 1 : maxIndex; // Fallback to last index if not found
+
+    // // Extract the corresponding labels (indicator times) based on the indices
+    // const filteredTimes = extractedIndicatorTimes.slice(
+    //   validMinIndex,
+    //   validMaxIndex + 1
+    // );
   };
 
   return (
