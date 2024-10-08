@@ -26,6 +26,10 @@ export const DataProvider = ({ children }) => {
   // state determining what data is shown in minigraph-grid (rawData or filteredData)
   const [showFiltered, setShowFiltered] = useState(false);
 
+  // state determining what range of x-values exist within annotation box
+  const [annotationRangeStart, setAnnotationRangeStart] = useState(0);
+  const [annotationRangeEnd, setAnnotationRangeEnd] = useState(0);
+
   // functions handling selectedWellArray management
   const handleSelectWell = (well) => {
     setSelectedWellArray((prevArray) => [...prevArray, well]);
@@ -226,6 +230,10 @@ export const DataProvider = ({ children }) => {
         handleSelectWell,
         handleDeselectWell,
         handleClearSelectedWells,
+        // annotationRangeStart,
+        // setAnnotationRangeStart,
+        // annotationRangeEnd,
+        // setAnnotationRangeEnd,
       }}
     >
       {children} {/* Provide context to children components */}

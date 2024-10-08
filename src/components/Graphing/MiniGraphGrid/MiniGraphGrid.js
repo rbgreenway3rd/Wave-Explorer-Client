@@ -30,7 +30,7 @@ export const MiniGraphGrid = ({
 
   const [isRubberbanding, setIsRubberbanding] = useState(false);
 
-  console.log(selectedWellArray);
+  // console.log(selectedWellArray);
 
   const plate = project?.plate || [];
   const experiment = plate[0]?.experiments[0] || {};

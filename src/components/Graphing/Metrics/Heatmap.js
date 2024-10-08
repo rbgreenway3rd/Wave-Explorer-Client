@@ -9,6 +9,8 @@ const Heatmap = ({
   largeCanvasHeight,
   rowLabels,
   columnLabels,
+  annotationRangeStart,
+  annotationRangeEnd,
 }) => {
   const canvasRef = useRef(null);
   const [tooltip, setTooltip] = useState({
@@ -20,6 +22,11 @@ const Heatmap = ({
   });
   const numColumns = columnLabels.length;
   const numRows = rowLabels.length;
+
+  const annotationRange =
+    annotationRangeStart > annotationRangeEnd
+      ? { start: annotationRangeEnd, end: annotationRangeStart }
+      : { start: annotationRangeStart, end: annotationRangeEnd };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -34,9 +41,21 @@ const Heatmap = ({
     context.clearRect(0, 0, largeCanvasWidth, largeCanvasHeight);
 
     // Flatten all y-values from the filteredData arrays inside wellArrays.
-    const allValues = wellArrays.flatMap(
-      (well) => well.indicators[0]?.filteredData.map((d) => d.y) || []
-    );
+    const allValues = wellArrays.flatMap((well) => {
+      // Filter filteredData based on the annotationRange
+      const filteredData = well.indicators[0]?.filteredData || [];
+
+      // Only include values within the annotationRange
+      if (annotationRangeStart !== null && annotationRangeEnd !== null) {
+        return filteredData
+          .filter(
+            (_, i) => i >= annotationRange.start && i <= annotationRange.end
+          )
+          .map((d) => d.y);
+      } else {
+        return filteredData.map((d) => d.y); // No filtering if annotationRange is not set
+      }
+    });
 
     // Create a color scale based on data
     const colorScale = d3
@@ -61,9 +80,17 @@ const Heatmap = ({
       const row = Math.floor(i / numColumns);
       const col = i % numColumns;
 
-      const filteredData = well.indicators[0]?.filteredData || [];
+      let heatmapData = well.indicators[0]?.filteredData || [];
+
+      // Only include filteredData within the annotationRange if it's set
+      if (annotationRangeStart !== null && annotationRangeEnd !== null) {
+        heatmapData = heatmapData.filter(
+          (_, i) => i >= annotationRange.start && i <= annotationRange.end
+        );
+      }
+
       const maxYValue =
-        filteredData.length > 0 ? d3.max(filteredData, (d) => d.y) : 0;
+        heatmapData.length > 0 ? d3.max(heatmapData, (d) => d.y) : 0;
 
       context.fillStyle = colorScale(maxYValue);
 
@@ -87,7 +114,14 @@ const Heatmap = ({
       // Draw the well label
       context.fillText(well.label || "", textX, textY); // Replace with actual label property
     });
-  }, [wellArrays, largeCanvasWidth, largeCanvasHeight]);
+  }, [
+    wellArrays,
+    largeCanvasWidth,
+    largeCanvasHeight,
+    annotationRangeStart,
+    annotationRangeEnd,
+    annotationRange,
+  ]);
 
   // Mouse move handler to update tooltip position and visibility
   const handleMouseMove = (e) => {

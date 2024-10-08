@@ -69,6 +69,10 @@ export const CombinedComponent = () => {
   const [selectedFilters, setSelectedFilters] = useState([]);
   const [enabledFilters, setEnabledFilters] = useState([]);
 
+  // State variables to store range of y-values inside filteredGraph's annotation box
+  const [annotationRangeStart, setAnnotationRangeStart] = useState(null);
+  const [annotationRangeEnd, setAnnotationRangeEnd] = useState(null);
+
   // Extracted plate and experiment data from the project
   const plate = project?.plate || [];
   const experiment = plate[0]?.experiments[0] || {};
@@ -355,6 +359,8 @@ export const CombinedComponent = () => {
                   columnLabels={columnLabels}
                   rowLabels={rowLabels}
                   analysisData={analysisData}
+                  annotationRangeStart={annotationRangeStart}
+                  annotationRangeEnd={annotationRangeEnd}
                 />
               </div>
               <div className="combined-component__metrics-controls">
@@ -369,6 +375,10 @@ export const CombinedComponent = () => {
                   extractedIndicatorTimes={extractedIndicatorTimes}
                   selectedWellArray={selectedWellArray}
                   filteredGraphData={filteredGraphData}
+                  annotationRangeStart={annotationRangeStart}
+                  annotationRangeEnd={annotationRangeEnd}
+                  setAnnotationRangeStart={setAnnotationRangeStart}
+                  setAnnotationRangeEnd={setAnnotationRangeEnd}
                   options={filteredGraphConfig}
                 />
               </div>
