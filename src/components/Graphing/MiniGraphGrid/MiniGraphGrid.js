@@ -1,4 +1,4 @@
-import React, { memo, useMemo, useContext, useState } from "react";
+import React, { memo, useMemo, useContext, useState, useRef } from "react";
 import { DataContext } from "../../FileHandling/DataProvider";
 import "../../../styles/MiniGraphGrid.css";
 import "chartjs-adapter-date-fns";
@@ -30,6 +30,9 @@ export const MiniGraphGrid = ({
 
   const [isRubberbanding, setIsRubberbanding] = useState(false);
 
+  const [selectionBox, setSelectionBox] = useState(null);
+
+  const selectionCanvasRef = useRef(null);
   // console.log(selectedWellArray);
 
   const plate = project?.plate || [];
@@ -45,29 +48,7 @@ export const MiniGraphGrid = ({
     }
   };
 
-  // Handle when the user starts/stops dragging the rubberband
-  const handleMouseDown = () => setIsRubberbanding(true);
-  const handleMouseUp = () => setIsRubberbanding(false);
-
-  const handleSelectionComplete = (selectionBox) => {
-    // Logic to select wells within the selectionBox
-    console.log("Selection completed: ", selectionBox);
-    // You can calculate which wells fall into this box using the coordinates
-  };
-
-  // console.log("sch: ", smallCanvasHeight, "smw: ", smallCanvasWidth);
-
   return (
-    // <RubberbandSelector
-    //   onSelectionComplete={handleSelectionComplete}
-    //   onMouseDown={handleMouseDown}
-    //   onMouseUp={handleMouseUp}
-    //   isRubberbanding={isRubberbanding}
-    //   width={largeCanvasWidth}
-    //   height={largeCanvasHeight}
-    //   smallCanvasHeight={smallCanvasHeight}
-    //   smallCanvasWidth={smallCanvasWidth}
-    // >
     <div
       className="minigraph-and-controls__minigraph-container"
       style={{ height: largeCanvasHeight, width: largeCanvasWidth }}
@@ -150,6 +131,7 @@ export const MiniGraphGrid = ({
       <div
         className="minigraph-and-controls__minigraph-grid"
         style={{
+          position: "relative",
           alignItems: "center",
           justifyContent: "center",
         }}
@@ -190,7 +172,6 @@ export const MiniGraphGrid = ({
           ))}
       </div>
     </div>
-    // </RubberbandSelector>
   );
 };
 

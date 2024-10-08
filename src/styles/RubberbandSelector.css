@@ -5,5 +5,5 @@
 
 .rubberband {
   background-color: rgba(0, 123, 255, 0.2);
-  pointer-events: none; /* Ensure it doesn’t interfere with clicks */
+  /* pointer-events: none; Ensure it doesn’t interfere with clicks */
 }

@@ -2,6 +2,11 @@
     /* display: flex; */
 }
 
+.rubberband-selector{
+    /* display: grid; */
+    /* grid-area: minigraph-and-controls__minigraph-grid; */
+}
+
 .minigraph-and-controls__minigraph-container {
     /* border: solid 0.5em black; */
     /* background: rgb(220, 220, 220);  */ /* match canvas background */
