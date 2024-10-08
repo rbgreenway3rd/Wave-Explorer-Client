@@ -1,6 +1,37 @@
-import React, { useContext, useEffect, useState, useRef } from "react";
+// import React, { useContext, useEffect, useState, useRef } from "react";
+// import "./MetricsControls.css";
+// export const MetricsControls = () => {
+//   return (
+//     <div className="metrics__controls-container">
+//       <div className="metrics__radio-container">
+//         Show
+//         <div className="radio__show-max">
+//           <input
+//             type="radio"
+//             id="show-max"
+//             className="radio__show-max-radio"
+//             value="showMax"
+//             name="radio-group-metrics"
+//             // defaultChecked={true}
+//           />
+//           <label htmlFor="show-raw">Max</label>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+import React, { useState } from "react";
 import "./MetricsControls.css";
-export const MetricsControls = () => {
+
+export const MetricsControls = ({ setMetricType }) => {
+  const [selectedMetric, setSelectedMetric] = useState("maxYValue");
+
+  const handleMetricChange = (e) => {
+    const newMetric = e.target.value;
+    setSelectedMetric(newMetric);
+    setMetricType(newMetric); // Prop to notify Heatmap of the change
+  };
+
   return (
     <div className="metrics__controls-container">
       <div className="metrics__radio-container">
@@ -10,13 +41,40 @@ export const MetricsControls = () => {
             type="radio"
             id="show-max"
             className="radio__show-max-radio"
-            value="showMax"
+            value="maxYValue"
             name="radio-group-metrics"
-            // defaultChecked={true}
+            checked={selectedMetric === "maxYValue"}
+            onChange={handleMetricChange}
           />
-          <label htmlFor="show-raw">Max</label>
+          <label htmlFor="show-max">Max</label>
+        </div>
+        <div className="radio__show-min">
+          <input
+            type="radio"
+            id="show-min"
+            className="radio__show-min-radio"
+            value="minYValue"
+            name="radio-group-metrics"
+            checked={selectedMetric === "minYValue"}
+            onChange={handleMetricChange}
+          />
+          <label htmlFor="show-min">Min</label>
+        </div>
+        <div className="radio__show-range">
+          <input
+            type="radio"
+            id="show-range"
+            className="radio__show-range-radio"
+            value="rangeOfYValues"
+            name="radio-group-metrics"
+            checked={selectedMetric === "rangeOfYValues"}
+            onChange={handleMetricChange}
+          />
+          <label htmlFor="show-range">Range</label>
         </div>
       </div>
     </div>
   );
 };
+
+export default MetricsControls;

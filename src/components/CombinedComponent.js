@@ -73,6 +73,9 @@ export const CombinedComponent = () => {
   const [annotationRangeStart, setAnnotationRangeStart] = useState(null);
   const [annotationRangeEnd, setAnnotationRangeEnd] = useState(null);
 
+  // State variable handling what metrics type is shown in heatmap
+  const [metricType, setMetricType] = useState("maxYValue"); // Default metric type
+
   // Extracted plate and experiment data from the project
   const plate = project?.plate || [];
   const experiment = plate[0]?.experiments[0] || {};
@@ -361,10 +364,11 @@ export const CombinedComponent = () => {
                   analysisData={analysisData}
                   annotationRangeStart={annotationRangeStart}
                   annotationRangeEnd={annotationRangeEnd}
+                  metricType={metricType}
                 />
               </div>
               <div className="combined-component__metrics-controls">
-                <MetricsControls />
+                <MetricsControls setMetricType={setMetricType} />
               </div>
               <header className="combined-component__filters-header">
                 Filtered Waves

@@ -11,6 +11,7 @@ const Heatmap = ({
   columnLabels,
   annotationRangeStart,
   annotationRangeEnd,
+  metricType,
 }) => {
   const canvasRef = useRef(null);
   const [tooltip, setTooltip] = useState({
@@ -92,8 +93,18 @@ const Heatmap = ({
 
       const maxYValue =
         heatmapData.length > 0 ? d3.max(heatmapData, (d) => d.y) : 0;
+      const minYValue =
+        heatmapData.length > 0 ? d3.min(heatmapData, (d) => d.y) : 0;
+      const rangeOfYValues = maxYValue - minYValue;
 
-      context.fillStyle = colorScale(maxYValue);
+      const activeMetric =
+        metricType === "maxYValue"
+          ? maxYValue
+          : metricType === "minYValue"
+          ? minYValue
+          : rangeOfYValues;
+
+      context.fillStyle = colorScale(activeMetric);
 
       // Draw each cell ensuring it perfectly fits in the grid
       context.fillRect(
@@ -126,6 +137,7 @@ const Heatmap = ({
     annotationRange, // annotationRange is memoized, reducing unnecessary recalculations
     // annotationRangeStart,
     // annotationRangeEnd,
+    metricType,
   ]);
 
   // Mouse move handler to update tooltip position and visibility
