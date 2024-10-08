@@ -168,6 +168,7 @@ ChartJS.register(
 
 export const FilteredGraph = ({
   filteredGraphData,
+  extractedIndicatorTimes,
   annotationRangeStart,
   setAnnotationRangeStart,
   annotationRangeEnd,
@@ -192,7 +193,14 @@ export const FilteredGraph = ({
 
     setAnnotationStartPos({ x, y: 0 });
     setIsDragging(true);
-    setAnnotationRangeStart(annotationRangeStartIndex);
+    if (
+      annotationRangeStartIndex < 0 ||
+      annotationRangeStartIndex > extractedIndicatorTimes.length
+    ) {
+      setAnnotationRangeStart(0);
+    } else {
+      setAnnotationRangeStart(annotationRangeStartIndex);
+    }
 
     console.log("Start position:", annotationRangeStartIndex);
   };
@@ -238,8 +246,14 @@ export const FilteredGraph = ({
     const rect = chart.canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const annotationRangeEndIndex = chart.scales.x.getValueForPixel(x);
-
-    setAnnotationRangeEnd(annotationRangeEndIndex);
+    if (
+      annotationRangeEndIndex > extractedIndicatorTimes.length ||
+      annotationRangeEndIndex < 0
+    ) {
+      setAnnotationRangeEnd(extractedIndicatorTimes.length);
+    } else {
+      setAnnotationRangeEnd(annotationRangeEndIndex);
+    }
 
     // Get the annotation and store it in state, clearing old annotations
     const newAnnotation = {

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useMemo } from "react";
 import * as d3 from "d3";
 
 const Heatmap = ({
@@ -20,13 +20,16 @@ const Heatmap = ({
     label: "",
     value: "",
   });
+
   const numColumns = columnLabels.length;
   const numRows = rowLabels.length;
 
-  const annotationRange =
-    annotationRangeStart > annotationRangeEnd
+  // Memoize annotationRange to prevent unnecessary recalculations and re-renders
+  const annotationRange = useMemo(() => {
+    return annotationRangeStart > annotationRangeEnd
       ? { start: annotationRangeEnd, end: annotationRangeStart }
       : { start: annotationRangeStart, end: annotationRangeEnd };
+  }, [annotationRangeStart, annotationRangeEnd]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -35,14 +38,12 @@ const Heatmap = ({
     // Calculate exact width and height for cells so they fill up the entire canvas
     const cellWidth = largeCanvasWidth / numColumns;
     const cellHeight = largeCanvasHeight / numRows;
-    // const cellHeight = smallCanvasHeight;
 
     // Clear the entire canvas before drawing
     context.clearRect(0, 0, largeCanvasWidth, largeCanvasHeight);
 
-    // Flatten all y-values from the filteredData arrays inside wellArrays.
+    // Flatten all y-values from the filteredData arrays inside wellArrays
     const allValues = wellArrays.flatMap((well) => {
-      // Filter filteredData based on the annotationRange
       const filteredData = well.indicators[0]?.filteredData || [];
 
       // Only include values within the annotationRange
@@ -101,6 +102,7 @@ const Heatmap = ({
         cellWidth,
         cellHeight
       );
+
       // Set text properties
       context.fillStyle = "black"; // Set the text color
       context.font = "12px Arial"; // Set font size and family
@@ -114,13 +116,16 @@ const Heatmap = ({
       // Draw the well label
       context.fillText(well.label || "", textX, textY); // Replace with actual label property
     });
+    console.log(annotationRange);
   }, [
     wellArrays,
     largeCanvasWidth,
     largeCanvasHeight,
-    annotationRangeStart,
-    annotationRangeEnd,
-    annotationRange,
+    numColumns,
+    numRows,
+    annotationRange, // annotationRange is memoized, reducing unnecessary recalculations
+    // annotationRangeStart,
+    // annotationRangeEnd,
   ]);
 
   // Mouse move handler to update tooltip position and visibility
@@ -164,11 +169,10 @@ const Heatmap = ({
       <canvas
         className="heatmap-canvas"
         ref={canvasRef}
-        width={largeCanvasWidth} // Use the full large canvas width
-        height={largeCanvasHeight} // Use the full large canvas height
+        width={largeCanvasWidth}
+        height={largeCanvasHeight}
         onMouseLeave={handleMouseLeave}
         onMouseMove={handleMouseMove}
-        // style={{ border: "solid 0.5em black" }}
       />
       {tooltip.visible && (
         <div
@@ -180,7 +184,7 @@ const Heatmap = ({
             color: "white",
             padding: "5px",
             borderRadius: "5px",
-            pointerEvents: "none", // Prevents the tooltip from interfering with mouse events
+            pointerEvents: "none",
           }}
         >
           <div>
