@@ -33,14 +33,14 @@ export const FilteredGraphOptions = (
       duration: 0,
     },
     plugins: {
-      legend: true, // displays dataset label at top of graph
+      legend: false, // displays dataset label at top of graph
       decimation: {
         enabled: false,
         algorithm: "lttb",
         samples: 50,
       },
       tooltip: {
-        enabled: true, // set to FALSE if using an external function for tooltip
+        enabled: false, // set to FALSE if using an external function for tooltip
         mode: "nearest",
         intersect: false,
       },
@@ -52,22 +52,22 @@ export const FilteredGraphOptions = (
     responsive: true,
     scales: {
       x: {
-        display: true,
+        display: false,
         ticks: {
-          display: true,
+          display: false,
         },
         grid: {
-          display: true,
+          display: false,
         },
         min: minXValue,
         max: maxXValue,
       },
       y: {
         ticks: {
-          display: true,
+          display: false,
         },
         grid: {
-          display: true,
+          display: false,
         },
         min: minYValue,
         max: maxYValue,

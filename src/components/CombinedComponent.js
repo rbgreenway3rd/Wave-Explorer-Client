@@ -395,6 +395,8 @@ export const CombinedComponent = () => {
                   setShowFiltered={setShowFiltered}
                   columnLabels={columnLabels}
                   rowLabels={rowLabels}
+                  setAnnotationRangeStart={setAnnotationRangeStart}
+                  setAnnotationRangeEnd={setAnnotationRangeEnd}
                 />
               </div>
             </section>

@@ -39,6 +39,8 @@ export const FilterControls = ({
   applyEnabledFilters,
   columnLabels,
   rowLabels,
+  setAnnotationRangeStart,
+  setAnnotationRangeEnd,
 }) => {
   const [selectedWells, setSelectedWells] = useState([]);
   const [highlightedFilter, setHighlightedFilter] = useState({});
@@ -61,8 +63,10 @@ export const FilterControls = ({
   // state for drawer - collapsing controls
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
+  const handleResetAnnotations = () => {
+    // Reset the annotationRangeStart and annotationRangeEnd
+    setAnnotationRangeStart(null);
+    setAnnotationRangeEnd(null);
   };
 
   const modalStyle = {
@@ -440,9 +444,17 @@ export const FilterControls = ({
           </Typography>
         )}
       </section>
+      {/* Reset Annotations Button */}
+      <button
+        className="filter-controls__reset-annotations"
+        variant="contained"
+        color="secondary"
+        onClick={handleResetAnnotations}
+      >
+        Reset Annotations
+      </button>
 
       {/* Reset Filters Button */}
-
       <button
         className="filter-controls__reset-button"
         variant="contained"
