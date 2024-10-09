@@ -239,6 +239,7 @@ export const MiniGraphGrid = ({
             right: 0,
             bottom: 0,
             pointerEvents: "none", // Prevent this container from interfering with clicks
+            zIndex: 200000, // prevents seleciton box from being drawn behind canvases
           }}
         >
           <DragSelection

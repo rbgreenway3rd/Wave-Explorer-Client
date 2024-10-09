@@ -2,10 +2,6 @@
     /* display: flex; */
 }
 
-.rubberband-selector{
-    /* display: grid; */
-    /* grid-area: minigraph-and-controls__minigraph-grid; */
-}
 
 .minigraph-and-controls__minigraph-container {
     /* border: solid 0.5em black; */
@@ -26,12 +22,6 @@
     background: rgb(220, 220, 220);
     justify-self: center;
     align-self: center;
-    /* width: auto;
-    height: auto; */
-     /* box-sizing: border-box; */
-     /* max-width: 100%;
-    max-height: 100%; */
-    /* object-fit: contain; Ensure the aspect ratio is respected */
 }
 
 .minigraph-and-controls__minigraph-canvas:hover {

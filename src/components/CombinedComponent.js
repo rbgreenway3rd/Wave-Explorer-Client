@@ -34,6 +34,8 @@ export const CombinedComponent = () => {
   const {
     project,
     setProject,
+    extractedRows,
+    extractedColumns,
     extractedIndicatorTimes,
     analysisData,
     showFiltered,
@@ -104,6 +106,13 @@ export const CombinedComponent = () => {
     "O",
     "P",
   ];
+
+  console.log(
+    "extractedRows: ",
+    extractedRows,
+    "extractedColumns: ",
+    extractedColumns
+  );
 
   // Functions to handle zoom state changes
   const toggleZoomState = (currentZoomState) => {

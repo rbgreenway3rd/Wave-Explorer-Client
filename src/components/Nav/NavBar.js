@@ -17,11 +17,11 @@ export const NavBar = () => {
         <h1 className="logo">ave Explorer</h1>
       </section>
       <section className="navbar-right">
-        <img
+        {/* <img
           src={WaveFrontLogo}
           alt="WaveFront Logo"
           className="wavefront-logo"
-        />{" "}
+        />{" "} */}
       </section>
     </header>
   );
