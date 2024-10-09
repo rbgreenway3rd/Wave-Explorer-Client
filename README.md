@@ -19,6 +19,7 @@ Front End application oriented to ...
 ## Technologies Used
 
 - React single page application
+- react-drag-to-select [airlabsteam.github.io/react-drag-to-select] for rubberband selection
 - ... [other technologies]
 
 ### Architecture diagrams
