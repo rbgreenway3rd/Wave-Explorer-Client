@@ -1,99 +1,118 @@
-// import React, { useState, useRef } from "react";
-// // import "../../../styles/RubberbandSelector.css";
+// import { useState, useRef, useEffect } from "react";
 
-// const RubberbandSelector = ({
+// export const RubberbandSelector = ({
+//   selectionCanvasWidth,
+//   selectionCanvasHeight,
 //   onSelectionComplete,
-//   width,
-//   height,
-//   smallCanvasHeight,
-//   smallCanvasWidth,
-//   children,
 // }) => {
+//   const canvasRef = useRef(null);
 //   const [isSelecting, setIsSelecting] = useState(false);
-//   const [selectionBox, setSelectionBox] = useState(null);
-//   const selectionCanvasRef = useRef(null);
+//   const [startPoint, setStartPoint] = useState(null);
+//   const [endPoint, setEndPoint] = useState(null);
 
 //   const handleMouseDown = (e) => {
+//     // Start new selection when mouse is clicked
 //     setIsSelecting(true);
-//     const { offsetX, offsetY } = e.nativeEvent;
-//     setSelectionBox({
-//       xStart: offsetX + smallCanvasWidth,
-//       yStart: offsetY + smallCanvasHeight,
-//       xEnd: offsetX,
-//       yEnd: offsetY,
-//     });
+//     const rect = canvasRef.current.getBoundingClientRect();
+//     setStartPoint({ x: e.clientX - rect.left, y: e.clientY - rect.top });
 //   };
 
 //   const handleMouseMove = (e) => {
+//     // Update selection box as mouse moves, only if selecting
 //     if (!isSelecting) return;
-//     const { offsetX, offsetY } = e.nativeEvent;
-//     setSelectionBox((prev) => ({
-//       ...prev,
-//       xEnd: offsetX,
-//       yEnd: offsetY,
-//     }));
-
-//     // Draw the rubberband box on the canvas
-//     const ctx = selectionCanvasRef.current.getContext("2d");
-//     ctx.clearRect(0, 0, width, height);
-//     ctx.strokeStyle = "blue";
-//     ctx.lineWidth = 2;
-//     ctx.setLineDash([6]);
-//     ctx.strokeRect(
-//       selectionBox.xStart,
-//       selectionBox.yStart,
-//       offsetX - selectionBox.xStart,
-//       offsetY - selectionBox.yStart
-//     );
+//     const rect = canvasRef.current.getBoundingClientRect();
+//     setEndPoint({ x: e.clientX - rect.left, y: e.clientY - rect.top });
 //   };
 
-//   const handleMouseUp = (e) => {
-//     if (!isSelecting) return;
+//   const handleMouseUp = () => {
+//     // Complete selection and reset isSelecting to false
+//     if (!isSelecting || !startPoint || !endPoint) return;
+
+//     // Pass the final coordinates to the parent component
+//     onSelectionComplete({
+//       xStart: Math.min(startPoint.x, endPoint.x),
+//       yStart: Math.min(startPoint.y, endPoint.y),
+//       xEnd: Math.max(startPoint.x, endPoint.x),
+//       yEnd: Math.max(startPoint.y, endPoint.y),
+//     });
+
+//     // Reset selection states
 //     setIsSelecting(false);
-
-//     // Final selection logic (could compute selected wells here)
-//     onSelectionComplete(selectionBox);
-//     setSelectionBox(null);
-//     const ctx = selectionCanvasRef.current.getContext("2d");
-//     ctx.clearRect(0, 0, width, height);
+//     setStartPoint(null);
+//     setEndPoint(null);
 //   };
+
+//   // Handle mouseup globally so selection doesn't break if the mouse leaves the canvas
+//   useEffect(() => {
+//     if (isSelecting) {
+//       window.addEventListener("mouseup", handleMouseUp);
+//     } else {
+//       window.removeEventListener("mouseup", handleMouseUp);
+//     }
+
+//     return () => {
+//       window.removeEventListener("mouseup", handleMouseUp);
+//     };
+//   }, [isSelecting]);
+
+//   // Drawing the rubberband selection box
+//   useEffect(() => {
+//     const canvas = canvasRef.current;
+//     const context = canvas.getContext("2d");
+
+//     if (isSelecting && startPoint && endPoint) {
+//       // Clear previous drawings
+//       context.clearRect(0, 0, canvas.width, canvas.height);
+
+//       // Draw the selection rectangle
+//       context.strokeStyle = "blue";
+//       context.lineWidth = 2;
+//       context.strokeRect(
+//         Math.min(startPoint.x, endPoint.x),
+//         Math.min(startPoint.y, endPoint.y),
+//         Math.abs(endPoint.x - startPoint.x),
+//         Math.abs(endPoint.y - startPoint.y)
+//       );
+//     } else {
+//       // Clear canvas when not selecting
+//       context.clearRect(0, 0, canvas.width, canvas.height);
+//     }
+//   }, [isSelecting, startPoint, endPoint]);
 
 //   return (
-//     <div
-//       className="rubberband-container"
+//     <canvas
+//       ref={canvasRef}
+//       width={selectionCanvasWidth}
+//       height={selectionCanvasHeight}
 //       style={{
-//         position: "absolute", // Absolute inside the grid
-//         width,
-//         height,
-//         zIndex: 10, // Ensure it stays on top of the grid
-//         pointerEvents: "none", // So it doesn't block interactions with underlying elements
+//         position: "absolute",
+//         top: 0,
+//         left: 0,
+//         zIndex: 1000,
+//         pointerEvents: isSelecting ? "auto" : "none",
 //       }}
 //       onMouseDown={handleMouseDown}
 //       onMouseMove={handleMouseMove}
 //       onMouseUp={handleMouseUp}
-//     >
-//       {children}
-//       <canvas
-//         ref={selectionCanvasRef}
-//         width={width}
-//         height={height}
-//         style={{
-//           position: "absolute",
-//           top: 0,
-//           left: 0,
-//           pointerEvents: "none", // Prevent the canvas from capturing clicks
-//         }}
-//       />
-//     </div>
+//     />
 //   );
 // };
 
 // export default RubberbandSelector;
 import { useState, useRef, useEffect } from "react";
 
-export const RubberbandSelector = ({ width, height, onSelectionComplete }) => {
+export const RubberbandSelector = ({
+  selectionCanvasWidth,
+  selectionCanvasHeight,
+  isSelecting,
+  setIsSelecting,
+  onMouseDown,
+  onMouseMove,
+  onMouseUp,
+  onSelectionComplete,
+}) => {
   const canvasRef = useRef(null);
-  const [isSelecting, setIsSelecting] = useState(false);
+
   const [startPoint, setStartPoint] = useState(null);
   const [endPoint, setEndPoint] = useState(null);
 
@@ -101,18 +120,19 @@ export const RubberbandSelector = ({ width, height, onSelectionComplete }) => {
     setIsSelecting(true);
     const rect = canvasRef.current.getBoundingClientRect();
     setStartPoint({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    onMouseDown(e); // Notify parent that mouse down occurred
   };
 
   const handleMouseMove = (e) => {
     if (!isSelecting) return;
     const rect = canvasRef.current.getBoundingClientRect();
     setEndPoint({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    onMouseMove(e); // Notify parent of mouse movement
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (e) => {
     if (!isSelecting || !startPoint || !endPoint) return;
 
-    // Finish selection and pass coordinates to parent
     onSelectionComplete({
       xStart: Math.min(startPoint.x, endPoint.x),
       yStart: Math.min(startPoint.y, endPoint.y),
@@ -123,17 +143,27 @@ export const RubberbandSelector = ({ width, height, onSelectionComplete }) => {
     setIsSelecting(false);
     setStartPoint(null);
     setEndPoint(null);
+    onMouseUp(e);
   };
+
+  useEffect(() => {
+    if (isSelecting) {
+      window.addEventListener("mouseup", handleMouseUp);
+    } else {
+      window.removeEventListener("mouseup", handleMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isSelecting]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
 
     if (isSelecting && startPoint && endPoint) {
-      // Clear previous drawing
       context.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Draw the selection rectangle
       context.strokeStyle = "blue";
       context.lineWidth = 2;
       context.strokeRect(
@@ -143,7 +173,6 @@ export const RubberbandSelector = ({ width, height, onSelectionComplete }) => {
         Math.abs(endPoint.y - startPoint.y)
       );
     } else {
-      // Clear canvas when not selecting
       context.clearRect(0, 0, canvas.width, canvas.height);
     }
   }, [isSelecting, startPoint, endPoint]);
@@ -151,14 +180,14 @@ export const RubberbandSelector = ({ width, height, onSelectionComplete }) => {
   return (
     <canvas
       ref={canvasRef}
-      width={width}
-      height={height}
+      width={selectionCanvasWidth}
+      height={selectionCanvasHeight}
       style={{
         position: "absolute",
         top: 0,
         left: 0,
         zIndex: 1000,
-        pointerEvents: isSelecting ? "auto" : "none",
+        pointerEvents: isSelecting ? "auto" : "none", // Only intercept events when selecting
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}

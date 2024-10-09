@@ -28,12 +28,9 @@ export const MiniGraphGrid = ({
     handleClearSelectedWells,
   } = useContext(DataContext);
 
-  const [isRubberbanding, setIsRubberbanding] = useState(false);
-
-  const [selectionBox, setSelectionBox] = useState(null);
-
-  const selectionCanvasRef = useRef(null);
   // console.log(selectedWellArray);
+  const [isSelecting, setIsSelecting] = useState(true);
+  const [mouseMoved, setMouseMoved] = useState(false);
 
   const plate = project?.plate || [];
   const experiment = plate[0]?.experiments[0] || {};
@@ -46,6 +43,26 @@ export const MiniGraphGrid = ({
     } else {
       handleSelectWell(well);
     }
+  };
+
+  const onSelectionComplete = () => {
+    console.log("selection complete");
+  };
+
+  const handleMouseDown = (e) => {
+    setIsSelecting(true);
+    setMouseMoved(false); // Reset mouseMoved state
+  };
+
+  const handleMouseMove = () => {
+    setMouseMoved(true); // Set mouseMoved to true if mouse is moved
+  };
+
+  const handleMouseUp = (wellId) => {
+    if (!isSelecting) {
+      handleWellClick(wellId); // Pass the well ID as needed
+    }
+    setIsSelecting(false);
   };
 
   return (
@@ -67,7 +84,6 @@ export const MiniGraphGrid = ({
       >
         all
       </button>
-      {/* </div> */}
       <div
         className="minigraph-and-controls__column-selectors"
         style={{
@@ -136,6 +152,17 @@ export const MiniGraphGrid = ({
           justifyContent: "center",
         }}
       >
+        <RubberbandSelector
+          selectionCanvasWidth={largeCanvasWidth - smallCanvasWidth}
+          selectionCanvasHeight={largeCanvasHeight - smallCanvasHeight}
+          isSelecting={isSelecting}
+          setIsSelecting={setIsSelecting}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onSelectionComplete={onSelectionComplete}
+          style={{ zIndex: 10000 }}
+        />
         {wellArrays?.length > 0 &&
           wellArrays.map((well) => (
             <Line
@@ -148,8 +175,9 @@ export const MiniGraphGrid = ({
                 )
                   ? {
                       border: "solid 2px red",
+                      zIndex: 10,
                     } // styling for selected wells
-                  : {} // styling for un-selected wells
+                  : { zIndex: 10 } // styling for un-selected wells
               }
               key={well.id}
               data={{
