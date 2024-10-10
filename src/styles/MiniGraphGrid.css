@@ -6,7 +6,9 @@
 .minigraph-and-controls__minigraph-container {
     /* border: solid 0.5em black; */
     /* background: rgb(220, 220, 220);  */ /* match canvas background */
+  
     background: rgb(212, 212, 212);
+    /* background: rgb(0, 0, 0); */
     display: grid;
     grid-template-areas:
         "minigraph-and-controls__all-selector minigraph-and-controls__column-selectors"
@@ -20,6 +22,7 @@
 .minigraph-and-controls__minigraph-canvas {
     /* padding: 1px; */
     background: rgb(220, 220, 220);
+    /* background: rgb(0, 0, 0); */
     justify-self: center;
     align-self: center;
 }
@@ -81,4 +84,8 @@
     padding: 0; /* Ensure no padding interferes */
     box-sizing: border-box; /* Include padding and border in button width */
     flex: 1 0 auto; /* Make sure flexbox properties don't interfere */
+}
+
+.dotwave-loader {
+    
 }

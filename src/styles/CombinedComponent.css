@@ -24,6 +24,10 @@
     border: solid 0.5em black;
     grid-column: 1;
     grid-row: 2;
+    display: flex;
+    
+    justify-content: center;
+    
 }
 
 .combined-component__minigraph-controls {
