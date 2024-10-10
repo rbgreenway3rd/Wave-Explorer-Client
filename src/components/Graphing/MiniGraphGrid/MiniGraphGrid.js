@@ -20,6 +20,7 @@ import {
   Box,
   boxesIntersect,
 } from "@air/react-drag-to-select";
+import DotWaveLoader from "../../Loaders/DotWaveLoader";
 
 export const MiniGraphGrid = ({
   minigraphOptions,
@@ -43,6 +44,20 @@ export const MiniGraphGrid = ({
   const plate = project?.plate || []; // Default to an empty array if plate is undefined
   const experiment = plate[0]?.experiments[0] || {}; // Get the first experiment
   const wellArrays = experiment.wells || []; // Get well arrays or default to an empty array
+
+  // // State to track if rendering is complete
+  const [isRenderingComplete, setIsRenderingComplete] = useState(false);
+
+  useEffect(() => {
+    if (wellArrays.length > 0) {
+      // Introduce a small delay before setting isRenderingComplete
+      const timeout = setTimeout(() => {
+        setIsRenderingComplete(true);
+      }, 1500); // keep loader for at least 1.5 sec
+
+      return () => clearTimeout(timeout); // Cleanup timeout on component unmount
+    }
+  }, [wellArrays]);
 
   // Refs used for the drag-to-select box
   const gridRef = useRef(null); // Ref to the grid container
@@ -121,20 +136,26 @@ export const MiniGraphGrid = ({
     isEnabled: true, // Enable the drag selection
   });
 
+  const updateSelectableItems = () => {
+    selectableItems.current = []; // Reset selectable items
+    if (gridRef.current) {
+      // If gridRef is assigned
+      Array.from(gridRef.current.children).forEach((child) => {
+        // Loop through each child in the grid
+        const { left, top, width, height } = child.getBoundingClientRect(); // Get bounding rect
+        selectableItems.current.push({ left, top, width, height }); // Store the bounding box
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (isRenderingComplete && gridRef.current) {
+      updateSelectableItems(); // Ensure selectable items are recalculated after rendering
+    }
+  }, [isRenderingComplete, wellArrays]);
+
   // Capture the bounding boxes of wells
   useEffect(() => {
-    const updateSelectableItems = () => {
-      selectableItems.current = []; // Reset selectable items
-      if (gridRef.current) {
-        // If gridRef is assigned
-        Array.from(gridRef.current.children).forEach((child) => {
-          // Loop through each child in the grid
-          const { left, top, width, height } = child.getBoundingClientRect(); // Get bounding rect
-          selectableItems.current.push({ left, top, width, height }); // Store the bounding box
-        });
-      }
-    };
-
     updateSelectableItems(); // Initial update of selectable items
     window.addEventListener("resize", updateSelectableItems); // Re-capture on window resize
 
@@ -142,152 +163,158 @@ export const MiniGraphGrid = ({
   }, [wellArrays]); // Run effect when wellArrays changes
 
   return (
-    <div
-      className="minigraph-and-controls__minigraph-container"
-      style={{ height: largeCanvasHeight, width: largeCanvasWidth }}
-    >
-      <button
-        id="allButton"
-        className="minigraph-and-controls__all-button"
-        onClick={() =>
-          handleAllSelectorClick(
-            wellArrays,
-            selectedWellArray,
-            handleSelectWell,
-            handleClearSelectedWells
-          )
-        }
-      >
-        all
-      </button>
-      <div
-        className="minigraph-and-controls__column-selectors"
-        style={{
-          width: "100%",
-          height: smallCanvasHeight,
-        }}
-      >
-        {columnLabels.map((columnLabel) => (
+    <>
+      {isRenderingComplete ? (
+        <div
+          className="minigraph-and-controls__minigraph-container"
+          style={{ height: largeCanvasHeight, width: largeCanvasWidth }}
+        >
           <button
-            id="columnButton"
-            className="minigraph-and-controls__column-button"
-            key={columnLabel}
+            id="allButton"
+            className="minigraph-and-controls__all-button"
+            onClick={() =>
+              handleAllSelectorClick(
+                wellArrays,
+                selectedWellArray,
+                handleSelectWell,
+                handleClearSelectedWells
+              )
+            }
+          >
+            all
+          </button>
+          <div
+            className="minigraph-and-controls__column-selectors"
             style={{
               width: "100%",
               height: smallCanvasHeight,
             }}
-            onClick={() =>
-              handleColumnSelectorClick(
-                columnLabel,
-                wellArrays,
-                selectedWellArray,
-                handleSelectWell,
-                handleDeselectWell
-              )
-            }
           >
-            {columnLabel}
-          </button>
-        ))}
-      </div>
-      <div
-        className="minigraph-and-controls__row-selectors"
-        style={{
-          width: "100%",
-          height: "100%",
-        }}
-      >
-        {rowLabels.map((rowLabel) => (
-          <button
-            id="rowButton"
-            className="minigraph-and-controls__row-button"
-            key={rowLabel}
+            {columnLabels.map((columnLabel) => (
+              <button
+                id="columnButton"
+                className="minigraph-and-controls__column-button"
+                key={columnLabel}
+                style={{
+                  width: "100%",
+                  height: smallCanvasHeight,
+                }}
+                onClick={() =>
+                  handleColumnSelectorClick(
+                    columnLabel,
+                    wellArrays,
+                    selectedWellArray,
+                    handleSelectWell,
+                    handleDeselectWell
+                  )
+                }
+              >
+                {columnLabel}
+              </button>
+            ))}
+          </div>
+          <div
+            className="minigraph-and-controls__row-selectors"
             style={{
               width: "100%",
               height: "100%",
             }}
-            onClick={() =>
-              handleRowSelectorClick(
-                rowLabel,
-                wellArrays,
-                selectedWellArray,
-                handleSelectWell,
-                handleDeselectWell
-              )
-            }
           >
-            {rowLabel}
-          </button>
-        ))}
-      </div>
-      <div
-        className="minigraph-and-controls__minigraph-grid"
-        ref={gridRef} // Assign the ref to the grid container
-        style={{
-          position: "relative",
-          alignItems: "center",
-          justifyContent: "center",
-          overflow: "hidden", // Prevent the drag selector from going outside the grid
-        }}
-      >
-        {/* DragSelection is absolutely positioned and won't interfere with grid layout */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            pointerEvents: "none", // Prevent this container from interfering with clicks
-            zIndex: 200000, // prevents seleciton box from being drawn behind canvases
-          }}
-        >
-          <DragSelection
-            selectableTargets={".minigraph-and-controls__minigraph-canvas"}
-            onSelectionChange={handleSelectionChange}
-            selectionProps={{
-              boundingElement: ".minigraph-and-controls__minigraph-grid", // Limits selection to grid bounds
+            {rowLabels.map((rowLabel) => (
+              <button
+                id="rowButton"
+                className="minigraph-and-controls__row-button"
+                key={rowLabel}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                }}
+                onClick={() =>
+                  handleRowSelectorClick(
+                    rowLabel,
+                    wellArrays,
+                    selectedWellArray,
+                    handleSelectWell,
+                    handleDeselectWell
+                  )
+                }
+              >
+                {rowLabel}
+              </button>
+            ))}
+          </div>
+          <div
+            className="minigraph-and-controls__minigraph-grid"
+            ref={gridRef} // Assign the ref to the grid container
+            style={{
+              position: "relative",
+              alignItems: "center",
+              justifyContent: "center",
+              overflow: "hidden", // Prevent the drag selector from going outside the grid
             }}
-          />
-        </div>
-        {wellArrays?.length > 0 &&
-          wellArrays.map((well) => (
-            <Line
-              type="line"
-              id="minigraphCanvas"
-              className="minigraph-and-controls__minigraph-canvas"
-              data-well-id={well.id}
-              style={
-                selectedWellArray?.some(
-                  (selectedWell) => selectedWell.id === well.id
-                )
-                  ? {
-                      border: "solid 2px red",
-                      zIndex: 10,
-                    } // styling for selected wells
-                  : { zIndex: 10 } // styling for un-selected wells
-              }
-              key={well.id}
-              data={{
-                datasets: [
-                  {
-                    data: showFiltered
-                      ? well.indicators[0]?.filteredData
-                      : well.indicators[0]?.rawData,
-                    borderColor: "black",
-                    pointBorderWidth: 0,
-                    pointBorderRadius: 0,
-                  },
-                ],
+          >
+            {/* DragSelection is absolutely positioned and won't interfere with grid layout */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                pointerEvents: "none", // Prevent this container from interfering with clicks
+                zIndex: 200000, // prevents seleciton box from being drawn behind canvases
               }}
-              width={smallCanvasWidth}
-              height={smallCanvasHeight}
-              options={minigraphOptions}
-              onClick={() => handleWellClick(well.id)}
-            />
-          ))}
-      </div>
-    </div>
+            >
+              <DragSelection
+                selectableTargets={".minigraph-and-controls__minigraph-canvas"}
+                onSelectionChange={handleSelectionChange}
+                selectionProps={{
+                  boundingElement: ".minigraph-and-controls__minigraph-grid", // Limits selection to grid bounds
+                }}
+              />
+            </div>
+            {wellArrays?.length > 0 &&
+              wellArrays.map((well) => (
+                <Line
+                  type="line"
+                  id="minigraphCanvas"
+                  className="minigraph-and-controls__minigraph-canvas"
+                  data-well-id={well.id}
+                  style={
+                    selectedWellArray?.some(
+                      (selectedWell) => selectedWell.id === well.id
+                    )
+                      ? {
+                          border: "solid 2px red",
+                          zIndex: 10,
+                        } // styling for selected wells
+                      : { zIndex: 10 } // styling for un-selected wells
+                  }
+                  key={well.id}
+                  data={{
+                    datasets: [
+                      {
+                        data: showFiltered
+                          ? well.indicators[0]?.filteredData
+                          : well.indicators[0]?.rawData,
+                        borderColor: "rgb(75, 192, 192)",
+                        pointBorderWidth: 0,
+                        pointBorderRadius: 0,
+                      },
+                    ],
+                  }}
+                  width={smallCanvasWidth}
+                  height={smallCanvasHeight}
+                  options={minigraphOptions}
+                  onClick={() => handleWellClick(well.id)}
+                />
+              ))}
+          </div>
+        </div>
+      ) : (
+        <DotWaveLoader className="dotwave-loader" />
+      )}
+    </>
   );
 };
 
