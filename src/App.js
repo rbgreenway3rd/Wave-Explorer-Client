@@ -8,9 +8,9 @@ import { DataProvider } from "./components/FileHandling/DataProvider";
 function App() {
   return (
     <>
-      <NavBar />
       {/* <FilterProvider> */}
       <DataProvider>
+        <NavBar />
         <CombinedComponent />
       </DataProvider>
       {/* </FilterProvider> */}

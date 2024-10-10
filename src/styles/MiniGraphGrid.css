@@ -7,8 +7,8 @@
     /* border: solid 0.5em black; */
     /* background: rgb(220, 220, 220);  */ /* match canvas background */
   
-    background: rgb(212, 212, 212);
-    /* background: rgb(0, 0, 0); */
+    /* background: rgb(212, 212, 212); */
+    background: rgb(50, 50, 50);
     display: grid;
     grid-template-areas:
         "minigraph-and-controls__all-selector minigraph-and-controls__column-selectors"
@@ -21,8 +21,9 @@
 
 .minigraph-and-controls__minigraph-canvas {
     /* padding: 1px; */
-    background: rgb(220, 220, 220);
-    /* background: rgb(0, 0, 0); */
+    /* background: rgb(220, 220, 220); */
+    display: flex;
+    background: rgb(0, 0, 0);
     justify-self: center;
     align-self: center;
 }
@@ -43,7 +44,11 @@
     box-sizing: border-box;
      max-width: 100%;
     max-height: 100%;
-    padding-right: 0.1em;
+    padding-top: 0.1em;
+    /* padding-right: 0.1em; */
+    justify-content: center;
+    align-items: center;
+    
 }
 
 .minigraph-and-controls__all-selector {
@@ -52,12 +57,15 @@
 }
 
 .minigraph-and-controls__all-button {
+    background-color: lightgray;    /* color:white; */
+    border-style: solid;
     text-align: center;
     padding: 0; /* Ensure no padding interferes */
     box-sizing: border-box; /* Include padding and border in button width */
-    flex: 1 0 auto; /* Make sure flexbox properties don't interfere */
+    /* flex: 1 0 auto; Make sure flexbox properties don't interfere */
     width: 100%;
     height: 100%;
+    padding: 0;
 }
 
 .minigraph-and-controls__column-selectors {
@@ -66,6 +74,7 @@
     display: grid;
     grid-template-columns: repeat(24, 1fr);
     gap: 0;
+    padding-right: 1em;
 }
 
 .minigraph-and-controls__row-selectors {
@@ -73,17 +82,31 @@
     grid-row: 2 / span 1;
     display: grid;
     grid-template-rows: repeat(16, 1fr);
+   
+
 }
 
-/* .minigraph-and-controls__row-button {
-    width: 100%;
-    height: 100%;
-} */
-.minigraph-and-controls__column-button {
+.minigraph-and-controls__row-button {
+   background-color: lightgray; 
+   border-style: solid;
+    /* color:white; */
     text-align: center;
-    padding: 0; /* Ensure no padding interferes */
+    padding-left: 0.2em;
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-right: 0.2em;
+    
+}
+.minigraph-and-controls__column-button {
+     background-color: lightgray;
+     border-style: solid;
+    /* color:white; */
+    text-align: center;
+    text-align: center;
+    /* padding: 0; Ensure no padding interferes */
     box-sizing: border-box; /* Include padding and border in button width */
     flex: 1 0 auto; /* Make sure flexbox properties don't interfere */
+    
 }
 
 .dotwave-loader {

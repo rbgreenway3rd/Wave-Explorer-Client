@@ -1,5 +1,5 @@
 import React, { useRef, forwardRef, useImperativeHandle } from "react";
-// import "../../../styles/LargeGraph.css";
+import "../../../styles/LargeGraph.css";
 import { Line } from "react-chartjs-2";
 import { Chart } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
@@ -25,6 +25,7 @@ export const LargeGraph = forwardRef(
     return (
       // <div className="large-graph">
       <Line
+        className="large-graph-canvas"
         data={rawGraphData}
         options={largeGraphConfig}
         ref={chartRef}

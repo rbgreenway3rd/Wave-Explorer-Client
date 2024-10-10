@@ -1,6 +1,6 @@
 .navbar-container {
     /* background-color: rgb(175 175 175); */
-    background-color: rgb(255, 255, 255);
+    background-color: grey;
     padding: 0.25em;
     display: flex;
     flex-direction: row;

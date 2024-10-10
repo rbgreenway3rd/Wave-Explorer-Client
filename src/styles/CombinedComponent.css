@@ -1,6 +1,7 @@
 .combined-component {
     /* padding-left: 0.25em;
     padding-right: 0.25em; */
+   background-color: gray
 }
 
 .combined-component__wave-container {
@@ -21,11 +22,11 @@
 }
 
 .combined-component__minigraph {
-    border: solid 0.5em black;
+    border: solid 0.25em rgb(50, 50, 50);
     grid-column: 1;
     grid-row: 2;
     display: flex;
-    
+    /* box-shadow: 0.2em 0em 0.2em 0.2em black; */
     justify-content: center;
     
 }
@@ -48,7 +49,8 @@
 }
 
 .combined-component__large-graph {
-    border: solid 0.5em black;
+    border: solid 0.5em rgb(50, 50, 50);
+    background: rgb(0, 0, 0);
     grid-column: 3;
     grid-row: 2;
     /* margin-left: 0.5em; */
@@ -79,7 +81,7 @@
 .combined-component__metrics {
     align-items: center;
     justify-content: center;
-    border: solid 0.5em black;
+    border: solid 0.5em rgb(50, 50, 50);
     padding-top: 0.25em;
     background-color: grey;
     grid-column: 1;
@@ -100,7 +102,7 @@
 }
 
 .combined-component__filtered-graph {
-    border: solid 0.5em black;
+    border: solid 0.5em rgb(50, 50, 50);
     grid-column: 3;
     grid-row: 2;
     /* margin-left: 0.5em; */
