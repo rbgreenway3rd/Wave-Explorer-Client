@@ -23,11 +23,16 @@
 
 .combined-component__minigraph {
     border: solid 0.5em rgb(50, 50, 50);
+    background-color: black;
     grid-column: 1;
     grid-row: 2;
     display: flex;
+    /* padding-left: 0.25em;
+    padding-right: 0.25em;
+    padding-top: 0.25em;
+    padding-bottom: 0.25em; */
     /* box-shadow: 0.2em 0em 0.2em 0.2em black; */
-    justify-content: center;
+    justify-content:center ;
     
 }
 
@@ -81,9 +86,11 @@
 .combined-component__metrics {
     align-items: center;
     justify-content: center;
-    border: solid 0.5em rgb(50, 50, 50);
+    border: solid 0.25em rgb(50, 50, 50);
     padding-top: 0.25em;
-    background-color: grey;
+    padding-left: 0.25em;
+    padding-right: 0.25em;
+    background-color: rgb(50, 50, 50);
     grid-column: 1;
     grid-row: 2;
 }

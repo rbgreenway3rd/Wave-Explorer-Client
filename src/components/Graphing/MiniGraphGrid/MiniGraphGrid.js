@@ -167,7 +167,7 @@ export const MiniGraphGrid = ({
       {isRenderingComplete ? (
         <div
           className="minigraph-and-controls__minigraph-container"
-          // style={{ height: largeCanvasHeight, width: largeCanvasWidth }}
+          style={{ height: largeCanvasHeight, width: largeCanvasWidth }}
         >
           <button
             id="allButton"
@@ -274,7 +274,9 @@ export const MiniGraphGrid = ({
                 selectableTargets={".minigraph-and-controls__minigraph-canvas"}
                 onSelectionChange={handleSelectionChange}
                 selectionProps={{
-                  boundingElement: ".minigraph-and-controls__minigraph-grid", // Limits selection to grid bounds
+                  // boundingElement: ".minigraph-and-controls__minigraph-grid", // Limits selection to grid bounds
+                  boundingElement:
+                    ".minigraph-and-controls__minigraph-container", // Limits selection to grid bounds
                 }}
               />
             </div>

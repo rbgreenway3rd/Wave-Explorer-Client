@@ -462,6 +462,7 @@ export const FilterControls = ({
         onClick={() => {
           setEnabledFilters([]);
           setSelectedFilters([]);
+          applyEnabledFilters();
         }}
       >
         Reset <br />

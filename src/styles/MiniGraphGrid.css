@@ -8,8 +8,7 @@
     /* background: rgb(220, 220, 220);  */ /* match canvas background */
   
     /* background: rgb(212, 212, 212); */
-    background: rgb(50, 50, 50);
-    display: grid;
+background: rgb(50, 50, 50);    display: grid;
     grid-template-areas:
         "minigraph-and-controls__all-selector minigraph-and-controls__column-selectors"
         "minigraph-and-controls__row-selectors minigraph-and-controls__minigraph-grid";
@@ -106,9 +105,8 @@
 .minigraph-and-controls__column-button {
      background-color: lightgray;
      border-style: solid;
-    /* color:white; */
-    text-align: center;
-    text-align: center;
+    
+    align-items: center;
     /* padding: 0; Ensure no padding interferes */
     box-sizing: border-box; /* Include padding and border in button width */
     flex: 1 0 auto; /* Make sure flexbox properties don't interfere */

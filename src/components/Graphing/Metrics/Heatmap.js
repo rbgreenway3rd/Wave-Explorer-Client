@@ -64,7 +64,7 @@ const Heatmap = ({
       .scaleQuantize()
       .domain(d3.extent(allValues)) // Domain based on the min and max values
       .range([
-        "black",
+        "#4a4a4a",
         "#00008B",
         "blue",
         "#007d5b",
@@ -116,7 +116,7 @@ const Heatmap = ({
 
       // Set border color and size
       context.strokeStyle = "black"; // Border color
-      context.lineWidth = 1; // Border size
+      context.lineWidth = 2; // Border size
 
       // Draw the border around the cell
       context.strokeRect(

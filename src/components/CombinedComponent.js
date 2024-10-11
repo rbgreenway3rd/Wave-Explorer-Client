@@ -29,7 +29,7 @@ import zoomPlugin from "chartjs-plugin-zoom";
 Chart.register(...registerables, annotationPlugin, zoomPlugin);
 
 // CombinedComponent: Main component that integrates various functionalities
-export const CombinedComponent = () => {
+export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
   // Context to manage shared data across components
   const {
     project,
@@ -67,7 +67,7 @@ export const CombinedComponent = () => {
   const [isFiltered, setIsFiltered] = useState(false); // Default is raw data (false)
 
   // State variables for well arrays and filter management
-  const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
+  // const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState([]);
   const [enabledFilters, setEnabledFilters] = useState([]);
 
@@ -212,7 +212,6 @@ export const CombinedComponent = () => {
       tension: 0.1,
     })),
   };
-
   const filteredGraphData = {
     labels: extractedIndicatorTimes,
     datasets: selectedWellArray.map((well) => ({
@@ -235,8 +234,12 @@ export const CombinedComponent = () => {
   );
   const filteredGraphConfig = FilteredGraphOptions(
     analysisData,
+    wellArrays,
+    filteredGraphData,
     extractedIndicatorTimes
   );
+
+  console.log(wellArrays);
 
   const handleToggleDataShown = () => {
     setIsFiltered((prev) => !prev); // Toggle the filter state
@@ -264,7 +267,7 @@ export const CombinedComponent = () => {
   return (
     <div className="combined-component">
       {/* File uploader to upload project data */}
-      <FileUploader setWellArraysUpdated={setWellArraysUpdated} />
+      {/* <FileUploader setWellArraysUpdated={setWellArraysUpdated} /> */}
       <div className="combined-component__main-container">
         {project ? (
           <>

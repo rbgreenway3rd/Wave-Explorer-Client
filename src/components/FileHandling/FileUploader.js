@@ -1,6 +1,9 @@
 import React, { useContext, useEffect, useState } from "react";
 import { DataContext } from "./DataProvider";
 import { Project, Plate, Experiment, Well, Indicator } from "../Models.js";
+import Button from "@mui/material/Button";
+import DriveFolderUploadIcon from "@mui/icons-material/DriveFolderUpload";
+import { styled } from "@mui/material/styles";
 
 export const FileUploader = ({ setWellArraysUpdated }) => {
   // Row labels for wells
@@ -133,12 +136,38 @@ export const FileUploader = ({ setWellArraysUpdated }) => {
     }
   };
 
+  const VisuallyHiddenInput = styled("input")({
+    clip: "rect(0 0 0 0)",
+    clipPath: "inset(50%)",
+    height: 1,
+    overflow: "hidden",
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    whiteSpace: "nowrap",
+    width: 1,
+  });
+
   return (
-    <input
-      className="file-uploader-input"
-      type="file"
-      onChange={handleFileSelect} // Trigger file selection handler on change
-    />
+    <Button
+      component="label"
+      role={undefined}
+      variant="contained"
+      tabIndex={-1}
+      startIcon={<DriveFolderUploadIcon />}
+    >
+      Upload file
+      <VisuallyHiddenInput
+        type="file"
+        onChange={handleFileSelect} // Trigger file selection handler on change
+        multiple
+      />
+    </Button>
+    // <input
+    //   className="file-uploader-input"
+    //   type="file"
+    //   onChange={handleFileSelect} // Trigger file selection handler on change
+    // />
   );
 };
 

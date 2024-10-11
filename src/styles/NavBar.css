@@ -9,10 +9,12 @@
 
 .navbar-left {
     display: flex;
-    
+    align-items: center;
+    float: right;
 }
 
 .navbar-right {
+    display: flex;
     align-items: center;
     float: right;
 }
