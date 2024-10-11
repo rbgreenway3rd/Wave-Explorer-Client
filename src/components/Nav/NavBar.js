@@ -8,24 +8,20 @@ import FileUploader from "../FileHandling/FileUploader";
 import { DataContext } from "../FileHandling/DataProvider";
 
 export const NavBar = () => {
-  const {
-    project,
-    setProject,
-    extractedRows,
-    extractedColumns,
-    extractedIndicatorTimes,
-    analysisData,
-    showFiltered,
-    setShowFiltered,
-    selectedWellArray,
-    setSelectedWellArray,
-  } = useContext(DataContext);
-
   const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
+  const [file, setFile] = useState(null); // State to store the uploaded file
+
   return (
     <header className="navbar-container">
       <section className="navbar-left">
-        <FileUploader setWellArraysUpdated={setWellArraysUpdated} />
+        <FileUploader
+          setWellArraysUpdated={setWellArraysUpdated}
+          setFile={setFile}
+        />
+      </section>
+      <section className="navbar-middle">
+        {/* Display the file name */}
+        {file && <p>{file.name}</p>}{" "}
       </section>
       <section className="navbar-right">
         <img

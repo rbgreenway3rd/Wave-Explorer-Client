@@ -5,7 +5,7 @@ import Button from "@mui/material/Button";
 import DriveFolderUploadIcon from "@mui/icons-material/DriveFolderUpload";
 import { styled } from "@mui/material/styles";
 
-export const FileUploader = ({ setWellArraysUpdated }) => {
+export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
   // Row labels for wells
   const rowLabels = [
     "A",
@@ -124,6 +124,7 @@ export const FileUploader = ({ setWellArraysUpdated }) => {
   const handleFileSelect = async (event) => {
     const file = event.target.files[0];
     if (file) {
+      setFile(file);
       const reader = new FileReader();
       reader.onload = async (e) => {
         const fileContent = e.target.result;
@@ -149,26 +150,44 @@ export const FileUploader = ({ setWellArraysUpdated }) => {
   });
 
   return (
+    // <div style={{ display: "flex", alignItems: "center" }}>
     <Button
       component="label"
-      role={undefined}
       variant="contained"
-      tabIndex={-1}
       startIcon={<DriveFolderUploadIcon />}
     >
-      Upload file
+      Upload File
       <VisuallyHiddenInput
         type="file"
         onChange={handleFileSelect} // Trigger file selection handler on change
         multiple
       />
     </Button>
-    // <input
-    //   className="file-uploader-input"
-    //   type="file"
-    //   onChange={handleFileSelect} // Trigger file selection handler on change
-    // />
+    //  Display the file name next to the button
+    // {file && <span style={{ marginLeft: "10px" }}>{file.name}</span>}
+    // </div>
   );
 };
 
 export default FileUploader;
+
+// <Button
+//   component="label"
+//   role={undefined}
+//   variant="contained"
+//   tabIndex={-1}
+//   startIcon={<DriveFolderUploadIcon />}
+// >
+//   Upload file
+//   <VisuallyHiddenInput
+//     type="file"
+//     onChange={handleFileSelect} // Trigger file selection handler on change
+//     multiple
+//   />
+// </Button>
+
+// <input
+//   className="file-uploader-input"
+//   type="file"
+//   onChange={handleFileSelect} // Trigger file selection handler on change
+// />

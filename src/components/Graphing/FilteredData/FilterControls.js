@@ -455,7 +455,7 @@ export const FilterControls = ({
       </button>
 
       {/* Reset Filters Button */}
-      <button
+      {/* <button
         className="filter-controls__reset-button"
         variant="contained"
         color="secondary"
@@ -467,7 +467,7 @@ export const FilterControls = ({
       >
         Reset <br />
         Filters
-      </button>
+      </button> */}
 
       {/* Well Selection Modal */}
       {/* <WellSelectionModal
