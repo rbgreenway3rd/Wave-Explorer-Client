@@ -16,13 +16,18 @@
     grid-template-columns: auto 1fr;
     grid-template-rows: auto 1fr;
     /* margin-bottom: 0.5em; */
-    gap: 0
+    gap: 0;
+    
 }
 
 .minigraph-and-controls__minigraph-canvas {
-    /* padding: 1px; */
+    
     /* background: rgb(220, 220, 220); */
-    display: flex;
+    
+    
+   width: 100%;
+   height: 100%;
+    /* display: block; */
     background: rgb(0, 0, 0);
     justify-self: center;
     align-self: center;
@@ -40,15 +45,16 @@
     grid-row: 2 / span 1;
     grid-template-columns: repeat(24, 1fr);
     grid-template-rows: repeat(16, 1fr);
-     gap: 0;
+    gap: 0;
     box-sizing: border-box;
-     max-width: 100%;
-    max-height: 100%;
+     /* max-width: 100%;
+    max-height: 100%; */
     padding-top: 0.1em;
     /* padding-right: 0.1em; */
     justify-content: center;
     align-items: center;
-    
+    margin: 0;
+    justify-content: space-around,
 }
 
 .minigraph-and-controls__all-selector {
@@ -74,7 +80,7 @@
     display: grid;
     grid-template-columns: repeat(24, 1fr);
     gap: 0;
-    padding-right: 1em;
+    /* padding-right: 1em; */
 }
 
 .minigraph-and-controls__row-selectors {

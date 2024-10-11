@@ -167,7 +167,7 @@ export const MiniGraphGrid = ({
       {isRenderingComplete ? (
         <div
           className="minigraph-and-controls__minigraph-container"
-          style={{ height: largeCanvasHeight, width: largeCanvasWidth }}
+          // style={{ height: largeCanvasHeight, width: largeCanvasWidth }}
         >
           <button
             id="allButton"
@@ -196,8 +196,11 @@ export const MiniGraphGrid = ({
                 className="minigraph-and-controls__column-button"
                 key={columnLabel}
                 style={{
+                  display: "flex",
                   width: "100%",
                   height: smallCanvasHeight,
+                  justifyContent: "center",
+                  justifySelf: "center",
                 }}
                 onClick={() =>
                   handleColumnSelectorClick(
@@ -226,6 +229,8 @@ export const MiniGraphGrid = ({
                 className="minigraph-and-controls__row-button"
                 key={rowLabel}
                 style={{
+                  // width: { smallCanvasWidth },
+                  // height: { smallCanvasHeight },
                   width: "100%",
                   height: "100%",
                 }}
@@ -287,8 +292,14 @@ export const MiniGraphGrid = ({
                       ? {
                           border: "solid 2px red",
                           zIndex: 10,
+                          width: "95%",
+                          height: "95%",
                         } // styling for selected wells
-                      : { zIndex: 10 } // styling for un-selected wells
+                      : {
+                          zIndex: 10,
+                          width: "95%",
+                          height: "95%",
+                        } // styling for un-selected wells
                   }
                   key={well.id}
                   data={{

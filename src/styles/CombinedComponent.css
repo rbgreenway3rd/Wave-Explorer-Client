@@ -1,6 +1,6 @@
 .combined-component {
-    /* padding-left: 0.25em;
-    padding-right: 0.25em; */
+    padding-left: 0.25em;
+    padding-right: 0.25em;
    background-color: gray
 }
 
@@ -22,7 +22,7 @@
 }
 
 .combined-component__minigraph {
-    border: solid 0.25em rgb(50, 50, 50);
+    border: solid 0.5em rgb(50, 50, 50);
     grid-column: 1;
     grid-row: 2;
     display: flex;

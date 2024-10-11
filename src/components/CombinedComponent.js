@@ -360,7 +360,7 @@ export const CombinedComponent = () => {
               </header>
               <div className="combined-component__metrics">
                 <Heatmap
-                  // className="combined-component__metrics"
+                  className="combined-component__metrics"
                   wellArrays={wellArrays}
                   selectedWellArray={selectedWellArray}
                   timeData={extractedIndicatorTimes}

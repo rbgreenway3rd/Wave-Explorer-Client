@@ -114,6 +114,18 @@ const Heatmap = ({
         cellHeight
       );
 
+      // Set border color and size
+      context.strokeStyle = "black"; // Border color
+      context.lineWidth = 1; // Border size
+
+      // Draw the border around the cell
+      context.strokeRect(
+        col * cellWidth,
+        row * cellHeight,
+        cellWidth,
+        cellHeight
+      );
+
       // Set text properties
       context.fillStyle = "black"; // Set the text color
       context.font = "12px Arial"; // Set font size and family
@@ -158,13 +170,24 @@ const Heatmap = ({
       const filteredData = well.indicators[0]?.filteredData || [];
       const maxYValue =
         filteredData.length > 0 ? d3.max(filteredData, (d) => d.y) : 0;
+      const minYValue =
+        filteredData.length > 0 ? d3.min(filteredData, (d) => d.y) : 0;
+      const rangeOfYValues = maxYValue - minYValue;
+
+      // Determine the active metric for the tooltip based on metricType
+      const activeMetric =
+        metricType === "maxYValue"
+          ? maxYValue
+          : metricType === "minYValue"
+          ? minYValue
+          : rangeOfYValues;
 
       setTooltip({
         visible: true,
         x: e.clientX,
         y: e.clientY,
         label: well.label || "",
-        value: maxYValue,
+        value: activeMetric,
       });
     } else {
       setTooltip((prev) => ({ ...prev, visible: false }));
