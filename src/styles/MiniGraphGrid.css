@@ -38,6 +38,7 @@ background: rgb(50, 50, 50);    display: grid;
 }
 
 .minigraph-and-controls__minigraph-grid {
+    border: solid 1px black;
     display: grid;
     grid-area: minigraph-and-controls__minigraph-grid;
     grid-column: 2 / span 1;
@@ -48,6 +49,7 @@ background: rgb(50, 50, 50);    display: grid;
     box-sizing: border-box;
      /* max-width: 100%;
     max-height: 100%; */
+    /* padding-top: 0.1em; */
     padding-top: 0.1em;
     /* padding-right: 0.1em; */
     justify-content: center;
