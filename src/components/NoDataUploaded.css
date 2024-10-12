@@ -1,0 +1,28 @@
+.header {
+    display: flex;
+    justify-content: center;
+    padding-top: 10rem;
+    margin: 0;
+    text-decoration: underline;
+}
+
+.header-text{
+    /* background-color: rgb(148, 148, 148); */
+    /* border: 0.25rem solid rgb(7, 0, 134); */
+    /* border-radius: 0.5em; */
+    /* padding-left: 1rem; */
+    /* padding-right: 1rem; */
+}
+
+.image-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    align-items: center;
+    justify-content: center;
+}
+
+.wavefront-logo {
+    width: 15%;
+    height: 10%;
+}

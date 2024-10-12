@@ -1,7 +1,8 @@
 .navbar-container {
-    /* background-color: rgb(175 175 175); */
     background-color: grey;
     padding: 0.25em;
+    padding-left: 1rem;
+    padding-right: 1rem;
     display: flex;
     flex-direction: row;
     justify-content: space-between;

@@ -4,6 +4,11 @@
    background-color: gray
 }
 
+.combined-component__no-data {
+       background-color: gray;
+       /* height: 100vh; */
+}
+
 .combined-component__wave-container {
     display: grid;
     grid-template-columns: 6fr 1fr 6fr 1fr; /* Four columns */

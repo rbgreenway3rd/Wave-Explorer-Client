@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useState, useRef, useMemo } from "react";
 import "../styles/CombinedComponent.css";
+import { NoDataUploaded } from "./NoDataUploaded.js";
 import { DataContext } from "./FileHandling/DataProvider.js";
 import { LargeGraphOptions } from "../config/LargeGraphOptions.js";
 import { LargeGraph } from "./Graphing/LargeGraph/LargeGraph.js";
@@ -422,9 +423,7 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
             </section>
           </>
         ) : (
-          <div className="combined-component__no-data">
-            No project data available. Please upload a file.
-          </div>
+          <NoDataUploaded className="combined-component__no-data" />
         )}
       </div>
     </div>

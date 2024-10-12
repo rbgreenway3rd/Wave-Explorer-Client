@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
+import "./FileUploader.css";
 import { DataContext } from "./DataProvider";
 import { Project, Plate, Experiment, Well, Indicator } from "../Models.js";
 import Button from "@mui/material/Button";
@@ -41,6 +42,7 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
     analysisData,
     selectedWellArray,
     setSelectedWellArray,
+    project,
     setProject,
   } = useContext(DataContext); // Accessing context data
 
@@ -152,10 +154,11 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
   });
 
   return (
-    <Tooltip title="Choose File To Upload" arrow>
+    <Tooltip title="Choose File" arrow>
       <Button
         component="label"
         variant="contained"
+        className={!project ? "glow-button" : ""} // Apply glow class if no project
         style={{
           padding: 0,
           minWidth: 30,
