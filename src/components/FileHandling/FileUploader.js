@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useState } from "react";
 import { DataContext } from "./DataProvider";
 import { Project, Plate, Experiment, Well, Indicator } from "../Models.js";
 import Button from "@mui/material/Button";
+import Tooltip from "@mui/material/Tooltip";
 import DriveFolderUploadIcon from "@mui/icons-material/DriveFolderUpload";
 import { styled } from "@mui/material/styles";
 
@@ -146,48 +147,28 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
     bottom: 0,
     left: 0,
     whiteSpace: "nowrap",
+    // minWidth: 3,
     width: 1,
   });
 
   return (
-    // <div style={{ display: "flex", alignItems: "center" }}>
-    <Button
-      component="label"
-      variant="contained"
-      startIcon={<DriveFolderUploadIcon />}
-    >
-      Upload File
-      <VisuallyHiddenInput
-        type="file"
-        onChange={handleFileSelect} // Trigger file selection handler on change
-        multiple
-      />
-    </Button>
-    //  Display the file name next to the button
-    // {file && <span style={{ marginLeft: "10px" }}>{file.name}</span>}
-    // </div>
+    <Tooltip title="Choose File To Upload" arrow>
+      <Button
+        component="label"
+        variant="contained"
+        style={{
+          padding: 0,
+          minWidth: 30,
+          display: "flex", // Flexbox for centering
+          justifyContent: "center", // Center horizontally
+          alignItems: "center", // Center vertically
+        }}
+      >
+        <DriveFolderUploadIcon />
+        <VisuallyHiddenInput type="file" onChange={handleFileSelect} multiple />
+      </Button>
+    </Tooltip>
   );
 };
 
 export default FileUploader;
-
-// <Button
-//   component="label"
-//   role={undefined}
-//   variant="contained"
-//   tabIndex={-1}
-//   startIcon={<DriveFolderUploadIcon />}
-// >
-//   Upload file
-//   <VisuallyHiddenInput
-//     type="file"
-//     onChange={handleFileSelect} // Trigger file selection handler on change
-//     multiple
-//   />
-// </Button>
-
-// <input
-//   className="file-uploader-input"
-//   type="file"
-//   onChange={handleFileSelect} // Trigger file selection handler on change
-// />

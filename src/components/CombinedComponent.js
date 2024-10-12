@@ -28,7 +28,7 @@ import zoomPlugin from "chartjs-plugin-zoom";
 // Register Chart.js components and plugins
 Chart.register(...registerables, annotationPlugin, zoomPlugin);
 
-// CombinedComponent: Main component that integrates various functionalities
+// Main component that integrates various functionalities
 export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
   // Context to manage shared data across components
   const {

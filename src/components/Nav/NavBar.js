@@ -6,6 +6,8 @@ import WaveGuideIcon from "../../../src/assets/brand/WaveGuideIcon.ico";
 import WaveFrontLogo from "../../../src/assets/brand/WaveFrontLogo.webp";
 import FileUploader from "../FileHandling/FileUploader";
 import { DataContext } from "../FileHandling/DataProvider";
+import Typography from "@mui/material/Typography";
+import NavMenu from "./NavMenu";
 
 export const NavBar = () => {
   const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
@@ -18,10 +20,11 @@ export const NavBar = () => {
           setWellArraysUpdated={setWellArraysUpdated}
           setFile={setFile}
         />
+        <NavMenu />
       </section>
       <section className="navbar-middle">
         {/* Display the file name */}
-        {file && <p>{file.name}</p>}{" "}
+        {file && <Typography>{file.name}</Typography>}
       </section>
       <section className="navbar-right">
         <img
