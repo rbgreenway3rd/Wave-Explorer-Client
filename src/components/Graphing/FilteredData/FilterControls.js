@@ -453,28 +453,6 @@ export const FilterControls = ({
       >
         Reset Annotations
       </button>
-
-      {/* Reset Filters Button */}
-      {/* <button
-        className="filter-controls__reset-button"
-        variant="contained"
-        color="secondary"
-        onClick={() => {
-          setEnabledFilters([]);
-          setSelectedFilters([]);
-          applyEnabledFilters();
-        }}
-      >
-        Reset <br />
-        Filters
-      </button> */}
-
-      {/* Well Selection Modal */}
-      {/* <WellSelectionModal
-        className="filter-controls__well-selection-modal"
-        onFilterApply={filterSelectedWells}
-      /> */}
-
       {/* Modal for Filter Selection */}
       <Modal
         className="filter-controls__filter-selection-modal"

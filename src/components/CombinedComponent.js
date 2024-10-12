@@ -56,12 +56,16 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
   const largeGraphRef = useRef(null);
 
   // Canvas dimensions for graphs
+
   const [largeCanvasWidth] = useState(window.innerWidth / 2.2);
   const [largeCanvasHeight] = useState(window.innerHeight / 2.2);
-  // const [smallCanvasWidth] = useState(window.innerWidth / 56);
+  // const [largeCanvasWidth] = useState(window.innerWidth / 2);
+  // const [largeCanvasHeight] = useState(window.innerHeight / 2);
+
   const [smallCanvasWidth] = useState(window.innerWidth / 61.6); // increased by 1.1
-  // const [smallCanvasHeight] = useState(window.innerHeight / 40);
   const [smallCanvasHeight] = useState(window.innerHeight / 44); // increased by 1.1
+  // const [smallCanvasWidth] = useState(window.innerWidth / 56);
+  // const [smallCanvasHeight] = useState(window.innerHeight / 40);
 
   // State for MiniGraph management
   const [isFiltered, setIsFiltered] = useState(false); // Default is raw data (false)
