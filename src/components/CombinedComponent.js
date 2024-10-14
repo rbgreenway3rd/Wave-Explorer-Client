@@ -45,6 +45,8 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
     setShowFiltered,
     selectedWellArray,
     setSelectedWellArray,
+    // hoveredSelectedWellId,
+    // setHoveredSelectedWellId,
   } = useContext(DataContext);
 
   // Ref to store the previous project state for comparison
@@ -72,6 +74,8 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
 
   // State for MiniGraph management
   const [isFiltered, setIsFiltered] = useState(false); // Default is raw data (false)
+  // State to handle hovering over selectedWell
+  const [hoveredWellId, setHoveredWellId] = useState(null);
 
   // State variables for well arrays and filter management
   // const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
@@ -146,6 +150,14 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
     }
   };
 
+  // const handleHoverSelectedWellEnter = (wellId) => {
+  //   setHoveredWellId(wellId); // Update hovered well ID on mouse enter
+  // };
+
+  // const handleHoverSelectedWellLeave = () => {
+  //   setHoveredWellId(null); // Reset hovered well ID on mouse leave
+  // };
+
   // Function to apply enabled filters to well arrays
   const applyEnabledFilters = () => {
     // Step 1: Apply filters to wellArrays and update indicators
@@ -216,6 +228,7 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
       data: well.indicators[0]?.rawData,
       fill: false,
       borderColor: "rgb(75, 192, 192)",
+      // borderColor: well.id === hoveredWellId ? "red" : "rgb(75, 192, 192)", // Change color if hovered
       tension: 0.1,
     })),
   };
@@ -287,8 +300,10 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
               <div
                 className="combined-component__minigraph"
                 style={{ width: largeCanvasWidth, height: largeCanvasHeight }}
+                // onMouseLeave={handleHoverSelectedWellLeave}
               >
                 <MiniGraphGrid
+                  // handleHoverSelectedWellEnter={handleHoverSelectedWellEnter} // Pass mouse enter handler to MiniGraphGrid
                   minigraphOptions={minigraphOptions}
                   largeCanvasWidth={largeCanvasWidth}
                   largeCanvasHeight={largeCanvasHeight}
@@ -372,7 +387,7 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
               <div className="combined-component__metrics">
                 <Heatmap
                   className="combined-component__metrics"
-                  wellArrays={wellArrays}
+                  // wellArrays={wellArrays}
                   selectedWellArray={selectedWellArray}
                   timeData={extractedIndicatorTimes}
                   smallCanvasWidth={smallCanvasWidth}

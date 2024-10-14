@@ -269,6 +269,9 @@ export const DataProvider = ({ children }) => {
 
   // state determining what data is shown in minigraph-grid (rawData or filteredData)
   const [showFiltered, setShowFiltered] = useState(false);
+  // state handling what selected well in minigraphgrid is hovered
+  // -> -> sends state to LargeGraph.js
+  const [hoveredSelectedWellId, setHoveredSelectedWellId] = useState(null);
 
   useEffect(() => {
     // Compute wellArrays whenever the project changes
@@ -486,6 +489,8 @@ export const DataProvider = ({ children }) => {
         setShowFiltered,
         selectedWellArray,
         setSelectedWellArray,
+        // hoveredSelectedWellId,
+        // setHoveredSelectedWellId,
         handleSelectWell,
         handleDeselectWell,
         handleClearSelectedWells,

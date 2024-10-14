@@ -1,4 +1,9 @@
-import React, { useRef, forwardRef, useImperativeHandle } from "react";
+import React, {
+  useRef,
+  forwardRef,
+  useImperativeHandle,
+  useContext,
+} from "react";
 import "../../../styles/LargeGraph.css";
 import { Line } from "react-chartjs-2";
 import { Chart } from "chart.js";
@@ -29,6 +34,7 @@ export const LargeGraph = forwardRef(
         data={rawGraphData}
         options={largeGraphConfig}
         ref={chartRef}
+
         // style={{ border: "solid 0.5em black" }}
       />
       // </div>

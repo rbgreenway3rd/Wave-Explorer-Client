@@ -30,12 +30,15 @@ export const MiniGraphGrid = ({
   smallCanvasHeight,
   columnLabels,
   rowLabels,
+  handleHoverSelectedWellEnter,
 }) => {
   const {
     project,
     wellArrays,
     showFiltered,
     selectedWellArray,
+    hoveredSelectedWellId,
+    setHoveredSelectedWellId,
     handleSelectWell,
     handleDeselectWell,
     handleClearSelectedWells,
@@ -331,6 +334,9 @@ export const MiniGraphGrid = ({
                   height={smallCanvasHeight}
                   options={minigraphOptions}
                   onClick={() => handleWellClick(well.id)}
+                  // hover state used in LargeGraph
+                  // onMouseEnter={() => handleHoverSelectedWellEnter(well.id)} // Call onMouseEnter with well ID
+                  // onMouseLeave={() => handleHoverSelectedWellEnter(null)} // Reset hover on mouse leave
                 />
               ))}
           </div>
