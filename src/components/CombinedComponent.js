@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState, useRef, useMemo } from "react";
 import "../styles/CombinedComponent.css";
 import { NoDataUploaded } from "./NoDataUploaded.js";
+import { NavBar } from "./Nav/NavBar.js";
 import { DataContext } from "./FileHandling/DataProvider.js";
 import { LargeGraphOptions } from "../config/LargeGraphOptions.js";
 import { LargeGraph } from "./Graphing/LargeGraph/LargeGraph.js";
@@ -271,6 +272,7 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
   // Render the component
   return (
     <div className="combined-component">
+      <NavBar />
       {/* File uploader to upload project data */}
       {/* <FileUploader setWellArraysUpdated={setWellArraysUpdated} /> */}
       <div className="combined-component__main-container">

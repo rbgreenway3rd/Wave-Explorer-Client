@@ -4,6 +4,15 @@
    background-color: gray
 }
 
+.combined-component__main-container {
+    background-color: gray;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    float: top;
+    
+}
+
 .combined-component__no-data {
        background-color: gray;
        /* height: 100vh; */
@@ -13,7 +22,7 @@
     display: grid;
     grid-template-columns: 6fr 1fr 6fr 1fr; /* Four columns */
     grid-template-rows: auto auto; /* Two rows for header and content */
-    border-bottom: 0.5em solid #808080;
+    /* border-bottom: 0.5em solid #808080; */
     /* gap: 1em;  */
     /* Space between elements */
 }

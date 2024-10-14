@@ -12,7 +12,7 @@ function App() {
     <>
       {/* <FilterProvider> */}
       <DataProvider>
-        <NavBar />
+        {/* <NavBar /> */}
 
         <CombinedComponent />
       </DataProvider>

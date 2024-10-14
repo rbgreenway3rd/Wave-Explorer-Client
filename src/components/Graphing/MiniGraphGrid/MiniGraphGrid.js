@@ -121,21 +121,6 @@ export const MiniGraphGrid = ({
     selectedIndexes.current = [];
   };
 
-  // Setup drag selection container
-  const { DragSelection } = useSelectionContainer({
-    onSelectionChange: handleSelectionChange,
-    onSelectionEnd: handleSelectionEnd, // Call handleSelectionEnd when dragging ends
-    selectionProps: {
-      style: {
-        border: "2px dashed purple", // Style for the selection box
-        borderRadius: 4, // Rounded corners for the box
-        backgroundColor: "brown", // Background color for the selection box
-        opacity: 0.5, // Opacity for the selection box
-      },
-    },
-    isEnabled: true, // Enable the drag selection
-  });
-
   const updateSelectableItems = () => {
     selectableItems.current = []; // Reset selectable items
     if (gridRef.current) {
@@ -161,6 +146,31 @@ export const MiniGraphGrid = ({
 
     return () => window.removeEventListener("resize", updateSelectableItems); // Cleanup event listener on unmount
   }, [wellArrays]); // Run effect when wellArrays changes
+
+  // controls whether useSelectionContainer fires or not
+  const shouldStartSelecting = (target) => {
+    // Check if the click originated from the grid container
+    if (gridRef.current && gridRef.current.contains(target)) {
+      return true; // Allow selection to start
+    }
+    return false; // Prevent selection from starting
+  };
+
+  // Setup drag selection container
+  const { DragSelection } = useSelectionContainer({
+    onSelectionChange: handleSelectionChange,
+    onSelectionEnd: handleSelectionEnd, // Call handleSelectionEnd when dragging ends
+    selectionProps: {
+      style: {
+        border: "2px dashed purple", // Style for the selection box
+        borderRadius: 4, // Rounded corners for the box
+        backgroundColor: "brown", // Background color for the selection box
+        opacity: 0.5, // Opacity for the selection box
+      },
+    },
+    isEnabled: true,
+    shouldStartSelecting, // condition to control selection initializing
+  });
 
   return (
     <>
@@ -292,7 +302,7 @@ export const MiniGraphGrid = ({
                       (selectedWell) => selectedWell.id === well.id
                     )
                       ? {
-                          border: "solid 2px red",
+                          border: "solid 2px yellow",
                           zIndex: 10,
                           width: "95%",
                           height: "95%",
