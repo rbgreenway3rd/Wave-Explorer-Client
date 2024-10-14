@@ -33,6 +33,7 @@ export const MiniGraphGrid = ({
 }) => {
   const {
     project,
+    wellArrays,
     showFiltered,
     selectedWellArray,
     handleSelectWell,
@@ -41,9 +42,9 @@ export const MiniGraphGrid = ({
   } = useContext(DataContext);
 
   // Extract plate and experiment data
-  const plate = project?.plate || []; // Default to an empty array if plate is undefined
-  const experiment = plate[0]?.experiments[0] || {}; // Get the first experiment
-  const wellArrays = experiment.wells || []; // Get well arrays or default to an empty array
+  // const plate = project?.plate || []; // Default to an empty array if plate is undefined
+  // const experiment = plate[0]?.experiments[0] || {}; // Get the first experiment
+  // const wellArrays = experiment.wells || []; // Get well arrays or default to an empty array
 
   // // State to track if rendering is complete
   const [isRenderingComplete, setIsRenderingComplete] = useState(false);

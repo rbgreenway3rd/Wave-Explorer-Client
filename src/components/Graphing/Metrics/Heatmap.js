@@ -1,8 +1,16 @@
-import React, { useRef, useEffect, useState, useMemo } from "react";
+import React, {
+  useRef,
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+  useContext,
+} from "react";
 import * as d3 from "d3";
+import { DataContext } from "../../FileHandling/DataProvider";
 
 const Heatmap = ({
-  wellArrays,
+  // wellArrays,
   smallCanvasWidth,
   smallCanvasHeight,
   largeCanvasWidth,
@@ -13,6 +21,7 @@ const Heatmap = ({
   annotationRangeEnd,
   metricType,
 }) => {
+  const { wellArrays } = useContext(DataContext);
   const canvasRef = useRef(null);
   const [tooltip, setTooltip] = useState({
     visible: false,

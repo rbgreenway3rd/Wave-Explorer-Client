@@ -17,9 +17,9 @@ export const MiniGraphControls = ({ handleToggleDataShown, isFiltered }) => {
   // Local state for managing which data to show
   //   const [isFiltered, setIsFiltered] = useState(false); // Default is raw data (false)
 
-  const plate = project?.plate || [];
-  const experiment = plate[0]?.experiments[0] || {};
-  const wellArrays = experiment.wells || [];
+  // const plate = project?.plate || [];
+  // const experiment = plate[0]?.experiments[0] || {};
+  // const wellArrays = experiment.wells || [];
 
   //   const handleToggleDataShown = () => {
   //     setIsFiltered((prev) => !prev); // Toggle the filter state

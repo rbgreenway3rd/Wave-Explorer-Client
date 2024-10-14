@@ -36,6 +36,7 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
   const {
     project,
     setProject,
+    wellArrays,
     extractedRows,
     extractedColumns,
     extractedIndicatorTimes,
@@ -86,8 +87,8 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
 
   // Extracted plate and experiment data from the project
   const plate = project?.plate || [];
-  const experiment = plate[0]?.experiments[0] || {};
-  const wellArrays = experiment.wells || [];
+  // const experiment = plate[0]?.experiments[0] || {};
+  // const wellArrays = experiment.wells || [];
 
   // Generating labels for columns and rows
   const columnLabels = Array.from(

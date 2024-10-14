@@ -44,9 +44,14 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
     setSelectedWellArray,
     project,
     setProject,
+    wellArrays,
+    updateWellArrays,
   } = useContext(DataContext); // Accessing context data
 
   const [dataExtracted, setDataExtracted] = useState(false); // State to track if data is extracted
+  // const plate = project?.plate || [];
+  // const experiment = plate[0]?.experiments[0] || {};
+  // const wellArrays = experiment.wells || [];
 
   useEffect(() => {
     if (dataExtracted) {

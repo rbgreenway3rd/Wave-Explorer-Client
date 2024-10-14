@@ -17,7 +17,7 @@ import {
   ArrowBackIos as ArrowBackIcon,
 } from "@mui/icons-material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import {
   StaticRatioModal,
   SmoothingFilterModal,
@@ -30,9 +30,10 @@ import {
   Smoothing_Filter,
   ControlSubtraction_Filter,
 } from "./FilterModels";
+import { DataContext } from "../../FileHandling/DataProvider";
 
 export const FilterControls = ({
-  wellArrays,
+  // wellArrays,
   selectedFilters,
   setSelectedFilters,
   setEnabledFilters,
@@ -42,6 +43,7 @@ export const FilterControls = ({
   setAnnotationRangeStart,
   setAnnotationRangeEnd,
 }) => {
+  const { wellArrays } = useContext(DataContext);
   const [selectedWells, setSelectedWells] = useState([]);
   const [highlightedFilter, setHighlightedFilter] = useState({});
   const [open, setOpen] = useState(false);
