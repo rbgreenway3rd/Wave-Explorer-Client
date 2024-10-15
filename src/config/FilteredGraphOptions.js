@@ -1,10 +1,9 @@
 export const FilteredGraphOptions = (
-  // minValue,
-  // maxValue,
   analysisData = [],
   wellArrays = [],
   filteredGraphData,
-  extractedIndicatorTimes = []
+  extractedIndicatorTimes = [],
+  annotations = []
 ) => {
   // Extract y-values from filteredData in wellArrays
   const allYValues = wellArrays
@@ -21,14 +20,6 @@ export const FilteredGraphOptions = (
     allYValues.length > 0
       ? allYValues.reduce((max, val) => (val > max ? val : max), -Infinity)
       : 100;
-  // const minYValue =
-  //   analysisData.length > 0
-  //     ? analysisData.reduce((min, val) => (val < min ? val : min), Infinity)
-  //     : 0;
-  // const maxYValue =
-  //   analysisData.length > 0
-  //     ? analysisData.reduce((max, val) => (val > max ? val : max), -Infinity)
-  //     : 100;
 
   const minXValue =
     extractedIndicatorTimes.length > 0
@@ -63,7 +54,7 @@ export const FilteredGraphOptions = (
         intersect: false,
       },
       annotation: {
-        annotations: [],
+        annotations: annotations,
       },
     },
     maintainAspectRatio: false,

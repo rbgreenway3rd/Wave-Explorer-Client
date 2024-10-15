@@ -40,6 +40,8 @@ export const FilterControls = ({
   applyEnabledFilters,
   columnLabels,
   rowLabels,
+  annotations,
+  setAnnotations,
   setAnnotationRangeStart,
   setAnnotationRangeEnd,
 }) => {
@@ -69,6 +71,7 @@ export const FilterControls = ({
     // Reset the annotationRangeStart and annotationRangeEnd
     setAnnotationRangeStart(null);
     setAnnotationRangeEnd(null);
+    setAnnotations([]);
   };
 
   const modalStyle = {

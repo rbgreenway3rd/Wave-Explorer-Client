@@ -83,6 +83,7 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
   const [enabledFilters, setEnabledFilters] = useState([]);
 
   // State variables to store range of y-values inside filteredGraph's annotation box
+  const [annotations, setAnnotations] = useState([]);
   const [annotationRangeStart, setAnnotationRangeStart] = useState(null);
   const [annotationRangeEnd, setAnnotationRangeEnd] = useState(null);
 
@@ -252,12 +253,12 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
     panState,
     panMode
   );
-  const filteredGraphConfig = FilteredGraphOptions(
-    analysisData,
-    wellArrays,
-    filteredGraphData,
-    extractedIndicatorTimes
-  );
+  // const filteredGraphConfig = FilteredGraphOptions(
+  //   analysisData,
+  //   wellArrays,
+  //   filteredGraphData,
+  //   extractedIndicatorTimes
+  // );
 
   console.log(wellArrays);
 
@@ -304,6 +305,7 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
               >
                 <MiniGraphGrid
                   // handleHoverSelectedWellEnter={handleHoverSelectedWellEnter} // Pass mouse enter handler to MiniGraphGrid
+                  extractedIndicatorTimes={extractedIndicatorTimes}
                   minigraphOptions={minigraphOptions}
                   largeCanvasWidth={largeCanvasWidth}
                   largeCanvasHeight={largeCanvasHeight}
@@ -410,15 +412,18 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
               </header>
               <div className="combined-component__filtered-graph">
                 <FilteredGraph
+                  analysisData={analysisData}
                   wellArrays={wellArrays}
                   extractedIndicatorTimes={extractedIndicatorTimes}
                   selectedWellArray={selectedWellArray}
                   filteredGraphData={filteredGraphData}
+                  annotations={annotations}
+                  setAnnotations={setAnnotations}
                   annotationRangeStart={annotationRangeStart}
                   annotationRangeEnd={annotationRangeEnd}
                   setAnnotationRangeStart={setAnnotationRangeStart}
                   setAnnotationRangeEnd={setAnnotationRangeEnd}
-                  options={filteredGraphConfig}
+                  // options={filteredGraphConfig}
                 />
               </div>
               <div className="combined-component__filter-controls">
@@ -434,6 +439,8 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
                   setShowFiltered={setShowFiltered}
                   columnLabels={columnLabels}
                   rowLabels={rowLabels}
+                  annotations={annotations}
+                  setAnnotations={setAnnotations}
                   setAnnotationRangeStart={setAnnotationRangeStart}
                   setAnnotationRangeEnd={setAnnotationRangeEnd}
                 />
