@@ -74,8 +74,6 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
 
   // State for MiniGraph management
   const [isFiltered, setIsFiltered] = useState(false); // Default is raw data (false)
-  // State to handle hovering over selectedWell
-  const [hoveredWellId, setHoveredWellId] = useState(null);
 
   // State variables for well arrays and filter management
   // const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
@@ -229,7 +227,7 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
       data: well.indicators[0]?.rawData,
       fill: false,
       borderColor: "rgb(75, 192, 192)",
-      // borderColor: well.id === hoveredWellId ? "red" : "rgb(75, 192, 192)", // Change color if hovered
+
       tension: 0.1,
     })),
   };
@@ -305,6 +303,7 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
               >
                 <MiniGraphGrid
                   // handleHoverSelectedWellEnter={handleHoverSelectedWellEnter} // Pass mouse enter handler to MiniGraphGrid
+
                   extractedIndicatorTimes={extractedIndicatorTimes}
                   minigraphOptions={minigraphOptions}
                   largeCanvasWidth={largeCanvasWidth}

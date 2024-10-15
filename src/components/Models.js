@@ -34,6 +34,7 @@ export class Well {
     this.column = column;
     this.row = row;
     this.indicators = []; // Array of Indicator instances
+    // this.isHovered = false;
   }
 }
 

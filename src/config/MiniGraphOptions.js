@@ -20,8 +20,8 @@ export const MiniGraphOptions = (
     normalized: true,
     maintainAspectRatio: true,
     responsive: false,
-    spanGaps: true,
-    // animation: false,
+    spanGaps: false,
+    events: ["onHover"],
     animation: {
       duration: 0,
     },

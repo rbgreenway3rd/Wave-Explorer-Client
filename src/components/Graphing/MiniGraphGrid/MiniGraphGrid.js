@@ -30,24 +30,16 @@ export const MiniGraphGrid = ({
   smallCanvasHeight,
   columnLabels,
   rowLabels,
-  handleHoverSelectedWellEnter,
 }) => {
   const {
     project,
     wellArrays,
     showFiltered,
     selectedWellArray,
-    hoveredSelectedWellId,
-    setHoveredSelectedWellId,
     handleSelectWell,
     handleDeselectWell,
     handleClearSelectedWells,
   } = useContext(DataContext);
-
-  // Extract plate and experiment data
-  // const plate = project?.plate || []; // Default to an empty array if plate is undefined
-  // const experiment = plate[0]?.experiments[0] || {}; // Get the first experiment
-  // const wellArrays = experiment.wells || []; // Get well arrays or default to an empty array
 
   // // State to track if rendering is complete
   const [isRenderingComplete, setIsRenderingComplete] = useState(false);
@@ -166,10 +158,10 @@ export const MiniGraphGrid = ({
     onSelectionEnd: handleSelectionEnd, // Call handleSelectionEnd when dragging ends
     selectionProps: {
       style: {
-        border: "2px dashed purple", // Style for the selection box
-        borderRadius: 4, // Rounded corners for the box
-        backgroundColor: "brown", // Background color for the selection box
-        opacity: 0.5, // Opacity for the selection box
+        border: "0.2em solid yellow", // Style for the selection box
+        borderRadius: 0, // Rounded corners for the box
+        backgroundColor: "rgb(75, 192, 192)", // Background color for the selection box
+        opacity: 0.4, // Opacity for the selection box
       },
     },
     isEnabled: true,
@@ -266,9 +258,8 @@ export const MiniGraphGrid = ({
             className="minigraph-and-controls__minigraph-grid"
             ref={gridRef} // Assign the ref to the grid container
             style={{
-              position: "relative",
-              alignItems: "center",
-              justifyContent: "center",
+              // height: largeCanvasHeight,
+              // width: largeCanvasWidth,
               overflow: "hidden", // Prevent the drag selector from going outside the grid
             }}
           >
@@ -334,6 +325,7 @@ export const MiniGraphGrid = ({
                   height={smallCanvasHeight}
                   options={minigraphOptions}
                   onClick={() => handleWellClick(well.id)}
+                  onHover={() => console.log(well.id)}
                   // hover state used in LargeGraph
                   // onMouseEnter={() => handleHoverSelectedWellEnter(well.id)} // Call onMouseEnter with well ID
                   // onMouseLeave={() => handleHoverSelectedWellEnter(null)} // Reset hover on mouse leave

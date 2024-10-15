@@ -271,7 +271,6 @@ export const DataProvider = ({ children }) => {
   const [showFiltered, setShowFiltered] = useState(false);
   // state handling what selected well in minigraphgrid is hovered
   // -> -> sends state to LargeGraph.js
-  const [hoveredSelectedWellId, setHoveredSelectedWellId] = useState(null);
 
   useEffect(() => {
     // Compute wellArrays whenever the project changes
@@ -280,10 +279,6 @@ export const DataProvider = ({ children }) => {
     const updatedWellArrays = experiment.wells || [];
     setWellArrays(updatedWellArrays); // Update wellArrays based on current project
   }, [project]);
-
-  // state determining what range of x-values exist within annotation box
-  const [annotationRangeStart, setAnnotationRangeStart] = useState(0);
-  const [annotationRangeEnd, setAnnotationRangeEnd] = useState(0);
 
   // Function to set wellArrays from outside
   const updateWellArrays = (newWellArrays) => {
