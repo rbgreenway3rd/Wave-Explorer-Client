@@ -33,7 +33,7 @@ export class StaticRatio_Filter {
       );
       return filteredData;
     }
-
+    const yFiltered = new Array(filteredData.length).fill({ x: 0, y: 0 });
     let sum = 0.0;
 
     // Calculate normalizing value (NV) based on the specified range
@@ -49,16 +49,23 @@ export class StaticRatio_Filter {
     const NV = sum / (this.end - this.start + 1);
 
     // Normalize the data using the NV
-    return filteredData.map((dataPoint) => {
-      if (dataPoint && typeof dataPoint.y === "number") {
-        return {
-          x: dataPoint.x,
-          y: dataPoint.y / NV,
-        };
-      }
-      console.error("Invalid data point during normalization");
-      return dataPoint; // Return the original point if something goes wrong
-    });
+    for (let i = 0; i < filteredData.length; ++i) {
+      yFiltered[i] = {
+        x: filteredData[i].x,
+        y: filteredData[i].y / NV,
+      };
+    }
+    return yFiltered;
+    // return filteredData.map((dataPoint) => {
+    //   if (dataPoint && typeof dataPoint.y === "number") {
+    //     return {
+    //       x: dataPoint.x,
+    //       y: dataPoint.y / NV,
+    //     };
+    //   }
+    //   console.error("Invalid data point during normalization");
+    //   return dataPoint; // Return the original point if something goes wrong
+    // });
   }
 }
 
@@ -176,6 +183,78 @@ export class Smoothing_Filter {
   }
 }
 
+// export class ControlSubtraction_Filter {
+//   constructor(num, onEdit, number_of_columns, number_of_rows) {
+//     this.id = "controlSubtraction_" + JSON.stringify(num);
+//     this.name = "Control Subtraction";
+//     this.desc = "Subtracts the average control curve from apply wells.";
+//     this.isEnabled = false;
+//     this.controlWellArray = []; // list of {row, col} for control wells
+//     this.applyWellArray = []; // list of {row, col} for apply wells
+//     this.number_of_columns = number_of_columns; // Total columns in the grid layout (e.g., 24 for a 24x16 grid)
+//     this.number_of_rows = number_of_rows;
+//     this.onEdit = onEdit; // Callback to open the modal
+//   }
+
+//   setEnabled(value) {
+//     this.isEnabled = value;
+//   }
+
+//   editParams() {
+//     if (this.onEdit) {
+//       // Opens a dialog to set controlWellArray and applyWellArray
+//       this.onEdit(
+//         this.controlWellArray,
+//         this.applyWellArray,
+//         this.setParams.bind(this)
+//       );
+//     }
+//   }
+
+//   setParams(controlWellArray, applyWellArray) {
+//     this.controlWellArray = controlWellArray;
+//     this.applyWellArray = applyWellArray;
+//   }
+
+//   execute(data) {
+//     if (!this.controlWellArray.length || !this.applyWellArray.length) {
+//       console.error("Control or Apply well list is empty.");
+//       return data; // Return early if lists are empty
+//     }
+
+//     const num_points = data[0].y.length;
+//     const average_control_curve = new Array(num_points).fill(0); // Initialize control average curve
+//     const yFiltered = new Array(data.length).fill({ x: 0, y: 0 });
+
+//     // Calculate the average data for control wells
+//     for (let i = 0; i < num_points; i++) {
+//       let control_avg = 0.0;
+
+//       for (let j = 0; j < this.controlWellArray.length; j++) {
+//         // Convert (row, col) to array index
+//         const { row, col } = this.controlWellArray[j];
+//         const ndx = row * this.number_of_columns + col;
+
+//         control_avg += data[ndx].y[i]; // Add the data point for each control well
+//       }
+
+//       control_avg = control_avg / this.controlWellArray.length; // Calculate the average
+//       average_control_curve[i] = control_avg; // Store the average in the curve
+//     }
+
+//     // Subtract the average control curve from each apply well
+//     for (let i = 0; i < this.applyWellArray.length; i++) {
+//       const { row, col } = this.applyWellArray[i];
+//       const ndx = row * this.number_of_columns + col;
+
+//       for (let j = 0; j < data[ndx].y.length; j++) {
+//         data[ndx].y[j] = data[ndx].y[j] - average_control_curve[j]; // Subtract the control average from each point
+//       }
+//     }
+
+//     return data; // Return the modified well data
+//   }
+// }
 export class ControlSubtraction_Filter {
   constructor(num, onEdit, number_of_columns, number_of_rows) {
     this.id = "controlSubtraction_" + JSON.stringify(num);
@@ -187,6 +266,7 @@ export class ControlSubtraction_Filter {
     this.number_of_columns = number_of_columns; // Total columns in the grid layout (e.g., 24 for a 24x16 grid)
     this.number_of_rows = number_of_rows;
     this.onEdit = onEdit; // Callback to open the modal
+    this.average_curve = [];
   }
 
   setEnabled(value) {
@@ -209,42 +289,48 @@ export class ControlSubtraction_Filter {
     this.applyWellArray = applyWellArray;
   }
 
+  calculate_average_curve(wells) {
+    this.average_curve = [];
+
+    for (let i = 0; i < wells[0].indicators[0].rawData.length; i++) {
+      for (let k = 0; k < wells[0].indicators[0].length; k++) {
+        let avg = 0.0;
+
+        for (let j = 0; j < this.controlWellArray.length; j++) {
+          const row = this.controlWellArray[j].row;
+          const col = this.controlWellArray[j].col;
+          const ndx = row * this.number_of_columns + col;
+
+          avg += wells[ndx].indicators[k].filteredData[i];
+        }
+
+        avg = avg / this.controlWellArray.length;
+
+        this.average_curve.push({
+          x: wells[0].indicators[k].rawData[i].x,
+          y: avg,
+        });
+      }
+    }
+  }
+
   execute(data) {
     if (!this.controlWellArray.length || !this.applyWellArray.length) {
-      console.error("Control or apply well list is empty.");
+      console.error("Control or Apply well list is empty.");
       return data; // Return early if lists are empty
     }
 
-    const num_points = data[0].y.length; // Assuming each well has the same number of data points (y-values)
-    const average_control_curve = new Array(num_points).fill(0); // Initialize control average curve
-    const yFiltered = new Array(data.length).fill({ x: 0, y: 0 });
-
-    // Calculate the average data for control wells
-    for (let i = 0; i < num_points; i++) {
-      let control_avg = 0.0;
-
-      for (let j = 0; j < this.controlWellArray.length; j++) {
-        // Convert (row, col) to array index
-        const { row, col } = this.controlWellArray[j];
-        const ndx = row * this.number_of_columns + col;
-
-        control_avg += data[ndx].y[i]; // Add the data point for each control well
-      }
-
-      control_avg = control_avg / this.controlWellArray.length; // Calculate the average
-      average_control_curve[i] = control_avg; // Store the average in the curve
-    }
-
-    // Subtract the average control curve from each apply well
     for (let i = 0; i < this.applyWellArray.length; i++) {
-      const { row, col } = this.applyWellArray[i];
+      const row = this.applyWellArray[i].row;
+      const col = this.applyWellArray[i].col;
       const ndx = row * this.number_of_columns + col;
 
-      for (let j = 0; j < data[ndx].y.length; j++) {
-        data[ndx].y[j] = data[ndx].y[j] - average_control_curve[j]; // Subtract the control average from each point
+      for (let j = 0; j < data[ndx].filteredData.length; j++) {
+        data[ndx].filteredData[j] = {
+          x: data[ndx].filteredData[j].x,
+          y: data[ndx].filteredData[j].y - this.average_curve[j].y,
+        };
       }
     }
-
-    return data; // Return the modified well data
   }
 }

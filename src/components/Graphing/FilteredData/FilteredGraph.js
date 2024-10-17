@@ -210,11 +210,11 @@ export const FilteredGraph = ({
   // Memoized options object including annotations
   const options = useMemo(() => {
     return FilteredGraphOptions(
-      [], // Pass your analysisData if needed
+      [],
       wellArrays,
       filteredGraphData,
       extractedIndicatorTimes,
-      annotations // Pass the current annotations state
+      annotations
     );
   }, [wellArrays, filteredGraphData, extractedIndicatorTimes, annotations]); // Dependencies include annotations
 

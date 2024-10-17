@@ -26,6 +26,7 @@ import {
 import deepEqual from "fast-deep-equal"; // for deep comparison of project state
 import annotationPlugin from "chartjs-plugin-annotation";
 import zoomPlugin from "chartjs-plugin-zoom";
+import { ControlSubtraction_Filter } from "./Graphing/FilteredData/FilterModels.js";
 
 // Register Chart.js components and plugins
 Chart.register(...registerables, annotationPlugin, zoomPlugin);
@@ -159,17 +160,33 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
 
   // Function to apply enabled filters to well arrays
   const applyEnabledFilters = () => {
-    // Step 1: Apply filters to wellArrays and update indicators
-    const updatedWellArrays = wellArrays.map((well) => {
-      const updatedIndicators = well.indicators.map((indicator) => {
-        let filteredData = [...indicator.rawData]; // start with raw data
-        enabledFilters.forEach((filter) => {
-          if (filter.isEnabled) filteredData = filter.execute(filteredData);
-        });
-        return { ...indicator, filteredData };
-      });
-      return { ...well, indicators: updatedIndicators };
-    });
+    // Step 0: reset filtered data to raw data for all wells
+    for (let i = 0; i < wellArrays.length; i++) {
+      for (let j = 0; j < wellArrays[i].indicators.length; j++) {
+        wellArrays[i].indicators[j].filteredData = [
+          ...wellArrays[i].indicators[j].rawData,
+        ];
+      }
+    }
+
+    // Step 1: Apply filters to wellArrays and update indicators\
+
+    for (let f = 0; f < enabledFilters.length; f++) {
+      // if this filter is a ControlSubtraction_Filter, then first calculated the average curve for the control wells
+      if (enabledFilters[f] instanceof ControlSubtraction_Filter) {
+        enabledFilters[f].calculate_average_curve(wellArrays);
+      }
+
+      if (enabledFilters[f].isEnabled) {
+        for (let w = 0; w < wellArrays.length; w++) {
+          for (let i = 0; i < wellArrays[w].indicators.length; i++) {
+            wellArrays[w].indicators[i].filteredData = enabledFilters[
+              f
+            ].execute(wellArrays[w].indicators[i].filteredData);
+          }
+        }
+      }
+    }
 
     // Step 2: Update the project with the new wellArrays
     const updatedProject = {
@@ -182,7 +199,7 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
               if (expIndex === 0) {
                 return {
                   ...experiment,
-                  wells: updatedWellArrays,
+                  wells: wellArrays, // ????
                 };
               }
               return experiment;
@@ -199,8 +216,7 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
     // Step 4: Sync selectedWellArray with the newly filtered wellArrays
     const updatedSelectedWellArray = selectedWellArray.map(
       (selectedWell) =>
-        updatedWellArrays.find((well) => well.id === selectedWell.id) ||
-        selectedWell
+        wellArrays.find((well) => well.id === selectedWell.id) || selectedWell
     );
 
     // Step 5: Update the selectedWellArray state with the updated wells
@@ -258,29 +274,27 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
   //   extractedIndicatorTimes
   // );
 
-  console.log(wellArrays);
-
   const handleToggleDataShown = () => {
     setIsFiltered((prev) => !prev); // Toggle the filter state
     setShowFiltered((prev) => !prev); // Update context state as well
   };
 
-  const minigraphOptions = useMemo(() => {
-    // Collect yValues based on whether showFiltered is true or not
-    const yValues = wellArrays.flatMap((well) =>
-      showFiltered
-        ? well.indicators[0]?.filteredData?.map((point) => point.y) || []
-        : well.indicators[0]?.rawData?.map((point) => point.y) || []
-    );
+  // const minigraphOptions = useMemo(() => {
+  //   // Collect yValues based on whether showFiltered is true or not
+  //   const yValues = wellArrays.flatMap((well) =>
+  //     showFiltered
+  //       ? well.indicators[0]?.filteredData?.map((point) => point.y) || []
+  //       : well.indicators[0]?.rawData?.map((point) => point.y) || []
+  //   );
 
-    // Return the options object instead of the yValues
-    return MiniGraphOptions(
-      analysisData,
-      extractedIndicatorTimes,
-      wellArrays,
-      yValues
-    );
-  }, [analysisData, extractedIndicatorTimes, wellArrays, showFiltered]);
+  //   // Return the options object instead of the yValues
+  //   return MiniGraphOptions(
+  //     analysisData,
+  //     extractedIndicatorTimes,
+  //     wellArrays,
+  //     yValues
+  //   );
+  // }, [analysisData, extractedIndicatorTimes, wellArrays, showFiltered]);
 
   // Render the component
   return (
@@ -303,9 +317,9 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
               >
                 <MiniGraphGrid
                   // handleHoverSelectedWellEnter={handleHoverSelectedWellEnter} // Pass mouse enter handler to MiniGraphGrid
-
+                  analysisData={analysisData}
                   extractedIndicatorTimes={extractedIndicatorTimes}
-                  minigraphOptions={minigraphOptions}
+                  // minigraphOptions={minigraphOptions}
                   largeCanvasWidth={largeCanvasWidth}
                   largeCanvasHeight={largeCanvasHeight}
                   smallCanvasWidth={smallCanvasWidth}

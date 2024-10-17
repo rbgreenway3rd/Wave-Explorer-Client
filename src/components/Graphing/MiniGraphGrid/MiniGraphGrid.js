@@ -7,6 +7,7 @@ import React, {
   useEffect,
 } from "react";
 import { DataContext } from "../../FileHandling/DataProvider";
+import { MiniGraphOptions } from "../../../config/MiniGraphOptions";
 import "../../../styles/MiniGraphGrid.css";
 import "chartjs-adapter-date-fns"; // date-fns adapter for Chart.js necessary for decimation
 import { Line } from "react-chartjs-2";
@@ -23,7 +24,9 @@ import {
 import DotWaveLoader from "../../Loaders/DotWaveLoader";
 
 export const MiniGraphGrid = ({
-  minigraphOptions,
+  // minigraphOptions,
+  analysisData,
+  extractedIndicatorTimes,
   largeCanvasWidth,
   largeCanvasHeight,
   smallCanvasWidth,
@@ -59,6 +62,13 @@ export const MiniGraphGrid = ({
   const gridRef = useRef(null); // Ref to the grid container
   const selectableItems = useRef([]); // Store selectable items for drag selection
   const selectedIndexes = useRef([]); // Store selected indexes during drag
+
+  // handles y-scales for proper rendering
+  const yValues = wellArrays.flatMap((well) =>
+    showFiltered
+      ? well.indicators[0]?.filteredData?.map((point) => point.y) || []
+      : well.indicators[0]?.rawData?.map((point) => point.y) || []
+  );
 
   // Function handling selection of a single well by click event
   const handleWellClick = (wellId) => {
@@ -167,6 +177,21 @@ export const MiniGraphGrid = ({
     isEnabled: true,
     shouldStartSelecting, // condition to control selection initializing
   });
+
+  const minigraphOptions = useMemo(() => {
+    return MiniGraphOptions(
+      analysisData,
+      extractedIndicatorTimes,
+      wellArrays,
+      yValues
+    );
+  }, [
+    analysisData,
+    extractedIndicatorTimes,
+    wellArrays,
+    yValues,
+    showFiltered,
+  ]);
 
   return (
     <>
@@ -297,7 +322,7 @@ export const MiniGraphGrid = ({
                       (selectedWell) => selectedWell.id === well.id
                     )
                       ? {
-                          border: "solid 2px yellow",
+                          border: "solid 0.1em yellow",
                           zIndex: 10,
                           width: "95%",
                           height: "95%",
@@ -325,7 +350,7 @@ export const MiniGraphGrid = ({
                   height={smallCanvasHeight}
                   options={minigraphOptions}
                   onClick={() => handleWellClick(well.id)}
-                  onHover={() => console.log(well.id)}
+
                   // hover state used in LargeGraph
                   // onMouseEnter={() => handleHoverSelectedWellEnter(well.id)} // Call onMouseEnter with well ID
                   // onMouseLeave={() => handleHoverSelectedWellEnter(null)} // Reset hover on mouse leave
