@@ -25,47 +25,37 @@ export class StaticRatio_Filter {
     this.end = end;
   }
 
-  execute(filteredData) {
-    // Ensure there's enough data in the filteredData array
-    if (filteredData.length <= this.end) {
-      console.error(
-        "filteredData array does not have enough data points. Start: ${this.start}, End: , ${this.end}"
-      );
-      return filteredData;
-    }
-    const yFiltered = new Array(filteredData.length).fill({ x: 0, y: 0 });
-    let sum = 0.0;
+  execute(data) {
+    for (let w = 0; w < data.length; ++w) {
+      for (let i = 0; i < data[w].indicators.length; ++i) {
+        for (let j = 0; j < data[w].indicators[i].rawData.length; ++j) {
+          let sum = 0.0;
 
-    // Calculate normalizing value (NV) based on the specified range
-    for (let i = this.start; i <= this.end; i++) {
-      if (filteredData[i] && typeof filteredData[i].y === "number") {
-        sum += filteredData[i].y;
-      } else {
-        console.error("Invalid data point at index", { i });
-        return filteredData; // Return early if there's invalid data
+          // Calculate normalizing value (NV) based on the specified range
+          for (let s = this.start; s <= this.end; s++) {
+            if (
+              data[w].indicators[i].filteredData[s] &&
+              typeof data[w].indicators[i].filteredData[s].y === "number"
+            ) {
+              sum += data[w].indicators[i].filteredData[s].y;
+            } else {
+              console.error("Invalid data point at index", { i });
+              return data[w].indicators[i].filteredData; // Return early if there's invalid data
+            }
+          }
+
+          const NV = sum / (this.end - this.start + 1);
+
+          // Normalize the data using the NV
+          for (let k = 0; k < data[w].indicators[i].filteredData.length; ++k) {
+            data[w].indicators[i].filteredData[k] = {
+              x: data[w].indicators[i].rawData[k].x,
+              y: data[w].indicators[i].filteredData[k].y / NV,
+            };
+          }
+        }
       }
     }
-
-    const NV = sum / (this.end - this.start + 1);
-
-    // Normalize the data using the NV
-    for (let i = 0; i < filteredData.length; ++i) {
-      yFiltered[i] = {
-        x: filteredData[i].x,
-        y: filteredData[i].y / NV,
-      };
-    }
-    return yFiltered;
-    // return filteredData.map((dataPoint) => {
-    //   if (dataPoint && typeof dataPoint.y === "number") {
-    //     return {
-    //       x: dataPoint.x,
-    //       y: dataPoint.y / NV,
-    //     };
-    //   }
-    //   console.error("Invalid data point during normalization");
-    //   return dataPoint; // Return the original point if something goes wrong
-    // });
   }
 }
 
@@ -153,108 +143,42 @@ export class Smoothing_Filter {
     // Ensure there's enough data for the moving average
     if (data.length < this.windowWidth) {
       console.error(
-        "Insufficient data points for moving average. Required: ${this.windowWidth}, Available: ${data.length}"
+        `Insufficient data points for moving average. Required: ${this.windowWidth}, Available: ${data.length}`
       );
       return data; // Return original data if not enough points
     }
 
-    const yFiltered = new Array(data.length).fill({ x: 0, y: 0 });
-    let windowSum = 0;
-
-    for (let i = 0; i < data.length; ++i) {
-      if (i < this.windowWidth) {
-        // Sum up values in the initial window
-        windowSum += data[i].y;
-        yFiltered[i] = {
-          x: data[i].x,
-          y: windowSum / (i + 1),
-        };
-      } else {
-        // Sliding window: subtract the value that's exiting the window and add the new one
-        windowSum = windowSum - data[i - this.windowWidth].y + data[i].y;
-        yFiltered[i] = {
-          x: data[i].x,
-          y: windowSum / this.windowWidth,
-        };
+    // const yFiltered = new Array(data.length).fill({ x: 0, y: 0 });
+    for (let w = 0; w < data.length; ++w) {
+      for (let i = 0; i < data[w].indicators.length; ++i) {
+        for (let j = 0; j < data[w].indicators[i].rawData.length; ++j) {
+          let windowSum = 0;
+          let windowStart = Math.max(Math.floor(j - this.windowWidth / 2), 0);
+          let windowEnd = Math.min(
+            data[w].indicators[i].rawData.length - 1,
+            j + this.windowWidth / 2
+          );
+          for (let k = windowStart; k < windowEnd + 1; k++) {
+            // Sum up values in the initial window
+            try {
+              // windowSum += data[w].indicators[i].rawData[k].y;
+              windowSum += data[w].indicators[i].filteredData[k].y;
+            } catch (err) {
+              console.log(err);
+            }
+          }
+          data[w].indicators[i].filteredData[j] = {
+            x: data[w].indicators[i].rawData[j].x,
+            y: windowSum / (windowEnd - windowStart + 1),
+          };
+        }
       }
     }
 
-    return yFiltered; // Return the smoothed array
+    // return yFiltered; // Return the smoothed array
   }
 }
 
-// export class ControlSubtraction_Filter {
-//   constructor(num, onEdit, number_of_columns, number_of_rows) {
-//     this.id = "controlSubtraction_" + JSON.stringify(num);
-//     this.name = "Control Subtraction";
-//     this.desc = "Subtracts the average control curve from apply wells.";
-//     this.isEnabled = false;
-//     this.controlWellArray = []; // list of {row, col} for control wells
-//     this.applyWellArray = []; // list of {row, col} for apply wells
-//     this.number_of_columns = number_of_columns; // Total columns in the grid layout (e.g., 24 for a 24x16 grid)
-//     this.number_of_rows = number_of_rows;
-//     this.onEdit = onEdit; // Callback to open the modal
-//   }
-
-//   setEnabled(value) {
-//     this.isEnabled = value;
-//   }
-
-//   editParams() {
-//     if (this.onEdit) {
-//       // Opens a dialog to set controlWellArray and applyWellArray
-//       this.onEdit(
-//         this.controlWellArray,
-//         this.applyWellArray,
-//         this.setParams.bind(this)
-//       );
-//     }
-//   }
-
-//   setParams(controlWellArray, applyWellArray) {
-//     this.controlWellArray = controlWellArray;
-//     this.applyWellArray = applyWellArray;
-//   }
-
-//   execute(data) {
-//     if (!this.controlWellArray.length || !this.applyWellArray.length) {
-//       console.error("Control or Apply well list is empty.");
-//       return data; // Return early if lists are empty
-//     }
-
-//     const num_points = data[0].y.length;
-//     const average_control_curve = new Array(num_points).fill(0); // Initialize control average curve
-//     const yFiltered = new Array(data.length).fill({ x: 0, y: 0 });
-
-//     // Calculate the average data for control wells
-//     for (let i = 0; i < num_points; i++) {
-//       let control_avg = 0.0;
-
-//       for (let j = 0; j < this.controlWellArray.length; j++) {
-//         // Convert (row, col) to array index
-//         const { row, col } = this.controlWellArray[j];
-//         const ndx = row * this.number_of_columns + col;
-
-//         control_avg += data[ndx].y[i]; // Add the data point for each control well
-//       }
-
-//       control_avg = control_avg / this.controlWellArray.length; // Calculate the average
-//       average_control_curve[i] = control_avg; // Store the average in the curve
-//     }
-
-//     // Subtract the average control curve from each apply well
-//     for (let i = 0; i < this.applyWellArray.length; i++) {
-//       const { row, col } = this.applyWellArray[i];
-//       const ndx = row * this.number_of_columns + col;
-
-//       for (let j = 0; j < data[ndx].y.length; j++) {
-//         data[ndx].y[j] = data[ndx].y[j] - average_control_curve[j]; // Subtract the control average from each point
-//       }
-//     }
-
-//     return data; // Return the modified well data
-//   }
-// }
 export class ControlSubtraction_Filter {
   constructor(num, onEdit, number_of_columns, number_of_rows) {
     this.id = "controlSubtraction_" + JSON.stringify(num);
@@ -287,31 +211,63 @@ export class ControlSubtraction_Filter {
   setParams(controlWellArray, applyWellArray) {
     this.controlWellArray = controlWellArray;
     this.applyWellArray = applyWellArray;
+    console.log(applyWellArray);
   }
 
   calculate_average_curve(wells) {
+    console.log("avg curve calc");
     this.average_curve = [];
 
-    for (let i = 0; i < wells[0].indicators[0].rawData.length; i++) {
-      for (let k = 0; k < wells[0].indicators[0].length; k++) {
-        let avg = 0.0;
+    // Ensure control wells are available
+    if (!this.controlWellArray.length) {
+      console.error("No control wells defined.");
+      return;
+    }
 
+    // Loop through each data point (assumes rawData has same length across all wells)
+    for (let i = 0; i < wells[0].indicators[0].rawData.length; i++) {
+      // Loop over each indicator
+      for (let k = 0; k < wells[0].indicators.length; k++) {
+        let avg = 0.0;
+        let validControlCount = 0; // Track valid control wells
+
+        // Loop through each control well
         for (let j = 0; j < this.controlWellArray.length; j++) {
           const row = this.controlWellArray[j].row;
           const col = this.controlWellArray[j].col;
           const ndx = row * this.number_of_columns + col;
 
-          avg += wells[ndx].indicators[k].filteredData[i];
+          // Check if filteredData is available for this well and indicator
+          if (
+            wells[ndx] &&
+            wells[ndx].indicators[k] &&
+            wells[ndx].indicators[k].filteredData[i]
+          ) {
+            avg += wells[ndx].indicators[k].filteredData[i].y;
+            validControlCount++;
+          } else {
+            console.warn(
+              `Filtered data missing for well at row ${row}, col ${col}`
+            );
+          }
         }
 
-        avg = avg / this.controlWellArray.length;
+        // Avoid division by zero
+        if (validControlCount > 0) {
+          avg = avg / validControlCount;
+        } else {
+          avg = 0; // No valid control wells, default to 0
+        }
 
+        // Add the calculated average to the curve
         this.average_curve.push({
           x: wells[0].indicators[k].rawData[i].x,
           y: avg,
         });
       }
     }
+
+    console.log(this.average_curve);
   }
 
   execute(data) {
@@ -320,17 +276,26 @@ export class ControlSubtraction_Filter {
       return data; // Return early if lists are empty
     }
 
+    // const yFiltered = [...data]; // Make a copy of the original data to modify
+
+    // Loop through apply wells
     for (let i = 0; i < this.applyWellArray.length; i++) {
       const row = this.applyWellArray[i].row;
       const col = this.applyWellArray[i].col;
       const ndx = row * this.number_of_columns + col;
 
-      for (let j = 0; j < data[ndx].filteredData.length; j++) {
-        data[ndx].filteredData[j] = {
-          x: data[ndx].filteredData[j].x,
-          y: data[ndx].filteredData[j].y - this.average_curve[j].y,
-        };
+      for (let i = 0; i < data[ndx].indicators.length; i++) {
+        for (let j = 0; j < data[ndx].indicators[i].filteredData.length; j++) {
+          data[ndx].indicators[i].filteredData[j] = {
+            x: data[ndx].indicators[i].filteredData[j].x, // Keep x value unchanged
+            y:
+              data[ndx].indicators[i].filteredData[j].y -
+              this.average_curve[j].y, // Subtract control average curve's y
+          };
+        }
       }
     }
+
+    // return yFiltered; // Return the adjusted data with subtracted control curve
   }
 }

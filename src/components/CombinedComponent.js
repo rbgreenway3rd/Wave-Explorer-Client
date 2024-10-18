@@ -178,13 +178,14 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
       }
 
       if (enabledFilters[f].isEnabled) {
-        for (let w = 0; w < wellArrays.length; w++) {
-          for (let i = 0; i < wellArrays[w].indicators.length; i++) {
-            wellArrays[w].indicators[i].filteredData = enabledFilters[
-              f
-            ].execute(wellArrays[w].indicators[i].filteredData);
-          }
-        }
+        // for (let w = 0; w < wellArrays.length; w++) {
+        //   for (let i = 0; i < wellArrays[w].indicators.length; i++) {
+        //     wellArrays[w].indicators[i].filteredData = enabledFilters[
+        //       f
+        //     ].execute(wellArrays[w].indicators[i].filteredData);
+        //   }
+        // }
+        enabledFilters[f].execute(wellArrays);
       }
     }
 
