@@ -44,15 +44,7 @@ export const FilteredGraph = ({
   // const annotationsRef = useRef([]);
   const [isDragging, setIsDragging] = useState(false);
   const [annotationStartPos, setAnnotationStartPos] = useState({ x: 0, y: 0 });
-  // const [annotations, setAnnotations] = useState([]); // Store annotations here
 
-  // const filteredGraphConfig = FilteredGraphOptions(
-  //   analysisData,
-  //   wellArrays,
-  //   filteredGraphData,
-  //   extractedIndicatorTimes
-  // );
-  // Memoized options object including annotations
   const options = useMemo(() => {
     return FilteredGraphOptions(
       [],

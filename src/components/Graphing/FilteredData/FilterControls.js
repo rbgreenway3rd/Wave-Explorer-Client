@@ -22,6 +22,7 @@ import {
   StaticRatioModal,
   SmoothingFilterModal,
   ControlSubtractionModal,
+  OutlierRemovalFilterModal,
 } from "./ParameterModals";
 import {
   StaticRatio_Filter,
@@ -29,6 +30,8 @@ import {
   Div_Filter,
   Smoothing_Filter,
   ControlSubtraction_Filter,
+  Derivative_Filter,
+  Outlier_Removal_Filter,
 } from "./FilterModels";
 import { DataContext } from "../../FileHandling/DataProvider";
 
@@ -63,6 +66,9 @@ export const FilterControls = ({
   // state for control subtraction filter params
   const [controlWellArray, setControlWellArray] = useState([]);
   const [applyWellArray, setApplyWellArray] = useState([]);
+  // state for outlier removal filter params
+  const [halfWindow, setHalfWindow] = useState(2);
+  const [threshold, setThreshold] = useState(3);
 
   // state for drawer - collapsing controls
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -119,6 +125,18 @@ export const FilterControls = ({
     setApplyWellArray(applyWellArray);
     setCurrentFilter({ setParams });
     setEditModalType("controlSubtractionFilter");
+    setOpenDialog(true);
+  };
+
+  const handleEditOutlierRemovalFilterParams = (
+    halfWindow,
+    threshold,
+    setParams
+  ) => {
+    setHalfWindow(halfWindow);
+    setThreshold(threshold);
+    setCurrentFilter({ setParams });
+    setEditModalType("outlierRemovalFilter");
     setOpenDialog(true);
   };
 
@@ -274,9 +292,8 @@ export const FilterControls = ({
   // handle adding new filters to selectedFilters list on modal close
   const handleConfirm = () => {
     setOpen(false);
-    // addFilterToList(selectedValue)
+
     if (selectedValue === "staticRatio") {
-      // create instance of static ratio filter
       const newStaticRatioFilter = new StaticRatio_Filter(
         selectedFilters.length,
         handleEditStaticRatioParams
@@ -284,27 +301,12 @@ export const FilterControls = ({
       // append it to filter list
       console.log(newStaticRatioFilter);
       setSelectedFilters([...selectedFilters, newStaticRatioFilter]);
-    } else if (selectedValue === "dynamicRatio") {
-      // create instance of dynamic ratio filter
-      const newDynamicRatioFilter = new DynamicRatio_Filter(
-        selectedFilters.length
-      );
-      // append newDynamicRatioFilter to selectedFilters array
-      console.log(newDynamicRatioFilter);
-      setSelectedFilters([...selectedFilters, newDynamicRatioFilter]);
-    } else if (selectedValue === "divFilter") {
-      // create instance of div filter
-      const newDivFilter = new Div_Filter(selectedFilters.length);
-      // append to selectedFilters array
-      console.log(newDivFilter);
-      setSelectedFilters([...selectedFilters, newDivFilter]);
     } else if (selectedValue === "smoothingFilter") {
-      // create instance of smoothing filter
       const newSmoothingFilter = new Smoothing_Filter(
         selectedFilters.length,
         handleEditSmoothingFilterParams
-      ); // need to figure out how to initialize windowWidth
-      // append newSmoothingFilter to selectedFilters array
+      );
+
       console.log(newSmoothingFilter);
       setSelectedFilters([...selectedFilters, newSmoothingFilter]);
     } else if (selectedValue === "controlSubtraction") {
@@ -316,6 +318,17 @@ export const FilterControls = ({
       );
       console.log(newControlSubtractionFilter);
       setSelectedFilters([...selectedFilters, newControlSubtractionFilter]);
+    } else if (selectedValue === "derivative") {
+      const newDerivativeFilter = new Derivative_Filter(selectedFilters.length);
+      console.log(newDerivativeFilter);
+      setSelectedFilters([...selectedFilters, newDerivativeFilter]);
+    } else if (selectedValue === "outlierRemoval") {
+      const newOutlierRemovalFilter = new Outlier_Removal_Filter(
+        selectedFilters.length,
+        handleEditOutlierRemovalFilterParams
+      );
+      console.log(newOutlierRemovalFilter);
+      setSelectedFilters([...selectedFilters, newOutlierRemovalFilter]);
     }
 
     // Apply the list of selected filters
@@ -479,16 +492,7 @@ export const FilterControls = ({
                 label: "Static Ratio",
                 value: "staticRatio",
               },
-              {
-                id: "dynamic-ratio",
-                label: "Dynamic Ratio",
-                value: "dynamicRatio",
-              },
-              {
-                id: "div-filter",
-                label: "Divide by 2",
-                value: "divFilter",
-              },
+
               {
                 id: "smoothing-filter",
                 label: "Smoothing",
@@ -498,6 +502,16 @@ export const FilterControls = ({
                 id: "control-subtraction-filter",
                 label: "Control Subtraction",
                 value: "controlSubtraction",
+              },
+              {
+                id: "derivative-filter",
+                label: "Derivative",
+                value: "derivative",
+              },
+              {
+                id: "outlier-removal-filter",
+                label: "Outlier Removal",
+                value: "outlierRemoval",
               },
             ].map(({ id, label, value }) => (
               <Box
@@ -567,6 +581,18 @@ export const FilterControls = ({
           setApplyWellArray={setApplyWellArray}
           number_of_rows={rowLabels.length}
           number_of_columns={columnLabels.length}
+          onSave={handleSaveParams}
+        />
+      )}
+      {editModalType === "outlierRemovalFilter" && (
+        <OutlierRemovalFilterModal
+          className="filter-controls__outlier-removal-filter-modal"
+          open={openDialog}
+          onClose={() => setOpenDialog(false)}
+          halfWindow={halfWindow}
+          setHalfWindow={setHalfWindow}
+          threshold={threshold}
+          setThreshold={setThreshold}
           onSave={handleSaveParams}
         />
       )}

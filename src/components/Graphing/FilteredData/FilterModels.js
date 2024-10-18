@@ -59,61 +59,6 @@ export class StaticRatio_Filter {
   }
 }
 
-export class DynamicRatio_Filter {
-  constructor(num) {
-    this.id = "dynamicRatio_" + JSON.stringify(num);
-    this.name = "Dynamic Ratio";
-    this.sourceWellList = []; // list of {row,col} tuples containing those wells to be used as source wells
-    this.destWellList = []; // list of {row,col} tuples containing those wells to be used as destination wells
-    this.isEnabled = false;
-  }
-
-  editParams() {
-    // opens dialog to edit sourceWellList and destWellList
-    // if "ok" pressed,
-  }
-
-  execute(wells) {}
-
-  setEnabled(value) {
-    this.isEnabled = value;
-  }
-}
-
-export class Div_Filter {
-  constructor(num) {
-    this.id = "divFilter_" + JSON.stringify(num);
-    this.name = "Divide Filter";
-    this.desc = "Divide filter";
-    this.isEnabled = false;
-    this.divisor = 20;
-  }
-  editParams() {
-    // opens dialog to edit start and end values
-    // if "ok" pressed, set start and end to values set in dialog
-    // else leave start and end as they were
-  }
-  execute(data) {
-    let newData = [];
-    for (let i = 0; i < data.length; i++) {
-      newData.push({
-        x: data[i].x,
-        y: data[i].y / this.divisor,
-      });
-    }
-
-    return newData;
-  }
-
-  setDivisor(value) {
-    this.divisor = value;
-  }
-
-  setEnabled(value) {
-    this.isEnabled = value;
-  }
-}
-
 export class Smoothing_Filter {
   constructor(num, onEdit) {
     this.id = "smoothingFilter_" + JSON.stringify(num);
@@ -147,8 +92,6 @@ export class Smoothing_Filter {
       );
       return data; // Return original data if not enough points
     }
-
-    // const yFiltered = new Array(data.length).fill({ x: 0, y: 0 });
     for (let w = 0; w < data.length; ++w) {
       for (let i = 0; i < data[w].indicators.length; ++i) {
         for (let j = 0; j < data[w].indicators[i].rawData.length; ++j) {
@@ -174,8 +117,6 @@ export class Smoothing_Filter {
         }
       }
     }
-
-    // return yFiltered; // Return the smoothed array
   }
 }
 
@@ -276,8 +217,6 @@ export class ControlSubtraction_Filter {
       return data; // Return early if lists are empty
     }
 
-    // const yFiltered = [...data]; // Make a copy of the original data to modify
-
     // Loop through apply wells
     for (let i = 0; i < this.applyWellArray.length; i++) {
       const row = this.applyWellArray[i].row;
@@ -295,7 +234,89 @@ export class ControlSubtraction_Filter {
         }
       }
     }
-
-    // return yFiltered; // Return the adjusted data with subtracted control curve
   }
 }
+
+export class Derivative_Filter {
+  constructor(num, onEdit) {
+    this.id = "Derivative_" + JSON.stringify(num);
+    this.name = "Derivative";
+    this.desc = "Derivative filter";
+    this.isEnabled = false;
+    this.onEdit = onEdit; // Callback to open the modal
+  }
+
+  setEnabled(value) {
+    this.isEnabled = value;
+  }
+
+  execute(data) {
+    for (let w = 0; w < data.length; w++) {
+      for (let i = 0; i < data[w].indicators.length; i++) {
+        for (
+          let j = 0;
+          j < data[w].indicators[i].filteredData.length - 1;
+          j++
+        ) {
+          let x1 = data[w].indicators[i].filteredData[j].x;
+          let x2 = data[w].indicators[i].filteredData[j + 1].x;
+          let y1 = data[w].indicators[i].filteredData[j].y;
+          let y2 = data[w].indicators[i].filteredData[j + 1].y;
+
+          data[w].indicators[i].filteredData[j] = {
+            x: data[w].indicators[i].filteredData[j].x,
+            y: (y2 - y1) / (x2 - x1), // slope
+          };
+        }
+      }
+    }
+  }
+}
+
+export class Outlier_Removal_Filter {
+  constructor(num, onEdit) {
+    this.id = "outlierRemovalFilter_" + JSON.stringify(num);
+    this.name = "Outlier Removal";
+    this.desc = "Outlier Removal";
+    this.isEnabled = false;
+    this.halfWindow = 2;
+    this.threshold = 3;
+    this.onEdit = onEdit;
+  }
+  setEnabled(value) {
+    this.isEnabled = value;
+  }
+  editParams() {
+    if (this.onEdit) {
+      this.onEdit(this.halfWindow, this.threshold, this.setParams.bind(this)); // Open the modal and pass the setter callback
+    }
+  }
+
+  setParams(halfWindow, threshold) {
+    this.halfWindow = halfWindow;
+    this.threshold = threshold;
+  }
+
+  execute(data) {}
+}
+
+// export class DynamicRatio_Filter {
+//   constructor(num) {
+//     this.id = "dynamicRatio_" + JSON.stringify(num);
+//     this.name = "Dynamic Ratio";
+//     this.sourceWellList = []; // list of {row,col} tuples containing those wells to be used as source wells
+//     this.destWellList = []; // list of {row,col} tuples containing those wells to be used as destination wells
+//     this.isEnabled = false;
+//   }
+
+//   editParams() {
+//     // opens dialog to edit sourceWellList and destWellList
+//     // if "ok" pressed,
+//   }
+
+//   execute(wells) {}
+
+//   setEnabled(value) {
+//     this.isEnabled = value;
+//   }
+// }
