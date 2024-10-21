@@ -148,6 +148,8 @@ export const FilterControls = ({
       currentFilter.setParams(windowWidth);
     } else if (editModalType === "controlSubtractionFilter") {
       currentFilter.setParams(controlWellArray, applyWellArray);
+    } else if (editModalType === "outlierRemovalFilter") {
+      currentFilter.setParams(halfWindow, threshold);
     }
     // Other filter types...
     setOpenDialog(false);
