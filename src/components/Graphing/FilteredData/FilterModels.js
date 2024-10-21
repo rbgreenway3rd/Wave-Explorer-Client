@@ -152,7 +152,8 @@ export class ControlSubtraction_Filter {
   setParams(controlWellArray, applyWellArray) {
     this.controlWellArray = controlWellArray;
     this.applyWellArray = applyWellArray;
-    console.log(applyWellArray);
+    console.log("control: ", controlWellArray);
+    console.log("apply: ", applyWellArray);
   }
 
   calculate_average_curve(wells) {
