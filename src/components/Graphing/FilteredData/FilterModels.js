@@ -262,12 +262,13 @@ export class Derivative_Filter {
           let x2 = data[w].indicators[i].filteredData[j + 1].x;
           let y1 = data[w].indicators[i].filteredData[j].y;
           let y2 = data[w].indicators[i].filteredData[j + 1].y;
-
+          let slope = (y2 - y1) / (x2 - x1);
           data[w].indicators[i].filteredData[j] = {
             x: data[w].indicators[i].filteredData[j].x,
-            y: (y2 - y1) / (x2 - x1), // slope
+            y: slope,
           };
         }
+        data[w].indicators[i].filteredData.pop();
       }
     }
   }
@@ -283,9 +284,11 @@ export class Outlier_Removal_Filter {
     this.threshold = 3;
     this.onEdit = onEdit;
   }
+
   setEnabled(value) {
     this.isEnabled = value;
   }
+
   editParams() {
     if (this.onEdit) {
       this.onEdit(this.halfWindow, this.threshold, this.setParams.bind(this)); // Open the modal and pass the setter callback
@@ -297,7 +300,77 @@ export class Outlier_Removal_Filter {
     this.threshold = threshold;
   }
 
-  execute(data) {}
+  median(arr) {
+    const sortedArr = arr.slice().sort((a, b) => a - b);
+    const middle = Math.floor(sortedArr.length / 2);
+
+    if (sortedArr.length % 2 === 0) {
+      return (sortedArr[middle - 1] + sortedArr[middle]) / 2;
+    } else {
+      return sortedArr[middle];
+    }
+  }
+
+  hampelFilter(data) {
+    let threshold = this.threshold;
+    let halfWindow = this.halfWindow;
+
+    const n = data.length;
+    const dataCopy = data.slice(); // Make a copy of the original data
+    const outliers = [];
+    const L = 1.4826; // Scaling factor for MAD
+
+    for (let i = halfWindow; i < n - halfWindow; i++) {
+      const windowData = data.slice(i - halfWindow, i + halfWindow + 1);
+      const med = this.median(windowData);
+
+      const MAD = L * this.median(windowData.map((val) => Math.abs(val - med)));
+
+      if (Math.abs(data[i] - med) / MAD > threshold) {
+        dataCopy[i] = med; // Replace outlier with the median
+        outliers.push(i); // Store the index of the outlier
+      }
+    }
+
+    return {
+      data: dataCopy,
+      outliers: outliers,
+    };
+  }
+
+  execute(data) {
+    // Ensure there's enough data to apply the Hampel filter
+    for (let w = 0; w < data.length; ++w) {
+      for (let i = 0; i < data[w].indicators.length; ++i) {
+        const rawData = data[w].indicators[i].rawData;
+
+        if (rawData.length < this.halfWindow * 2 + 1) {
+          console.error(
+            `Insufficient data points for Hampel filter. Required: ${
+              this.halfWindow * 2 + 1
+            }, Available: ${rawData.length}`
+          );
+          continue; // Skip this indicator if there aren't enough points
+        }
+
+        const filteredResult = this.hampelFilter(
+          rawData.map((point) => point.y) // Pass only the `y` values to the filter
+        );
+
+        // Update the filteredData with the Hampel-filtered values
+        for (let j = 0; j < rawData.length; ++j) {
+          data[w].indicators[i].filteredData[j] = {
+            x: rawData[j].x, // Keep the original x values
+            y: filteredResult.data[j], // Replace the y values with the filtered result
+          };
+        }
+
+        console.log("Outliers removed at indices:", filteredResult.outliers);
+      }
+    }
+
+    return data; // Return the filtered dataset
+  }
 }
 
 // export class DynamicRatio_Filter {
