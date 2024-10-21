@@ -18,12 +18,10 @@ import {
 } from "@mui/icons-material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { useState, useEffect, useContext } from "react";
-import {
-  StaticRatioModal,
-  SmoothingFilterModal,
-  ControlSubtractionModal,
-  OutlierRemovalFilterModal,
-} from "./ParameterModals";
+import { SmoothingFilterModal } from "./ParameterModals/SmoothingModal";
+import { StaticRatioModal } from "./ParameterModals/StaticRatioModal";
+import { ControlSubtractionModal } from "./ParameterModals/ControlSubtractionModal";
+import { OutlierRemovalFilterModal } from "./ParameterModals/OutlierRemovalModal";
 import {
   StaticRatio_Filter,
   DynamicRatio_Filter,
