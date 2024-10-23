@@ -38,6 +38,8 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
     project,
     setProject,
     wellArrays,
+    setWellArrays,
+    updateWellArrays,
     extractedRows,
     extractedColumns,
     extractedIndicatorTimes,
@@ -46,6 +48,10 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
     setShowFiltered,
     selectedWellArray,
     setSelectedWellArray,
+    selectedFilters,
+    setSelectedFilters,
+    enabledFilters,
+    setEnabledFilters,
     // hoveredSelectedWellId,
     // setHoveredSelectedWellId,
   } = useContext(DataContext);
@@ -78,8 +84,8 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
 
   // State variables for well arrays and filter management
   // const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
-  const [selectedFilters, setSelectedFilters] = useState([]);
-  const [enabledFilters, setEnabledFilters] = useState([]);
+  // const [selectedFilters, setSelectedFilters] = useState([]);
+  // const [enabledFilters, setEnabledFilters] = useState([]);
 
   // State variables to store range of y-values inside filteredGraph's annotation box
   const [annotations, setAnnotations] = useState([]);
@@ -118,12 +124,12 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
     "P",
   ];
 
-  console.log(
-    "extractedRows: ",
-    extractedRows,
-    "extractedColumns: ",
-    extractedColumns
-  );
+  // console.log(
+  //   "extractedRows: ",
+  //   extractedRows,
+  //   "extractedColumns: ",
+  //   extractedColumns
+  // );
 
   // Functions to handle zoom state changes
   const toggleZoomState = (currentZoomState) => {
@@ -150,43 +156,26 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
     }
   };
 
-  // const handleHoverSelectedWellEnter = (wellId) => {
-  //   setHoveredWellId(wellId); // Update hovered well ID on mouse enter
-  // };
-
-  // const handleHoverSelectedWellLeave = () => {
-  //   setHoveredWellId(null); // Reset hovered well ID on mouse leave
-  // };
-
   // Function to apply enabled filters to well arrays
   const applyEnabledFilters = () => {
-    // Step 0: reset filtered data to raw data for all wells
-    for (let i = 0; i < wellArrays.length; i++) {
-      for (let j = 0; j < wellArrays[i].indicators.length; j++) {
-        wellArrays[i].indicators[j].filteredData = [
-          ...wellArrays[i].indicators[j].rawData,
-        ];
-      }
-    }
+    console.log(enabledFilters);
 
-    // Step 1: Apply filters to wellArrays and update indicators\
+    // Step 0: reset filtered data to raw data for all wells by copying the wellArrays
+    const updatedWellArrays = wellArrays.map((well) => ({
+      ...well,
+      indicators: well.indicators.map((indicator) => ({
+        ...indicator,
+        filteredData: [...indicator.rawData], // Reset filteredData
+      })),
+    }));
 
+    // Step 1: Apply filters to the copied updatedWellArrays and update indicators
     for (let f = 0; f < enabledFilters.length; f++) {
-      // if this filter is a ControlSubtraction_Filter, then first calculated the average curve for the control wells
+      // if this filter is a ControlSubtraction_Filter, then first calculate the average curve for the control wells
       if (enabledFilters[f] instanceof ControlSubtraction_Filter) {
-        enabledFilters[f].calculate_average_curve(wellArrays);
+        enabledFilters[f].calculate_average_curve(updatedWellArrays);
       }
-
-      if (enabledFilters[f].isEnabled) {
-        // for (let w = 0; w < wellArrays.length; w++) {
-        //   for (let i = 0; i < wellArrays[w].indicators.length; i++) {
-        //     wellArrays[w].indicators[i].filteredData = enabledFilters[
-        //       f
-        //     ].execute(wellArrays[w].indicators[i].filteredData);
-        //   }
-        // }
-        enabledFilters[f].execute(wellArrays);
-      }
+      enabledFilters[f].execute(updatedWellArrays);
     }
 
     // Step 2: Update the project with the new wellArrays
@@ -200,7 +189,7 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
               if (expIndex === 0) {
                 return {
                   ...experiment,
-                  wells: wellArrays, // ????
+                  wells: updatedWellArrays, // Use the updated wellArrays
                 };
               }
               return experiment;
@@ -211,13 +200,14 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
       }),
     };
 
-    // Step 3: Set the updated project in the context
+    // Step 3: Set the updated project in the context, triggering wellArrays update
     setProject(updatedProject);
 
     // Step 4: Sync selectedWellArray with the newly filtered wellArrays
     const updatedSelectedWellArray = selectedWellArray.map(
       (selectedWell) =>
-        wellArrays.find((well) => well.id === selectedWell.id) || selectedWell
+        updatedWellArrays.find((well) => well.id === selectedWell.id) ||
+        selectedWell
     );
 
     // Step 5: Update the selectedWellArray state with the updated wells
@@ -227,6 +217,65 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
     console.log("updated selectedWellArray: ", updatedSelectedWellArray);
     console.log("filters: ", enabledFilters);
   };
+
+  // const applyEnabledFilters = () => {
+  //   console.log(enabledFilters);
+  //   // Step 0: reset filtered data to raw data for all wells
+  //   for (let i = 0; i < wellArrays.length; i++) {
+  //     for (let j = 0; j < wellArrays[i].indicators.length; j++) {
+  //       wellArrays[i].indicators[j].filteredData = [
+  //         ...wellArrays[i].indicators[j].rawData,
+  //       ];
+  //     }
+  //   }
+
+  //   // Step 1: Apply filters to wellArrays and update indicators\
+  //   for (let f = 0; f < enabledFilters.length; f++) {
+  //     // if this filter is a ControlSubtraction_Filter, then first calculated the average curve for the control wells
+  //     if (enabledFilters[f] instanceof ControlSubtraction_Filter) {
+  //       enabledFilters[f].calculate_average_curve(wellArrays);
+  //     }
+  //     enabledFilters[f].execute(wellArrays);
+  //   }
+
+  //   // Step 2: Update the project with the new wellArrays
+  //   const updatedProject = {
+  //     ...project,
+  //     plate: project.plate.map((plate, index) => {
+  //       if (index === 0) {
+  //         return {
+  //           ...plate,
+  //           experiments: plate.experiments.map((experiment, expIndex) => {
+  //             if (expIndex === 0) {
+  //               return {
+  //                 ...experiment,
+  //                 wells: wellArrays, // ????
+  //               };
+  //             }
+  //             return experiment;
+  //           }),
+  //         };
+  //       }
+  //       return plate;
+  //     }),
+  //   };
+
+  //   // Step 3: Set the updated project in the context
+  //   setProject(updatedProject); // Update wellArrays based on current project
+
+  //   // Step 4: Sync selectedWellArray with the newly filtered wellArrays
+  //   const updatedSelectedWellArray = selectedWellArray.map(
+  //     (selectedWell) =>
+  //       wellArrays.find((well) => well.id === selectedWell.id) || selectedWell
+  //   );
+
+  //   // Step 5: Update the selectedWellArray state with the updated wells
+  //   setSelectedWellArray(updatedSelectedWellArray);
+
+  //   console.log("updated project: ", updatedProject);
+  //   console.log("updated selectedWellArray: ", updatedSelectedWellArray);
+  //   console.log("filters: ", enabledFilters);
+  // };
 
   // Effect to track changes in project state
   useEffect(() => {
@@ -444,10 +493,10 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
                 <FilterControls
                   wellArrays={wellArrays}
                   extractedIndicatorTimes={extractedIndicatorTimes}
-                  selectedFilters={selectedFilters}
-                  setSelectedFilters={setSelectedFilters}
-                  enabledFilters={enabledFilters}
-                  setEnabledFilters={setEnabledFilters}
+                  // selectedFilters={selectedFilters}
+                  // setSelectedFilters={setSelectedFilters}
+                  // enabledFilters={enabledFilters}
+                  // setEnabledFilters={setEnabledFilters}
                   applyEnabledFilters={applyEnabledFilters}
                   showFiltered={showFiltered}
                   setShowFiltered={setShowFiltered}

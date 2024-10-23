@@ -34,9 +34,10 @@ import { DataContext } from "../../FileHandling/DataProvider";
 
 export const FilterControls = ({
   // wellArrays,
-  selectedFilters,
-  setSelectedFilters,
-  setEnabledFilters,
+  // selectedFilters,
+  // setSelectedFilters,
+  // enabledFilters,
+  // setEnabledFilters,
   applyEnabledFilters,
   columnLabels,
   rowLabels,
@@ -45,7 +46,13 @@ export const FilterControls = ({
   setAnnotationRangeStart,
   setAnnotationRangeEnd,
 }) => {
-  const { wellArrays } = useContext(DataContext);
+  const {
+    wellArrays,
+    selectedFilters,
+    setSelectedFilters,
+    enabledFilters,
+    setEnabledFilters,
+  } = useContext(DataContext);
   const [selectedWells, setSelectedWells] = useState([]);
   const [highlightedFilter, setHighlightedFilter] = useState({});
   const [open, setOpen] = useState(false);
@@ -444,15 +451,19 @@ export const FilterControls = ({
                 </Typography>
               </div>
               {/* Edit Params Button */}
-              <IconButton
-                className="filter-controls__edit-button"
-                variant="outlined"
-                size="small"
-                onClick={() => filter.editParams()}
-                sx={{ ml: 2, padding: 0, borderRadius: 100 }}
-              >
-                <EditIcon sx={{ fontSize: 17 }} />
-              </IconButton>
+              {filter.name !== "Derivative" ? (
+                <IconButton
+                  className="filter-controls__edit-button"
+                  variant="outlined"
+                  size="small"
+                  onClick={() => filter.editParams()}
+                  sx={{ ml: 2, padding: 0, borderRadius: 100 }}
+                >
+                  <EditIcon sx={{ fontSize: 17 }} />
+                </IconButton>
+              ) : (
+                <></>
+              )}
             </ul>
           ))
         ) : (
