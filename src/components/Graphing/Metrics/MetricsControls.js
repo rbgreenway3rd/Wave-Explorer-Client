@@ -60,6 +60,18 @@ export const MetricsControls = ({ setMetricType }) => {
           />
           <label htmlFor="show-min">Min</label>
         </div>
+        <div className="radio__show-slope">
+          <input
+            type="radio"
+            id="show-slope"
+            className="radio__show-slope-radio"
+            value="slope"
+            name="radio-group-metrics"
+            checked={selectedMetric === "slope"}
+            onChange={handleMetricChange}
+          />
+          <label htmlFor="show-slope">Slope</label>
+        </div>
         <div className="radio__show-range">
           <input
             type="radio"

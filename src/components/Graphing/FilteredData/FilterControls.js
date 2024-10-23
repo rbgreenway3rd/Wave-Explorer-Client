@@ -28,7 +28,7 @@ import {
   Smoothing_Filter,
   ControlSubtraction_Filter,
   Derivative_Filter,
-  Outlier_Removal_Filter,
+  OutlierRemoval_Filter,
 } from "./FilterModels";
 import { DataContext } from "../../FileHandling/DataProvider";
 
@@ -322,7 +322,7 @@ export const FilterControls = ({
       console.log(newDerivativeFilter);
       setSelectedFilters([...selectedFilters, newDerivativeFilter]);
     } else if (selectedValue === "outlierRemoval") {
-      const newOutlierRemovalFilter = new Outlier_Removal_Filter(
+      const newOutlierRemovalFilter = new OutlierRemoval_Filter(
         selectedFilters.length,
         handleEditOutlierRemovalFilterParams
       );

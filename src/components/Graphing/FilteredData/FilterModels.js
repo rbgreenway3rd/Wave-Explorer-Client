@@ -275,7 +275,7 @@ export class Derivative_Filter {
   }
 }
 
-export class Outlier_Removal_Filter {
+export class OutlierRemoval_Filter {
   constructor(num, onEdit) {
     this.id = "outlierRemovalFilter_" + JSON.stringify(num);
     this.name = "Outlier Removal";
