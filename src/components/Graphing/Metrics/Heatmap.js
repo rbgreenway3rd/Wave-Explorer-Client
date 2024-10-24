@@ -101,8 +101,32 @@ const Heatmap = ({
   const minSlope = d3.min(allSlopes);
   const maxSlope = d3.max(allSlopes);
 
-  // Memoize colorScale
+  const calculateRange = (heatmapData) => {
+    if (heatmapData.length === 0) return 0; // If no data, return 0
 
+    const maxY = d3.max(heatmapData, (d) => d.y); // Find the maximum y value
+    const minY = d3.min(heatmapData, (d) => d.y); // Find the minimum y value
+
+    return maxY - minY; // Return the range (difference between max and min)
+  };
+
+  const allRanges = useMemo(() => {
+    return wellArrays.map((well) => {
+      let heatmapData = well.indicators[0]?.filteredData || [];
+      // Filter based on annotationRange if needed
+      if (annotationRange.start !== null && annotationRange.end !== null) {
+        heatmapData = heatmapData.filter(
+          (_, i) => i >= annotationRange.start && i <= annotationRange.end
+        );
+      }
+      return calculateRange(heatmapData); // Calculate the range for each well
+    });
+  }, [wellArrays, annotationRange]);
+
+  // Calculate the min and max range values
+  const rangeExtent = d3.extent(allRanges);
+
+  // Memoize the colorScale
   const colorScale = useMemo(() => {
     const extent = d3.extent(allValues);
     console.log("Color scale extent: ", extent);
@@ -117,13 +141,28 @@ const Heatmap = ({
         .scaleDiverging()
         .interpolator(d3.interpolateRgbBasis(ColormapValues))
         .domain([slopeExtent[0], midpoint, slopeExtent[1]]);
+    } else if (metricType === "range") {
+      // Calculate the midpoint of the range extent
+      const midpoint = (rangeExtent[0] + rangeExtent[1]) / 2;
+      return d3
+        .scaleDiverging()
+        .interpolator(d3.interpolateRgbBasis(ColormapValues))
+        .domain([rangeExtent[0], midpoint, rangeExtent[1]]); // Use rangeExtent for the domain of the color scale
     } else {
       return d3
         .scaleSequential()
         .interpolator(d3.interpolateRgbBasis(ColormapValues))
         .domain(extent);
     }
-  }, [minSlope, maxSlope, metricType, allValues]);
+  }, [
+    minSlope,
+    maxSlope,
+    metricType,
+    allValues,
+    wellArrays,
+    annotationRange,
+    rangeExtent,
+  ]);
 
   useEffect(() => {
     const canvas = canvasRef.current;

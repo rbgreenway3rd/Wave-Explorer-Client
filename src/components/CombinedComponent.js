@@ -8,10 +8,7 @@ import { LargeGraph } from "./Graphing/LargeGraph/LargeGraph.js";
 import { LargeGraphControls } from "./Graphing/LargeGraph/LargeGraphControls.js";
 import { MiniGraphGrid } from "./Graphing/MiniGraphGrid/MiniGraphGrid.js";
 import { MiniGraphControls } from "./Graphing/MiniGraphGrid/MiniGraphControls.js";
-import { MiniGraphOptions } from "../config/MiniGraphOptions.js";
-import { FileUploader } from "./FileHandling/FileUploader.js";
 import { FilteredGraph } from "./Graphing/FilteredData/FilteredGraph.js";
-import { FilteredGraphOptions } from "../config/FilteredGraphOptions.js";
 import { FilterControls } from "./Graphing/FilteredData/FilterControls.js";
 import { MetricsControls } from "./Graphing/Metrics/MetricsControls.js";
 import { Chart, registerables } from "chart.js";
@@ -32,28 +29,19 @@ import { ControlSubtraction_Filter } from "./Graphing/FilteredData/FilterModels.
 Chart.register(...registerables, annotationPlugin, zoomPlugin);
 
 // Main component that integrates various functionalities
-export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
+export const CombinedComponent = () => {
   // Context to manage shared data across components
   const {
     project,
     setProject,
     wellArrays,
-    setWellArrays,
-    updateWellArrays,
-    extractedRows,
-    extractedColumns,
     extractedIndicatorTimes,
     analysisData,
     showFiltered,
     setShowFiltered,
     selectedWellArray,
     setSelectedWellArray,
-    selectedFilters,
-    setSelectedFilters,
     enabledFilters,
-    setEnabledFilters,
-    // hoveredSelectedWellId,
-    // setHoveredSelectedWellId,
   } = useContext(DataContext);
 
   // Ref to store the previous project state for comparison
@@ -69,23 +57,25 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
 
   // Canvas dimensions for graphs
 
-  const [largeCanvasWidth] = useState(window.innerWidth / 2.2);
-  const [largeCanvasHeight] = useState(window.innerHeight / 2.2);
   // const [largeCanvasWidth] = useState(window.innerWidth / 2);
   // const [largeCanvasHeight] = useState(window.innerHeight / 2);
-
-  const [smallCanvasWidth] = useState(window.innerWidth / 61.6); // increased by 1.1
-  const [smallCanvasHeight] = useState(window.innerHeight / 44); // increased by 1.1
   // const [smallCanvasWidth] = useState(window.innerWidth / 56);
   // const [smallCanvasHeight] = useState(window.innerHeight / 40);
+  const [largeCanvasWidth, setLargeCanvasWidth] = useState(
+    window.innerWidth / 2.2
+  );
+  const [largeCanvasHeight, setLargeCanvasHeight] = useState(
+    window.innerHeight / 2.2
+  );
+  const [smallCanvasWidth, setSmallCanvasWidth] = useState(
+    window.innerWidth / 61.6
+  );
+  const [smallCanvasHeight, setSmallCanvasHeight] = useState(
+    window.innerHeight / 44
+  );
 
   // State for MiniGraph management
   const [isFiltered, setIsFiltered] = useState(false); // Default is raw data (false)
-
-  // State variables for well arrays and filter management
-  // const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
-  // const [selectedFilters, setSelectedFilters] = useState([]);
-  // const [enabledFilters, setEnabledFilters] = useState([]);
 
   // State variables to store range of y-values inside filteredGraph's annotation box
   const [annotations, setAnnotations] = useState([]);
@@ -130,6 +120,23 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
   //   "extractedColumns: ",
   //   extractedColumns
   // );
+  // Resize handler function
+  const handleResize = () => {
+    setLargeCanvasWidth(window.innerWidth / 2.2);
+    setLargeCanvasHeight(window.innerHeight / 2.2);
+    setSmallCanvasWidth(window.innerWidth / 61.6);
+    setSmallCanvasHeight(window.innerHeight / 44);
+  };
+
+  // Effect to listen to window resize events
+  useEffect(() => {
+    window.addEventListener("resize", handleResize);
+
+    // Cleanup event listener on component unmount
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   // Functions to handle zoom state changes
   const toggleZoomState = (currentZoomState) => {
@@ -217,65 +224,6 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
     console.log("updated selectedWellArray: ", updatedSelectedWellArray);
     console.log("filters: ", enabledFilters);
   };
-
-  // const applyEnabledFilters = () => {
-  //   console.log(enabledFilters);
-  //   // Step 0: reset filtered data to raw data for all wells
-  //   for (let i = 0; i < wellArrays.length; i++) {
-  //     for (let j = 0; j < wellArrays[i].indicators.length; j++) {
-  //       wellArrays[i].indicators[j].filteredData = [
-  //         ...wellArrays[i].indicators[j].rawData,
-  //       ];
-  //     }
-  //   }
-
-  //   // Step 1: Apply filters to wellArrays and update indicators\
-  //   for (let f = 0; f < enabledFilters.length; f++) {
-  //     // if this filter is a ControlSubtraction_Filter, then first calculated the average curve for the control wells
-  //     if (enabledFilters[f] instanceof ControlSubtraction_Filter) {
-  //       enabledFilters[f].calculate_average_curve(wellArrays);
-  //     }
-  //     enabledFilters[f].execute(wellArrays);
-  //   }
-
-  //   // Step 2: Update the project with the new wellArrays
-  //   const updatedProject = {
-  //     ...project,
-  //     plate: project.plate.map((plate, index) => {
-  //       if (index === 0) {
-  //         return {
-  //           ...plate,
-  //           experiments: plate.experiments.map((experiment, expIndex) => {
-  //             if (expIndex === 0) {
-  //               return {
-  //                 ...experiment,
-  //                 wells: wellArrays, // ????
-  //               };
-  //             }
-  //             return experiment;
-  //           }),
-  //         };
-  //       }
-  //       return plate;
-  //     }),
-  //   };
-
-  //   // Step 3: Set the updated project in the context
-  //   setProject(updatedProject); // Update wellArrays based on current project
-
-  //   // Step 4: Sync selectedWellArray with the newly filtered wellArrays
-  //   const updatedSelectedWellArray = selectedWellArray.map(
-  //     (selectedWell) =>
-  //       wellArrays.find((well) => well.id === selectedWell.id) || selectedWell
-  //   );
-
-  //   // Step 5: Update the selectedWellArray state with the updated wells
-  //   setSelectedWellArray(updatedSelectedWellArray);
-
-  //   console.log("updated project: ", updatedProject);
-  //   console.log("updated selectedWellArray: ", updatedSelectedWellArray);
-  //   console.log("filters: ", enabledFilters);
-  // };
 
   // Effect to track changes in project state
   useEffect(() => {

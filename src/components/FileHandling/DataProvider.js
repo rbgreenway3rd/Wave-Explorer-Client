@@ -173,19 +173,29 @@ export const DataProvider = ({ children }) => {
 
   const extractOperator = (content) => {
     const lines = content.split("\n");
-    const startIndex = lines.findIndex((line) => line.includes("Operator"));
-
-    if (startIndex !== -1) {
-      const operatorLine = lines[startIndex];
-      const operatorParts = operatorLine.split("\t");
-
-      if (operatorParts.length > 1) {
-        return operatorParts[1].trim();
-      }
+    const startIndex = lines.findIndex((line) => line.includes("NumCols"));
+    const endIndex = lines.findIndex((line) => line.includes("Project"));
+    if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
+      return lines.slice(startIndex + 1, endIndex);
     }
-
-    return "";
+    return [];
   };
+
+  // const extractOperator = (content) => {
+  //   const lines = content.split("\n");
+  //   const startIndex = lines.findIndex((line) => line.includes("Operator"));
+
+  //   if (startIndex !== -1) {
+  //     const operatorLine = lines[startIndex];
+  //     const operatorParts = operatorLine.split("\t");
+
+  //     if (operatorParts.length > 1) {
+  //       return operatorParts[1].trim();
+  //     }
+  //   }
+
+  //   return "";
+  // };
 
   const extractAssayPlateBarcode = (content) => {
     const lines = content.split("\n");

@@ -10,6 +10,7 @@ import Typography from "@mui/material/Typography";
 import NavMenu from "./NavMenu";
 
 export const NavBar = () => {
+  const { project } = useContext(DataContext);
   const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
   const [file, setFile] = useState(null); // State to store the uploaded file
 
@@ -24,7 +25,8 @@ export const NavBar = () => {
       </section>
       <section className="navbar-middle">
         {/* Display the file name */}
-        {file && <Typography>{file.name}</Typography>}
+        {file && <Typography>file name: {file.name}</Typography>}
+        {project && <Typography>project: {project.title}</Typography>}
       </section>
       <section className="navbar-right">
         <img
