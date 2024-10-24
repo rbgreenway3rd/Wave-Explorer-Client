@@ -35,8 +35,13 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
     extractedProjectTitle,
     extractedProjectDate,
     extractedProjectTime,
+    extractedProjectInstrument,
     extractedProjectProtocol,
+    extractedAssayPlateBarcode,
+    extractedAddPlateBarcode,
+    extractedBinning,
     extractedIndicatorConfigurations,
+    extractedOperator,
     extractedIndicatorTimes,
     extractAllData,
     analysisData,
@@ -73,18 +78,23 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
       extractedProjectTitle,
       extractedProjectDate,
       extractedProjectTime,
+      extractedProjectInstrument,
       extractedProjectProtocol
     ); // Create new project
     const newPlate = new Plate(
       extractedRows,
       extractedColumns,
+      extractedAssayPlateBarcode,
+      extractedAddPlateBarcode,
       plateDimensions
     ); // Create new plate
     newProject.plate.push(newPlate);
     const newExperiment = new Experiment(
+      extractedBinning,
       extractedRows,
       extractedColumns,
-      extractedIndicatorConfigurations
+      extractedIndicatorConfigurations,
+      extractedOperator
     ); // Create new experiment
     newPlate.experiments.push(newExperiment);
 

@@ -317,34 +317,11 @@ export const CombinedComponent = (wellArraysUpdated, setWellArraysUpdated) => {
     panState,
     panMode
   );
-  // const filteredGraphConfig = FilteredGraphOptions(
-  //   analysisData,
-  //   wellArrays,
-  //   filteredGraphData,
-  //   extractedIndicatorTimes
-  // );
 
   const handleToggleDataShown = () => {
     setIsFiltered((prev) => !prev); // Toggle the filter state
     setShowFiltered((prev) => !prev); // Update context state as well
   };
-
-  // const minigraphOptions = useMemo(() => {
-  //   // Collect yValues based on whether showFiltered is true or not
-  //   const yValues = wellArrays.flatMap((well) =>
-  //     showFiltered
-  //       ? well.indicators[0]?.filteredData?.map((point) => point.y) || []
-  //       : well.indicators[0]?.rawData?.map((point) => point.y) || []
-  //   );
-
-  //   // Return the options object instead of the yValues
-  //   return MiniGraphOptions(
-  //     analysisData,
-  //     extractedIndicatorTimes,
-  //     wellArrays,
-  //     yValues
-  //   );
-  // }, [analysisData, extractedIndicatorTimes, wellArrays, showFiltered]);
 
   // Render the component
   return (

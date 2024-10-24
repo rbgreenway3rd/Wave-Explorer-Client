@@ -12,11 +12,20 @@ export const DataProvider = ({ children }) => {
   const [extractedProjectTitle, setExtractedProjectTitle] = useState([]);
   const [extractedProjectDate, setExtractedProjectDate] = useState([]);
   const [extractedProjectTime, setExtractedProjectTime] = useState([]);
+  const [extractedProjectInstrument, setExtractedProjectInstrument] = useState(
+    []
+  );
+  const [extractedAssayPlateBarcode, setExtractedAssayPlateBarcode] = useState(
+    []
+  );
+  const [extractedAddPlateBarcode, setExtractedAddPlateBarcode] = useState([]);
   const [extractedProjectProtocol, setExtractedProjectProtocol] = useState([]);
+  const [extractedBinning, setExtractedBinning] = useState([]);
   const [
     extractedIndicatorConfigurations,
     setExtractedIndicatorConfigurations,
   ] = useState([]);
+  const [extractedOperator, setExtractedOperator] = useState([]);
   const [extractedIndicatorTimes, setExtractedIndicatorTimes] = useState([]);
   const [analysisData, setAnalysisData] = useState([]);
   const [project, setProject] = useState(null);
@@ -94,6 +103,16 @@ export const DataProvider = ({ children }) => {
     return [];
   };
 
+  const extractInstrument = (content) => {
+    const lines = content.split("\n");
+    const startIndex = lines.findIndex((line) => line.includes("Time"));
+    const endIndex = lines.findIndex((line) => line.includes("ProtocolName"));
+    if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
+      return lines.slice(startIndex + 1, endIndex);
+    }
+    return [];
+  };
+
   // Function to extract project protocol from content
   const extractProjectProtocol = (content) => {
     const lines = content.split("\n");
@@ -114,6 +133,49 @@ export const DataProvider = ({ children }) => {
       line.includes("AddPlateBarcode	S")
     );
     const endIndex = lines.findIndex((line) => line.includes("Binning"));
+    if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
+      return lines.slice(startIndex + 1, endIndex);
+    }
+    return [];
+  };
+
+  const extractOperator = (content) => {
+    const lines = content.split("\n");
+    const startIndex = lines.findIndex((line) => line.includes("NumCols"));
+    const endIndex = lines.findIndex((line) => line.includes("Project"));
+    if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
+      return lines.slice(startIndex + 1, endIndex);
+    }
+    return [];
+  };
+
+  const extractAssayPlateBarcode = (content) => {
+    const lines = content.split("\n");
+    const startIndex = lines.findIndex((line) => line.includes("ProtocolName"));
+    const endIndex = lines.findIndex((line) =>
+      line.includes("AddPlateBarcode")
+    );
+    if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
+      return lines.slice(startIndex + 1, endIndex);
+    }
+    return [];
+  };
+
+  const extractAddPlateBarcode = (content) => {
+    const lines = content.split("\n");
+    const startIndex = lines.findIndex((line) =>
+      line.includes("AssayPlateBarcode")
+    );
+    const endIndex = lines.findIndex((line) => line.includes("Indicator"));
+    if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
+      return lines.slice(startIndex + 1, endIndex);
+    }
+    return [];
+  };
+  const extractBinning = (content) => {
+    const lines = content.split("\n");
+    const startIndex = lines.findIndex((line) => line.includes("Indicator"));
+    const endIndex = lines.findIndex((line) => line.includes("NumRows"));
     if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
       return lines.slice(startIndex + 1, endIndex);
     }
@@ -188,16 +250,26 @@ export const DataProvider = ({ children }) => {
     let extractedProjectTitle = await extractProjectTitle(content);
     let extractedProjectDate = await extractProjectDate(content);
     let extractedProjectTime = await extractProjectTime(content);
+    let extractedProjectInstrument = await extractInstrument(content);
     let extractedProjectProtocol = await extractProjectProtocol(content);
+    let extractedAssayPlateBarcode = await extractAssayPlateBarcode(content);
+    let extractedAddPlateBarcode = await extractAddPlateBarcode(content);
+    let extractedBinning = await extractBinning(content);
     let extractedIndicatorConfigurations = await extractIndicatorConfigurations(
       content
     );
+    let extractedOperator = await extractOperator(content);
 
     setExtractedProjectTitle(extractedProjectTitle);
     setExtractedProjectDate(extractedProjectDate);
     setExtractedProjectTime(extractedProjectTime);
+    setExtractedProjectInstrument(extractedProjectInstrument);
     setExtractedProjectProtocol(extractedProjectProtocol);
+    setExtractedAssayPlateBarcode(extractedAssayPlateBarcode);
+    setExtractedAddPlateBarcode(extractedAddPlateBarcode);
+    setExtractedBinning(extractedBinning);
     setExtractedIndicatorConfigurations(extractedIndicatorConfigurations);
+    setExtractedOperator(extractedOperator);
     setExtractedRows(extractedRows);
     setExtractedColumns(extractedColumns);
     setExtractedLines(extractedLines);
@@ -213,8 +285,13 @@ export const DataProvider = ({ children }) => {
       extractedProjectTitle,
       extractedProjectDate,
       extractedProjectTime,
+      extractedProjectInstrument,
       extractedProjectProtocol,
+      extractedAssayPlateBarcode,
+      extractedAddPlateBarcode,
+      extractedBinning,
       extractedIndicatorConfigurations,
+      extractedOperator,
       extractedIndicatorTimes,
       analysisData,
     };
@@ -229,8 +306,13 @@ export const DataProvider = ({ children }) => {
         extractedProjectTitle,
         extractedProjectDate,
         extractedProjectTime,
+        extractedProjectInstrument,
         extractedProjectProtocol,
+        extractedAssayPlateBarcode,
+        extractedAddPlateBarcode,
+        extractedBinning,
         extractedIndicatorConfigurations,
+        extractedOperator,
         extractAllData,
         extractIndicatorTimes,
         extractedIndicatorTimes,

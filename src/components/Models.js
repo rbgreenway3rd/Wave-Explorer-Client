@@ -1,27 +1,43 @@
 export class Project {
-  constructor(title, date, time, protocol) {
+  constructor(title, date, time, instrument, protocol) {
     this.title = title;
     this.date = date;
     this.time = time;
+    this.instrument = instrument;
     this.protocol = protocol;
     this.plate = [];
   }
 }
 
 export class Plate {
-  constructor(numberOfRows, numberOfColumns) {
+  constructor(
+    numberOfRows,
+    numberOfColumns,
+    assayPlateBarcode,
+    addPlateBarcode
+  ) {
     this.numberOfRows = numberOfRows;
     this.numberOfColumns = numberOfColumns;
+    this.assayPlateBarcode = assayPlateBarcode;
+    this.addPlateBarcode = addPlateBarcode;
     this.plateDimensions = numberOfRows * numberOfColumns;
     this.experiments = [];
   }
 }
 
 export class Experiment {
-  constructor(numberOfRows, numberOfColumns, indicatorConfigurations) {
+  constructor(
+    binning,
+    numberOfRows,
+    numberOfColumns,
+    indicatorConfigurations,
+    operator
+  ) {
+    this.binning = binning;
     this.numberOfRows = numberOfRows;
     this.numberOfColumns = numberOfColumns;
     this.indicatorConfigurations = indicatorConfigurations;
+    this.operator = operator;
     this.wells = [];
   }
 }
