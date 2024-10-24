@@ -80,50 +80,86 @@ export const NavMenu = () => {
     handleClose(); // Close the menu after saving
   };
 
+  // const generateCSV = (project) => {
+  //   // const header = ["<HEADER>"];
+  //   const header = [
+  //     "Date",
+  //     "Time",
+  //     "Instrument",
+  //     "ProtocolName",
+  //     "AssayPlateBarcode",
+  //     "AddPlateBarcode",
+  //     "Indicator",
+  //     "Binning",
+  //     "NumRows",
+  //     "NumCols",
+  //     "Operator",
+  //     "Project",
+  //   ];
+
+  //   const rows = [];
+  //   project.plate.forEach((plate) => {
+  //     plate.experiments.forEach((experiment) => {
+  //       // experiment.wells.forEach((well) => {
+  //       //   well.indicators.forEach((indicator) => {
+  //       const row = [
+  //         project.date,
+  //         project.time,
+  //         project.instrument,
+  //         project.protocol,
+  //         plate.assayPlateBarcode,
+  //         plate.addPlateBarcode,
+
+  //         experiment.binning,
+  //         `NumRows ${experiment.numberOfRows}`,
+  //         `NumCols ${experiment.numberOfColumns}`,
+  //         experiment.operator,
+  //         project.title,
+  //       ];
+  //       rows.push(row.join("\t")); // Join the row values with commas
+  //     });
+  //   });
+  //   //   });
+  //   // });
+
+  //   // Combine header and rows
+  //   return [header.join("\n"), ...rows].join("\n"); // Join rows with new line
+  // };
   const generateCSV = (project) => {
-    const header = ["<HEADER></HEADER>"];
-    // const header = [
-    //   "Date",
-    //   "Time",
-    //   "Instrument",
-    //   "ProtocolName",
-    //   "AssayPlateBarcode",
-    //   "AddPlateBarcode",
-    //   "Indicator",
-    //   "Binning",
-    //   "NumRows",
-    //   "NumCols",
-    //   "Operator",
-    //   "Project",
-    // ];
+    // Header section with tab-separated column names
+    const header = [
+      "<HEADER>",
+      "Date\tTime\tInstrument\tProtocolName\tAssayPlateBarcode\tAddPlateBarcode\tIndicator\tBinning\tNumRows\tNumCols\tOperator\tProject",
+    ];
 
     const rows = [];
+
+    // Loop through the plates, experiments, and wells to construct each row
     project.plate.forEach((plate) => {
       plate.experiments.forEach((experiment) => {
-        // experiment.wells.forEach((well) => {
-        //   well.indicators.forEach((indicator) => {
+        // Construct the row with all details formatted properly
         const row = [
-          project.date,
-          project.time,
-          project.instrument,
-          project.protocol,
-          plate.assayPlateBarcode,
-          plate.addPlateBarcode,
-
-          experiment.binning,
-          `NumRows ${experiment.numberOfRows}`,
-          `NumCols ${experiment.numberOfColumns}`,
+          project.date, // Date
+          project.time, // Time
+          project.instrument, // Instrument
+          project.protocol, // ProtocolName
+          plate.assayPlateBarcode, // AssayPlateBarcode
+          plate.addPlateBarcode, // AddPlateBarcode
+          experiment.indicatorConfigurations,
+          experiment.binning, // Binning
+          experiment.numberOfRows, // NumRows
+          experiment.numberOfColumns, // NumCols
           experiment.operator,
-          project.title,
+          project.title, // Project title
         ];
-        rows.push(row.join("\n")); // Join the row values with commas
+
+        // Push each formatted row into the rows array
+        rows.push(row.join("\t")); // Join values with tabs
       });
     });
-    //   });
-    // });
 
-    // Combine header and rows
-    return [header.join("\t"), ...rows].join("\n"); // Join rows with new line
+    // Combine header and rows, joining with new line breaks
+    return [header.join("\n"), ...rows].join("\n");
   };
 
   return (

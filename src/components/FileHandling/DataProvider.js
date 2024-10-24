@@ -71,115 +71,172 @@ export const DataProvider = ({ children }) => {
   };
 
   // Function to extract project title from content
+
   const extractProjectTitle = (content) => {
-    const lines = content.split("\n");
-    const startIndex = lines.findIndex((line) => line.includes("Project"));
-    const endIndex = lines.findIndex((line) => line.includes("</HEADER>"));
-    if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
-      return lines.slice(startIndex, startIndex + 1);
+    const lines = content.split("\n"); // Split content into lines
+    const startIndex = lines.findIndex((line) => line.includes("Project")); // Find the line containing 'Project'
+
+    if (startIndex !== -1) {
+      // Split the line by tab and return the second part (after 'Project')
+      const projectLine = lines[startIndex];
+      const projectParts = projectLine.split("\t"); // Split by tab
+
+      if (projectParts.length > 1) {
+        return projectParts[1].trim(); // Return the project title without extra spaces or characters
+      }
     }
-    return [];
+
+    return ""; // Return an empty string if no project title is found
   };
 
   // Function to extract project date from content
   const extractProjectDate = (content) => {
-    const lines = content.split("\n");
-    const startIndex = lines.findIndex((line) => line.includes("<HEADER>"));
-    const endIndex = lines.findIndex((line) => line.includes("Time"));
-    if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
-      return lines.slice(startIndex + 1, endIndex);
+    const lines = content.split("\n"); // Split content into lines
+    const startIndex = lines.findIndex((line) => line.includes("Date")); // Find the line containing 'Date'
+
+    if (startIndex !== -1) {
+      // Split the line by tab and return the second part (the date)
+      const dateLine = lines[startIndex];
+      const dateParts = dateLine.split("\t"); // Split by tab
+
+      if (dateParts.length > 1) {
+        return dateParts[1].trim(); // Return the date, removing any extra spaces or characters
+      }
     }
-    return [];
+
+    return ""; // Return an empty string if no date is found
   };
 
-  // Function to extract project time from content
   const extractProjectTime = (content) => {
     const lines = content.split("\n");
-    const startIndex = lines.findIndex((line) => line.includes("Date"));
-    const endIndex = lines.findIndex((line) => line.includes("Instrument"));
-    if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
-      return lines.slice(startIndex + 1, endIndex);
+    const startIndex = lines.findIndex((line) => line.includes("Time")); // Find the line with 'Time'
+
+    if (startIndex !== -1) {
+      const timeLine = lines[startIndex];
+      const timeParts = timeLine.split("\t"); // Split by tab
+
+      if (timeParts.length > 1) {
+        return timeParts[1].trim(); // Return the clean time value
+      }
     }
-    return [];
+
+    return ""; // Return empty string if not found
   };
 
   const extractInstrument = (content) => {
     const lines = content.split("\n");
-    const startIndex = lines.findIndex((line) => line.includes("Time"));
-    const endIndex = lines.findIndex((line) => line.includes("ProtocolName"));
-    if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
-      return lines.slice(startIndex + 1, endIndex);
+    const startIndex = lines.findIndex((line) => line.includes("Instrument"));
+
+    if (startIndex !== -1) {
+      const instrumentLine = lines[startIndex];
+      const instrumentParts = instrumentLine.split("\t");
+
+      if (instrumentParts.length > 1) {
+        return instrumentParts[1].trim();
+      }
     }
-    return [];
+
+    return "";
   };
 
-  // Function to extract project protocol from content
   const extractProjectProtocol = (content) => {
     const lines = content.split("\n");
-    const startIndex = lines.findIndex((line) => line.includes("Instrument"));
-    const endIndex = lines.findIndex((line) =>
-      line.includes("AssayPlateBarcode")
-    );
-    if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
-      return lines.slice(startIndex + 1, endIndex);
+    const startIndex = lines.findIndex((line) => line.includes("ProtocolName"));
+
+    if (startIndex !== -1) {
+      const protocolLine = lines[startIndex];
+      const protocolParts = protocolLine.split("\t");
+
+      if (protocolParts.length > 1) {
+        return protocolParts[1].trim();
+      }
     }
-    return [];
+
+    return "";
   };
 
-  // Function to extract indicator configurations from content
   const extractIndicatorConfigurations = (content) => {
     const lines = content.split("\n");
-    const startIndex = lines.findIndex((line) =>
-      line.includes("AddPlateBarcode	S")
-    );
-    const endIndex = lines.findIndex((line) => line.includes("Binning"));
-    if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
-      return lines.slice(startIndex + 1, endIndex);
+    const startIndex = lines.findIndex((line) => line.includes("Indicator"));
+
+    if (startIndex !== -1) {
+      const indicatorLine = lines[startIndex];
+      const indicatorParts = indicatorLine.split("\t");
+
+      if (indicatorParts.length > 1) {
+        return indicatorParts[1].trim();
+      }
     }
-    return [];
+
+    return "";
   };
 
   const extractOperator = (content) => {
     const lines = content.split("\n");
-    const startIndex = lines.findIndex((line) => line.includes("NumCols"));
-    const endIndex = lines.findIndex((line) => line.includes("Project"));
-    if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
-      return lines.slice(startIndex + 1, endIndex);
+    const startIndex = lines.findIndex((line) => line.includes("Operator"));
+
+    if (startIndex !== -1) {
+      const operatorLine = lines[startIndex];
+      const operatorParts = operatorLine.split("\t");
+
+      if (operatorParts.length > 1) {
+        return operatorParts[1].trim();
+      }
     }
-    return [];
+
+    return "";
   };
 
   const extractAssayPlateBarcode = (content) => {
     const lines = content.split("\n");
-    const startIndex = lines.findIndex((line) => line.includes("ProtocolName"));
-    const endIndex = lines.findIndex((line) =>
-      line.includes("AddPlateBarcode")
+    const startIndex = lines.findIndex((line) =>
+      line.includes("AssayPlateBarcode")
     );
-    if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
-      return lines.slice(startIndex + 1, endIndex);
+
+    if (startIndex !== -1) {
+      const barcodeLine = lines[startIndex];
+      const barcodeParts = barcodeLine.split("\t");
+
+      if (barcodeParts.length > 1) {
+        return barcodeParts[1].trim();
+      }
     }
-    return [];
+
+    return "";
   };
 
   const extractAddPlateBarcode = (content) => {
     const lines = content.split("\n");
     const startIndex = lines.findIndex((line) =>
-      line.includes("AssayPlateBarcode")
+      line.includes("AddPlateBarcode")
     );
-    const endIndex = lines.findIndex((line) => line.includes("Indicator"));
-    if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
-      return lines.slice(startIndex + 1, endIndex);
+
+    if (startIndex !== -1) {
+      const barcodeLine = lines[startIndex];
+      const barcodeParts = barcodeLine.split("\t");
+
+      if (barcodeParts.length > 1) {
+        return barcodeParts[1].trim();
+      }
     }
-    return [];
+
+    return "";
   };
+
   const extractBinning = (content) => {
     const lines = content.split("\n");
-    const startIndex = lines.findIndex((line) => line.includes("Indicator"));
-    const endIndex = lines.findIndex((line) => line.includes("NumRows"));
-    if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
-      return lines.slice(startIndex + 1, endIndex);
+    const startIndex = lines.findIndex((line) => line.includes("Binning"));
+
+    if (startIndex !== -1) {
+      const binningLine = lines[startIndex];
+      const binningParts = binningLine.split("\t");
+
+      if (binningParts.length > 1) {
+        return binningParts[1].trim();
+      }
     }
-    return [];
+
+    return "";
   };
 
   // Function to extract number of rows from content
