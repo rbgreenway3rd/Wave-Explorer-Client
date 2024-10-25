@@ -30,7 +30,7 @@ import {
   Derivative_Filter,
   OutlierRemoval_Filter,
 } from "./FilterModels";
-import { DataContext } from "../../FileHandling/DataProvider";
+import { DataContext } from "../../../providers/DataProvider";
 
 export const FilterControls = ({
   // wellArrays,

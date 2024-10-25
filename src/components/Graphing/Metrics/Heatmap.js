@@ -7,7 +7,7 @@ import React, {
   useContext,
 } from "react";
 import * as d3 from "d3";
-import { DataContext } from "../../FileHandling/DataProvider";
+import { DataContext } from "../../../providers/DataProvider";
 import { ColormapValues } from "./HeatmapConfig";
 
 const Heatmap = ({
@@ -164,7 +164,7 @@ const Heatmap = ({
   // Memoize the colorScale
   const colorScale = useMemo(() => {
     const extent = d3.extent(allValues);
-    console.log("Color scale extent: ", extent);
+    // console.log("Color scale extent: ", extent);
 
     if (metricType === "slope") {
       const slopeExtent = [minSlope, maxSlope];

@@ -5,7 +5,7 @@ import WaveGuideLogo from "../../../src/assets/brand/WaveGuideLogo.webp"; // Abs
 import WaveGuideIcon from "../../../src/assets/brand/WaveGuideIcon.ico";
 import WaveFrontLogo from "../../../src/assets/brand/WaveFrontLogo.webp";
 import FileUploader from "../FileHandling/FileUploader";
-import { DataContext } from "../FileHandling/DataProvider";
+import { DataContext } from "../../providers/DataProvider";
 import Typography from "@mui/material/Typography";
 import NavMenu from "./NavMenu";
 

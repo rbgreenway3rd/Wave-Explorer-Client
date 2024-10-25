@@ -1,5 +1,5 @@
 import React, { useContext, useState } from "react";
-import { DataContext } from "../../FileHandling/DataProvider";
+import { DataContext } from "../../../providers/DataProvider";
 import "../../../styles/MiniGraphControls.css";
 
 export const MiniGraphControls = ({ handleToggleDataShown, isFiltered }) => {

@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import "./FileUploader.css";
-import { DataContext } from "./DataProvider";
+import { DataContext } from "../../providers/DataProvider.js";
 import { Project, Plate, Experiment, Well, Indicator } from "../Models.js";
 import Button from "@mui/material/Button";
 import Tooltip from "@mui/material/Tooltip";

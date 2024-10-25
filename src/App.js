@@ -2,9 +2,9 @@ import React, { useContext } from "react";
 import "./App.css";
 import { NavBar } from "./components/Nav/NavBar";
 import { CombinedComponent } from "./components/CombinedComponent";
-import { DataProvider } from "./components/FileHandling/DataProvider";
+import { DataProvider } from "./providers/DataProvider";
 import { NoDataUploaded } from "./components/NoDataUploaded";
-import { DataContext } from "./components/FileHandling/DataProvider";
+// import { DataContext } from "./components/FileHandling/DataProvider";
 
 function App() {
   return (
