@@ -18,7 +18,7 @@ export const MiniGraphOptions = (
       : 100;
   return {
     normalized: true,
-    maintainAspectRatio: true,
+    maintainAspectRatio: false,
     responsive: false,
     spanGaps: false,
     events: ["onHover"],

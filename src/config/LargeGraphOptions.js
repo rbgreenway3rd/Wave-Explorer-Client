@@ -80,7 +80,8 @@ export const LargeGraphOptions = (
         },
       },
     },
-    maintainAspectRatio: false,
+    maintainAspectRatio: true,
+    // responsive: true,
     responsive: true,
 
     scales: {

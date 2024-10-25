@@ -62,9 +62,11 @@ export const CombinedComponent = () => {
   // const [smallCanvasWidth] = useState(window.innerWidth / 56);
   // const [smallCanvasHeight] = useState(window.innerHeight / 40);
   const [largeCanvasWidth, setLargeCanvasWidth] = useState(
+    // window.innerWidth / 3
     window.innerWidth / 2.2
   );
   const [largeCanvasHeight, setLargeCanvasHeight] = useState(
+    // window.innerHeight / 3
     window.innerHeight / 2.2
   );
   const [smallCanvasWidth, setSmallCanvasWidth] = useState(
@@ -122,6 +124,8 @@ export const CombinedComponent = () => {
   // );
   // Resize handler function
   const handleResize = () => {
+    // setLargeCanvasWidth(window.innerWidth / 3);
+    // setLargeCanvasHeight(window.innerHeight / 3);
     setLargeCanvasWidth(window.innerWidth / 2.2);
     setLargeCanvasHeight(window.innerHeight / 2.2);
     setSmallCanvasWidth(window.innerWidth / 61.6);

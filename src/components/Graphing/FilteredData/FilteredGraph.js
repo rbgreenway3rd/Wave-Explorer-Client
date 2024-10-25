@@ -45,6 +45,39 @@ export const FilteredGraph = ({
   const [isDragging, setIsDragging] = useState(false);
   const [annotationStartPos, setAnnotationStartPos] = useState({ x: 0, y: 0 });
 
+  const [largeCanvasWidth, setLargeCanvasWidth] = useState(
+    window.innerWidth / 2.2
+  );
+  const [largeCanvasHeight, setLargeCanvasHeight] = useState(
+    window.innerHeight / 2.2
+  );
+  const [smallCanvasWidth, setSmallCanvasWidth] = useState(
+    window.innerWidth / 61.6
+  );
+  const [smallCanvasHeight, setSmallCanvasHeight] = useState(
+    window.innerHeight / 44
+  );
+
+  // Resize handler function
+  const handleResize = () => {
+    // setLargeCanvasWidth(window.innerWidth / 3);
+    // setLargeCanvasHeight(window.innerHeight / 3);
+    setLargeCanvasWidth(window.innerWidth / 2.2);
+    setLargeCanvasHeight(window.innerHeight / 2.2);
+    setSmallCanvasWidth(window.innerWidth / 61.6);
+    setSmallCanvasHeight(window.innerHeight / 44);
+  };
+
+  // Effect to listen to window resize events
+  useEffect(() => {
+    window.addEventListener("resize", handleResize);
+
+    // Cleanup event listener on component unmount
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
   const options = useMemo(() => {
     return FilteredGraphOptions(
       [],
@@ -164,10 +197,13 @@ export const FilteredGraph = ({
 
   return (
     <Line
+      key={`${largeCanvasWidth}-${largeCanvasHeight}`}
       ref={chartRef}
       className="filtered-graph-canvas"
       data={filteredGraphData}
       options={options}
+      width={largeCanvasWidth}
+      height={largeCanvasHeight}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}

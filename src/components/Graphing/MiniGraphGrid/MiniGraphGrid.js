@@ -27,10 +27,10 @@ export const MiniGraphGrid = ({
   // minigraphOptions,
   analysisData,
   extractedIndicatorTimes,
-  largeCanvasWidth,
-  largeCanvasHeight,
-  smallCanvasWidth,
-  smallCanvasHeight,
+  // largeCanvasWidth,
+  // largeCanvasHeight,
+  // smallCanvasWidth,
+  // smallCanvasHeight,
   columnLabels,
   rowLabels,
 }) => {
@@ -46,6 +46,41 @@ export const MiniGraphGrid = ({
 
   // // State to track if rendering is complete
   const [isRenderingComplete, setIsRenderingComplete] = useState(false);
+
+  const [largeCanvasWidth, setLargeCanvasWidth] = useState(
+    // window.innerWidth / 3
+    window.innerWidth / 2.2
+  );
+  const [largeCanvasHeight, setLargeCanvasHeight] = useState(
+    // window.innerHeight / 3
+    window.innerHeight / 2.2
+  );
+  const [smallCanvasWidth, setSmallCanvasWidth] = useState(
+    window.innerWidth / 61.6
+  );
+  const [smallCanvasHeight, setSmallCanvasHeight] = useState(
+    window.innerHeight / 44
+  );
+
+  // Resize handler function
+  const handleResize = () => {
+    // setLargeCanvasWidth(window.innerWidth / 3);
+    // setLargeCanvasHeight(window.innerHeight / 3);
+    setLargeCanvasWidth(window.innerWidth / 2.2);
+    setLargeCanvasHeight(window.innerHeight / 2.2);
+    setSmallCanvasWidth(window.innerWidth / 61.6);
+    setSmallCanvasHeight(window.innerHeight / 44);
+  };
+
+  // Effect to listen to window resize events
+  useEffect(() => {
+    window.addEventListener("resize", handleResize);
+
+    // Cleanup event listener on component unmount
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   useEffect(() => {
     if (wellArrays.length > 0) {
@@ -333,7 +368,8 @@ export const MiniGraphGrid = ({
                           height: "95%",
                         } // styling for un-selected wells
                   }
-                  key={well.id}
+                  // key={well.id}
+                  key={`${well.id}-${smallCanvasWidth}-${smallCanvasHeight}`}
                   data={{
                     datasets: [
                       {

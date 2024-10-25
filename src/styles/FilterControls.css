@@ -27,8 +27,10 @@
   width: 100%;
   /* margin-top: 3em; */
   border: 1px solid #101010;
-  
+}
 
+.filter-controls__add-filter-button {
+  padding: 0
 }
 
 .filter-controls__selected-filters-title {
@@ -42,7 +44,8 @@
 
 .filter-controls__apply-button {
   position: absolute;
-  top: 0
+  top: 0;
+  padding: 0
 }
 
 .filter-controls__reset-annotations {

@@ -359,7 +359,7 @@ export const FilterControls = ({
 
       <div
         className="filter-controls__selection-controls"
-        style={{ width: "100%" }}
+        // style={{ width: "100%" }}
       >
         <Stack direction="row" spacing={1}>
           {/* Modal Trigger for Adding Filters */}
@@ -368,6 +368,7 @@ export const FilterControls = ({
             onClick={handleOpen}
             variant="outlined"
             color="primary"
+            style={{ padding: 0 }}
           >
             <AddCircleIcon />
           </IconButton>
