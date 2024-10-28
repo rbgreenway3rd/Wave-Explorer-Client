@@ -15,7 +15,7 @@ import {
   handleAllSelectorClick,
   handleRowSelectorClick,
   handleColumnSelectorClick,
-} from "../../../utilities/Helpers";
+} from "../../../utilities/Handlers";
 import {
   useSelectionContainer,
   Box,

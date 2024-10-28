@@ -30,7 +30,7 @@ export const GenerateCSV = (project, enabledFilters) => {
       experiment.wells[0].indicators.forEach((_, indicatorIndex) => {
         // Add <INDICATOR_DATA> for each indicator
         indicatorData.push(
-          `<INDICATOR_DATA ${experiment.indicatorConfigurations}>`
+          `<INDICATOR_DATA, ${experiment.indicatorConfigurations}>`
         );
 
         // Add <RAW_DATA> tag before the header row

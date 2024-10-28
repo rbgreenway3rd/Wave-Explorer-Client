@@ -19,7 +19,7 @@ import {
   handleAllSelectorClick,
   handleRowSelectorClick,
   handleColumnSelectorClick,
-} from "../utilities/Helpers.js";
+} from "../utilities/Handlers.js";
 import deepEqual from "fast-deep-equal"; // for deep comparison of project state
 import annotationPlugin from "chartjs-plugin-annotation";
 import zoomPlugin from "chartjs-plugin-zoom";
@@ -435,6 +435,10 @@ export const CombinedComponent = () => {
                   setAnnotations={setAnnotations}
                   setAnnotationRangeStart={setAnnotationRangeStart}
                   setAnnotationRangeEnd={setAnnotationRangeEnd}
+                  largeCanvasWidth={largeCanvasWidth}
+                  largeCanvasHeight={largeCanvasHeight}
+                  smallCanvasWidth={smallCanvasWidth}
+                  smallCanvasHeight={smallCanvasHeight}
                 />
               </div>
             </section>

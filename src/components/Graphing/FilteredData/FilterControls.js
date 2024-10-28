@@ -45,6 +45,10 @@ export const FilterControls = ({
   setAnnotations,
   setAnnotationRangeStart,
   setAnnotationRangeEnd,
+  largeCanvasWidth,
+  largeCanvasHeight,
+  smallCanvasWidth,
+  smallCanvasHeight,
 }) => {
   const {
     wellArrays,
@@ -593,6 +597,10 @@ export const FilterControls = ({
           number_of_rows={rowLabels.length}
           number_of_columns={columnLabels.length}
           onSave={handleSaveParams}
+          largeCanvasWidth={largeCanvasWidth}
+          largeCanvasHeight={largeCanvasHeight}
+          smallCanvasWidth={smallCanvasWidth}
+          smallCanvasHeight={smallCanvasHeight}
         />
       )}
       {editModalType === "outlierRemovalFilter" && (
