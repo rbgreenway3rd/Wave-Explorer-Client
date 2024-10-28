@@ -372,7 +372,7 @@ export const FilterControls = ({
             onClick={handleOpen}
             variant="outlined"
             color="primary"
-            style={{ padding: 0 }}
+            style={{ padding: 0, margin: 0 }}
           >
             <AddCircleIcon />
           </IconButton>
@@ -382,7 +382,7 @@ export const FilterControls = ({
             className="filter-controls__order-up-button"
             onClick={handleChangeFilterOrderUp}
             variant="outlined"
-            sx={{ ml: 1 }}
+            sx={{ padding: 0, margin: 0 }}
           >
             <ArrowUpwardIcon />
           </IconButton>
@@ -394,7 +394,7 @@ export const FilterControls = ({
             onClick={handleRemoveHighlightedFilter}
             variant="outlined"
             color="error"
-            sx={{ ml: 1 }}
+            sx={{ padding: 0, margin: 0 }}
           >
             <RemoveCircleOutlineIcon />
           </IconButton>
@@ -404,7 +404,7 @@ export const FilterControls = ({
             className="filter-controls__order-down-button"
             onClick={handleChangeFilterOrderDown}
             variant="outlined"
-            sx={{ ml: 1 }}
+            sx={{ padding: 0, margin: 0 }}
           >
             <ArrowDownwardIcon />
           </IconButton>

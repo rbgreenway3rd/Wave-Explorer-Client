@@ -46,26 +46,33 @@ export const FilteredGraph = ({
   const [annotationStartPos, setAnnotationStartPos] = useState({ x: 0, y: 0 });
 
   const [largeCanvasWidth, setLargeCanvasWidth] = useState(
-    window.innerWidth / 2.2
+    // window.innerWidth / 2.2
+    window.innerWidth / 2.5
   );
   const [largeCanvasHeight, setLargeCanvasHeight] = useState(
-    window.innerHeight / 2.2
+    // window.innerHeight / 2.2
+    window.innerHeight / 2.5
   );
   const [smallCanvasWidth, setSmallCanvasWidth] = useState(
-    window.innerWidth / 61.6
+    // window.innerWidth / 61.6
+    window.innerWidth / 70
   );
   const [smallCanvasHeight, setSmallCanvasHeight] = useState(
-    window.innerHeight / 44
+    // window.innerHeight / 44
+    window.innerHeight / 50
   );
-
   // Resize handler function
   const handleResize = () => {
     // setLargeCanvasWidth(window.innerWidth / 3);
     // setLargeCanvasHeight(window.innerHeight / 3);
-    setLargeCanvasWidth(window.innerWidth / 2.2);
-    setLargeCanvasHeight(window.innerHeight / 2.2);
-    setSmallCanvasWidth(window.innerWidth / 61.6);
-    setSmallCanvasHeight(window.innerHeight / 44);
+    // setLargeCanvasWidth(window.innerWidth / 2.2);
+    // setLargeCanvasHeight(window.innerHeight / 2.2);
+    // setSmallCanvasWidth(window.innerWidth / 61.6);
+    // setSmallCanvasHeight(window.innerHeight / 44);
+    setLargeCanvasWidth(window.innerWidth / 2.5);
+    setLargeCanvasHeight(window.innerHeight / 2.5);
+    setSmallCanvasWidth(window.innerWidth / 70);
+    setSmallCanvasHeight(window.innerHeight / 50);
   };
 
   // Effect to listen to window resize events

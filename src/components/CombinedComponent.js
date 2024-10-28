@@ -62,19 +62,30 @@ export const CombinedComponent = () => {
   // const [smallCanvasWidth] = useState(window.innerWidth / 56);
   // const [smallCanvasHeight] = useState(window.innerHeight / 40);
   const [largeCanvasWidth, setLargeCanvasWidth] = useState(
-    // window.innerWidth / 3
-    window.innerWidth / 2.2
+    // window.innerWidth / 2.2
+    window.innerWidth / 2.5
   );
   const [largeCanvasHeight, setLargeCanvasHeight] = useState(
-    // window.innerHeight / 3
-    window.innerHeight / 2.2
+    // window.innerHeight / 2.2
+    window.innerHeight / 2.5
   );
   const [smallCanvasWidth, setSmallCanvasWidth] = useState(
-    window.innerWidth / 61.6
+    // window.innerWidth / 61.6
+    window.innerWidth / 70
   );
   const [smallCanvasHeight, setSmallCanvasHeight] = useState(
-    window.innerHeight / 44
+    // window.innerHeight / 44
+    window.innerHeight / 50
   );
+
+  const handleResize = () => {
+    // setLargeCanvasWidth(window.innerWidth / 3);
+    // setLargeCanvasHeight(window.innerHeight / 3);
+    setLargeCanvasWidth(window.innerWidth / 2.5);
+    setLargeCanvasHeight(window.innerHeight / 2.5);
+    setSmallCanvasWidth(window.innerWidth / 70);
+    setSmallCanvasHeight(window.innerHeight / 50);
+  };
 
   // State for MiniGraph management
   const [isFiltered, setIsFiltered] = useState(false); // Default is raw data (false)
@@ -123,14 +134,6 @@ export const CombinedComponent = () => {
   //   extractedColumns
   // );
   // Resize handler function
-  const handleResize = () => {
-    // setLargeCanvasWidth(window.innerWidth / 3);
-    // setLargeCanvasHeight(window.innerHeight / 3);
-    setLargeCanvasWidth(window.innerWidth / 2.2);
-    setLargeCanvasHeight(window.innerHeight / 2.2);
-    setSmallCanvasWidth(window.innerWidth / 61.6);
-    setSmallCanvasHeight(window.innerHeight / 44);
-  };
 
   // Effect to listen to window resize events
   useEffect(() => {
@@ -380,7 +383,7 @@ export const CombinedComponent = () => {
               </header>
               <div className="combined-component__metrics">
                 <Heatmap
-                  className="combined-component__metrics"
+                  // className="combined-component__metrics"
                   // wellArrays={wellArrays}
                   selectedWellArray={selectedWellArray}
                   timeData={extractedIndicatorTimes}
