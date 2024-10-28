@@ -221,31 +221,26 @@ export const FilterControls = ({
 
   const handleRemoveHighlightedFilter = () => {
     if (highlightedFilter && highlightedFilter.id) {
-      // Set the highlighted filter's isEnabled to false
+      // Update `selectedFilters` by toggling `isEnabled` for the highlighted filter
       const updatedSelectedFilters = selectedFilters.map((filter) => {
         if (filter.id === highlightedFilter.id) {
           filter.setEnabled(!filter.isEnabled);
         }
-        if (filter.isEnabled) {
-          setEnabledFilters((prevEnabledFilters) => [
-            ...prevEnabledFilters,
-            filter,
-          ]);
-        } else {
-          setEnabledFilters((prevEnabledFilters) =>
-            prevEnabledFilters.filter((f) => f.id !== filter.id)
-          );
-        }
         return filter;
       });
 
-      // Remove the highlighted filter from the selectedFilters array
+      // Filter out the highlighted filter from both `enabledFilters` and `selectedFilters`
       const newSelectedFilters = updatedSelectedFilters.filter(
         (filter) => filter.id !== highlightedFilter.id
       );
 
-      // Update the selectedFilters state
+      // Update `selectedFilters` with the remaining filters
       setSelectedFilters(newSelectedFilters);
+
+      // Update `enabledFilters` only once after all filters have been processed
+      setEnabledFilters((prevEnabledFilters) =>
+        prevEnabledFilters.filter((f) => f.id !== highlightedFilter.id)
+      );
 
       // Reset the highlighted filter
       setHighlightedFilter({});
