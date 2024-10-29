@@ -408,7 +408,7 @@ export const FilterControls = ({
 
       {/* Selected Filters List */}
       <section className="filter-controls__selected-filters">
-        Filters:
+        <div className="selected-filters__header">Filters:</div>
         {selectedFilters.length > 0 ? (
           selectedFilters.map((filter) => (
             <ul
@@ -435,11 +435,11 @@ export const FilterControls = ({
                   className="filter-controls__filter-name"
                   variant="body1"
                   sx={{
-                    ml: 1,
+                    // ml: 1,
                     cursor: "pointer",
                     fontWeight:
                       highlightedFilter.id === filter.id ? "bold" : "normal",
-                    fontSize: "0.95em",
+                    fontSize: "0.75em",
                     backgroundColor:
                       highlightedFilter.id === filter.id
                         ? "yellow"
@@ -457,9 +457,9 @@ export const FilterControls = ({
                   variant="outlined"
                   size="small"
                   onClick={() => filter.editParams()}
-                  sx={{ ml: 2, padding: 0, borderRadius: 100 }}
+                  sx={{ ml: 0, padding: 0, borderRadius: 100 }}
                 >
-                  <EditIcon sx={{ fontSize: 17 }} />
+                  <EditIcon sx={{ fontSize: 15 }} />
                 </IconButton>
               ) : (
                 <></>
