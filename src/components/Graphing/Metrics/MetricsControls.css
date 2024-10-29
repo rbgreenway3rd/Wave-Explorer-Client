@@ -1,9 +1,17 @@
 .metrics__controls-container {
     display: flex;
-    flex-direction: row
+    flex-direction: column;
+    position: relative;
+    height: 100%;
 }
 
 .metrics__radio-container {
     display: flex;
     flex-direction: column
+}
+
+.metrics-controls__reset-annotations{
+    position: absolute;
+  bottom: 0;
+  width: 100%
 }

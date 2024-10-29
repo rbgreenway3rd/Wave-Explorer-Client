@@ -1,19 +1,32 @@
 import React, { useState } from "react";
 import "./MetricsControls.css";
 
-export const MetricsControls = ({ setMetricType }) => {
+export const MetricsControls = ({
+  setMetricType,
+  annotations,
+  setAnnotations,
+  setAnnotationRangeStart,
+  setAnnotationRangeEnd,
+}) => {
   const [selectedMetric, setSelectedMetric] = useState("maxYValue");
 
   const handleMetricChange = (e) => {
     const newMetric = e.target.value;
     setSelectedMetric(newMetric);
-    setMetricType(newMetric); // Prop to notify Heatmap of the change
+    setMetricType(newMetric);
+  };
+
+  const handleResetAnnotations = () => {
+    // Reset the annotationRangeStart and annotationRangeEnd
+    setAnnotationRangeStart(null);
+    setAnnotationRangeEnd(null);
+    setAnnotations([]);
   };
 
   return (
     <div className="metrics__controls-container">
       <div className="metrics__radio-container">
-        Show
+        Metric Type:
         <div className="radio__show-max">
           <input
             type="radio"
@@ -63,6 +76,14 @@ export const MetricsControls = ({ setMetricType }) => {
           <label htmlFor="show-range">Range</label>
         </div>
       </div>
+      <button
+        className="metrics-controls__reset-annotations"
+        variant="contained"
+        color="secondary"
+        onClick={handleResetAnnotations}
+      >
+        Reset Annotation
+      </button>
     </div>
   );
 };

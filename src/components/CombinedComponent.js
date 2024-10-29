@@ -402,7 +402,13 @@ export const CombinedComponent = () => {
                 />
               </div>
               <div className="combined-component__metrics-controls">
-                <MetricsControls setMetricType={setMetricType} />
+                <MetricsControls
+                  setMetricType={setMetricType}
+                  annotations={annotations}
+                  setAnnotations={setAnnotations}
+                  setAnnotationRangeStart={setAnnotationRangeStart}
+                  setAnnotationRangeEnd={setAnnotationRangeEnd}
+                />
               </div>
               <header className="combined-component__filters-header">
                 Filtered Waves

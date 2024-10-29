@@ -4,17 +4,11 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  /* width: 90%;  */
   margin-top: 0; /* Center horizontally */
   margin-bottom: 0; /* Center horizontally */
-  /* margin-left: 0.5em;  */
-  /* Center horizontally */
-  /* margin-right: 0.5em;  */
-  /* Center horizontally */
   height: 100%; /* Ensure full height for vertical centering */
   width: 100%;
   position: relative;
-  /* background-color: lightgray; */
 }
 
 .filter-controls__selection-controls {
@@ -22,17 +16,25 @@
   flex-direction: column;
   justify-content: center; /* Centers horizontally */
   align-items: center;     /* Centers vertically */
-  width: 100%;            
+  width: 100%;     
+  /* position: absolute;      */
+   /* margin-bottom: 15em; */
+   /* margin-top: 2em; */
+   /* top: 0 */
+    
 }
 
 .filter-controls__selected-filters {
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  /* margin-top: 3em; */
+  height: 100%;
   border: 1px solid #101010;
   max-height: 15em;
   overflow-y: auto;
-    background-color: lightgray;
-
+  background-color: lightgray;
+  position: absolute;
+  bottom: 0;
 }
 
 .selected-filters__header{
@@ -70,13 +72,19 @@
 
 .filter-controls__filter-item {
   display: flex;
-  padding: 0
+  flex-direction: row;
+  padding: 0;
+  margin: 0;
+  justify-content: space-between
 }
 
 .filter-controls__filter-item-info {
   padding: 0;
   display: flex;
-  
+}
+
+.filter-controls__edit-button {
+  padding: 0;
 }
 
 .filter-controls__filter-name {

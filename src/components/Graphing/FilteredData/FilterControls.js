@@ -111,10 +111,6 @@ export const FilterControls = ({
     setOpenDialog(true);
   };
 
-  const handleEditDynamicRatioParams = (setParams) => {
-    // Dynamic Ratio filter
-  };
-
   const handleEditSmoothingFilterParams = (windowWidth, setParams) => {
     setWindowWidth(windowWidth);
     setCurrentFilter({ setParams });
@@ -356,58 +352,57 @@ export const FilterControls = ({
         Apply Filters
       </button>
 
-      <div
-        className="filter-controls__selection-controls"
-        // style={{ width: "100%" }}
-      >
-        <Stack direction="row" spacing={1}>
-          {/* Modal Trigger for Adding Filters */}
-          <IconButton
-            className="filter-controls__add-filter-button"
-            onClick={handleOpen}
-            variant="outlined"
-            color="primary"
-            style={{ padding: 0, margin: 0 }}
-          >
-            <AddCircleIcon />
-          </IconButton>
-
-          {/* Order Up Button */}
-          <IconButton
-            className="filter-controls__order-up-button"
-            onClick={handleChangeFilterOrderUp}
-            variant="outlined"
-            sx={{ padding: 0, margin: 0 }}
-          >
-            <ArrowUpwardIcon />
-          </IconButton>
-        </Stack>
-        <Stack direction="row" spacing={1}>
-          {/* Remove Filter Button */}
-          <IconButton
-            className="filter-controls__remove-filter-button"
-            onClick={handleRemoveHighlightedFilter}
-            variant="outlined"
-            color="error"
-            sx={{ padding: 0, margin: 0 }}
-          >
-            <RemoveCircleOutlineIcon />
-          </IconButton>
-
-          {/* Order Down Button */}
-          <IconButton
-            className="filter-controls__order-down-button"
-            onClick={handleChangeFilterOrderDown}
-            variant="outlined"
-            sx={{ padding: 0, margin: 0 }}
-          >
-            <ArrowDownwardIcon />
-          </IconButton>
-        </Stack>
-      </div>
-
       {/* Selected Filters List */}
       <section className="filter-controls__selected-filters">
+        <div
+          className="filter-controls__selection-controls"
+          // style={{ width: "100%" }}
+        >
+          <Stack direction="row" spacing={1}>
+            {/* Modal Trigger for Adding Filters */}
+            <IconButton
+              className="filter-controls__add-filter-button"
+              onClick={handleOpen}
+              variant="outlined"
+              color="primary"
+              style={{ padding: 0, margin: 0 }}
+            >
+              <AddCircleIcon />
+            </IconButton>
+
+            {/* Order Up Button */}
+            <IconButton
+              className="filter-controls__order-up-button"
+              onClick={handleChangeFilterOrderUp}
+              variant="outlined"
+              sx={{ padding: 0, margin: 0 }}
+            >
+              <ArrowUpwardIcon />
+            </IconButton>
+          </Stack>
+          <Stack direction="row" spacing={1}>
+            {/* Remove Filter Button */}
+            <IconButton
+              className="filter-controls__remove-filter-button"
+              onClick={handleRemoveHighlightedFilter}
+              variant="outlined"
+              color="error"
+              sx={{ padding: 0, margin: 0 }}
+            >
+              <RemoveCircleOutlineIcon />
+            </IconButton>
+
+            {/* Order Down Button */}
+            <IconButton
+              className="filter-controls__order-down-button"
+              onClick={handleChangeFilterOrderDown}
+              variant="outlined"
+              sx={{ padding: 0, margin: 0 }}
+            >
+              <ArrowDownwardIcon />
+            </IconButton>
+          </Stack>
+        </div>
         <div className="selected-filters__header">Filters:</div>
         {selectedFilters.length > 0 ? (
           selectedFilters.map((filter) => (
@@ -473,14 +468,14 @@ export const FilterControls = ({
         )}
       </section>
       {/* Reset Annotations Button */}
-      <button
+      {/* <button
         className="filter-controls__reset-annotations"
         variant="contained"
         color="secondary"
         onClick={handleResetAnnotations}
       >
         Reset Annotations
-      </button>
+      </button> */}
       {/* Modal for Filter Selection */}
       <Modal
         className="filter-controls__filter-selection-modal"
