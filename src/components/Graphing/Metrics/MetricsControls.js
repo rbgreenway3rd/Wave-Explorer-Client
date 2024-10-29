@@ -1,19 +1,32 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
+import { DataContext } from "../../../providers/DataProvider";
 import "./MetricsControls.css";
 
 export const MetricsControls = ({
   setMetricType,
   annotations,
   setAnnotations,
+  annotationRangeStart,
+  annotationRangeEnd,
   setAnnotationRangeStart,
   setAnnotationRangeEnd,
 }) => {
+  const { savedMetrics, setSavedMetrics } = useContext(DataContext);
   const [selectedMetric, setSelectedMetric] = useState("maxYValue");
 
   const handleMetricChange = (e) => {
     const newMetric = e.target.value;
     setSelectedMetric(newMetric);
     setMetricType(newMetric);
+  };
+
+  const handleSaveMetric = () => {
+    const newMetric = {
+      metricType: selectedMetric,
+      range: [annotationRangeStart, annotationRangeEnd],
+    };
+
+    setSavedMetrics((prevMetrics) => [...prevMetrics, newMetric]);
   };
 
   const handleResetAnnotations = () => {
@@ -76,6 +89,12 @@ export const MetricsControls = ({
           <label htmlFor="show-range">Range</label>
         </div>
       </div>
+      <button className="save-metric" onClick={handleSaveMetric}>
+        Save Metric
+      </button>
+      <button onClick={() => console.log(savedMetrics)}>
+        log saved metrics
+      </button>
       <button
         className="metrics-controls__reset-annotations"
         variant="contained"

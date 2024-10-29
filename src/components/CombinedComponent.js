@@ -405,6 +405,8 @@ export const CombinedComponent = () => {
                 <MetricsControls
                   setMetricType={setMetricType}
                   annotations={annotations}
+                  annotationRangeStart={annotationRangeStart}
+                  annotationRangeEnd={annotationRangeEnd}
                   setAnnotations={setAnnotations}
                   setAnnotationRangeStart={setAnnotationRangeStart}
                   setAnnotationRangeEnd={setAnnotationRangeEnd}

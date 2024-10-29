@@ -39,8 +39,9 @@ export const DataProvider = ({ children }) => {
 
   // state determining what data is shown in minigraph-grid (rawData or filteredData)
   const [showFiltered, setShowFiltered] = useState(false);
-  // state handling what selected well in minigraphgrid is hovered
-  // -> -> sends state to LargeGraph.js
+
+  // state handling saved annotationRange for metric report
+  const [savedMetrics, setSavedMetrics] = useState([]);
 
   useEffect(() => {
     // Compute wellArrays whenever the project changes
@@ -404,6 +405,8 @@ export const DataProvider = ({ children }) => {
         handleSelectWell,
         handleDeselectWell,
         handleClearSelectedWells,
+        savedMetrics,
+        setSavedMetrics,
         // annotationRangeStart,
         // setAnnotationRangeStart,
         // annotationRangeEnd,
