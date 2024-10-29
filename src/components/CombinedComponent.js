@@ -62,29 +62,31 @@ export const CombinedComponent = () => {
   // const [smallCanvasWidth] = useState(window.innerWidth / 56);
   // const [smallCanvasHeight] = useState(window.innerHeight / 40);
   const [largeCanvasWidth, setLargeCanvasWidth] = useState(
-    // window.innerWidth / 2.2
-    window.innerWidth / 2.5
+    window.innerWidth / 2.3
+    // window.innerWidth / 2.5
   );
   const [largeCanvasHeight, setLargeCanvasHeight] = useState(
-    // window.innerHeight / 2.2
-    window.innerHeight / 2.5
+    window.innerHeight / 2.3
+    // window.innerHeight / 2.5
   );
   const [smallCanvasWidth, setSmallCanvasWidth] = useState(
-    // window.innerWidth / 61.6
-    window.innerWidth / 70
+    window.innerWidth / 64.4
+    // window.innerWidth / 70
   );
   const [smallCanvasHeight, setSmallCanvasHeight] = useState(
-    // window.innerHeight / 44
-    window.innerHeight / 50
+    window.innerHeight / 46
+    // window.innerHeight / 50
   );
 
   const handleResize = () => {
-    // setLargeCanvasWidth(window.innerWidth / 3);
-    // setLargeCanvasHeight(window.innerHeight / 3);
-    setLargeCanvasWidth(window.innerWidth / 2.5);
-    setLargeCanvasHeight(window.innerHeight / 2.5);
-    setSmallCanvasWidth(window.innerWidth / 70);
-    setSmallCanvasHeight(window.innerHeight / 50);
+    // setLargeCanvasWidth(window.innerWidth / 2.5);
+    // setLargeCanvasHeight(window.innerHeight / 2.5);
+    // setSmallCanvasWidth(window.innerWidth / 70);
+    // setSmallCanvasHeight(window.innerHeight / 50);
+    setLargeCanvasWidth(window.innerWidth / 2.3);
+    setLargeCanvasHeight(window.innerHeight / 2.3);
+    setSmallCanvasWidth(window.innerWidth / 64.4);
+    setSmallCanvasHeight(window.innerHeight / 46);
   };
 
   // State for MiniGraph management
