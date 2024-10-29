@@ -12,6 +12,7 @@
   /* margin-right: 0.5em;  */
   /* Center horizontally */
   height: 100%; /* Ensure full height for vertical centering */
+  width: 100%;
   position: relative;
   /* background-color: lightgray; */
 }
@@ -21,7 +22,7 @@
   flex-direction: column;
   justify-content: center; /* Centers horizontally */
   align-items: center;     /* Centers vertically */
-  /* width: 100%;             */
+  width: 100%;            
 }
 
 .filter-controls__selected-filters {
@@ -99,7 +100,8 @@
 .filter-controls__apply-button {
   position: absolute;
   top: 0;
-  padding: 0
+  padding: 0;
+  width: 100%;
 }
 
 .filter-controls__reset-annotations {

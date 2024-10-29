@@ -1,16 +1,18 @@
 .combined-component {
-    padding-left: 0.25em;
-    padding-right: 0.25em;
+    /* padding-left: 0.25em; */
+    /* padding-right: 0.25em; */
    background-color: gray;
    height: 100vh;
 }
 
 .combined-component__main-container {
+    padding-left: 0.25em;
+    padding-right: 0.25em;
     background-color: gray;
     display: flex;
     flex-direction: column;
     align-items: center;
-    float: top;
+    
     height: 95vh
 }
 
@@ -37,6 +39,8 @@
 }
 
 .combined-component__minigraph {
+    /* padding-left: 0.25em; */
+    /* padding-right: 0.25em; */
     border: solid 0.5em rgb(50, 50, 50);
     background-color: black;
     grid-column: 1;
@@ -77,6 +81,8 @@
 }
 
 .combined-component__large-graph-controls {
+    /* padding-left: 0.25em; */
+    /* padding-right: 0.25em; */
     grid-column: 4;
     grid-row: 2;
     box-sizing: border-box; /* Include padding and border in button width */
@@ -99,6 +105,8 @@
 }
 
 .combined-component__metrics {
+    /* padding-left: 0.25em; */
+    /* padding-right: 0.25em; */
     align-items: center;
     justify-content: center;
     border: solid 0.25em rgb(50, 50, 50);
@@ -131,14 +139,16 @@
 }
 
 .combined-component__filter-controls {
+    /* padding-left: 0.25em; */
+    /* padding-right: 0.25em; */
   grid-column: 4;
   grid-row: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: auto;
-  margin: 0 auto; /* Center horizontally */
+  /* width: auto; */
+  /* margin: 0 auto; Center horizontally */
   padding: 0;
   height: 100%; /* Ensure full height for vertical centering */
 
