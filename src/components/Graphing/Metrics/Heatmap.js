@@ -94,7 +94,29 @@ const Heatmap = ({
   }, [wellArrays, annotationRange]);
 
   // Memoize the linear regression function
-  const linearRegression = (data) => {
+  // const linearRegression = (data) => {
+  //   let xsum = 0,
+  //     ysum = 0;
+  //   for (let i = 0; i < data.length; i++) {
+  //     xsum += data[i].x;
+  //     ysum += data[i].y;
+  //   }
+  //   let xmean = xsum / data.length;
+  //   let ymean = ysum / data.length;
+
+  //   let num = 0,
+  //     denom = 0;
+  //   for (let i = 0; i < data.length; i++) {
+  //     let x = data[i].x;
+  //     let y = data[i].y;
+  //     num += (x - xmean) * (y - ymean);
+  //     denom += (x - xmean) * (x - xmean);
+  //   }
+  //   let m = num / denom;
+  //   return m;
+  // };
+  // Memoized linearRegression function
+  const linearRegression = useCallback((data) => {
     let xsum = 0,
       ysum = 0;
     for (let i = 0; i < data.length; i++) {
@@ -112,14 +134,16 @@ const Heatmap = ({
       num += (x - xmean) * (y - ymean);
       denom += (x - xmean) * (x - xmean);
     }
-    let m = num / denom;
-    return m;
-  };
+    return num / denom;
+  }, []);
 
   // Memoize slope calculation for each well
-  const calculateSlope = useCallback((heatmapData) => {
-    return heatmapData.length > 0 ? linearRegression(heatmapData) : 0;
-  });
+  const calculateSlope = useCallback(
+    (heatmapData) => {
+      return heatmapData.length > 0 ? linearRegression(heatmapData) : 0;
+    },
+    [linearRegression]
+  );
 
   // Calculate slopes for all wells
   const allSlopes = useMemo(() => {
@@ -369,7 +393,7 @@ const Heatmap = ({
           style={{
             position: "absolute",
             left: tooltip.x + 20,
-            top: tooltip.y + 5,
+            top: tooltip.y - 40,
             backgroundColor: "rgba(0, 0, 0, 0.7)",
             color: "white",
             padding: "5px",
