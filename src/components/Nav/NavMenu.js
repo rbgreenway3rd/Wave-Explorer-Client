@@ -98,7 +98,9 @@ export const NavMenu = () => {
       enabledFilters,
       includeRawData,
       includeFilteredData,
-      includeSavedMetrics ? savedMetrics : null
+      // includeSavedMetrics ? savedMetrics : null
+      includeSavedMetrics,
+      savedMetrics
     );
 
     // Blob creation and download

@@ -622,7 +622,7 @@ const Heatmap = ({
     annotationRange, // annotationRange is memoized, reducing unnecessary recalculations
     metricType,
     colorScale, // Add colorScale to dependencies
-    calculateSlope,
+    // calculateSlope,
   ]);
 
   const handleMouseMove = (e) => {

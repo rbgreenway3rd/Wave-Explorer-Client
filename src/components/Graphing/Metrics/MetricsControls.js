@@ -23,9 +23,11 @@ export const MetricsControls = ({
   const handleSaveMetric = () => {
     const newMetric = {
       metricType: selectedMetric,
-      range: [annotationRangeStart, annotationRangeEnd],
+      range:
+        annotationRangeStart > annotationRangeEnd
+          ? [annotationRangeEnd, annotationRangeStart]
+          : [annotationRangeStart, annotationRangeEnd],
     };
-
     setSavedMetrics((prevMetrics) => [...prevMetrics, newMetric]);
   };
 

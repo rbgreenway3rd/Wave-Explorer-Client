@@ -1,8 +1,18 @@
+import {
+  linearRegression,
+  calculateSlope,
+  calculateRange,
+  getAllValues,
+  getAllSlopes,
+  getAllRanges,
+} from "../Graphing/Metrics/MetricsUtilities";
+
 export const GenerateCSV = (
   project,
   enabledFilters,
   includeRawData,
   includeFilteredData,
+  includeSavedMetrics,
   savedMetrics
 ) => {
   // Header section
@@ -132,6 +142,51 @@ export const GenerateCSV = (
 
           // Close the <FILTERED_DATA> tag
           indicatorData.push("</FILTERED_DATA>");
+        }
+        // Inside GenerateCSV, after <FILTERED_DATA> section
+        // Saved Metrics section
+        if (includeSavedMetrics && savedMetrics.length > 0) {
+          savedMetrics.forEach((metric) => {
+            // Extract the range from the saved metric entry
+            const annotationRange = metric.range;
+            const metricHeader = `${metric.metricType} (from ${annotationRange[0]} to ${annotationRange[1]})`;
+
+            // Add header for this metric type
+            indicatorData.push(`<${metricHeader}>`);
+
+            // Header row: "Time" followed by well labels
+            const wellHeaders = [
+              "Time",
+              ...experiment.wells.map((well) => well.label),
+            ];
+            indicatorData.push(wellHeaders.join(","));
+
+            // Iterate through each time point in the annotation range
+            for (let i = annotationRange[0]; i <= annotationRange[1]; i++) {
+              // Start with time in milliseconds
+              const timeInMilliseconds =
+                experiment.wells[0].indicators[indicatorIndex].time[i] / 1000;
+              const row = [timeInMilliseconds];
+
+              // Calculate the metric value for each well at this time point
+              experiment.wells.forEach((well) => {
+                const data = well.indicators[indicatorIndex].filteredData;
+                if (metric.metricType === "slope") {
+                  row.push(calculateSlope(data, annotationRange));
+                } else if (metric.metricType === "range") {
+                  row.push(calculateRange(data, annotationRange));
+                } else {
+                  row.push(""); // Placeholder for unsupported metric types
+                }
+              });
+
+              // Add the row for this time point
+              indicatorData.push(row.join(","));
+            }
+
+            // Close the metric section
+            indicatorData.push(`</${metricHeader}>`);
+          });
         }
 
         // Close the <INDICATOR_DATA> tag
