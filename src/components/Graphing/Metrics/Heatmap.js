@@ -705,6 +705,7 @@ const Heatmap = ({
             padding: "5px",
             borderRadius: "5px",
             pointerEvents: "none",
+            zIndex: 99999,
           }}
         >
           <div>
