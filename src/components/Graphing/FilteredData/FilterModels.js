@@ -344,25 +344,25 @@ export class OutlierRemoval_Filter {
     // Ensure there's enough data to apply the Hampel filter
     for (let w = 0; w < data.length; ++w) {
       for (let i = 0; i < data[w].indicators.length; ++i) {
-        const rawData = data[w].indicators[i].rawData;
+        const filteredData = data[w].indicators[i].filteredData;
 
-        if (rawData.length < this.halfWindow * 2 + 1) {
+        if (filteredData.length < this.halfWindow * 2 + 1) {
           console.error(
             `Insufficient data points for Hampel filter. Required: ${
               this.halfWindow * 2 + 1
-            }, Available: ${rawData.length}`
+            }, Available: ${filteredData.length}`
           );
           continue; // Skip this indicator if there aren't enough points
         }
 
         const filteredResult = this.hampelFilter(
-          rawData.map((point) => point.y) // Pass only the `y` values to the filter
+          filteredData.map((point) => point.y) // Pass only the `y` values to the filter
         );
 
         // Update the filteredData with the Hampel-filtered values
-        for (let j = 0; j < rawData.length; ++j) {
+        for (let j = 0; j < filteredData.length; ++j) {
           data[w].indicators[i].filteredData[j] = {
-            x: rawData[j].x, // Keep the original x values
+            x: filteredData[j].x, // Keep the original x values
             y: filteredResult.data[j], // Replace the y values with the filtered result
           };
         }
