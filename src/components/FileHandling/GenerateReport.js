@@ -7,6 +7,8 @@ import {
   getAllRanges,
 } from "../Graphing/Metrics/MetricsUtilities";
 
+import * as d3 from "d3";
+
 export const GenerateCSV = (
   project,
   enabledFilters,
@@ -143,49 +145,64 @@ export const GenerateCSV = (
           // Close the <FILTERED_DATA> tag
           indicatorData.push("</FILTERED_DATA>");
         }
-        // Inside GenerateCSV, after <FILTERED_DATA> section
+
         // Saved Metrics section
         if (includeSavedMetrics && savedMetrics.length > 0) {
+          // Add <METRICS> header to indicate the start of the metrics section
+          indicatorData.push("<METRICS>");
+
           savedMetrics.forEach((metric) => {
             // Extract the range from the saved metric entry
             const annotationRange = metric.range;
-            const metricHeader = `${metric.metricType} (from ${annotationRange[0]} to ${annotationRange[1]})`;
 
-            // Add header for this metric type
+            // Convert annotation range indices to corresponding time values in milliseconds
+            const timeArray =
+              experiment.wells[0].indicators[indicatorIndex].time;
+            const startTime = timeArray[annotationRange[0]] / 1000; // Start time in ms
+            const endTime = timeArray[annotationRange[1]] / 1000; // End time in ms
+
+            // Update the metricHeader to use time values
+            const metricHeader = `${metric.metricType} (from ${startTime} ms to ${endTime} ms)`;
+
+            // Add header for this metric type, including well labels row
             indicatorData.push(`<${metricHeader}>`);
+            const wellLabels = experiment.wells.map((well) => well.label);
+            indicatorData.push(wellLabels.join(",")); // Add well labels row
 
-            // Header row: "Time" followed by well labels
-            const wellHeaders = [
-              "Time",
-              ...experiment.wells.map((well) => well.label),
-            ];
-            indicatorData.push(wellHeaders.join(","));
+            // Calculate the metric value for each well over the annotation range
+            const metricValues = experiment.wells.map((well) => {
+              let heatmapData =
+                well.indicators[indicatorIndex]?.filteredData || [];
+              const maxYValue =
+                heatmapData.length > 0 ? d3.max(heatmapData, (d) => d.y) : 0;
+              const minYValue =
+                heatmapData.length > 0 ? d3.min(heatmapData, (d) => d.y) : 0;
+              // Only include filteredData within the annotationRange if it's set
+              if (annotationRange[0] !== null && annotationRange[1] !== null) {
+                heatmapData = heatmapData.filter(
+                  (_, i) => i >= annotationRange[0] && i <= annotationRange[1]
+                );
+              }
+              if (metric.metricType === "slope") {
+                return calculateSlope(heatmapData);
+              } else if (metric.metricType === "rangeOfYValues") {
+                return calculateRange(heatmapData);
+              } else if (metric.metricType === "maxYValue") {
+                // return Math.max(heatmapData, (d) => d.y);
+                return maxYValue;
+              } else if (metric.metricType === "minYValue") {
+                // return Math.min(heatmapData, (d) => d.y);
+                return minYValue;
+              } else {
+                return ""; // Handler for unsupported metric types
+              }
+            });
 
-            // Iterate through each time point in the annotation range
-            for (let i = annotationRange[0]; i <= annotationRange[1]; i++) {
-              // Start with time in milliseconds
-              const timeInMilliseconds =
-                experiment.wells[0].indicators[indicatorIndex].time[i] / 1000;
-              const row = [timeInMilliseconds];
-
-              // Calculate the metric value for each well at this time point
-              experiment.wells.forEach((well) => {
-                const data = well.indicators[indicatorIndex].filteredData;
-                if (metric.metricType === "slope") {
-                  row.push(calculateSlope(data, annotationRange));
-                } else if (metric.metricType === "range") {
-                  row.push(calculateRange(data, annotationRange));
-                } else {
-                  row.push(""); // Placeholder for unsupported metric types
-                }
-              });
-
-              // Add the row for this time point
-              indicatorData.push(row.join(","));
-            }
+            // Add a single row of metric values
+            indicatorData.push(metricValues.join(","));
 
             // Close the metric section
-            indicatorData.push(`</${metricHeader}>`);
+            indicatorData.push(`</${metric.metricType}>`);
           });
         }
 
