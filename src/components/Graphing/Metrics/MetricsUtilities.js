@@ -38,9 +38,15 @@ export const calculateRange = (heatmapData) => {
 export const getAllValues = (wellArrays, annotationRange) => {
   return wellArrays.flatMap((well) => {
     const filteredData = well.indicators[0]?.filteredData || [];
-    return filteredData
-      .filter((_, i) => i >= annotationRange.start && i <= annotationRange.end)
-      .map((d) => d.y);
+    if (annotationRange.start !== null && annotationRange.end !== null) {
+      return filteredData
+        .filter(
+          (_, i) => i >= annotationRange.start && i <= annotationRange.end
+        )
+        .map((d) => d.y);
+    } else {
+      return filteredData.map((d) => d.y);
+    }
   });
 };
 
