@@ -254,22 +254,23 @@ export class Derivative_Filter {
   execute(data) {
     for (let w = 0; w < data.length; w++) {
       for (let i = 0; i < data[w].indicators.length; i++) {
-        for (
-          let j = 0;
-          j < data[w].indicators[i].filteredData.length - 1;
-          j++
-        ) {
-          let x1 = data[w].indicators[i].filteredData[j].x;
-          let x2 = data[w].indicators[i].filteredData[j + 1].x;
-          let y1 = data[w].indicators[i].filteredData[j].y;
-          let y2 = data[w].indicators[i].filteredData[j + 1].y;
-          let slope = (y2 - y1) / (x2 - x1);
-          data[w].indicators[i].filteredData[j] = {
-            x: data[w].indicators[i].filteredData[j].x,
-            y: slope,
-          };
-        }
-        data[w].indicators[i].filteredData.pop();
+        for (let j = 0; j < data[w].indicators[i].filteredData.length; j++)
+          if (j < data[w].indicators[i].filteredData.length - 1) {
+            let x1 = data[w].indicators[i].filteredData[j].x;
+            let x2 = data[w].indicators[i].filteredData[j + 1].x;
+            let y1 = data[w].indicators[i].filteredData[j].y;
+            let y2 = data[w].indicators[i].filteredData[j + 1].y;
+            let slope = (y2 - y1) / (x2 - x1);
+            data[w].indicators[i].filteredData[j] = {
+              x: data[w].indicators[i].filteredData[j].x,
+              y: slope,
+            };
+          } else {
+            data[w].indicators[i].filteredData[j] = {
+              x: data[w].indicators[i].filteredData[j].x,
+              y: data[w].indicators[i].filteredData[j - 1].y,
+            };
+          }
       }
     }
   }
