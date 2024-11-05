@@ -21,6 +21,7 @@ import { SmoothingFilterModal } from "./ParameterModals/SmoothingModal";
 import { StaticRatioModal } from "./ParameterModals/StaticRatioModal";
 import { ControlSubtractionModal } from "./ParameterModals/ControlSubtractionModal";
 import { OutlierRemovalFilterModal } from "./ParameterModals/OutlierRemovalModal";
+import { FlatFieldCorrectionModal } from "./ParameterModals/FlatFieldCorrectionModal";
 import {
   StaticRatio_Filter,
   DynamicRatio_Filter,
@@ -29,6 +30,7 @@ import {
   ControlSubtraction_Filter,
   Derivative_Filter,
   OutlierRemoval_Filter,
+  FlatFieldCorrection_Filter,
 } from "./FilterModels";
 import { DataContext } from "../../../providers/DataProvider";
 
@@ -77,6 +79,8 @@ export const FilterControls = ({
   // state for outlier removal filter params
   const [halfWindow, setHalfWindow] = useState(2);
   const [threshold, setThreshold] = useState(3);
+  // state for flat field correction filter params
+  const [correctionMatrix, setCorrectionMatrix] = useState([]);
 
   // state for drawer - collapsing controls
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -144,6 +148,16 @@ export const FilterControls = ({
     setOpenDialog(true);
   };
 
+  const handleEditFlatFieldCorrectionFilterParams = (
+    correctionMatrix,
+    setParams
+  ) => {
+    setCorrectionMatrix(correctionMatrix);
+    setCurrentFilter({ setParams });
+    setEditModalType("flatFieldCorrectionFilter");
+    setOpenDialog(true);
+  };
+
   const handleSaveParams = () => {
     // Save logic depending on the filter type
     if (editModalType === "staticRatio") {
@@ -154,8 +168,10 @@ export const FilterControls = ({
       currentFilter.setParams(controlWellArray, applyWellArray);
     } else if (editModalType === "outlierRemovalFilter") {
       currentFilter.setParams(halfWindow, threshold);
+    } else if (editModalType === "flatFieldCorrectionFilter") {
+      currentFilter.setParams(correctionMatrix);
     }
-    // Other filter types...
+
     setOpenDialog(false);
   };
 
@@ -330,6 +346,13 @@ export const FilterControls = ({
       );
       console.log(newOutlierRemovalFilter);
       setSelectedFilters([...selectedFilters, newOutlierRemovalFilter]);
+    } else if (selectedValue === "flatFieldCorrection") {
+      const newFlatFieldCorrectionFilter = new FlatFieldCorrection_Filter(
+        selectedFilters.length,
+        handleEditFlatFieldCorrectionFilterParams
+      );
+      console.log(newFlatFieldCorrectionFilter);
+      setSelectedFilters([...selectedFilters, newFlatFieldCorrectionFilter]);
     }
 
     // Apply the list of selected filters
@@ -518,6 +541,11 @@ export const FilterControls = ({
                 label: "Outlier Removal",
                 value: "outlierRemoval",
               },
+              {
+                id: "flat-field-correction-filter",
+                label: "Flat Field Correction",
+                value: "flatFieldCorrection",
+              },
             ].map(({ id, label, value }) => (
               <Box
                 key={id}
@@ -602,6 +630,16 @@ export const FilterControls = ({
           setHalfWindow={setHalfWindow}
           threshold={threshold}
           setThreshold={setThreshold}
+          onSave={handleSaveParams}
+        />
+      )}
+      {editModalType === "flatFieldCorrectionFilter" && (
+        <FlatFieldCorrectionModal
+          className="filter-controls__flat-field-correction-filter-modal"
+          open={openDialog}
+          onClose={() => setOpenDialog(false)}
+          correctionMatrix={correctionMatrix}
+          setCorrectionMatrix={setCorrectionMatrix}
           onSave={handleSaveParams}
         />
       )}

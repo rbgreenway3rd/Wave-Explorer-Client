@@ -181,7 +181,8 @@ export const CombinedComponent = () => {
       ...well,
       indicators: well.indicators.map((indicator) => ({
         ...indicator,
-        filteredData: [...indicator.rawData], // Reset filteredData
+        // filteredData: [...indicator.rawData], // Reset filteredData
+        filteredData: indicator.rawData.map((point) => ({ ...point })), // Deep clone each point
       })),
     }));
 

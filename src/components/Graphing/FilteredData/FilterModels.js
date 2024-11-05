@@ -375,6 +375,72 @@ export class OutlierRemoval_Filter {
   }
 }
 
+export class FlatFieldCorrection_Filter {
+  constructor(num, onEdit) {
+    this.id = "flatfieldCorrection_Filter" + JSON.stringify(num);
+    this.name = "Flat Field Correction";
+    this.desc = "Flat Field Correction";
+    this.isEnabled = false;
+    this.correctionMatrix = [];
+    this.onEdit = onEdit;
+  }
+
+  setEnabled(value) {
+    this.isEnabled = value;
+  }
+
+  editParams() {
+    if (this.onEdit) {
+      this.onEdit(this.correctionMatrix, this.setParams.bind(this)); // Open the modal and pass the setter callback
+    }
+  }
+
+  setParams(correctionMatrix) {
+    this.correctionMatrix = correctionMatrix;
+  }
+
+  execute(data) {
+    for (let w = 0; w < data.length; w++) {
+      if (data.length !== this.correctionMatrix.length) {
+        console.warn(`Correction matrix does not match plate dimensions.`);
+        continue; // Skip this indicator if lengths don't match
+      }
+      for (let i = 0; i < data[w].indicators.length; i++) {
+        for (let j = 0; j < data[w].indicators[i].filteredData.length; j++) {
+          data[w].indicators[i].filteredData[j] = {
+            x: data[w].indicators[i].filteredData[j].x,
+            y: (data[w].indicators[i].filteredData[j].y *=
+              this.correctionMatrix[w]),
+          };
+        }
+      }
+    }
+  }
+}
+
+//     for (let w = 0; w < data.length; w++) {
+//       // Iterate through each indicator in the current well
+//       for (let i = 0; i < data[w].indicators.length; i++) {
+//         const filteredData = data[w].indicators[i].filteredData;
+
+//         // Check if correctionMatrix length matches filteredData length
+//         if (filteredData.length !== this.correctionMatrix.length) {
+//           console.warn(
+//             `Correction matrix length does not match filtered data length for well ${w}, indicator ${i}.`
+//           );
+//           continue; // Skip this indicator if lengths don't match
+//         }
+
+//         // Apply correction by multiplying each y-value by the corresponding correction matrix value
+//         for (let j = 0; j < filteredData.length; j++) {
+//           filteredData[j].y *= this.correctionMatrix[j];
+//         }
+//       }
+//     }
+//     return data;
+//   }
+// }
+
 // export class DynamicRatio_Filter {
 //   constructor(num) {
 //     this.id = "dynamicRatio_" + JSON.stringify(num);
