@@ -20,6 +20,9 @@ export const theme = createTheme({
           //   borderRadius: "8px", // Rounded buttons
           padding: 0,
           margin: 0,
+          lineHeight: 1.25,
+          letterSpacing: 0,
+          borderRadius: 0,
         },
         contained: {
           backgroundColor: "#1976d2", // Primary color for contained button
@@ -27,6 +30,7 @@ export const theme = createTheme({
           "&:hover": {
             backgroundColor: "#1565c0", // Darker shade for hover
           },
+          fontSize: "0.75rem",
         },
         outlined: {
           borderColor: "#1976d2", // Primary color for outlined button border
@@ -62,6 +66,7 @@ export const theme = createTheme({
         root: { padding: 0 },
       },
     },
+
     MuiCheckbox: {
       styleOverrides: {
         root: { padding: 0 },
@@ -70,6 +75,11 @@ export const theme = createTheme({
     MuiFormControlLabel: {
       styleOverrides: {
         root: { padding: 0, margin: 0 },
+      },
+    },
+    MuiFormGroup: {
+      styleOverrides: {
+        root: { display: "flex", flexDirection: "column" },
       },
     },
   },

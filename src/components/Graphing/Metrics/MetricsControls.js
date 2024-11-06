@@ -113,6 +113,8 @@
 
 // MATERIAL UI THEME USAGE
 import React, { useContext, useState } from "react";
+import BookmarkAddTwoToneIcon from "@mui/icons-material/BookmarkAddTwoTone";
+import DisabledByDefaultTwoToneIcon from "@mui/icons-material/DisabledByDefaultTwoTone";
 import { DataContext } from "../../../providers/DataProvider";
 import {
   Button,
@@ -162,10 +164,11 @@ export const MetricsControls = ({
 
   return (
     <div className="metrics__controls-container">
-      <div className="metrics__radio-container">
+      <div className="metrics__management">
         <FormControl component="fieldset" className="metrics__radio-container">
           <FormLabel component="legend">Metric Type</FormLabel>
           <RadioGroup
+            className="metrics__radio-container"
             aria-label="metric-type"
             name="radio-group-metrics"
             value={selectedMetric}
@@ -190,16 +193,16 @@ export const MetricsControls = ({
             />
           </RadioGroup>
         </FormControl>
+        <Button
+          variant="contained"
+          color="primary"
+          className="save-metric"
+          onClick={handleSaveMetric}
+        >
+          <BookmarkAddTwoToneIcon />
+          Save Metric
+        </Button>
       </div>
-
-      <Button
-        variant="contained"
-        color="primary"
-        className="save-metric"
-        onClick={handleSaveMetric}
-      >
-        Save Metric
-      </Button>
 
       {/* <Button
         variant="outlined"
@@ -215,7 +218,8 @@ export const MetricsControls = ({
         color="secondary"
         onClick={handleResetAnnotations}
       >
-        Reset Annotation
+        <DisabledByDefaultTwoToneIcon />
+        Clear Annotation
       </Button>
     </div>
   );

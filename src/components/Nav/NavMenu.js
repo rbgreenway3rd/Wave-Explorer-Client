@@ -125,7 +125,7 @@ export const NavMenu = () => {
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
         <MenuItem onClick={handleSaveProjectReport}>
           <FileDownloadTwoToneIcon />
-          Download Project Report
+          Generate Report
         </MenuItem>
         {/* Other menu items */}
       </Menu>
