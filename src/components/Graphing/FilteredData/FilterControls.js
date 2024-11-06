@@ -35,11 +35,6 @@ import {
 import { DataContext } from "../../../providers/DataProvider";
 
 export const FilterControls = ({
-  // wellArrays,
-  // selectedFilters,
-  // setSelectedFilters,
-  // enabledFilters,
-  // setEnabledFilters,
   applyEnabledFilters,
   columnLabels,
   rowLabels,
