@@ -61,6 +61,7 @@ import React, { useState, useContext } from "react";
 import "../../styles/NavBar.css";
 import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
+import FileDownloadTwoToneIcon from "@mui/icons-material/FileDownloadTwoTone";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Dialog from "@mui/material/Dialog";
@@ -123,7 +124,8 @@ export const NavMenu = () => {
       </IconButton>
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
         <MenuItem onClick={handleSaveProjectReport}>
-          Save Project Report
+          <FileDownloadTwoToneIcon />
+          Download Project Report
         </MenuItem>
         {/* Other menu items */}
       </Menu>

@@ -4,7 +4,8 @@ import { NavBar } from "./components/Nav/NavBar";
 import { CombinedComponent } from "./components/CombinedComponent";
 import { DataProvider } from "./providers/DataProvider";
 import { NoDataUploaded } from "./components/NoDataUploaded";
-// import { DataContext } from "./components/FileHandling/DataProvider";
+import { ThemeProvider } from "@mui/material/styles";
+import { theme } from "./styles/themes";
 
 function App() {
   return (
@@ -12,8 +13,9 @@ function App() {
       {/* <FilterProvider> */}
       <DataProvider>
         {/* <NavBar /> */}
-
-        <CombinedComponent />
+        <ThemeProvider theme={theme}>
+          <CombinedComponent />
+        </ThemeProvider>
       </DataProvider>
       {/* </FilterProvider> */}
     </>
