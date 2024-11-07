@@ -14,11 +14,10 @@
 .metrics__radio-container {
     display: flex;
     flex-direction: column
-    /* flex-direction: row */
 }
 
 .metrics-controls__reset-annotations{
-    position: absolute;
+  position: absolute;
   bottom: 0;
   width: 100%
 }

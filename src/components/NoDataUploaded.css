@@ -8,7 +8,8 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    /* margin-top: 10rem; */
+    margin-top: 5rem;
+    margin-bottom: 0;
     /* margin: 0; */
     text-decoration: underline;
     
@@ -36,6 +37,6 @@
 .wavefront-logo {
     position: absolute;
     /* bottom: 0; */
-    width: 20em;
-    height: 6em
+    width: 40em;
+    height: 12em
 }
