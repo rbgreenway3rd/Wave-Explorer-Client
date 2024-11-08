@@ -277,18 +277,27 @@ import DisabledByDefaultTwoToneIcon from "@mui/icons-material/DisabledByDefaultT
 import DeleteIcon from "@mui/icons-material/Delete";
 import { DataContext } from "../../../providers/DataProvider";
 import {
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Typography,
+  IconButton,
+  FormControl,
+  FormHelperText,
+  InputLabel,
+  List,
+  ListItem,
+  ListItemText,
+  ListSubheader,
+  MenuItem,
+  Select,
   Button,
   Radio,
   RadioGroup,
   FormControlLabel,
-  FormControl,
   FormLabel,
-  Typography,
-  InputLabel,
-  Select,
-  MenuItem,
-  IconButton,
 } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import "./MetricsControls.css";
 
 export const MetricsControls = ({
@@ -302,6 +311,7 @@ export const MetricsControls = ({
 }) => {
   const { savedMetrics, setSavedMetrics } = useContext(DataContext);
   const [selectedMetricType, setSelectedMetricType] = useState("maxYValue");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const handleMetricChange = (e) => {
     const newMetric = e.target.value;
@@ -382,56 +392,72 @@ export const MetricsControls = ({
         <Button
           variant="contained"
           color="primary"
-          className="save-metric"
+          className="save-metric-button"
           onClick={handleSaveMetric}
         >
           <BookmarkAddTwoToneIcon />
           Save Metric
         </Button>
-      </div>
-      <div className="saved-metrics-list">
-        <FormControl fullWidth>
-          <InputLabel id="saved-metrics-label">Saved Metrics</InputLabel>
-          <Select
-            labelId="saved-metrics-label"
-            id="saved-metrics-select"
-            value={selectedMetricType}
-            onChange={(e) => {
-              const selectedMetric = savedMetrics.find(
-                (metric) => metric.metricType === e.target.value
-              );
-              handleSelectMetric(selectedMetric); // Pass the full metric object
+        <section
+          className="saved-metrics-list"
+          style={{ width: "100%", position: "relative" }}
+        >
+          {/* Dropdown Label */}
+          <Typography
+            variant="body1"
+            htmlFor="saved-metrics"
+            style={{
+              display: "block",
+              textAlign: "center",
+              position: "sticky",
+              top: 0,
+              background: "rgb(180,180,180)",
+              borderBottom: "solid 0.1em white",
+              zIndex: 100,
             }}
-            displayEmpty
           >
-            {savedMetrics.length > 0 ? (
-              savedMetrics.map((metric) => (
-                <MenuItem
-                  key={metric.id}
-                  value={metric.metricType}
-                  className="saved-metric"
+            Saved Metrics
+          </Typography>
+          {savedMetrics.length > 0 ? (
+            savedMetrics.map((metric) => (
+              <ListItem
+                key={metric.id}
+                onClick={() => {
+                  setSelectedMetricType(metric); // Update selected metric
+                  handleSelectMetric(metric);
+                  setIsDropdownOpen(false); // Close dropdown after selection
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "8px",
+                  cursor: "pointer",
+                  borderBottom: "1px solid #eee",
+                }}
+              >
+                <Typography style={{ fontSize: "0.75em" }}>
+                  {metric.metricType}
+                </Typography>
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent click from selecting the metric
+                    handleDeleteMetric(metric.id);
+                  }}
                 >
-                  <Typography>{metric.metricType}</Typography>
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent selection on delete
-                      handleDeleteMetric(metric.id);
-                    }}
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </MenuItem>
-              ))
-            ) : (
-              <Typography className="no-saved-metrics">
-                No Saved Metrics
-              </Typography>
-            )}
-          </Select>
-        </FormControl>
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </ListItem>
+            ))
+          ) : (
+            <Typography
+              style={{ padding: "8px", color: "#888", textAlign: "center" }}
+            >
+              No Saved Metrics
+            </Typography>
+          )}
+        </section>
       </div>
-
       <Button
         className="metrics-controls__reset-annotations"
         variant="contained"
@@ -439,7 +465,7 @@ export const MetricsControls = ({
         onClick={handleResetAnnotations}
       >
         <DisabledByDefaultTwoToneIcon />
-        Clear Annotation
+        Clear Range
       </Button>
     </div>
   );
