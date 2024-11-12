@@ -12,10 +12,15 @@ export const LargeGraphOptions = (
   panMode
 ) => {
   const allYValues = wellArrays
-    .flatMap((well) => well.indicators[0]?.rawData ?? []) // Access filteredData if it exists
+    .flatMap(
+      (well) =>
+        well.indicators
+          .filter((indicator) => indicator.isDisplayed) // Only include displayed indicators
+          .flatMap((indicator) => indicator.rawData ?? []) // Access rawData for each displayed indicator
+    )
     .map((point) => point.y); // Extract the y values from each point
 
-  // Calculate min and max y-values from all wells' filtered data
+  // Calculate min and max y-values from all wells' displayed indicators' data
   const minYValue =
     allYValues.length > 0
       ? allYValues.reduce((min, val) => (val < min ? val : min), Infinity)

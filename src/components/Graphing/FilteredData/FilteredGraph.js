@@ -16,7 +16,7 @@ import {
 } from "chart.js";
 import annotationPlugin from "chartjs-plugin-annotation";
 import "../../../styles/FilteredGraph.css";
-import { FilteredGraphOptions } from "../../../config/FilteredGraphOptions";
+import { FilteredGraphOptions } from "../config/FilteredGraphOptions";
 
 ChartJS.register(
   ...registerables,

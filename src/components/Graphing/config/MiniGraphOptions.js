@@ -8,13 +8,24 @@ export const MiniGraphOptions = (
   wellArrays,
   yValues
 ) => {
+  const allYValues = wellArrays
+    .flatMap(
+      (well) =>
+        well.indicators
+          .filter((indicator) => indicator.isDisplayed) // Only include displayed indicators
+          .flatMap((indicator) => indicator.rawData ?? []) // Access rawData for each displayed indicator
+    )
+    .map((point) => point.y); // Extract the y values from each point
+
+  // Calculate min and max y-values from all wells' displayed indicators' data
   const minYValue =
-    yValues.length > 0
-      ? yValues.reduce((min, val) => (val < min ? val : min), Infinity)
+    allYValues.length > 0
+      ? allYValues.reduce((min, val) => (val < min ? val : min), Infinity)
       : 0;
+
   const maxYValue =
-    yValues.length > 0
-      ? yValues.reduce((max, val) => (val > max ? val : max), -Infinity)
+    allYValues.length > 0
+      ? allYValues.reduce((max, val) => (val > max ? val : max), -Infinity)
       : 100;
 
   const minXValue =

@@ -58,8 +58,6 @@ const Heatmap = ({
     // window.innerHeight / 50
   );
 
-  console.log(metricIndicator);
-
   const handleResize = () => {
     // setLargeCanvasWidth(window.innerWidth / 2.5);
     // setLargeCanvasHeight(window.innerHeight / 2.5);

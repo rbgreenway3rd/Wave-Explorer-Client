@@ -389,7 +389,7 @@ export const MetricsControls = ({
           </RadioGroup>
         </FormControl>
         <FormControl component="fieldset" className="metrics__radio-container">
-          <FormLabel component="legend">Metric Type</FormLabel>
+          <FormLabel component="legend">Metric</FormLabel>
           <RadioGroup
             className="metrics__radio-container"
             aria-label="metric-type"

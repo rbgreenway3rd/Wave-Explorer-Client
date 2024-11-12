@@ -7,7 +7,7 @@ import React, {
   useEffect,
 } from "react";
 import { DataContext } from "../../../providers/DataProvider";
-import { MiniGraphOptions } from "../../../config/MiniGraphOptions";
+import { MiniGraphOptions } from "../config/MiniGraphOptions";
 import "../../../styles/MiniGraphGrid.css";
 import "chartjs-adapter-date-fns"; // date-fns adapter for Chart.js necessary for decimation
 import { Line } from "react-chartjs-2";
