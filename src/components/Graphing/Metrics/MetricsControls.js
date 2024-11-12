@@ -302,6 +302,8 @@ import "./MetricsControls.css";
 
 export const MetricsControls = ({
   setMetricType,
+  metricIndicator,
+  setMetricIndicator,
   annotations,
   setAnnotations,
   annotationRangeStart,
@@ -309,7 +311,8 @@ export const MetricsControls = ({
   setAnnotationRangeStart,
   setAnnotationRangeEnd,
 }) => {
-  const { savedMetrics, setSavedMetrics } = useContext(DataContext);
+  const { savedMetrics, setSavedMetrics, extractedIndicators } =
+    useContext(DataContext);
   const [selectedMetricType, setSelectedMetricType] = useState("maxYValue");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -358,9 +361,33 @@ export const MetricsControls = ({
     setAnnotations([]);
   };
 
+  const handleIndicatorChange = (e) => {
+    const newIndicator = e.target.value;
+    setMetricIndicator(newIndicator);
+  };
+
   return (
     <div className="metrics__controls-container">
       <div className="metrics__management">
+        <FormControl component="fieldset" className="metrics__radio-container">
+          <FormLabel component="legend">Indicator</FormLabel>
+          <RadioGroup
+            className="metrics__radio-container"
+            aria-label="indicator-type"
+            name="radio-group-indicator"
+            value={metricIndicator}
+            onChange={handleIndicatorChange}
+            row
+          >
+            {extractedIndicators.map((indicator) => (
+              <FormControlLabel
+                value={indicator.id}
+                control={<Radio />}
+                label={indicator.indicatorName}
+              />
+            ))}
+          </RadioGroup>
+        </FormControl>
         <FormControl component="fieldset" className="metrics__radio-container">
           <FormLabel component="legend">Metric Type</FormLabel>
           <RadioGroup

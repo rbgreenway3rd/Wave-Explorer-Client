@@ -35,9 +35,9 @@ export const calculateRange = (heatmapData) => {
   return maxY - minY; // Return the range (difference between max and min)
 };
 
-export const getAllValues = (wellArrays, annotationRange) => {
+export const getAllValues = (wellArrays, annotationRange, metricIndicator) => {
   return wellArrays.flatMap((well) => {
-    const filteredData = well.indicators[0]?.filteredData || [];
+    const filteredData = well.indicators[metricIndicator]?.filteredData || [];
     if (annotationRange.start !== null && annotationRange.end !== null) {
       return filteredData
         .filter(
@@ -50,9 +50,9 @@ export const getAllValues = (wellArrays, annotationRange) => {
   });
 };
 
-export const getAllSlopes = (wellArrays, annotationRange) => {
+export const getAllSlopes = (wellArrays, annotationRange, metricIndicator) => {
   return wellArrays.map((well) => {
-    let heatmapData = well.indicators[0]?.filteredData || [];
+    let heatmapData = well.indicators[metricIndicator]?.filteredData || [];
     if (annotationRange.start !== null && annotationRange.end !== null) {
       heatmapData = heatmapData.filter(
         (_, i) => i >= annotationRange.start && i <= annotationRange.end
@@ -62,9 +62,9 @@ export const getAllSlopes = (wellArrays, annotationRange) => {
   });
 };
 
-export const getAllRanges = (wellArrays, annotationRange) => {
+export const getAllRanges = (wellArrays, annotationRange, metricIndicator) => {
   return wellArrays.map((well) => {
-    let heatmapData = well.indicators[0]?.filteredData || [];
+    let heatmapData = well.indicators[metricIndicator]?.filteredData || [];
     if (annotationRange.start !== null && annotationRange.end !== null) {
       heatmapData = heatmapData.filter(
         (_, i) => i >= annotationRange.start && i <= annotationRange.end
