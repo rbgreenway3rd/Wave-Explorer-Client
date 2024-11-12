@@ -8,6 +8,7 @@ export const DataProvider = ({ children }) => {
   // State variables to store extracted data
   const [extractedLines, setExtractedLines] = useState([]);
   const [extractedRows, setExtractedRows] = useState(0);
+  const [rowLabels, setRowLabels] = useState([]);
   const [extractedColumns, setExtractedColumns] = useState(0);
   const [extractedProjectTitle, setExtractedProjectTitle] = useState([]);
   const [extractedProjectDate, setExtractedProjectDate] = useState([]);
@@ -32,6 +33,10 @@ export const DataProvider = ({ children }) => {
   const [wellArrays, setWellArrays] = useState([]);
   const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
   const [selectedWellArray, setSelectedWellArray] = useState([]);
+
+  // TESTING
+  const [extractedIndicators, setExtractedIndicators] = useState([]);
+  const [selectedIndicators, setSelectedIndicators] = useState([0]);
 
   // state handling selected and enabled filters
   const [selectedFilters, setSelectedFilters] = useState([]);
@@ -69,6 +74,21 @@ export const DataProvider = ({ children }) => {
 
   const handleClearSelectedWells = () => {
     setSelectedWellArray([]);
+  };
+
+  // Generate row labels based on extractedRows
+  const generateRowLabels = (extractedRows) => {
+    const labels = [];
+    for (let i = 0; i < extractedRows; i++) {
+      let label = "";
+      let n = i;
+      while (n >= 0) {
+        label = String.fromCharCode((n % 26) + 65) + label;
+        n = Math.floor(n / 26) - 1;
+      }
+      labels.push(label);
+    }
+    return labels;
   };
 
   // Function to extract project title from content
@@ -156,31 +176,45 @@ export const DataProvider = ({ children }) => {
     return "";
   };
 
+  // const extractIndicatorConfigurations = (content) => {
+  //   const lines = content.split("\n");
+  //   const startIndex = lines.findIndex((line) => line.includes("Indicator"));
+
+  //   if (startIndex !== -1) {
+  //     const indicatorLine = lines[startIndex];
+  //     const indicatorParts = indicatorLine.split("\t");
+
+  //     if (indicatorParts.length > 1) {
+  //       return indicatorParts[1].trim();
+  //     }
+  //   }
+
+  //   return "";
+  // };
   const extractIndicatorConfigurations = (content) => {
     const lines = content.split("\n");
-    const startIndex = lines.findIndex((line) => line.includes("Indicator"));
+    const indicatorConfigurations = [];
 
-    if (startIndex !== -1) {
-      const indicatorLine = lines[startIndex];
-      const indicatorParts = indicatorLine.split("\t");
+    lines.forEach((line) => {
+      if (line.includes("Indicator")) {
+        const parts = line.split("\t");
 
-      if (indicatorParts.length > 1) {
-        return indicatorParts[1].trim();
+        if (parts.length >= 9) {
+          // Ensure there are enough parts to extract all fields
+          const config = {
+            name: parts[1].trim(),
+            Excitation: parts[3].trim(),
+            Emission: parts[5].trim(),
+            Exposure: parts[7].trim(),
+            Gain: parts[9].trim(),
+          };
+          indicatorConfigurations.push(config);
+        }
       }
-    }
+    });
 
-    return "";
+    return indicatorConfigurations;
   };
-
-  // const extractOperator = (content) => {
-  //   const lines = content.split("\n");
-  //   const startIndex = lines.findIndex((line) => line.includes("NumCols"));
-  //   const endIndex = lines.findIndex((line) => line.includes("Project"));
-  //   if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
-  //     return lines.slice(startIndex + 1, endIndex);
-  //   }
-  //   return [];
-  // };
 
   const extractOperator = (content) => {
     const lines = content.split("\n");
@@ -275,46 +309,130 @@ export const DataProvider = ({ children }) => {
     return 0; // Return 0 when NumCols is not found
   };
 
-  // Function to extract lines related to indicators from content
-  const extractLines = (content) => {
-    const lines = content.split("\n");
-    const startIndex = lines.findIndex((line) => line.includes("P24"));
-    const endIndex = lines.findIndex((line) =>
-      line.includes("</INDICATOR_DATA>")
-    );
-    if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
-      return lines.slice(startIndex + 1, endIndex);
+  const findLinesWith = (lines, matchString) => {
+    // const lines = content.split("\n"); // Split content into lines
+    let ndxs = [];
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].includes(matchString)) {
+        ndxs.push(i);
+      }
+      // console.log("findLinesWith: ", lines);
     }
-    console.log(lines);
-    return [];
+    return ndxs;
   };
 
-  // Function to extract indicator times and analysis data from lines
-  const extractIndicatorTimes = (extractedLines) => {
-    const joinedLines = extractedLines.join("");
-    const elements = joinedLines.split("\t").slice(0, -1);
-    let extractedIndicatorTimes = []; // Time values pulled from extractedLines
-    let analysisData = []; // Datapoints to be sorted by well; pulled from extractedLines
-    for (let i = 0; i < elements.length; i++) {
-      if (i % 385 === 0) {
-        extractedIndicatorTimes.push(
-          parseFloat(elements[i].replace("\r", "") * 1000)
-        );
-      } else {
-        analysisData.push(parseFloat(elements[i]));
-      }
+  const getItem = (line, ndx) => {
+    let tokens = line.split("\t");
+    console.log("getItem tokens: ", tokens[ndx]);
+    return tokens[ndx];
+  };
+
+  const getIndicators = (content) => {
+    const lines = content.split("\n"); // Split content into lines
+
+    let indicators = [];
+    let startNdxs = findLinesWith(lines, "<INDICATOR_DATA");
+    let endNdxs = findLinesWith(lines, "</INDICATOR_DATA>");
+
+    for (let i = 0; i < startNdxs.length; i++) {
+      let indicatorName = getItem(lines[startNdxs[i]], 1); // Assuming 'New Green' is the second tab-separated item
+      let startIndex = startNdxs[i];
+      let endIndex = endNdxs[i];
+      indicators.push({ id: i, indicatorName, startIndex, endIndex });
     }
-    // console.log("Extracted Indicator Times:", extractedIndicatorTimes);
-    // console.log("Analysis Data:", analysisData);
-    setExtractedIndicatorTimes(extractedIndicatorTimes);
+
+    console.log("indicators: ", indicators);
+    return indicators;
+  };
+
+  // Function to extract lines related to indicators from content
+  // const extractLines = (content) => {
+  //   const lines = content.split("\n");
+  //   const startIndex = lines.findIndex((line) => line.includes("P24"));
+  //   const endIndex = lines.findIndex((line) =>
+  //     line.includes("</INDICATOR_DATA>")
+  //   );
+  //   if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
+  //     return lines.slice(startIndex + 1, endIndex);
+  //   }
+  //   console.log(lines);
+  //   return [];
+  // };
+
+  // // Function to extract indicator times and analysis data from lines
+  // const extractIndicatorTimes = (extractedLines) => {
+  //   const joinedLines = extractedLines.join("");
+  //   const elements = joinedLines.split("\t").slice(0, -1);
+  //   let extractedIndicatorTimes = []; // Time values pulled from extractedLines
+  //   let analysisData = []; // Datapoints to be sorted by well; pulled from extractedLines
+  //   for (let i = 0; i < elements.length; i++) {
+  //     if (i % 385 === 0) {
+  //       extractedIndicatorTimes.push(
+  //         parseFloat(elements[i].replace("\r", "") * 1000)
+  //       );
+  //     } else {
+  //       analysisData.push(parseFloat(elements[i]));
+  //     }
+  //   }
+  //   // console.log("Extracted Indicator Times:", extractedIndicatorTimes);
+  //   // console.log("Analysis Data:", analysisData);
+  //   setExtractedIndicatorTimes(extractedIndicatorTimes);
+  //   setAnalysisData(analysisData);
+  //   return { extractedIndicatorTimes, analysisData };
+  // };
+  const extractLines = (content, indicators) => {
+    const lines = content.split("\n");
+    let extractedLinesByIndicator = {};
+
+    indicators.forEach(({ indicatorName, startIndex, endIndex }) => {
+      extractedLinesByIndicator[indicatorName] = lines.slice(
+        startIndex + 2,
+        endIndex
+      );
+    });
+
+    console.log("Extracted Lines by Indicator:", extractedLinesByIndicator);
+    return extractedLinesByIndicator;
+  };
+  const extractIndicatorTimes = (extractedLinesByIndicator) => {
+    let indicatorTimes = {};
+    let analysisData = {};
+
+    for (let indicator in extractedLinesByIndicator) {
+      const extractedLines = extractedLinesByIndicator[indicator];
+      const joinedLines = extractedLines.join("");
+      const elements = joinedLines.split("\t").slice(0, -1);
+      console.log(elements);
+
+      let times = [];
+      let dataPoints = [];
+
+      for (let i = 0; i < elements.length; i++) {
+        if (i % 385 === 0) {
+          times.push(parseFloat(elements[i].replace("\r", "")) * 1000);
+        } else {
+          dataPoints.push(parseFloat(elements[i]));
+        }
+      }
+
+      indicatorTimes[indicator] = times;
+      analysisData[indicator] = dataPoints;
+    }
+
+    console.log("Extracted Indicator Times:", indicatorTimes);
+    console.log("Analysis Data by Indicator:", analysisData);
+
+    // Set or return the values as needed
+    setExtractedIndicatorTimes(indicatorTimes);
     setAnalysisData(analysisData);
-    return { extractedIndicatorTimes, analysisData };
+
+    return { indicatorTimes, analysisData };
   };
 
   // Function to handle the entire asynchronous extraction process and update state
   async function extractAllData(content) {
-    let extractedLines = await extractLines(content);
     let extractedRows = await extractNumberOfRows(content);
+    let rowLabels = await generateRowLabels(extractedRows);
     let extractedColumns = await extractNumberOfColumns(content);
     let extractedProjectTitle = await extractProjectTitle(content);
     let extractedProjectDate = await extractProjectDate(content);
@@ -329,6 +447,10 @@ export const DataProvider = ({ children }) => {
     );
     let extractedOperator = await extractOperator(content);
 
+    let extractedIndicators = await getIndicators(content);
+    setExtractedIndicators(extractedIndicators);
+    let extractedLines = await extractLines(content, extractedIndicators);
+
     setExtractedProjectTitle(extractedProjectTitle);
     setExtractedProjectDate(extractedProjectDate);
     setExtractedProjectTime(extractedProjectTime);
@@ -342,14 +464,18 @@ export const DataProvider = ({ children }) => {
     setExtractedRows(extractedRows);
     setExtractedColumns(extractedColumns);
     setExtractedLines(extractedLines);
+    setRowLabels(rowLabels);
 
     let { extractedIndicatorTimes, analysisData } = await extractIndicatorTimes(
       extractedLines
     );
 
     return {
+      extractedIndicators,
+
       extractedLines,
       extractedRows,
+      rowLabels,
       extractedColumns,
       extractedProjectTitle,
       extractedProjectDate,
@@ -369,8 +495,13 @@ export const DataProvider = ({ children }) => {
   return (
     <DataContext.Provider
       value={{
+        extractedIndicators,
+        // selectedIndicators,
+        // setSelectedIndicators,
+
         extractedLines,
         extractedRows,
+        rowLabels,
         extractedColumns,
         extractedProjectTitle,
         extractedProjectDate,
@@ -389,6 +520,7 @@ export const DataProvider = ({ children }) => {
         project,
         setProject,
         wellArrays, // Expose wellArrays to all components
+        setWellArrays,
         updateWellArrays, // Provide function to update wellArrays to all components
         wellArraysUpdated,
         setWellArraysUpdated,

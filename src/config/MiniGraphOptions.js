@@ -16,6 +16,21 @@ export const MiniGraphOptions = (
     yValues.length > 0
       ? yValues.reduce((max, val) => (val > max ? val : max), -Infinity)
       : 100;
+
+  const minXValue =
+    extractedIndicatorTimes.length > 0
+      ? extractedIndicatorTimes.reduce(
+          (min, val) => (val < min ? val : min),
+          Infinity
+        )
+      : 0;
+  const maxXValue =
+    extractedIndicatorTimes.length > 0
+      ? extractedIndicatorTimes.reduce(
+          (max, val) => (val > max ? val : max),
+          -Infinity
+        )
+      : 100;
   return {
     normalized: true,
     maintainAspectRatio: false,
@@ -58,8 +73,10 @@ export const MiniGraphOptions = (
     scales: {
       x: {
         type: "time",
-        min: Math.min(...extractedIndicatorTimes),
-        max: Math.max(...extractedIndicatorTimes),
+        min: Math.min(...extractedIndicatorTimes["Green"]),
+        max: Math.max(...extractedIndicatorTimes["Green"]),
+        // min: minXValue,
+        // max: maxXValue,
         ticks: {
           display: false,
         },

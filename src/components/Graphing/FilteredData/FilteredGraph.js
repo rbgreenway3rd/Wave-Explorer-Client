@@ -91,7 +91,7 @@ export const FilteredGraph = ({
       extractedIndicatorTimes,
       annotations
     );
-  }, [wellArrays, filteredGraphData, extractedIndicatorTimes, annotations]); // Dependencies include annotations
+  }, [wellArrays, filteredGraphData, extractedIndicatorTimes, annotations]);
 
   useEffect(() => {
     console.log("Filtered graph data:", filteredGraphData);

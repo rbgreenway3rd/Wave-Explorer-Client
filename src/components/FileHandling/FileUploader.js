@@ -9,28 +9,13 @@ import { styled } from "@mui/material/styles";
 
 export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
   // Row labels for wells
-  const rowLabels = [
-    "A",
-    "B",
-    "C",
-    "D",
-    "E",
-    "F",
-    "G",
-    "H",
-    "I",
-    "J",
-    "K",
-    "L",
-    "M",
-    "N",
-    "O",
-    "P",
-  ];
 
   const {
+    extractedIndicators,
+
     extractedLines,
     extractedRows,
+    rowLabels,
     extractedColumns,
     extractedProjectTitle,
     extractedProjectDate,
@@ -54,15 +39,12 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
   } = useContext(DataContext); // Accessing context data
 
   const [dataExtracted, setDataExtracted] = useState(false); // State to track if data is extracted
-  // const plate = project?.plate || [];
-  // const experiment = plate[0]?.experiments[0] || {};
-  // const wellArrays = experiment.wells || [];
 
   useEffect(() => {
     if (dataExtracted) {
       distributeData(rowLabels, analysisData, extractedIndicatorTimes); // Distribute data after extraction
     }
-  }, [dataExtracted, analysisData, extractedIndicatorTimes]);
+  }, [dataExtracted, analysisData, extractedIndicatorTimes, rowLabels]);
 
   // Generate well label based on row and column
   const getWellLabel = (row, col) => {
@@ -72,8 +54,79 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
   };
 
   // Distribute extracted data into project, plate, experiment, wells, and indicators
-  const distributeData = (rowLabels, analysisData, extractedIndicatorTimes) => {
+  // const distributeData = (rowLabels, analysisData, extractedIndicatorTimes) => {
+  //   const plateDimensions = extractedRows * extractedColumns;
+  //   const newProject = new Project(
+  //     extractedProjectTitle,
+  //     extractedProjectDate,
+  //     extractedProjectTime,
+  //     extractedProjectInstrument,
+  //     extractedProjectProtocol
+  //   ); // Create new project
+  //   const newPlate = new Plate(
+  //     extractedRows,
+  //     extractedColumns,
+  //     extractedAssayPlateBarcode,
+  //     extractedAddPlateBarcode,
+  //     plateDimensions
+  //   ); // Create new plate
+  //   newProject.plate.push(newPlate);
+  //   const newExperiment = new Experiment(
+  //     extractedBinning,
+  //     extractedRows,
+  //     extractedColumns,
+  //     extractedIndicatorConfigurations,
+  //     extractedOperator
+  //   ); // Create new experiment
+  //   newPlate.experiments.push(newExperiment);
+
+  //   let newWellArrays = [];
+  //   let wellId = 1;
+  //   for (let rowIndex = 0; rowIndex < rowLabels.length; rowIndex++) {
+  //     for (let colIndex = 1; colIndex <= extractedColumns; colIndex++) {
+  //       const wellKey = `${rowLabels[rowIndex]}${colIndex}`;
+  //       const wellLabel = getWellLabel(rowIndex, colIndex - 1);
+  //       const newWell = new Well(
+  //         wellId++,
+  //         wellKey,
+  //         wellLabel,
+  //         colIndex - 1,
+  //         rowIndex
+  //       ); // Create new well
+  //       let data = [];
+  //       let i = 0;
+  //       for (
+  //         let y = rowIndex * extractedColumns + (colIndex - 1);
+  //         y < analysisData.length;
+  //         y += extractedRows * extractedColumns
+  //       ) {
+  //         data.push({ x: extractedIndicatorTimes[i], y: analysisData[y] });
+  //         i++;
+  //       }
+  //       const indicator = new Indicator(
+  //         data,
+  //         [...data],
+  //         extractedIndicatorTimes,
+  //         true
+  //       ); // Create new indicator
+  //       newWell.indicators.push(indicator);
+  //       newExperiment.wells.push(newWell); // Add well to experiment
+  //       newWellArrays.push(newWell); // Add well to array
+  //     }
+  //   }
+  //   setWellArraysUpdated(true); // Notify that well arrays are updated
+  //   setSelectedWellArray([]);
+  //   setProject(newProject); // Set the new project in context
+  //   console.log(newProject);
+  //   console.log("extractedIndicators: ", extractedIndicators);
+  // };
+  const distributeData = (
+    rowLabels,
+    analysisData, // Expecting an object with indicator names as keys, each containing an array of data points
+    extractedIndicatorTimes // Expecting an object with indicator names as keys, each containing an array of time points
+  ) => {
     const plateDimensions = extractedRows * extractedColumns;
+
     const newProject = new Project(
       extractedProjectTitle,
       extractedProjectDate,
@@ -81,6 +134,7 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
       extractedProjectInstrument,
       extractedProjectProtocol
     ); // Create new project
+
     const newPlate = new Plate(
       extractedRows,
       extractedColumns,
@@ -88,7 +142,9 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
       extractedAddPlateBarcode,
       plateDimensions
     ); // Create new plate
+
     newProject.plate.push(newPlate);
+
     const newExperiment = new Experiment(
       extractedBinning,
       extractedRows,
@@ -96,14 +152,17 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
       extractedIndicatorConfigurations,
       extractedOperator
     ); // Create new experiment
+
     newPlate.experiments.push(newExperiment);
 
     let newWellArrays = [];
     let wellId = 1;
+
     for (let rowIndex = 0; rowIndex < rowLabels.length; rowIndex++) {
       for (let colIndex = 1; colIndex <= extractedColumns; colIndex++) {
         const wellKey = `${rowLabels[rowIndex]}${colIndex}`;
         const wellLabel = getWellLabel(rowIndex, colIndex - 1);
+
         const newWell = new Well(
           wellId++,
           wellKey,
@@ -111,31 +170,50 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
           colIndex - 1,
           rowIndex
         ); // Create new well
-        let data = [];
-        let i = 0;
-        for (
-          let y = rowIndex * extractedColumns + (colIndex - 1);
-          y < analysisData.length;
-          y += extractedRows * extractedColumns
-        ) {
-          data.push({ x: extractedIndicatorTimes[i], y: analysisData[y] });
-          i++;
+
+        // Loop through each indicator for the well
+        let indicatorId = 0;
+        for (let indicatorName in analysisData) {
+          let indicatorData = [];
+          let timeData = extractedIndicatorTimes[indicatorName];
+          let i = 0;
+
+          // Collect data for this indicator in the current well
+          for (
+            let y = rowIndex * extractedColumns + (colIndex - 1);
+            y < analysisData[indicatorName].length;
+            y += extractedRows * extractedColumns
+          ) {
+            indicatorData.push({
+              x: timeData[i],
+              y: analysisData[indicatorName][y],
+            });
+            i++;
+          }
+
+          const indicator = new Indicator(
+            indicatorId++,
+            indicatorName,
+            indicatorData, // filteredData is initially set to the raw data
+            [...indicatorData], // Copy of the data for rawData
+            timeData, // Time points specific to this indicator
+            true
+          ); // Create new indicator and add to well
+
+          newWell.indicators.push(indicator);
         }
-        const indicator = new Indicator(
-          data,
-          [...data],
-          extractedIndicatorTimes,
-          true
-        ); // Create new indicator
-        newWell.indicators.push(indicator);
+
         newExperiment.wells.push(newWell); // Add well to experiment
         newWellArrays.push(newWell); // Add well to array
       }
     }
+
     setWellArraysUpdated(true); // Notify that well arrays are updated
     setSelectedWellArray([]);
     setProject(newProject); // Set the new project in context
+
     console.log(newProject);
+    console.log("extractedIndicators: ", extractedIndicators);
   };
 
   // Handle file selection and reading

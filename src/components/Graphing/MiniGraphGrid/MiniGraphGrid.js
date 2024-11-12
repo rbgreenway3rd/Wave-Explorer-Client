@@ -231,6 +231,16 @@ export const MiniGraphGrid = ({
     showFiltered,
   ]);
 
+  const indicatorColors = [
+    "rgb(75, 192, 192)", // Teal
+    "rgb(255, 99, 132)", // Red
+    "rgb(54, 162, 235)", // Blue
+    "rgb(255, 206, 86)", // Yellow
+    "rgb(153, 102, 255)", // Purple
+    "rgb(255, 159, 64)", // Orange
+    // Add more colors as needed
+  ];
+
   return (
     <>
       {isRenderingComplete ? (
@@ -374,16 +384,27 @@ export const MiniGraphGrid = ({
                   // key={well.id}
                   key={`${well.id}-${smallCanvasWidth}-${smallCanvasHeight}`}
                   data={{
-                    datasets: [
-                      {
-                        data: showFiltered
-                          ? well.indicators[0]?.filteredData
-                          : well.indicators[0]?.rawData,
-                        borderColor: "rgb(75, 192, 192)",
-                        pointBorderWidth: 0,
-                        pointBorderRadius: 0,
-                      },
-                    ],
+                    // datasets: [
+                    //   {
+                    //     data: showFiltered
+                    //       ? well.indicators[0]?.filteredData
+                    //       : well.indicators[0]?.rawData,
+                    //     borderColor: "rgb(75, 192, 192)",
+                    //     pointBorderWidth: 0,
+                    //     pointBorderRadius: 0,
+                    //   },
+                    // ],
+                    datasets: well.indicators
+                      // .filter((indicator) => indicator.isDisplayed)
+                      .map((indicator, indIndex) => ({
+                        label: `${well.label} - Indicator ${indIndex + 1}`, // Label for each indicator
+                        data: indicator.rawData,
+                        fill: false,
+                        borderColor:
+                          indicatorColors[indIndex % indicatorColors.length], // Cycle colors
+                        tension: 0.1,
+                        hidden: !indicator.isDisplayed,
+                      })),
                   }}
                   width={smallCanvasWidth}
                   height={smallCanvasHeight}

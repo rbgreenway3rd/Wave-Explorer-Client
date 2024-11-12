@@ -4,20 +4,28 @@ Chart.register(zoomPlugin);
 
 export const LargeGraphOptions = (
   analysisData = [],
+  wellArrays = [],
   extractedIndicatorTimes = [],
   zoomState,
   zoomMode,
   panState,
   panMode
 ) => {
+  const allYValues = wellArrays
+    .flatMap((well) => well.indicators[0]?.rawData ?? []) // Access filteredData if it exists
+    .map((point) => point.y); // Extract the y values from each point
+
+  // Calculate min and max y-values from all wells' filtered data
   const minYValue =
-    analysisData.length > 0
-      ? analysisData.reduce((min, val) => (val < min ? val : min), Infinity)
+    allYValues.length > 0
+      ? allYValues.reduce((min, val) => (val < min ? val : min), Infinity)
       : 0;
+
   const maxYValue =
-    analysisData.length > 0
-      ? analysisData.reduce((max, val) => (val > max ? val : max), -Infinity)
+    allYValues.length > 0
+      ? allYValues.reduce((max, val) => (val > max ? val : max), -Infinity)
       : 100;
+
   const minXValue =
     extractedIndicatorTimes.length > 0
       ? extractedIndicatorTimes.reduce(

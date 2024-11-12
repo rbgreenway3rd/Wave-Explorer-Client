@@ -78,6 +78,79 @@
 // };
 
 //MATERIAL UI THEME USAGE
+// import React, { useContext } from "react";
+// import { DataContext } from "../../../providers/DataProvider";
+// import {
+//   Button,
+//   Radio,
+//   RadioGroup,
+//   FormControlLabel,
+//   Checkbox,
+//   FormControl,
+//   FormLabel,
+// } from "@mui/material";
+// import "../../../styles/MiniGraphControls.css"; // You may keep this if you need custom styling not handled by Material UI
+
+// export const MiniGraphControls = ({ handleToggleDataShown, isFiltered }) => {
+//   const {
+//     project,
+//     analysisData,
+//     showFiltered,
+//     setShowFiltered,
+//     selectedWellArray,
+//     handleSelectWell,
+//     handleDeselectWell,
+//     handleClearSelectedWells,
+//   } = useContext(DataContext);
+
+//   return (
+//     <div className="minigraph-and-controls__controls-container">
+//       {/* Show Raw or Filtered data radio buttons */}
+//       <div className="minigraph-and-controls__show-raw-or-filtered">
+//         <FormControl component="fieldset">
+//           <FormLabel component="legend">Show</FormLabel>
+//           <RadioGroup
+//             row
+//             aria-label="data-display"
+//             name="radio-group-1"
+//             value={showFiltered ? "showFiltered" : "showRaw"}
+//             onChange={() => handleToggleDataShown()}
+//           >
+//             <FormControlLabel value="showRaw" control={<Radio />} label="Raw" />
+//             <FormControlLabel
+//               value="showFiltered"
+//               control={<Radio />}
+//               label="Filtered"
+//             />
+//           </RadioGroup>
+//         </FormControl>
+//       </div>
+
+//       {/* Visibility checkbox */}
+//       <div className="minigraph-and-controls__visibility">
+//         <FormControl component="fieldset">
+//           <FormLabel component="legend">Visibility</FormLabel>
+//           <FormControlLabel
+//             control={<Checkbox id="visibility-selector" />}
+//             label="Green"
+//           />
+//         </FormControl>
+//       </div>
+
+//       {/* Clear Selections button */}
+//       <Button
+//         variant="contained"
+//         color="secondary"
+//         className="clear-selections-button"
+//         onClick={() => handleClearSelectedWells()}
+//       >
+//         Clear Selections
+//       </Button>
+//     </div>
+//   );
+// };
+
+// INDICATOR TOGGLING
 import React, { useContext } from "react";
 import { DataContext } from "../../../providers/DataProvider";
 import {
@@ -89,19 +162,47 @@ import {
   FormControl,
   FormLabel,
 } from "@mui/material";
-import "../../../styles/MiniGraphControls.css"; // You may keep this if you need custom styling not handled by Material UI
+import "../../../styles/MiniGraphControls.css";
 
-export const MiniGraphControls = ({ handleToggleDataShown, isFiltered }) => {
+export const MiniGraphControls = ({
+  handleToggleDataShown,
+  handleToggleVisibility,
+}) => {
   const {
     project,
-    analysisData,
+    setProject,
     showFiltered,
     setShowFiltered,
-    selectedWellArray,
-    handleSelectWell,
-    handleDeselectWell,
+    wellArrays,
+    setWellArrays,
+    updateWellArrays,
+    extractedIndicators,
     handleClearSelectedWells,
   } = useContext(DataContext);
+  console.log(extractedIndicators);
+
+  // Function to toggle the isDisplayed property for all wells of a specific indicator type
+  // const handleToggleVisibility = (indicatorName) => {
+  //   updateWellArrays((prevWellArrays) => {
+  //     const updatedWells = prevWellArrays.map((well) => {
+  //       console.log("Before update:", well); // Log each well before changes
+  //       const updatedWell = {
+  //         ...well,
+  //         indicators: well.indicators.map((indicator) => {
+  //           if (indicator.name === indicatorName) {
+  //             console.log("Toggling isDisplayed for indicator:", indicator);
+  //             return { ...indicator, isDisplayed: !indicator.isDisplayed };
+  //           }
+  //           return indicator;
+  //         }),
+  //       };
+  //       console.log("After update:", updatedWell); // Log the well after changes
+  //       return updatedWell;
+  //     });
+  //     console.log("Updated well arrays:", updatedWells); // Final log of all updated wells
+  //     return updatedWells;
+  //   });
+  // };
 
   return (
     <div className="minigraph-and-controls__controls-container">
@@ -126,14 +227,22 @@ export const MiniGraphControls = ({ handleToggleDataShown, isFiltered }) => {
         </FormControl>
       </div>
 
-      {/* Visibility checkbox */}
+      {/* Visibility section with checkboxes for each unique indicator type */}
       <div className="minigraph-and-controls__visibility">
         <FormControl component="fieldset">
           <FormLabel component="legend">Visibility</FormLabel>
-          <FormControlLabel
-            control={<Checkbox id="visibility-selector" />}
-            label="Green"
-          />
+          {extractedIndicators.map((indicator) => (
+            <FormControlLabel
+              key={indicator.id}
+              control={
+                <Checkbox
+                  defaultChecked
+                  onChange={() => handleToggleVisibility(indicator.id)}
+                />
+              }
+              label={indicator.indicatorName}
+            />
+          ))}
         </FormControl>
       </div>
 

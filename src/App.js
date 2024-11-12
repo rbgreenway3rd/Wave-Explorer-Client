@@ -5,7 +5,7 @@ import { CombinedComponent } from "./components/CombinedComponent";
 import { DataProvider } from "./providers/DataProvider";
 import { NoDataUploaded } from "./components/NoDataUploaded";
 import { ThemeProvider } from "@mui/material/styles";
-import { theme } from "./styles/themes";
+import { theme } from "./providers/StyleProvider";
 
 function App() {
   return (

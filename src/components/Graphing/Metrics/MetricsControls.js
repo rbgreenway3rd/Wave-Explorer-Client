@@ -400,7 +400,12 @@ export const MetricsControls = ({
         </Button>
         <section
           className="saved-metrics-list"
-          style={{ width: "100%", position: "relative" }}
+          style={{
+            width: "95%",
+            position: "relative",
+            display: "flex",
+            alignSelf: "center",
+          }}
         >
           {/* Dropdown Label */}
           <Typography
@@ -411,7 +416,7 @@ export const MetricsControls = ({
               textAlign: "center",
               position: "sticky",
               top: 0,
-              background: "rgb(180,180,180)",
+              background: "rgb(180,180,180)", // MidGrey
               borderBottom: "solid 0.1em white",
               zIndex: 100,
             }}
@@ -430,7 +435,7 @@ export const MetricsControls = ({
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  padding: "8px",
+                  padding: 0,
                   cursor: "pointer",
                   borderBottom: "1px solid #eee",
                 }}
@@ -460,8 +465,8 @@ export const MetricsControls = ({
       </div>
       <Button
         className="metrics-controls__reset-annotations"
-        variant="contained"
-        color="secondary"
+        variant="outlined"
+        color="primary"
         onClick={handleResetAnnotations}
       >
         <DisabledByDefaultTwoToneIcon />

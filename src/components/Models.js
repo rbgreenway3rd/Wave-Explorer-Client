@@ -50,16 +50,19 @@ export class Well {
     this.column = column;
     this.row = row;
     this.indicators = []; // Array of Indicator instances
-    // this.isHovered = false;
   }
 }
 
 export class Indicator {
-  constructor(rawData, filteredData, time, isDisplayed) {
-    // this.key = key;
+  constructor(id, indicatorName, rawData, filteredData, time, isDisplayed) {
+    this.id = id;
+    this.indicatorName = indicatorName;
     this.rawData = rawData;
     this.filteredData = filteredData;
     this.time = time;
     this.isDisplayed = isDisplayed; // boolean
+  }
+  setDisplayed(value) {
+    this.isDisplayed = value;
   }
 }

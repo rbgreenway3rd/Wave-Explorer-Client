@@ -8,6 +8,12 @@ export const theme = createTheme({
     secondary: {
       main: "#dc004e", // Customize your secondary color
     },
+    LightGrey: {
+      main: "rgb(211,211,211)",
+    },
+    MidGrey: {
+      main: "rgb(180,180,180)",
+    },
   },
   typography: {
     // fontFamily: "Roboto, Arial, sans-serif", // Customize the font
@@ -34,6 +40,7 @@ export const theme = createTheme({
         },
         outlined: {
           borderColor: "#1976d2", // Primary color for outlined button border
+          backgroundColor: "#B4B4B4",
           color: "#1976d2", // Text color for outlined button
           "&:hover": {
             backgroundColor: "#e3f2fd", // Light background on hover
