@@ -109,12 +109,22 @@ export const MiniGraphGrid = ({
   );
 
   // Function handling selection of a single well by click event
+  // const handleWellClick = (wellId) => {
+  //   const well = wellArrays.find((well) => well.id === wellId); // Find the well by its ID
+  //   if (selectedWellArray.includes(well)) {
+  //     handleDeselectWell(well); // Deselect the well if already selected
+  //   } else {
+  //     handleSelectWell(well); // Select the well if not already selected
+  //   }
+  // };
   const handleWellClick = (wellId) => {
-    const well = wellArrays.find((well) => well.id === wellId); // Find the well by its ID
-    if (selectedWellArray.includes(well)) {
-      handleDeselectWell(well); // Deselect the well if already selected
+    const isSelected = selectedWellArray.some((well) => well.id === wellId);
+
+    if (isSelected) {
+      handleDeselectWell(wellId); // Deselect by ID if already selected
     } else {
-      handleSelectWell(well); // Select the well if not already selected
+      const well = wellArrays.find((well) => well.id === wellId);
+      handleSelectWell(well); // Select by finding the well in wellArrays
     }
   };
 

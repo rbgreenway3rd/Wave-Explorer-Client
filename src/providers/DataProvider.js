@@ -66,9 +66,14 @@ export const DataProvider = ({ children }) => {
     setSelectedWellArray((prevArray) => [...prevArray, well]);
   };
 
-  const handleDeselectWell = (wellToRemove) => {
+  // const handleDeselectWell = (wellToRemove) => {
+  //   setSelectedWellArray((prevArray) =>
+  //     prevArray.filter((well) => well !== wellToRemove)
+  //   );
+  // };
+  const handleDeselectWell = (wellIdToRemove) => {
     setSelectedWellArray((prevArray) =>
-      prevArray.filter((well) => well !== wellToRemove)
+      prevArray.filter((well) => well.id !== wellIdToRemove)
     );
   };
 

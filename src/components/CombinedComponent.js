@@ -160,29 +160,91 @@ export const CombinedComponent = () => {
   };
 
   // Function to apply enabled filters to well arrays
+  // const applyEnabledFilters = () => {
+  //   console.log(enabledFilters);
+
+  //   // Step 0: reset filtered data to raw data for all wells by copying the wellArrays
+  //   const updatedWellArrays = wellArrays.map((well) => ({
+  //     ...well,
+  //     indicators: well.indicators.map((indicator) => ({
+  //       ...indicator,
+  //       // filteredData: [...indicator.rawData], // Reset filteredData
+  //       filteredData: indicator.rawData.map((point) => ({ ...point })), // Deep clone each point
+  //     })),
+  //   }));
+
+  //   // Step 1: Apply filters to the copied updatedWellArrays and update indicators
+  //   for (let f = 0; f < enabledFilters.length; f++) {
+  //     // if this filter is a ControlSubtraction_Filter, then first calculate the average curve for the control wells
+  //     if (enabledFilters[f] instanceof ControlSubtraction_Filter) {
+  //       enabledFilters[f].calculate_average_curve(updatedWellArrays);
+  //     }
+  //     enabledFilters[f].execute(updatedWellArrays);
+  //   }
+
+  //   // Step 2: Update the project with the new wellArrays
+  //   const updatedProject = {
+  //     ...project,
+  //     plate: project.plate.map((plate, index) => {
+  //       if (index === 0) {
+  //         return {
+  //           ...plate,
+  //           experiments: plate.experiments.map((experiment, expIndex) => {
+  //             if (expIndex === 0) {
+  //               return {
+  //                 ...experiment,
+  //                 wells: updatedWellArrays, // Use the updated wellArrays
+  //               };
+  //             }
+  //             return experiment;
+  //           }),
+  //         };
+  //       }
+  //       return plate;
+  //     }),
+  //   };
+
+  //   // Step 3: Set the updated project in the context, triggering wellArrays update
+  //   setProject(updatedProject);
+
+  //   // Step 4: Sync selectedWellArray with the newly filtered wellArrays
+  //   const updatedSelectedWellArray = selectedWellArray.map(
+  //     (selectedWell) =>
+  //       updatedWellArrays.find((well) => well.id === selectedWell.id) ||
+  //       selectedWell
+  //   );
+
+  //   // Step 5: Update the selectedWellArray state with the updated wells
+  //   setSelectedWellArray(updatedSelectedWellArray);
+
+  //   console.log("updated project: ", updatedProject);
+  //   console.log("updated selectedWellArray: ", updatedSelectedWellArray);
+  //   console.log("filters: ", enabledFilters);
+  // };
   const applyEnabledFilters = () => {
     console.log(enabledFilters);
 
     // Step 0: reset filtered data to raw data for all wells by copying the wellArrays
     const updatedWellArrays = wellArrays.map((well) => ({
       ...well,
-      indicators: well.indicators.map((indicator) => ({
-        ...indicator,
-        // filteredData: [...indicator.rawData], // Reset filteredData
-        filteredData: indicator.rawData.map((point) => ({ ...point })), // Deep clone each point
-      })),
+      indicators: well.indicators.map((indicator) => {
+        // Reset filteredData without deep cloning the entire indicator
+        indicator.filteredData = indicator.rawData.map((point) => ({
+          ...point,
+        }));
+        return indicator;
+      }),
     }));
 
     // Step 1: Apply filters to the copied updatedWellArrays and update indicators
     for (let f = 0; f < enabledFilters.length; f++) {
-      // if this filter is a ControlSubtraction_Filter, then first calculate the average curve for the control wells
       if (enabledFilters[f] instanceof ControlSubtraction_Filter) {
         enabledFilters[f].calculate_average_curve(updatedWellArrays);
       }
       enabledFilters[f].execute(updatedWellArrays);
     }
 
-    // Step 2: Update the project with the new wellArrays
+    // Update the project and selectedWellArray as before
     const updatedProject = {
       ...project,
       plate: project.plate.map((plate, index) => {
@@ -203,18 +265,13 @@ export const CombinedComponent = () => {
         return plate;
       }),
     };
-
-    // Step 3: Set the updated project in the context, triggering wellArrays update
     setProject(updatedProject);
 
-    // Step 4: Sync selectedWellArray with the newly filtered wellArrays
     const updatedSelectedWellArray = selectedWellArray.map(
       (selectedWell) =>
         updatedWellArrays.find((well) => well.id === selectedWell.id) ||
         selectedWell
     );
-
-    // Step 5: Update the selectedWellArray state with the updated wells
     setSelectedWellArray(updatedSelectedWellArray);
 
     console.log("updated project: ", updatedProject);
@@ -225,7 +282,6 @@ export const CombinedComponent = () => {
   const handleToggleVisibility = (indicatorId) => {
     // Create a deep clone of the project to avoid mutating the original object directly
     const updatedProject = { ...project };
-
     updatedProject.plate = updatedProject.plate.map((plate) => ({
       ...plate,
       experiments: plate.experiments.map((experiment) => ({
@@ -249,8 +305,7 @@ export const CombinedComponent = () => {
         }),
       })),
     }));
-
-    // Step 3: Update the project in the context
+    // Update the project in the context
     console.log(updatedProject);
     setProject(updatedProject);
   };
