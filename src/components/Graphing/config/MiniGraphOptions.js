@@ -8,6 +8,8 @@ export const MiniGraphOptions = (
   wellArrays,
   yValues
 ) => {
+  let indicatorTimes = Object.values(extractedIndicatorTimes);
+
   const allYValues = wellArrays
     .flatMap(
       (well) =>
@@ -29,15 +31,15 @@ export const MiniGraphOptions = (
       : 100;
 
   const minXValue =
-    extractedIndicatorTimes.length > 0
-      ? extractedIndicatorTimes.reduce(
+    indicatorTimes[0]?.length > 0
+      ? indicatorTimes[0].reduce(
           (min, val) => (val < min ? val : min),
           Infinity
         )
       : 0;
   const maxXValue =
-    extractedIndicatorTimes.length > 0
-      ? extractedIndicatorTimes.reduce(
+    indicatorTimes[0]?.length > 0
+      ? indicatorTimes[0].reduce(
           (max, val) => (val > max ? val : max),
           -Infinity
         )
