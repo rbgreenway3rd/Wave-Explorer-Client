@@ -412,7 +412,7 @@ export const MetricsControls = ({
             <FormControlLabel
               value="rangeOfYValues"
               control={<Radio />}
-              label="Range"
+              label="Max-Min"
             />
           </RadioGroup>
         </FormControl>
@@ -468,7 +468,9 @@ export const MetricsControls = ({
                 }}
               >
                 <Typography style={{ fontSize: "0.75em" }}>
-                  {metric.metricType}
+                  {metric.metricType === "rangeOfYValues"
+                    ? "Max-Min"
+                    : metric.metricType}
                 </Typography>
                 <IconButton
                   size="small"

@@ -1,5 +1,6 @@
 import React, { useContext } from "react";
 import { DataContext } from "../../../providers/DataProvider";
+import DisabledByDefaultTwoToneIcon from "@mui/icons-material/DisabledByDefaultTwoTone";
 import {
   Button,
   Radio,
@@ -72,11 +73,12 @@ export const MiniGraphControls = ({
 
       {/* Clear Selections button */}
       <Button
-        variant="contained"
-        color="secondary"
+        variant="outlined"
+        color="primary"
         className="clear-selections-button"
         onClick={() => handleClearSelectedWells()}
       >
+        <DisabledByDefaultTwoToneIcon />
         Clear Selections
       </Button>
     </div>

@@ -104,8 +104,8 @@ export const MiniGraphGrid = ({
   // handles y-scales for proper rendering
   const yValues = wellArrays.flatMap((well) =>
     showFiltered
-      ? well.indicators[0]?.filteredData?.map((point) => point.y) || []
-      : well.indicators[0]?.rawData?.map((point) => point.y) || []
+      ? well.indicators?.filteredData?.map((point) => point.y) || []
+      : well.indicators?.rawData?.map((point) => point.y) || []
   );
 
   // Function handling selection of a single well by click event
@@ -169,7 +169,7 @@ export const MiniGraphGrid = ({
 
     // Update selectedWellArray based on the wellsToSelect and wellsToDeselect
     wellsToSelect.forEach((well) => handleSelectWell(well)); // Select the wells
-    wellsToDeselect.forEach((well) => handleDeselectWell(well)); // Deselect the wells
+    wellsToDeselect.forEach((well) => handleDeselectWell(well.id)); // Deselect the wells
 
     // Clear the selectedIndexes ref for future selections
     selectedIndexes.current = [];

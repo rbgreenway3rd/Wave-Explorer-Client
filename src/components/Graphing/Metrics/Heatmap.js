@@ -8,7 +8,7 @@ import React, {
 } from "react";
 import * as d3 from "d3";
 import { DataContext } from "../../../providers/DataProvider";
-import { ColormapValues } from "./HeatmapConfig";
+import { ColormapValues } from "../config/HeatmapConfig";
 import {
   linearRegression,
   calculateSlope,

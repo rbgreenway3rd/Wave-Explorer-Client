@@ -177,13 +177,13 @@ export const NavMenu = () => {
 
   const handleSavePreferencesAsJSON = () => {
     // Prepare preferences data
-    const preferences = {
+    const filtersAndMetrics = {
       filters: selectedFilters,
       metrics: savedMetrics,
     };
 
     // Convert to JSON and create a Blob
-    const jsonContent = JSON.stringify(preferences, null, 2); // 2-space indentation for readability
+    const jsonContent = JSON.stringify(filtersAndMetrics, null, 2); // 2-space indentation for readability
     const blob = new Blob([jsonContent], { type: "application/json" });
 
     // Create a download link and click it to download
@@ -210,7 +210,7 @@ export const NavMenu = () => {
         </MenuItem>
         <MenuItem onClick={handleSavePreferencesAsJSON}>
           <SaveIcon />
-          Save Preferences as JSON
+          Save Filters and Metrics
         </MenuItem>
         {/* Other menu items */}
       </Menu>

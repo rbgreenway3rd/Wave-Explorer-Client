@@ -102,14 +102,34 @@ export const FilteredGraph = ({
     const chart = chartRef.current;
     const rect = chart.canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
-    const annotationRangeStartIndex = chart.scales.x.getValueForPixel(x);
+    let annotationRangeStartIndex = chart.scales.x.getValueForPixel(x);
+
+    //   setAnnotationStartPos({ x, y: 0 });
+    //   setIsDragging(true);
+    //   if (
+    //     annotationRangeStartIndex < 0 ||
+    //     annotationRangeStartIndex > extractedIndicatorTimes.length
+    //   ) {
+    //     setAnnotationRangeStart(0);
+    //   } else {
+    //     setAnnotationRangeStart(annotationRangeStartIndex);
+    //   }
+
+    //   console.log("Start position:", annotationRangeStartIndex);
+    // };
+    if (annotationRangeStartIndex === null) {
+      annotationRangeStartIndex = 0; // Set to 0 if null
+    }
 
     setAnnotationStartPos({ x, y: 0 });
     setIsDragging(true);
+
     if (
       annotationRangeStartIndex < 0 ||
       annotationRangeStartIndex > extractedIndicatorTimes.length
     ) {
+      setAnnotationRangeStart(0);
+    } else if (annotationRangeStartIndex < 0) {
       setAnnotationRangeStart(0);
     } else {
       setAnnotationRangeStart(annotationRangeStartIndex);
@@ -152,13 +172,56 @@ export const FilteredGraph = ({
   );
 
   // Handle mouse up to finalize the annotation and persist it
+  // const handleMouseUp = (event) => {
+  //   setIsDragging(false);
+
+  //   const chart = chartRef.current;
+  //   const rect = chart.canvas.getBoundingClientRect();
+  //   const x = event.clientX - rect.left;
+  //   const annotationRangeEndIndex = chart.scales.x.getValueForPixel(x);
+
+  //   if (
+  //     annotationRangeEndIndex > extractedIndicatorTimes.length ||
+  //     annotationRangeEndIndex < 0
+  //   ) {
+  //     setAnnotationRangeEnd(extractedIndicatorTimes.length);
+  //   } else {
+  //     setAnnotationRangeEnd(annotationRangeEndIndex);
+  //   }
+
+  //   // Get the annotation and store it in state without clearing old annotations
+  //   const newAnnotation = {
+  //     type: "box",
+  //     xMin: chart.scales.x.getValueForPixel(Math.min(annotationStartPos.x, x)),
+  //     xMax: chart.scales.x.getValueForPixel(Math.max(annotationStartPos.x, x)),
+  //     yMin: chart.scales.y.min,
+  //     yMax: chart.scales.y.max,
+  //     backgroundColor: "rgba(0, 255, 0, 0.2)",
+  //     borderColor: "rgba(0, 255, 0, 1)",
+  //     borderWidth: 2,
+  //   };
+
+  //   // Add the new annotation without clearing old ones
+  //   // setAnnotations((prevAnnotations) => [...prevAnnotations, newAnnotation]);
+  //   setAnnotations([newAnnotation]);
+
+  //   console.log(
+  //     "Final annotation range:",
+  //     annotationRangeStart,
+  //     annotationRangeEnd
+  //   );
+  // };
   const handleMouseUp = (event) => {
     setIsDragging(false);
 
     const chart = chartRef.current;
     const rect = chart.canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
-    const annotationRangeEndIndex = chart.scales.x.getValueForPixel(x);
+    let annotationRangeEndIndex = chart.scales.x.getValueForPixel(x);
+
+    if (annotationRangeEnd === null) {
+      annotationRangeEndIndex = chart.scales.x.max; // Set to max value if null
+    }
 
     if (
       annotationRangeEndIndex > extractedIndicatorTimes.length ||
@@ -182,7 +245,6 @@ export const FilteredGraph = ({
     };
 
     // Add the new annotation without clearing old ones
-    // setAnnotations((prevAnnotations) => [...prevAnnotations, newAnnotation]);
     setAnnotations([newAnnotation]);
 
     console.log(
