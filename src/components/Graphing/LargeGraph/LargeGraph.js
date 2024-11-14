@@ -10,11 +10,14 @@ import "../../../styles/LargeGraph.css";
 import { Line } from "react-chartjs-2";
 import { Chart } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
+import { DataContext } from "../../../providers/DataProvider";
 
 Chart.register(zoomPlugin);
 
 export const LargeGraph = forwardRef(
   ({ rawGraphData, largeGraphConfig }, ref) => {
+    const { wellArrays } = useContext(DataContext);
+
     const chartRef = useRef(null);
 
     const [largeCanvasWidth, setLargeCanvasWidth] = useState(

@@ -1,5 +1,7 @@
 import { Chart } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
+import { useContext } from "react";
+import { DataContext } from "../../../providers/DataProvider";
 Chart.register(zoomPlugin);
 
 export const LargeGraphOptions = (
@@ -11,6 +13,7 @@ export const LargeGraphOptions = (
   panState,
   panMode
 ) => {
+  // const { wellArrays, extractedIndicatorTimes } = useContext(DataContext);
   let indicatorTimes = Object.values(extractedIndicatorTimes);
 
   const allYValues = wellArrays
@@ -56,7 +59,7 @@ export const LargeGraphOptions = (
     plugins: {
       legend: false,
       decimation: {
-        enabled: true,
+        enabled: false,
         algorithm: "lttb",
         samples: 50,
         threshold: 100,
@@ -119,8 +122,8 @@ export const LargeGraphOptions = (
         grid: {
           display: false, // Hides y-axis grid lines
         },
-        min: minYValue,
-        max: maxYValue,
+        suggestedMin: minYValue,
+        suggestedMax: maxYValue,
       },
     },
     elements: {
@@ -129,4 +132,27 @@ export const LargeGraphOptions = (
       },
     },
   };
+};
+
+// Function to update chart when wellArrays change
+export const updateChart = (
+  chartInstance,
+  wellArrays,
+  extractedIndicatorTimes
+) => {
+  const updatedOptions = LargeGraphOptions(
+    [],
+    wellArrays,
+    extractedIndicatorTimes,
+    chartInstance.options.plugins.zoom.zoom.wheel.enabled,
+    chartInstance.options.plugins.zoom.zoom.mode,
+    chartInstance.options.plugins.zoom.pan.enabled,
+    chartInstance.options.plugins.zoom.pan.mode
+  );
+
+  // Update chart options
+  chartInstance.options = updatedOptions;
+
+  // Re-render the chart with the new options
+  chartInstance.update();
 };

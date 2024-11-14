@@ -9,6 +9,7 @@ import { LargeGraphControls } from "./Graphing/LargeGraph/LargeGraphControls.js"
 import { MiniGraphGrid } from "./Graphing/MiniGraphGrid/MiniGraphGrid.js";
 import { MiniGraphControls } from "./Graphing/MiniGraphGrid/MiniGraphControls.js";
 import { FilteredGraph } from "./Graphing/FilteredData/FilteredGraph.js";
+import { FilteredGraphOptions } from "./Graphing/config/FilteredGraphOptions.js";
 import { FilterControls } from "./Graphing/FilteredData/FilterControls.js";
 import { MetricsControls } from "./Graphing/Metrics/MetricsControls.js";
 import { Chart, registerables } from "chart.js";
@@ -60,6 +61,9 @@ export const CombinedComponent = () => {
   const [panMode, setPanMode] = useState("xy");
   // Ref to access LargeGraph's chart instance
   const largeGraphRef = useRef(null);
+
+  // Ref to access FilteredGraph's chart instance
+  const filteredGraphRef = useRef(null);
 
   // Canvas dimensions for graphs
 
@@ -233,12 +237,12 @@ export const CombinedComponent = () => {
               const newIsDisplayed = !indicator.isDisplayed;
               indicator.setDisplayed(newIsDisplayed); // Directly toggle the property
             }
-            console.log(
-              "indicator.id: ",
-              indicator.id,
-              "indicatorId: ",
-              indicatorId
-            );
+            // console.log(
+            //   "indicator.id: ",
+            //   indicator.id,
+            //   "indicatorId: ",
+            //   indicatorId
+            // );
             return indicator;
           });
           return { ...well, indicators: updatedIndicators };
@@ -318,6 +322,17 @@ export const CombinedComponent = () => {
     zoomMode,
     panState,
     panMode
+  );
+
+  // Generate the chart options with dynamic min/max y-values
+  const filteredGraphConfig = FilteredGraphOptions(
+    analysisData,
+    wellArrays,
+    filteredGraphData,
+    extractedIndicatorTimes,
+    annotations
+    // minYValue,
+    // maxYValue
   );
 
   const handleToggleDataShown = () => {
@@ -465,6 +480,7 @@ export const CombinedComponent = () => {
               </header>
               <div className="combined-component__filtered-graph">
                 <FilteredGraph
+                  ref={filteredGraphRef}
                   analysisData={analysisData}
                   wellArrays={wellArrays}
                   extractedIndicatorTimes={extractedIndicatorTimes}
@@ -476,7 +492,7 @@ export const CombinedComponent = () => {
                   annotationRangeEnd={annotationRangeEnd}
                   setAnnotationRangeStart={setAnnotationRangeStart}
                   setAnnotationRangeEnd={setAnnotationRangeEnd}
-                  // options={filteredGraphConfig}
+                  filteredGraphConfig={filteredGraphConfig}
                 />
               </div>
               <div className="combined-component__filter-controls">

@@ -381,6 +381,7 @@ export const MetricsControls = ({
           >
             {extractedIndicators.map((indicator) => (
               <FormControlLabel
+                key={indicator.id}
                 value={indicator.id}
                 control={<Radio />}
                 label={indicator.indicatorName}

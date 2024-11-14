@@ -1,18 +1,23 @@
+import { useContext } from "react";
+import { DataContext } from "../../../providers/DataProvider";
+
 export const FilteredGraphOptions = (
   analysisData = [],
   wellArrays = [],
   filteredGraphData,
   extractedIndicatorTimes = [],
   annotations = []
+  // minYValue,
+  // maxYValue
 ) => {
+  // const { wellArrays, extractedIndicatorTimes } = useContext(DataContext);
   let indicatorTimes = Object.values(extractedIndicatorTimes);
 
   const allYValues = wellArrays
-    .flatMap(
-      (well) =>
-        well.indicators
-          .filter((indicator) => indicator.isDisplayed) // Only include displayed indicators
-          .flatMap((indicator) => indicator.rawData ?? []) // Access rawData for each displayed indicator
+    .flatMap((well) =>
+      well.indicators
+        .filter((indicator) => indicator.isDisplayed) // Only include displayed indicators
+        .flatMap((indicator) => indicator.filteredData ?? [])
     )
     .map((point) => point.y); // Extract the y values from each point
 
@@ -63,7 +68,7 @@ export const FilteredGraphOptions = (
         annotations: annotations,
       },
     },
-    maintainAspectRatio: false,
+    maintainAspectRatio: true,
     responsive: true,
     scales: {
       x: {
@@ -78,14 +83,15 @@ export const FilteredGraphOptions = (
         max: maxXValue,
       },
       y: {
+        display: false,
         ticks: {
           display: false,
         },
         grid: {
           display: false,
         },
-        min: minYValue,
-        max: maxYValue,
+        suggestedMin: minYValue,
+        suggestedMax: maxYValue,
         // min: minValue,
         // max: maxValue,
       },
@@ -96,4 +102,23 @@ export const FilteredGraphOptions = (
       },
     },
   };
+};
+
+// Function to update chart when wellArrays change
+export const updateChart = (
+  chartInstance,
+  wellArrays,
+  extractedIndicatorTimes
+) => {
+  const updatedOptions = FilteredGraphOptions(
+    [],
+    wellArrays,
+    extractedIndicatorTimes
+  );
+
+  // Update chart options
+  chartInstance.options = updatedOptions;
+
+  // Re-render the chart with the new options
+  chartInstance.update();
 };
