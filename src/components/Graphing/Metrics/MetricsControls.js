@@ -1,276 +1,3 @@
-// import React, { useContext, useState } from "react";
-// import { DataContext } from "../../../providers/DataProvider";
-// import "./MetricsControls.css";
-
-// export const MetricsControls = ({
-//   setMetricType,
-//   annotations,
-//   setAnnotations,
-//   annotationRangeStart,
-//   annotationRangeEnd,
-//   setAnnotationRangeStart,
-//   setAnnotationRangeEnd,
-// }) => {
-//   const { savedMetrics, setSavedMetrics } = useContext(DataContext);
-//   const [selectedMetric, setSelectedMetric] = useState("maxYValue");
-
-//   const handleMetricChange = (e) => {
-//     const newMetric = e.target.value;
-//     setSelectedMetric(newMetric);
-//     setMetricType(newMetric);
-//   };
-
-//   const handleSaveMetric = () => {
-//     const newMetric = {
-//       metricType: selectedMetric,
-//       range:
-//         annotationRangeStart > annotationRangeEnd
-//           ? [annotationRangeEnd, annotationRangeStart]
-//           : [annotationRangeStart, annotationRangeEnd],
-//     };
-//     setSavedMetrics((prevMetrics) => [...prevMetrics, newMetric]);
-//   };
-
-//   const handleResetAnnotations = () => {
-//     // Reset the annotationRangeStart and annotationRangeEnd
-//     setAnnotationRangeStart(null);
-//     setAnnotationRangeEnd(null);
-//     setAnnotations([]);
-//   };
-
-//   return (
-//     <div className="metrics__controls-container">
-//       <div className="metrics__radio-container">
-//         Metric Type:
-//         <div className="radio__show-max">
-//           <input
-//             type="radio"
-//             id="show-max"
-//             className="radio__show-max-radio"
-//             value="maxYValue"
-//             name="radio-group-metrics"
-//             checked={selectedMetric === "maxYValue"}
-//             onChange={handleMetricChange}
-//           />
-//           <label htmlFor="show-max">Max</label>
-//         </div>
-//         <div className="radio__show-min">
-//           <input
-//             type="radio"
-//             id="show-min"
-//             className="radio__show-min-radio"
-//             value="minYValue"
-//             name="radio-group-metrics"
-//             checked={selectedMetric === "minYValue"}
-//             onChange={handleMetricChange}
-//           />
-//           <label htmlFor="show-min">Min</label>
-//         </div>
-//         <div className="radio__show-slope">
-//           <input
-//             type="radio"
-//             id="show-slope"
-//             className="radio__show-slope-radio"
-//             value="slope"
-//             name="radio-group-metrics"
-//             checked={selectedMetric === "slope"}
-//             onChange={handleMetricChange}
-//           />
-//           <label htmlFor="show-slope">Slope</label>
-//         </div>
-//         <div className="radio__show-range">
-//           <input
-//             type="radio"
-//             id="show-range"
-//             className="radio__show-range-radio"
-//             value="rangeOfYValues"
-//             name="radio-group-metrics"
-//             checked={selectedMetric === "rangeOfYValues"}
-//             onChange={handleMetricChange}
-//           />
-//           <label htmlFor="show-range">Range</label>
-//         </div>
-//       </div>
-//       <button className="save-metric" onClick={handleSaveMetric}>
-//         Save Metric
-//       </button>
-//       <button onClick={() => console.log(savedMetrics)}>
-//         log saved metrics
-//       </button>
-//       <button
-//         className="metrics-controls__reset-annotations"
-//         variant="contained"
-//         color="secondary"
-//         onClick={handleResetAnnotations}
-//       >
-//         Reset Annotation
-//       </button>
-//     </div>
-//   );
-// };
-
-// export default MetricsControls;
-
-// MATERIAL UI THEME USAGE
-// import React, { useContext, useState } from "react";
-// import BookmarkAddTwoToneIcon from "@mui/icons-material/BookmarkAddTwoTone";
-// import DisabledByDefaultTwoToneIcon from "@mui/icons-material/DisabledByDefaultTwoTone";
-// import { DataContext } from "../../../providers/DataProvider";
-// import {
-//   Button,
-//   Radio,
-//   RadioGroup,
-//   FormControlLabel,
-//   FormControl,
-//   FormLabel,
-//   ListItem,
-//   Typography,
-//   InputLabel,
-//   Select,
-//   MenuItem,
-//   IconButton,
-// } from "@mui/material";
-// import "./MetricsControls.css"; // Keep for custom styling, if needed
-// import { DeleteOutline } from "@mui/icons-material";
-
-// export const MetricsControls = ({
-//   setMetricType,
-//   annotations,
-//   setAnnotations,
-//   annotationRangeStart,
-//   annotationRangeEnd,
-//   setAnnotationRangeStart,
-//   setAnnotationRangeEnd,
-// }) => {
-//   const { savedMetrics, setSavedMetrics } = useContext(DataContext);
-//   const [selectedMetric, setSelectedMetric] = useState("maxYValue");
-
-//   const handleMetricChange = (e) => {
-//     const newMetric = e.target.value;
-//     setSelectedMetric(newMetric);
-//     setMetricType(newMetric);
-//   };
-
-//   const handleSaveMetric = () => {
-//     const newMetric = {
-//       id: savedMetrics.length + 1,
-//       metricType: selectedMetric,
-//       range:
-//         annotationRangeStart > annotationRangeEnd
-//           ? [annotationRangeEnd, annotationRangeStart]
-//           : [annotationRangeStart, annotationRangeEnd],
-//     };
-//     setSavedMetrics((prevMetrics) => [...prevMetrics, newMetric]);
-//   };
-
-//   const handleDeleteMetric = (id) => {
-//     setSavedMetrics((prevMetrics) =>
-//       prevMetrics.filter((metric) => metric.id !== id)
-//     );
-//   };
-
-//   const handleResetAnnotations = () => {
-//     // Reset the annotationRangeStart and annotationRangeEnd
-//     setAnnotationRangeStart(null);
-//     setAnnotationRangeEnd(null);
-//     setAnnotations([]);
-//   };
-
-//   return (
-//     <div className="metrics__controls-container">
-//       <div className="metrics__management">
-//         <FormControl component="fieldset" className="metrics__radio-container">
-//           <FormLabel component="legend">Metric Type</FormLabel>
-//           <RadioGroup
-//             className="metrics__radio-container"
-//             aria-label="metric-type"
-//             name="radio-group-metrics"
-//             value={selectedMetric}
-//             onChange={handleMetricChange}
-//             row
-//           >
-//             <FormControlLabel
-//               value="maxYValue"
-//               control={<Radio />}
-//               label="Max"
-//             />
-//             <FormControlLabel
-//               value="minYValue"
-//               control={<Radio />}
-//               label="Min"
-//             />
-//             <FormControlLabel value="slope" control={<Radio />} label="Slope" />
-//             <FormControlLabel
-//               value="rangeOfYValues"
-//               control={<Radio />}
-//               label="Range"
-//             />
-//           </RadioGroup>
-//         </FormControl>
-//         <Button
-//           variant="contained"
-//           color="primary"
-//           className="save-metric"
-//           onClick={handleSaveMetric}
-//         >
-//           <BookmarkAddTwoToneIcon />
-//           Save Metric
-//         </Button>
-//       </div>
-//       <div className="saved-metrics-list">
-//         <FormControl fullWidth>
-//           <InputLabel id="demo-simple-select-label">Saved Metrics</InputLabel>
-//           <Select
-//             labelId="demo-simple-select-label"
-//             id="demo-simple-select"
-//             // value={metric.metricType}
-//             // label="Age"
-//             // onChange={handleChange}
-//             >
-//             {savedMetrics.length > 0 ? (
-//               savedMetrics.map((metric) => (
-//                 <MenuItem key={metric.id} className="saved-metric">
-//                   <Typography>{metric.metricType}</Typography>
-//                   <IconButton
-//                     size="small"
-//                     onClick={() => handleDeleteMetric(metric.id)}
-//                   >
-//                     <DeleteOutline fontSize="small" />
-//                   </IconButton>
-//                 </MenuItem>
-//               ))
-//             ) : (
-//               <Typography className="no-saved-metrics">
-//                 No Saved Metrics
-//               </Typography>
-//             )}
-//           </Select>
-//         </FormControl>
-//       </div>
-
-//       {/* <Button
-//         variant="outlined"
-//         color="default"
-//         onClick={() => console.log(savedMetrics)}
-//       >
-//         Log saved metrics
-//       </Button> */}
-
-//       <Button
-//         className="metrics-controls__reset-annotations"
-//         variant="contained"
-//         color="secondary"
-//         onClick={handleResetAnnotations}
-//       >
-//         <DisabledByDefaultTwoToneIcon />
-//         Clear Annotation
-//       </Button>
-//     </div>
-//   );
-// };
-
-// export default MetricsControls;
-
 import React, { useContext, useState } from "react";
 import BookmarkAddTwoToneIcon from "@mui/icons-material/BookmarkAddTwoTone";
 import DisabledByDefaultTwoToneIcon from "@mui/icons-material/DisabledByDefaultTwoTone";
@@ -327,11 +54,13 @@ export const MetricsControls = ({
       id: savedMetrics.length + 1,
       metricType: selectedMetricType,
       range:
-        annotationRangeStart > annotationRangeEnd
-          ? [annotationRangeEnd, annotationRangeStart]
-          : [annotationRangeStart, annotationRangeEnd],
+        // annotationRangeStart > annotationRangeEnd
+        //   ? [annotationRangeEnd, annotationRangeStart]
+        //   : [annotationRangeStart, annotationRangeEnd],
+        [annotations[0].xMin, annotations[0].xMax],
     };
     setSavedMetrics((prevMetrics) => [...prevMetrics, newMetric]);
+    console.log("savedMetrics: ", savedMetrics);
   };
 
   const handleDeleteMetric = (id) => {
@@ -345,12 +74,30 @@ export const MetricsControls = ({
     setMetricType(metric.metricType);
     setAnnotationRangeStart(metric.range[0]);
     setAnnotationRangeEnd(metric.range[1]);
-    setAnnotations((prevAnnotations) => {
+    // setAnnotations((prevAnnotations) => {
+    //   const updatedAnnotation = {
+    //     ...prevAnnotations[0], // Keep existing properties
+    //     xMax: metric.range[1],
+    //     xMin: metric.range[0],
+    //   };
+    //   console.log(prevAnnotations);
+    //   console.log(updatedAnnotation);
+    //   return [updatedAnnotation]; // Replace with updated annotation
+    // });
+
+    setAnnotations(() => {
       const updatedAnnotation = {
-        ...prevAnnotations[0], // Keep existing properties
+        type: "box",
         xMax: metric.range[1],
         xMin: metric.range[0],
+        yMin: "min", // chartjs attempts to dynamically calculate min and max
+        yMax: "max",
+        backgroundColor: "rgba(0, 255, 0, 0.2)",
+        borderColor: "rgba(0, 255, 0, 1)",
+        borderWidth: 2,
       };
+
+      console.log(updatedAnnotation);
       return [updatedAnnotation]; // Replace with updated annotation
     });
   };
@@ -456,7 +203,7 @@ export const MetricsControls = ({
               <ListItem
                 key={metric.id}
                 onClick={() => {
-                  setSelectedMetricType(metric); // Update selected metric
+                  // setSelectedMetricType(metric); // Update selected metric
                   handleSelectMetric(metric);
                   setIsDropdownOpen(false); // Close dropdown after selection
                 }}

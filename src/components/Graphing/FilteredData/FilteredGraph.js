@@ -236,6 +236,8 @@ export const FilteredGraph = ({
       annotationRangeStart,
       annotationRangeEnd
     );
+    console.log("newAnnotation: ", newAnnotation);
+    console.log("annotations: ", annotations);
   };
 
   return (

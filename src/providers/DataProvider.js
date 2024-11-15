@@ -407,7 +407,7 @@ export const DataProvider = ({ children }) => {
       const extractedLines = extractedLinesByIndicator[indicator];
       const joinedLines = extractedLines.join("");
       const elements = joinedLines.split("\t").slice(0, -1);
-      console.log(elements);
+      // console.log(elements);
 
       let times = [];
       let dataPoints = [];

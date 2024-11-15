@@ -480,7 +480,7 @@ export const CombinedComponent = () => {
               </header>
               <div className="combined-component__filtered-graph">
                 <FilteredGraph
-                  ref={filteredGraphRef}
+                  // ref={filteredGraphRef}
                   analysisData={analysisData}
                   wellArrays={wellArrays}
                   extractedIndicatorTimes={extractedIndicatorTimes}
