@@ -14,6 +14,8 @@ import AddCircleTwoToneIcon from "@mui/icons-material/AddCircleTwoTone";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
+
 import { ListItem, Checkbox, Radio, FormControlLabel } from "@mui/material";
 import {
   ArrowForwardIos as ArrowIcon,
@@ -56,7 +58,11 @@ export const FilterControls = ({
     wellArrays,
     selectedFilters,
     setSelectedFilters,
+    savedMetrics,
+    setSavedMetrics,
     enabledFilters,
+    uploadedFilters,
+    setUploadedFilters,
     setEnabledFilters,
   } = useContext(DataContext);
   const [selectedWells, setSelectedWells] = useState([]);
@@ -362,6 +368,66 @@ export const FilterControls = ({
   const handleRadioCheck = (event) => {
     setSelectedValue(event.target.value);
   };
+
+  useEffect(() => {
+    // const handleLoadSavedFilters = (data) => {
+    let newFilters = [];
+    // data.filters.map((filter) => {
+    uploadedFilters.map((filter) => {
+      if (filter.name === "Static Ratio") {
+        const newStaticRatioFilter = new StaticRatio_Filter(
+          selectedFilters.length,
+          handleEditStaticRatioParams
+        );
+        newStaticRatioFilter.setParams(filter.start, filter.end);
+        newFilters.push(newStaticRatioFilter);
+      } else if (filter.name === "Smoothing") {
+        const newSmoothingFilter = new Smoothing_Filter(
+          selectedFilters.length,
+          handleEditSmoothingFilterParams
+        );
+        newSmoothingFilter.setParams(filter.windowWidth);
+        newFilters.push(newSmoothingFilter);
+      } else if (filter.name === "Control Subtraction") {
+        const newControlSubtractionFilter = new ControlSubtraction_Filter(
+          selectedFilters.length,
+          handleEditControlSubtractionFilterParams,
+          filter.number_of_columns,
+          filter.number_of_rows
+        );
+        newControlSubtractionFilter.setParams(
+          filter.controlWellArray,
+          filter.applyWellArray
+        );
+        newFilters.push(newControlSubtractionFilter);
+      } else if (filter.name === "Derivative") {
+        const newDerivativeFilter = new Derivative_Filter(
+          selectedFilters.length
+        );
+        newFilters.push(newDerivativeFilter);
+      } else if (filter.name === "Outlier Removal") {
+        const newOutlierRemovalFilter = new OutlierRemoval_Filter(
+          selectedFilters.length,
+          handleEditOutlierRemovalFilterParams
+        );
+        newOutlierRemovalFilter.setParams(filter.halfWindow, filter.threshold);
+        newFilters.push(newOutlierRemovalFilter);
+      } else if (filter.name === "Flat Field Correction") {
+        const newFlatFieldCorrectionFilter = new FlatFieldCorrection_Filter(
+          selectedFilters.length,
+          handleEditFlatFieldCorrectionFilterParams
+        );
+        newFlatFieldCorrectionFilter.setParams(filter.correctionMatrix);
+        newFilters.push(newFlatFieldCorrectionFilter);
+      }
+      return newFilters;
+    });
+    // setUploadedFilters(newFilters);
+    setSelectedFilters(newFilters);
+    // setSavedMetrics(data.metrics);
+    // alert("Filters and metrics loaded successfully!");
+    // };
+  }, [uploadedFilters]);
 
   return (
     <Box className="filter-controls">

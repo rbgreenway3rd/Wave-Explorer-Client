@@ -27,7 +27,11 @@ export const GenerateCSV = (
       header.push(`ProtocolName,${project.protocol}`);
       header.push(`AssayPlateBarcode,${plate.assayPlateBarcode}`);
       header.push(`AddPlateBarcode,${plate.addPlateBarcode}`);
-      header.push(`Indicator,${experiment.indicatorConfigurations}`);
+      experiment.wells[0].indicators.forEach((_, indicatorIndex) => {
+        header.push(
+          `Indicator,${experiment.indicatorConfigurations[indicatorIndex]}`
+        );
+      });
       header.push(`Binning,${experiment.binning}`);
       header.push(`NumRows,${experiment.numberOfRows}`);
       header.push(`NumCols,${experiment.numberOfColumns}`);
@@ -45,7 +49,7 @@ export const GenerateCSV = (
       experiment.wells[0].indicators.forEach((_, indicatorIndex) => {
         // Add <INDICATOR_DATA> for each indicator
         indicatorData.push(
-          `<INDICATOR_DATA, ${experiment.indicatorConfigurations}>`
+          `<INDICATOR_DATA, ${experiment.indicatorConfigurations[indicatorIndex]}>`
         );
         if (includeRawData) {
           // Add <RAW_DATA> tag before the header row

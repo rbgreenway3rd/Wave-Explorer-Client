@@ -42,6 +42,9 @@ export const DataProvider = ({ children }) => {
   const [selectedFilters, setSelectedFilters] = useState([]);
   const [enabledFilters, setEnabledFilters] = useState([]);
 
+  // state handling new uploaded filters
+  const [uploadedFilters, setUploadedFilters] = useState([]);
+
   // state determining what data is shown in minigraph-grid (rawData or filteredData)
   const [showFiltered, setShowFiltered] = useState(false);
 
@@ -537,6 +540,8 @@ export const DataProvider = ({ children }) => {
         setSelectedFilters,
         enabledFilters,
         setEnabledFilters,
+        uploadedFilters,
+        setUploadedFilters,
         // hoveredSelectedWellId,
         // setHoveredSelectedWellId,
         handleSelectWell,

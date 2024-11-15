@@ -3,6 +3,7 @@ import BookmarkAddTwoToneIcon from "@mui/icons-material/BookmarkAddTwoTone";
 import DisabledByDefaultTwoToneIcon from "@mui/icons-material/DisabledByDefaultTwoTone";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { DataContext } from "../../../providers/DataProvider";
+import { keyframes } from "@mui/system";
 import {
   Accordion,
   AccordionSummary,
@@ -43,6 +44,13 @@ export const MetricsControls = ({
   const [selectedMetricType, setSelectedMetricType] = useState("maxYValue");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  // const handleClick = async () => {
+  //   await setIsAnimating(true);
+  //   handleResetAnnotations();
+  // };
+
   const handleMetricChange = (e) => {
     const newMetric = e.target.value;
     setSelectedMetricType(newMetric);
@@ -57,7 +65,10 @@ export const MetricsControls = ({
         // annotationRangeStart > annotationRangeEnd
         //   ? [annotationRangeEnd, annotationRangeStart]
         //   : [annotationRangeStart, annotationRangeEnd],
-        [annotations[0].xMin, annotations[0].xMax],
+
+        annotations[0]
+          ? [annotations[0].xMin, annotations[0].xMax]
+          : [null, null],
     };
     setSavedMetrics((prevMetrics) => [...prevMetrics, newMetric]);
     console.log("savedMetrics: ", savedMetrics);
@@ -88,8 +99,8 @@ export const MetricsControls = ({
     setAnnotations(() => {
       const updatedAnnotation = {
         type: "box",
-        xMax: metric.range[1],
-        xMin: metric.range[0],
+        xMax: metric.range ? metric.range[1] : "min",
+        xMin: metric.range ? metric.range[0] : "max",
         yMin: "min", // chartjs attempts to dynamically calculate min and max
         yMax: "max",
         backgroundColor: "rgba(0, 255, 0, 0.2)",
@@ -102,7 +113,8 @@ export const MetricsControls = ({
     });
   };
 
-  const handleResetAnnotations = () => {
+  const handleResetAnnotations = async () => {
+    await setIsAnimating(true);
     setAnnotationRangeStart(null);
     setAnnotationRangeEnd(null);
     setAnnotations([]);
@@ -241,10 +253,17 @@ export const MetricsControls = ({
         </section>
       </div>
       <Button
-        className="metrics-controls__reset-annotations"
+        // className="metrics-controls__reset-annotations"
+        className={`metrics-controls__reset-annotations ${
+          isAnimating ? "animate-line" : ""
+        }`}
         variant="outlined"
         color="primary"
+        // onClick={handleResetAnnotations}
+        // onClick={handleClick}
         onClick={handleResetAnnotations}
+        onAnimationEnd={() => setIsAnimating(false)} // Reset animation state
+        disableRipple
       >
         <DisabledByDefaultTwoToneIcon />
         Clear Range

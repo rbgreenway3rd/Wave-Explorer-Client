@@ -181,6 +181,8 @@ export const NavMenu = () => {
     savedMetrics,
     setSelectedFilters,
     setSavedMetrics,
+    uploadedFilters,
+    setUploadedFilters,
   } = useContext(DataContext);
 
   const [includeRawData, setIncludeRawData] = useState(true);
@@ -325,55 +327,16 @@ export const NavMenu = () => {
 
   const handleLoadPreferencesFromJSON = (event) => {
     const file = event.target.files[0];
+    setSelectedFilters([]);
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
           const data = JSON.parse(e.target.result);
           if (data.filters && data.metrics) {
-            let newFilters = [];
-            data.filters.map((filter) => {
-              if (filter.name === "Static Ratio") {
-                newFilters.push(
-                  new StaticRatio_Filter(filter.id, handleEditStaticRatioParams)
-                );
-              } else if (filter.name === "Smoothing") {
-                newFilters.push(
-                  new Smoothing_Filter(
-                    filter.id,
-                    handleEditSmoothingFilterParams
-                  )
-                );
-              } else if (filter.name === "Control Subtraction") {
-                newFilters.push(
-                  new ControlSubtraction_Filter(
-                    filter.id,
-                    handleEditControlSubtractionFilterParams,
-                    filter.number_of_columns,
-                    filter.number_of_rows
-                  )
-                );
-              } else if (filter.name === "Derivative") {
-                newFilters.push(new Derivative_Filter(filter.id));
-              } else if (filter.name === "Outlier Removal") {
-                newFilters.push(
-                  new OutlierRemoval_Filter(
-                    filter.id,
-                    handleEditOutlierRemovalFilterParams
-                  )
-                );
-              } else if (filter.name === "Flat Field Correction") {
-                newFilters.push(
-                  new FlatFieldCorrection_Filter(
-                    filter.id,
-                    handleEditFlatFieldCorrectionFilterParams
-                  )
-                );
-              }
-            });
-            setSelectedFilters(newFilters);
+            let newFilters = data.filters;
+            setUploadedFilters(newFilters);
             setSavedMetrics(data.metrics);
-            alert("Filters and metrics loaded successfully!");
           } else {
             alert(
               "Invalid JSON format. Please upload a valid preferences file."
@@ -383,6 +346,7 @@ export const NavMenu = () => {
           alert("Error reading the file. Make sure it's a valid JSON file.");
         }
       };
+
       reader.readAsText(file);
     }
   };

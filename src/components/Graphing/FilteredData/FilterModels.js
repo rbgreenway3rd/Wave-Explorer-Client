@@ -377,7 +377,7 @@ export class OutlierRemoval_Filter {
 
 export class FlatFieldCorrection_Filter {
   constructor(num, onEdit) {
-    this.id = "flatfieldCorrection_Filter" + JSON.stringify(num);
+    this.id = "flatfieldCorrection_" + JSON.stringify(num);
     this.name = "Flat Field Correction";
     this.desc = "Flat Field Correction";
     this.isEnabled = false;

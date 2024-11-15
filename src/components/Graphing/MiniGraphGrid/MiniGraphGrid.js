@@ -21,7 +21,7 @@ import {
   Box,
   boxesIntersect,
 } from "@air/react-drag-to-select";
-import DotWaveLoader from "../../../assets/Loaders/DotWaveLoader";
+import DotWaveLoader from "../../../assets/animations/DotWaveLoader";
 
 export const MiniGraphGrid = ({
   // minigraphOptions,
