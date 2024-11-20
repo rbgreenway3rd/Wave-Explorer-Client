@@ -402,27 +402,121 @@ export const DataProvider = ({ children }) => {
     console.log("Extracted Lines by Indicator:", extractedLinesByIndicator);
     return extractedLinesByIndicator;
   };
-  const extractIndicatorTimes = (extractedLinesByIndicator) => {
+
+  // const extractIndicatorTimes = (
+  //   extractedLinesByIndicator,
+  //   extractedRows,
+  //   extractedColumns
+  // ) => {
+  //   let indicatorTimes = {};
+  //   let analysisData = {};
+
+  //   for (let indicator in extractedLinesByIndicator) {
+  //     const extractedLines = extractedLinesByIndicator[indicator];
+  //     const joinedLines = extractedLines.join("");
+  //     const elements = joinedLines.split("\t").slice(0, -1);
+
+  //     console.log(elements);
+
+  //     let times = [];
+  //     let dataPoints = [];
+  //     let plateDimensions = extractedRows * extractedColumns;
+  //     for (let i = 0; i < elements.length; i++) {
+  //       if (i % (plateDimensions + 1) === 0) {
+  //         // if (i % 385 === 0) {
+  //         times.push(parseFloat(elements[i].replace("\r", "")) * 1000);
+  //       } else {
+  //         dataPoints.push(parseFloat(elements[i]));
+  //       }
+  //     }
+
+  //     indicatorTimes[indicator] = times;
+  //     analysisData[indicator] = dataPoints;
+  //   }
+
+  //   console.log("Extracted Indicator Times:", indicatorTimes);
+  //   console.log("Analysis Data by Indicator:", analysisData);
+
+  //   // Set or return the values as needed
+  //   setExtractedIndicatorTimes(indicatorTimes);
+  //   setAnalysisData(analysisData);
+
+  //   return { indicatorTimes, analysisData };
+  // };
+
+  // const extractIndicatorTimes = (
+  //   extractedLinesByIndicator,
+  //   extractedRows,
+  //   extractedColumns
+  // ) => {
+  //   let indicatorTimes = {};
+  //   let analysisData = {};
+  //   const plateDimensions = extractedRows * extractedColumns;
+
+  //   for (let indicator in extractedLinesByIndicator) {
+  //     const extractedLines = extractedLinesByIndicator[indicator];
+  //     const joinedLines = extractedLines.join("");
+  //     const elements = joinedLines.split("\t").slice(0, -1);
+
+  //     console.log(extractedLines[0].split("\t"));
+  //     let times = [];
+  //     let dataPoints = [];
+
+  //     for (let i = 0; i < elements.length; i++) {
+  //       // Dynamically determine if the index corresponds to 'times'
+  //       if (i % (plateDimensions + 1) === 0) {
+  //         times.push(parseFloat(elements[i].replace("\r", "")) * 1000);
+  //       } else {
+  //         dataPoints.push(parseFloat(elements[i]));
+  //       }
+  //     }
+  //     console.log(elements[96]);
+  //     indicatorTimes[indicator] = times;
+  //     analysisData[indicator] = dataPoints;
+  //   }
+
+  //   console.log("Extracted Indicator Times:", indicatorTimes);
+  //   console.log("Analysis Data by Indicator:", analysisData);
+
+  //   // Set or return the values as needed
+  //   setExtractedIndicatorTimes(indicatorTimes);
+  //   setAnalysisData(analysisData);
+
+  //   return { indicatorTimes, analysisData };
+  // };
+  const extractIndicatorTimes = (
+    extractedLinesByIndicator,
+    extractedRows,
+    extractedColumns
+  ) => {
     let indicatorTimes = {};
     let analysisData = {};
+    const plateDimensions = extractedRows * extractedColumns;
 
     for (let indicator in extractedLinesByIndicator) {
       const extractedLines = extractedLinesByIndicator[indicator];
-      const joinedLines = extractedLines.join("");
-      const elements = joinedLines.split("\t").slice(0, -1);
-      // console.log(elements);
 
       let times = [];
       let dataPoints = [];
 
-      for (let i = 0; i < elements.length; i++) {
-        if (i % 385 === 0) {
-          times.push(parseFloat(elements[i].replace("\r", "")) * 1000);
-        } else {
-          dataPoints.push(parseFloat(elements[i]));
+      // Iterate through each line in extractedLines
+      for (let i = 0; i < extractedLines.length; i++) {
+        // Split the line into elements by tab delimiter
+        const lineElements = extractedLines[i].split("\t");
+
+        // Push the first element (time) to the times array
+        times.push(parseFloat(lineElements[0].replace("\r", "")) * 1000);
+
+        // Push all other elements (data points) to the dataPoints array
+        for (let j = 1; j < lineElements.length; j++) {
+          const dataPoint = parseFloat(lineElements[j].replace("\r", ""));
+          if (!isNaN(dataPoint)) {
+            dataPoints.push(dataPoint);
+          }
         }
       }
 
+      // Assign the extracted times and data points to their respective indicators
       indicatorTimes[indicator] = times;
       analysisData[indicator] = dataPoints;
     }
@@ -475,7 +569,9 @@ export const DataProvider = ({ children }) => {
     setRowLabels(rowLabels);
 
     let { extractedIndicatorTimes, analysisData } = await extractIndicatorTimes(
-      extractedLines
+      extractedLines,
+      extractedRows,
+      extractedColumns
     );
 
     return {

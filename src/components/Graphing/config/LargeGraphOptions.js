@@ -111,8 +111,10 @@ export const LargeGraphOptions = (
         grid: {
           display: false, // Hides x-axis grid lines
         },
-        min: minXValue,
-        max: maxXValue,
+        // min: minXValue,
+        // max: maxXValue,
+        min: Math.min(extractedIndicatorTimes[0]),
+        max: Math.max(extractedIndicatorTimes[0]),
       },
       y: {
         display: false, // Completely hides the y axis

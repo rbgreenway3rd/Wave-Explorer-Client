@@ -56,6 +56,52 @@ export const handleAllSelectorClick = (
 };
 
 // Handle selecting a row of wells
+// export const handleRowSelectorClick = (
+//   rowLabel,
+//   wellArrays,
+//   selectedWellArray,
+//   handleSelectWell,
+//   handleDeselectWell
+// ) => {
+//   const wellsInRow = wellArrays.filter((well) => well.key.startsWith(rowLabel));
+//   const allSelected = wellsInRow.every((well) =>
+//     selectedWellArray.includes(well)
+//   );
+
+//   if (allSelected) {
+//     wellsInRow.forEach((well) => handleDeselectWell(well));
+//   } else {
+//     wellsInRow.forEach((well) => {
+//       if (!selectedWellArray.includes(well)) {
+//         handleSelectWell(well);
+//       }
+//     });
+//   }
+// };
+
+// // Handle selecting a column of wells
+// export const handleColumnSelectorClick = (
+//   colIndex,
+//   wellArrays,
+//   selectedWellArray,
+//   handleSelectWell,
+//   handleDeselectWell
+// ) => {
+//   const wellsInCol = wellArrays.filter((well) => well.column + 1 === colIndex);
+//   const allSelected = wellsInCol.every((well) =>
+//     selectedWellArray.includes(well)
+//   );
+
+//   if (allSelected) {
+//     wellsInCol.forEach((well) => handleDeselectWell(well));
+//   } else {
+//     wellsInCol.forEach((well) => {
+//       if (!selectedWellArray.includes(well)) {
+//         handleSelectWell(well);
+//       }
+//     });
+//   }
+// };
 export const handleRowSelectorClick = (
   rowLabel,
   wellArrays,
@@ -64,22 +110,23 @@ export const handleRowSelectorClick = (
   handleDeselectWell
 ) => {
   const wellsInRow = wellArrays.filter((well) => well.key.startsWith(rowLabel));
+  const selectedWellIds = selectedWellArray.map((well) => well.id); // Extract selected well IDs
+
   const allSelected = wellsInRow.every((well) =>
-    selectedWellArray.includes(well)
+    selectedWellIds.includes(well.id)
   );
 
   if (allSelected) {
-    wellsInRow.forEach((well) => handleDeselectWell(well));
+    wellsInRow.forEach((well) => handleDeselectWell(well.id)); // Deselect by ID
   } else {
     wellsInRow.forEach((well) => {
-      if (!selectedWellArray.includes(well)) {
-        handleSelectWell(well);
+      if (!selectedWellIds.includes(well.id)) {
+        handleSelectWell(well); // Select the well
       }
     });
   }
 };
 
-// Handle selecting a column of wells
 export const handleColumnSelectorClick = (
   colIndex,
   wellArrays,
@@ -88,16 +135,18 @@ export const handleColumnSelectorClick = (
   handleDeselectWell
 ) => {
   const wellsInCol = wellArrays.filter((well) => well.column + 1 === colIndex);
+  const selectedWellIds = selectedWellArray.map((well) => well.id); // Extract selected well IDs
+
   const allSelected = wellsInCol.every((well) =>
-    selectedWellArray.includes(well)
+    selectedWellIds.includes(well.id)
   );
 
   if (allSelected) {
-    wellsInCol.forEach((well) => handleDeselectWell(well));
+    wellsInCol.forEach((well) => handleDeselectWell(well.id)); // Deselect by ID
   } else {
     wellsInCol.forEach((well) => {
-      if (!selectedWellArray.includes(well)) {
-        handleSelectWell(well);
+      if (!selectedWellIds.includes(well.id)) {
+        handleSelectWell(well); // Select the well
       }
     });
   }

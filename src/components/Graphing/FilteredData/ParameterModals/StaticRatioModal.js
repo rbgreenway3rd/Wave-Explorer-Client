@@ -52,7 +52,7 @@ export const StaticRatioModal = ({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={onSave}>Save</Button>
+        <Button onClick={onSave}>Confirm</Button>
       </DialogActions>
     </Dialog>
   );

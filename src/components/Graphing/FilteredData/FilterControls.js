@@ -518,7 +518,7 @@ export const FilterControls = ({
                   ? "filter-controls__filter-item--highlighted"
                   : ""
               }`}
-              sx={{ display: "flex", alignItems: "center", gap: 1 }}
+              sx={{ display: "flex", alignItems: "center", gap: 1, padding: 0 }}
             >
               <FormControlLabel
                 control={
@@ -537,7 +537,7 @@ export const FilterControls = ({
                   cursor: "pointer",
                   fontWeight:
                     highlightedFilter.id === filter.id ? "bold" : "normal",
-                  fontSize: "0.75em",
+                  fontSize: "0.6em",
                   backgroundColor:
                     highlightedFilter.id === filter.id
                       ? "yellow"
@@ -557,7 +557,7 @@ export const FilterControls = ({
                   onClick={() => filter.editParams()}
                   sx={{ ml: 0, padding: 0, borderRadius: 100 }}
                 >
-                  <EditIcon sx={{ fontSize: 15 }} />
+                  <EditIcon sx={{ fontSize: 13 }} />
                 </IconButton>
               )}
             </ListItem>

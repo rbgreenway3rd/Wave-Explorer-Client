@@ -30,6 +30,8 @@ background: rgb(50, 50, 50);    display: grid;
     background: rgb(0, 0, 0);
     justify-self: center;
     align-self: center;
+    justify-content: center;
+    align-content: center;
 }
 
 .minigraph-and-controls__minigraph-canvas:hover {
@@ -41,11 +43,11 @@ background: rgb(50, 50, 50);    display: grid;
     position: relative;
     border: solid 1px black;
     display: grid;
-    grid-area: minigraph-and-controls__minigraph-grid;
+    /* grid-area: minigraph-and-controls__minigraph-grid;
     grid-column: 2 / span 1;
     grid-row: 2 / span 1;
     grid-template-columns: repeat(24, 1fr);
-    grid-template-rows: repeat(16, 1fr);
+    grid-template-rows: repeat(16, 1fr); */
     gap: 0;
     box-sizing: border-box;
      /* max-width: 100%;
@@ -60,8 +62,8 @@ background: rgb(50, 50, 50);    display: grid;
 }
 
 .minigraph-and-controls__all-selector {
-    grid-area: minigraph-and-controls__all-selector;
-    display: flex;
+    /* grid-area: minigraph-and-controls__all-selector; */
+    /* display: flex; */
 }
 
 .minigraph-and-controls__all-button {
@@ -73,24 +75,27 @@ background: rgb(50, 50, 50);    display: grid;
     /* flex: 1 0 auto; Make sure flexbox properties don't interfere */
     width: 100%;
     height: 100%;
-    padding: 0;
+    
 }
 
 .minigraph-and-controls__column-selectors {
-    grid-column: 2 / span 1;
+    display: flex;
+    flex-direction: row;
+    /* grid-column: 2 / span 1;
     grid-row: 1 / span 1;
-    display: grid;
-    grid-template-columns: repeat(24, 1fr);
+    display: grid; */
+    /* grid-template-columns: repeat(24, 1fr); */
     gap: 0;
     /* padding-right: 1em; */
 }
 
 .minigraph-and-controls__row-selectors {
-    grid-column: 1 / span 1;
-    grid-row: 2 / span 1;
-    display: grid;
-    grid-template-rows: repeat(16, 1fr);
-   
+    /* grid-column: 1 / span 1; */
+    /* grid-row: 2 / span 1; */
+    /* display: grid; */
+    /* grid-template-rows: repeat(16, 1fr); */
+   display: flex;
+   flex-direction: column;
 
 }
 

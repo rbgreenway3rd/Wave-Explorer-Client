@@ -286,15 +286,23 @@ export const ControlSubtractionModal = ({
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          height: "100vh",
+          // justifyContent: "space-between",
+          // height: "100vh",
           width: largeCanvasWidth + smallCanvasWidth || "80vw",
           padding: 0,
         }}
       >
-        <h4 style={{ margin: 0, marginBottom: "0.2em", fontSize: "0.8em" }}>
-          Select Control Wells
-        </h4>
         <div style={{ position: "relative", marginBottom: "0.25em" }}>
+          <h4
+            style={{
+              margin: 0,
+              marginBottom: "0.2em",
+              marginTop: "0.2em",
+              fontSize: "0.8em",
+            }}
+          >
+            Select Control Wells
+          </h4>
           <ControlDragSelection
             selectableTargets={".control-cell"}
             selectionProps={{ boundingElement: "control-grid" }}
@@ -307,10 +315,10 @@ export const ControlSubtractionModal = ({
           />
         </div>
 
-        <h4 style={{ margin: 0, marginBottom: "0.2em", fontSize: "0.8em" }}>
-          Select Apply Wells
-        </h4>
         <div style={{ position: "relative" }}>
+          <h4 style={{ margin: 0, marginBottom: "0.2em", fontSize: "0.8em" }}>
+            Select Apply Wells
+          </h4>
           <ApplyDragSelection
             selectableTargets={".apply-cell"}
             selectionProps={{ boundingElement: "apply-grid" }}
@@ -328,13 +336,13 @@ export const ControlSubtractionModal = ({
         sx={{
           display: "flex",
           justifyContent: "space-between",
-          width: "100%",
+          // width: "100%",
         }}
       >
         <Button onClick={clearSelections}>Clear</Button>
         <div>
           <Button onClick={onClose}>Cancel</Button>
-          <Button onClick={onSave}>Save</Button>
+          <Button onClick={onSave}>Confirm</Button>
         </div>
       </DialogActions>
     </Dialog>

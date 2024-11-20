@@ -185,15 +185,7 @@ export const MetricsControls = ({
           <BookmarkAddTwoToneIcon />
           Save Metric
         </Button>
-        <section
-          className="saved-metrics-list"
-          style={{
-            width: "95%",
-            position: "relative",
-            display: "flex",
-            alignSelf: "center",
-          }}
-        >
+        <section className="saved-metrics-list" style={{}}>
           {/* Dropdown Label */}
           <Typography
             variant="body1"
@@ -245,7 +237,7 @@ export const MetricsControls = ({
             ))
           ) : (
             <Typography
-              style={{ padding: "8px", color: "#888", textAlign: "center" }}
+              style={{ padding: 0, color: "#888", textAlign: "center" }}
             >
               No Saved Metrics
             </Typography>

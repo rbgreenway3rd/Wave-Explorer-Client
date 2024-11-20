@@ -46,8 +46,10 @@ export const MiniGraphOptions = (
       : 100;
   return {
     normalized: true,
-    maintainAspectRatio: false,
-    responsive: false,
+    maintainAspectRatio: true,
+    responsive: true,
+    devicePixelRatio: window.devicePixelRatio || 1, // Match screen pixel density
+
     spanGaps: false,
     events: ["onHover"],
     animation: {
@@ -73,7 +75,7 @@ export const MiniGraphOptions = (
         radius: 0,
       },
       line: {
-        borderWidth: 1.2,
+        borderWidth: 1.5,
       },
     },
     layout: {
@@ -86,8 +88,10 @@ export const MiniGraphOptions = (
     scales: {
       x: {
         type: "time",
-        min: Math.min(...extractedIndicatorTimes["Green"]),
-        max: Math.max(...extractedIndicatorTimes["Green"]),
+        min: Math.min(extractedIndicatorTimes[0]),
+        max: Math.max(extractedIndicatorTimes[0]),
+        // min: Math.min(...extractedIndicatorTimes[0]),
+        // max: Math.max(...extractedIndicatorTimes[0]),
         // min: minXValue,
         // max: maxXValue,
         ticks: {

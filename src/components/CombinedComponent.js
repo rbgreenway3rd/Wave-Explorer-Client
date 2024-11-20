@@ -281,8 +281,9 @@ export const CombinedComponent = () => {
   ];
 
   // Preparing graph data for raw and filtered graphs, using color differentiation for each indicator
+  let indicatorTimes = Object.values(extractedIndicatorTimes);
   const rawGraphData = {
-    labels: extractedIndicatorTimes.Green, // Adjust based on your indicator-specific times
+    labels: indicatorTimes[0], // Adjust based on your indicator-specific times
     datasets: selectedWellArray.flatMap((well, wellIndex) =>
       well.indicators
         // .filter((indicator) => indicator.isDisplayed)
@@ -298,7 +299,7 @@ export const CombinedComponent = () => {
   };
 
   const filteredGraphData = {
-    labels: extractedIndicatorTimes.Green, // Adjust based on your indicator-specific times
+    labels: indicatorTimes[0], // Adjust based on your indicator-specific times
     datasets: selectedWellArray.flatMap((well, wellIndex) =>
       well.indicators
         // .filter((indicator) => indicator.isDisplayed)
@@ -312,6 +313,11 @@ export const CombinedComponent = () => {
         }))
     ),
   };
+
+  useEffect(() => {
+    console.log(rawGraphData);
+    console.log(indicatorTimes[0]);
+  }, [rawGraphData]);
 
   // Configuration objects for graph options
   const largeGraphConfig = LargeGraphOptions(

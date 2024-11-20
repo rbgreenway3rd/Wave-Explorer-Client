@@ -29,7 +29,7 @@ export const OutlierRemovalFilterModal = ({
 }) => {
   return (
     <Dialog open={open} onClose={onClose}>
-      <DialogTitle>Edit Outlier Removal "half window" Parameter</DialogTitle>
+      <DialogTitle>Edit "half window" Parameter</DialogTitle>
       <DialogContent>
         <TextField
           autoFocus
@@ -42,7 +42,7 @@ export const OutlierRemovalFilterModal = ({
           inputProps={{ min: 1, max: 10 }} // Enforce allowed range
         />
       </DialogContent>
-      <DialogTitle>Edit Outlier Removal "threshold" Parameter</DialogTitle>
+      <DialogTitle>Edit "threshold" Parameter</DialogTitle>
       <DialogContent>
         <TextField
           autoFocus
@@ -57,7 +57,7 @@ export const OutlierRemovalFilterModal = ({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={onSave}>Save</Button>
+        <Button onClick={onSave}>Confirm</Button>
       </DialogActions>
     </Dialog>
   );
