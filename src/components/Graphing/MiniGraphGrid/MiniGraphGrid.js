@@ -28,6 +28,8 @@ export const MiniGraphGrid = ({
   extractedIndicatorTimes,
   smallCanvasWidth,
   smallCanvasHeight,
+  largeCanvasWidth,
+  largeCanvasHeight,
   columnLabels,
   rowLabels,
 }) => {
@@ -58,29 +60,26 @@ export const MiniGraphGrid = ({
   const [availableHeight, setAvailableHeight] = useState(
     window.innerHeight / 2.3
   );
+  // Fixed button dimensions
+  const buttonHeight = 40; // Height of row buttons
+  const buttonWidth = 80; // Width of column buttons
 
   // Parent container dimensions (e.g., from the parent layout or window)
-  const parentWidth = window.innerWidth / 2.3;
-  const parentHeight = window.innerHeight / 2.3;
-
-  // Fixed button dimensions
-  const buttonHeight = 50; // Height of row buttons
-  const buttonWidth = 100; // Width of column buttons
+  // const parentWidth = largeCanvasWidth;
+  // const parentHeight = largeCanvasHeight;
+  const parentWidth = availableWidth - buttonWidth;
+  const parentHeight = availableHeight - buttonHeight;
 
   // Dynamically calculate grid dimensions
 
-  const gridWidth = availableWidth - buttonWidth; // Deduct column button area
-  const gridHeight = availableHeight - buttonHeight; // Deduct row + "all" button area
+  const gridWidth = availableWidth - buttonWidth / 4; // Deduct column button area
+  const gridHeight = availableHeight - buttonHeight / 2; // Deduct row + "all" button area
 
   const cellWidth = gridWidth / numColumns;
   const cellHeight = gridHeight / numRows;
   // Dynamically calculate available grid space
   const availableGridWidth = parentWidth - buttonWidth; // Remaining width for the grid
   const availableGridHeight = parentHeight - buttonHeight; // Remaining height for the grid
-
-  // Ensure buttons retain their size relative to cellWidth
-  const buttonAdjustedWidth = cellWidth / 2;
-  const buttonAdjustedHeight = cellHeight / 2;
 
   // Update available dimensions on window resize
   const handleResize = () => {
@@ -237,7 +236,8 @@ export const MiniGraphGrid = ({
       analysisData,
       extractedIndicatorTimes,
       wellArrays,
-      yValues
+      yValues,
+      showFiltered
     );
   }, [
     analysisData,
@@ -261,61 +261,68 @@ export const MiniGraphGrid = ({
     <>
       {isRenderingComplete ? (
         <div
-          className="minigraph-and-controls__minigraph-container"
-          // style={{ height: largeCanvasHeight, width: largeCanvasWidth }}
+          className="minigraph-container"
           style={{
-            width: parentWidth,
-            height: parentHeight,
             display: "grid",
-            gridTemplateRows: `${buttonHeight}px auto`, // Row for buttons + grid
-            gridTemplateColumns: `${buttonWidth}px auto`, // Column for buttons + grid
+            gridTemplateColumns: `${buttonWidth} 10fr`,
+            gridTemplateRows: `${buttonHeight} 10fr`,
+            // width: parentWidth,
+            // height: parentHeight,
+            maxWidth: `calc(${parentWidth})`, // Adjust for parent's border (0.5em * 2)
+            maxHeight: `calc(${parentHeight})`, // Adjust for parent's border (0.5em * 2)
+            boxSizing: "border-box", // Ensures the padding and border are included in the container's size
           }}
         >
-          <button
-            id="allButton"
-            className="minigraph-and-controls__all-button"
-            style={{
-              width: buttonWidth,
-              height: buttonHeight,
-              // width: cellWidth / 2,
-              // height: cellHeight / 2,
-              // width: buttonAdjustedWidth,
-              // height: buttonAdjustedHeight,
-            }}
-            onClick={() =>
-              handleAllSelectorClick(
-                wellArrays,
-                selectedWellArray,
-                handleSelectWell,
-                handleClearSelectedWells
-              )
-            }
-          >
-            all
-          </button>
+          {/* "All" button (Top-left cell) */}
           <div
-            className="minigraph-and-controls__column-selectors"
+            className="minigraph-all-button-container"
             style={{
-              // width: "100%",
-              // height: smallCanvasHeight,
-              // height: cellHeight,
-              // width: cellWidth,
-              width: availableGridWidth,
-              height: buttonHeight,
+              gridRow: "1 / 2",
+              gridColumn: "1 / 2",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              maxWidth: buttonWidth / 4,
+            }}
+          >
+            <button
+              id="allButton"
+              style={{
+                width: buttonWidth / 4,
+                height: buttonHeight / 2,
+                alignItems: "center",
+                padding: 0,
+              }}
+              onClick={() =>
+                handleAllSelectorClick(
+                  wellArrays,
+                  selectedWellArray,
+                  handleSelectWell,
+                  handleClearSelectedWells
+                )
+              }
+            >
+              all
+            </button>
+          </div>
+
+          {/* Column selection buttons (Top-right nested grid) */}
+          <div
+            className="minigraph-column-buttons-container"
+            style={{
+              gridRow: "1 / 2",
+              gridColumn: "2 / 3",
+              display: "grid",
+              gridTemplateColumns: `repeat(${numColumns}, ${cellWidth}px)`,
+              justifyContent: "start",
             }}
           >
             {columnLabels.map((columnLabel) => (
               <button
-                id="columnButton"
-                className="minigraph-and-controls__column-button"
                 key={columnLabel}
                 style={{
-                  display: "flex",
-                  // width: "100%",
-                  width: buttonAdjustedWidth,
-                  // height: smallCanvasHeight,
-                  justifyContent: "center",
-                  justifySelf: "center",
+                  width: cellWidth, // Match canvas width
+                  height: buttonHeight / 2, // Half canvas height
                 }}
                 onClick={() =>
                   handleColumnSelectorClick(
@@ -331,27 +338,27 @@ export const MiniGraphGrid = ({
               </button>
             ))}
           </div>
+
+          {/* Row selection buttons (Bottom-left column) */}
           <div
-            className="minigraph-and-controls__row-selectors"
+            className="minigraph-row-buttons-container"
             style={{
-              // width: "100%",
-              maxWidth: buttonWidth,
-              height: "100%",
-              // height: cellHeight,
+              gridRow: "2 / 3",
+              gridColumn: "1 / 2",
+              display: "grid",
+              gridTemplateRows: `repeat(${numRows}, ${cellHeight}px)`,
+              justifyContent: "center",
+              maxWidth: buttonWidth / 4,
             }}
           >
             {rowLabels.map((rowLabel) => (
               <button
-                id="rowButton"
-                className="minigraph-and-controls__row-button"
                 key={rowLabel}
                 style={{
-                  // width: { smallCanvasWidth },
-                  // height: { smallCanvasHeight },
-                  // width: "100%",
-                  // height: "100%",
-                  height: cellHeight,
-                  width: buttonWidth,
+                  width: buttonWidth / 4, // Match the 'all' button width
+                  height: cellHeight, // Match canvas height
+                  textAlign: "center",
+                  padding: 0,
                 }}
                 onClick={() =>
                   handleRowSelectorClick(
@@ -367,102 +374,78 @@ export const MiniGraphGrid = ({
               </button>
             ))}
           </div>
+
+          {/* Minigraph canvases (Bottom-right nested grid) */}
           <div
-            className="minigraph-and-controls__minigraph-grid"
-            ref={gridRef} // Assign the ref to the grid container
+            className="minigraph-canvas-grid"
             style={{
-              // height: largeCanvasHeight,
-              // width: largeCanvasWidth,
-              overflow: "hidden", // Prevent the drag selector from going outside the grid
+              gridRow: "2 / 3",
+              gridColumn: "2 / 3",
+              display: "grid",
+              gridTemplateColumns: `repeat(${numColumns}, ${cellWidth}px)`,
+              gridTemplateRows: `repeat(${numRows}, ${cellHeight}px)`,
+              // width: gridWidth,
+              // height: gridHeight,
+              width: availableGridWidth,
+              height: availableGridHeight,
+              gap: 0,
             }}
           >
-            {/* DragSelection is absolutely positioned and won't interfere with grid layout */}
-            <DragSelection
-              selectableTargets={".minigraph-and-controls__minigraph-canvas"}
-              onSelectionChange={handleSelectionChange}
-              selectionProps={{
-                // boundingElement: ".minigraph-and-controls__minigraph-grid", // Limits selection to grid bounds
-                boundingElement: "container", // Limits selection to grid bounds
-                // boundingElement:
-                //   ".minigraph-and-controls__minigraph-container", // Limits selection to grid bounds
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                pointerEvents: "none", // Prevent this container from interfering with clicks
-                zIndex: 900000, // prevents seleciton box from being drawn behind canvases
-              }}
-            />
-            <div
-              className="container"
-              style={{
-                display: "grid",
-                gridTemplateRows: `repeat(${numRows}, ${cellHeight}px)`,
-                gridTemplateColumns: `repeat(${numColumns}, ${cellWidth}px)`,
-                width: gridWidth,
-                height: gridHeight,
-              }}
-            >
-              {wellArrays?.length > 0 &&
-                wellArrays.map((well) => (
-                  <Line
-                    type="line"
-                    id="minigraphCanvas"
-                    className="minigraph-and-controls__minigraph-canvas"
-                    data-well-id={well.id}
-                    style={
-                      selectedWellArray?.some(
-                        (selectedWell) => selectedWell.id === well.id
-                      )
-                        ? {
-                            border: "solid 0.1em yellow",
-                            zIndex: 10,
-                            // width: "95%",
-                            // height: "95%",
-                            width: "100%",
-                            height: "100%",
-                            maxWidth: cellWidth,
-                            maxHeight: cellHeight,
-                          } // styling for selected wells
-                        : {
-                            zIndex: 10,
-                            // width: "95%",
-                            // height: "95%",
-                            width: "100%",
-                            height: "100%",
-                            maxWidth: cellWidth,
-                            maxHeight: cellHeight,
-                          } // styling for un-selected wells
-                    }
-                    // key={well.id}
-                    key={well.id}
-                    data={{
-                      datasets: well.indicators
-                        // .filter((indicator) => indicator.isDisplayed)
-                        .map((indicator, indIndex) => ({
-                          label: `${well.label} - Indicator ${indIndex + 1}`, // Label for each indicator
-                          data: indicator.rawData,
-                          fill: false,
-                          borderColor:
-                            indicatorColors[indIndex % indicatorColors.length], // Cycle colors
-                          tension: 0.1,
-                          hidden: !indicator.isDisplayed,
-                        })),
-                    }}
-                    // width={smallCanvasWidth}
-                    // height={smallCanvasHeight}
-                    options={minigraphOptions}
-                    onClick={() => handleWellClick(well.id)}
-                  />
-                ))}
-            </div>
+            {wellArrays?.length > 0 &&
+              wellArrays.map((well) => (
+                <Line
+                  type="line"
+                  id="minigraphCanvas"
+                  className="minigraph-and-controls__minigraph-canvas"
+                  data-well-id={well.id}
+                  style={
+                    selectedWellArray?.some(
+                      (selectedWell) => selectedWell.id === well.id
+                    )
+                      ? {
+                          border: "solid 0.1em yellow",
+                          zIndex: 10,
+                          // width: "95%",
+                          // height: "95%",
+                          width: "100%",
+                          height: "100%",
+                          maxWidth: cellWidth,
+                          maxHeight: cellHeight,
+                        } // styling for selected wells
+                      : {
+                          zIndex: 10,
+                          // width: "95%",
+                          // height: "95%",
+                          width: "100%",
+                          height: "100%",
+                          maxWidth: cellWidth,
+                          maxHeight: cellHeight,
+                        } // styling for un-selected wells
+                  }
+                  // key={well.id}
+                  key={well.id}
+                  data={{
+                    datasets: well.indicators
+                      // .filter((indicator) => indicator.isDisplayed)
+                      .map((indicator, indIndex) => ({
+                        label: `${well.label} - Indicator ${indIndex + 1}`, // Label for each indicator
+                        data: showFiltered
+                          ? indicator.filteredData
+                          : indicator.rawData,
+                        fill: false,
+                        borderColor:
+                          indicatorColors[indIndex % indicatorColors.length], // Cycle colors
+                        tension: 0.1,
+                        hidden: !indicator.isDisplayed,
+                      })),
+                  }}
+                  // width={smallCanvasWidth}
+                  // height={smallCanvasHeight}
+                  options={minigraphOptions}
+                  onClick={() => handleWellClick(well.id)}
+                />
+              ))}
           </div>
-          {/* </div> */}
         </div>
       ) : (
         <DotWaveLoader className="dotwave-loader" />
@@ -472,6 +455,7 @@ export const MiniGraphGrid = ({
 };
 
 export default memo(MiniGraphGrid);
+
 // import React, {
 //   memo,
 //   useMemo,

@@ -6,7 +6,8 @@ export const MiniGraphOptions = (
   analysisData,
   extractedIndicatorTimes,
   wellArrays,
-  yValues
+  yValues,
+  showFiltered
 ) => {
   let indicatorTimes = Object.values(extractedIndicatorTimes);
 
@@ -15,7 +16,9 @@ export const MiniGraphOptions = (
       (well) =>
         well.indicators
           .filter((indicator) => indicator.isDisplayed) // Only include displayed indicators
-          .flatMap((indicator) => indicator.rawData ?? []) // Access rawData for each displayed indicator
+          .flatMap((indicator) =>
+            showFiltered ? indicator.filteredData : indicator.rawData ?? []
+          ) // Access rawData for each displayed indicator
     )
     .map((point) => point.y); // Extract the y values from each point
 

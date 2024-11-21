@@ -349,7 +349,7 @@ export const CombinedComponent = () => {
   // Render the component
   return (
     <div className="combined-component">
-      <NavBar />
+      {/* <NavBar /> */}
       {/* File uploader to upload project data */}
       {/* <FileUploader setWellArraysUpdated={setWellArraysUpdated} /> */}
       <div className="combined-component__main-container">

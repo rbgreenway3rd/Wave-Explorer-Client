@@ -2,18 +2,26 @@
     /* padding-left: 0.25em; */
     /* padding-right: 0.25em; */
    background-color: gray;
+   /* height: 100vh; */
    height: 100vh;
+   justify-content: center;
+   /* align-content: center; */
+   overflow: auto;
+   
 }
 
 .combined-component__main-container {
     padding-left: 0.25em;
     padding-right: 0.25em;
+    padding-bottom: 0.5em;
     background-color: gray;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    /* align-items: center; */
+    align-self: center;
+    /* height: 95vh */
     
-    height: 95vh
+    
 }
 
 .combined-component__no-data {
@@ -28,6 +36,7 @@
     /* border-bottom: 0.5em solid #808080; */
     /* gap: 1em;  */
     /* Space between elements */
+    
 }
 
 .combined-component__minigraph-header {
@@ -97,6 +106,7 @@
     /* border-bottom: 0.5em solid gray; */
     /* gap: 1em; */
      /* Space between elements */
+     
 }
 
 .combined-component__metrics-header {
@@ -111,7 +121,7 @@
     /* padding-right: 0.25em; */
     align-items: center;
     justify-content: center;
-    border: solid 0.25em rgb(50, 50, 50);
+    border: solid 0.35em rgb(50, 50, 50);
     padding-top: 0.25em;
     padding-left: 0.25em;
     padding-right: 0.25em;
@@ -138,6 +148,9 @@
     grid-column: 3;
     grid-row: 2;
     /* margin-left: 0.5em; */
+    justify-content: center;
+    align-content: center;
+    background-color: black;
 }
 
 .combined-component__filter-controls {
