@@ -2,6 +2,9 @@ import React, { useContext, useState } from "react";
 import BookmarkAddTwoToneIcon from "@mui/icons-material/BookmarkAddTwoTone";
 import DisabledByDefaultTwoToneIcon from "@mui/icons-material/DisabledByDefaultTwoTone";
 import DeleteIcon from "@mui/icons-material/Delete";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
+import DeleteForeverTwoToneIcon from "@mui/icons-material/DeleteForeverTwoTone";
 import { DataContext } from "../../../providers/DataProvider";
 import { keyframes } from "@mui/system";
 import {
@@ -41,7 +44,7 @@ export const MetricsControls = ({
 }) => {
   const { savedMetrics, setSavedMetrics, extractedIndicators } =
     useContext(DataContext);
-  const [selectedMetricType, setSelectedMetricType] = useState("maxYValue");
+  const [selectedMetricType, setSelectedMetricType] = useState("max");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const [isAnimating, setIsAnimating] = useState(false);
@@ -128,6 +131,15 @@ export const MetricsControls = ({
   return (
     <div className="metrics__controls-container">
       <div className="metrics__management">
+        <Button
+          variant="contained"
+          color="primary"
+          className="save-metric-button"
+          onClick={handleSaveMetric}
+        >
+          <BookmarkAddTwoToneIcon />
+          Save Metric
+        </Button>
         <FormControl component="fieldset" className="metrics__radio-container">
           <FormLabel component="legend">Indicator</FormLabel>
           <RadioGroup
@@ -158,16 +170,8 @@ export const MetricsControls = ({
             onChange={handleMetricChange}
             row
           >
-            <FormControlLabel
-              value="maxYValue"
-              control={<Radio />}
-              label="Max"
-            />
-            <FormControlLabel
-              value="minYValue"
-              control={<Radio />}
-              label="Min"
-            />
+            <FormControlLabel value="max" control={<Radio />} label="Max" />
+            <FormControlLabel value="min" control={<Radio />} label="Min" />
             <FormControlLabel value="slope" control={<Radio />} label="Slope" />
             <FormControlLabel
               value="rangeOfYValues"
@@ -176,75 +180,105 @@ export const MetricsControls = ({
             />
           </RadioGroup>
         </FormControl>
-        <Button
+        {/* <Button
           variant="contained"
           color="primary"
           className="save-metric-button"
           onClick={handleSaveMetric}
-        >
+          >
           <BookmarkAddTwoToneIcon />
           Save Metric
-        </Button>
-        <section className="saved-metrics-list" style={{}}>
-          {/* Dropdown Label */}
-          <Typography
-            variant="body1"
-            htmlFor="saved-metrics"
-            style={{
-              display: "block",
-              textAlign: "center",
-              position: "sticky",
-              top: 0,
-              background: "rgb(180,180,180)", // MidGrey
-              borderBottom: "solid 0.1em white",
-              zIndex: 100,
-            }}
-          >
-            Saved Metrics
-          </Typography>
-          {savedMetrics.length > 0 ? (
-            savedMetrics.map((metric) => (
-              <ListItem
-                key={metric.id}
-                onClick={() => {
-                  // setSelectedMetricType(metric); // Update selected metric
-                  handleSelectMetric(metric);
-                  setIsDropdownOpen(false); // Close dropdown after selection
-                }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  padding: 0,
-                  cursor: "pointer",
-                  borderBottom: "1px solid #eee",
-                }}
-              >
-                <Typography style={{ fontSize: "0.75em" }}>
-                  {metric.metricType === "rangeOfYValues"
-                    ? "Max-Min"
-                    : metric.metricType}
-                </Typography>
-                <IconButton
-                  size="small"
-                  onClick={(e) => {
-                    e.stopPropagation(); // Prevent click from selecting the metric
-                    handleDeleteMetric(metric.id);
-                  }}
-                >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
-              </ListItem>
-            ))
-          ) : (
-            <Typography
-              style={{ padding: 0, color: "#888", textAlign: "center" }}
-            >
-              No Saved Metrics
-            </Typography>
-          )}
-        </section>
+          </Button> */}
       </div>
       <Button
+        // className="metrics-controls__reset-annotations"
+        className={`metrics-controls__reset-annotations ${
+          isAnimating ? "animate-line" : ""
+        }`}
+        variant="outlined"
+        color="primary"
+        style={{ marginTop: "0.25em" }}
+        // onClick={handleResetAnnotations}
+        // onClick={handleClick}
+        onClick={handleResetAnnotations}
+        onAnimationEnd={() => setIsAnimating(false)} // Reset animation state
+        disableRipple
+      >
+        <DisabledByDefaultTwoToneIcon />
+        Clear Range
+      </Button>
+      <section className="saved-metrics-list" style={{ marginTop: "0.25em" }}>
+        {/* Dropdown Label */}
+        <Typography
+          // variant="body1"
+          htmlFor="saved-metrics"
+          style={{
+            // display: "block",
+            textAlign: "center",
+            position: "sticky",
+            top: 0,
+            background: "rgb(180,180,180)", // MidGrey
+            borderBottom: "solid 0.1em white",
+            zIndex: 100,
+            fontSize: "0.8em",
+            fontWeight: "bold",
+            textDecoration: "underline",
+          }}
+        >
+          Saved Metrics:
+        </Typography>
+        {savedMetrics.length > 0 ? (
+          savedMetrics.map((metric) => (
+            <ListItem
+              key={metric.id}
+              onClick={() => {
+                // setSelectedMetricType(metric); // Update selected metric
+                handleSelectMetric(metric);
+                setIsDropdownOpen(false); // Close dropdown after selection
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                padding: 0,
+                cursor: "pointer",
+                borderBottom: "1px solid #eee",
+              }}
+            >
+              <Typography style={{ fontSize: "0.75em" }}>
+                {metric.metricType === "rangeOfYValues"
+                  ? "Max-Min"
+                  : metric.metricType}
+              </Typography>
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent click from selecting the metric
+                  handleDeleteMetric(metric.id);
+                }}
+              >
+                <DeleteForeverTwoToneIcon
+                  sx={{
+                    fontSize: 15,
+                  }}
+                />
+              </IconButton>
+            </ListItem>
+          ))
+        ) : (
+          <Typography
+            style={{
+              padding: 0,
+              color: "#888",
+              textAlign: "center",
+              fontSize: "0.7em",
+            }}
+          >
+            No Saved Metrics
+          </Typography>
+        )}
+      </section>
+      {/* </div> */}
+      {/* <Button
         // className="metrics-controls__reset-annotations"
         className={`metrics-controls__reset-annotations ${
           isAnimating ? "animate-line" : ""
@@ -259,7 +293,7 @@ export const MetricsControls = ({
       >
         <DisabledByDefaultTwoToneIcon />
         Clear Range
-      </Button>
+      </Button> */}
     </div>
   );
 };

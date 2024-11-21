@@ -14,7 +14,7 @@ function App() {
       <DataProvider>
         {/* <NavBar /> */}
         <ThemeProvider theme={theme}>
-          <NavBar />
+          {/* <NavBar /> */}
           <CombinedComponent />
         </ThemeProvider>
       </DataProvider>

@@ -29,10 +29,10 @@ import { StaticRatioModal } from "./ParameterModals/StaticRatioModal";
 import { ControlSubtractionModal } from "./ParameterModals/ControlSubtractionModal";
 import { OutlierRemovalFilterModal } from "./ParameterModals/OutlierRemovalModal";
 import { FlatFieldCorrectionModal } from "./ParameterModals/FlatFieldCorrectionModal";
+import { DynamicRatioModal } from "./ParameterModals/DynamicRatioModal";
 import {
   StaticRatio_Filter,
   DynamicRatio_Filter,
-  Div_Filter,
   Smoothing_Filter,
   ControlSubtraction_Filter,
   Derivative_Filter,
@@ -87,6 +87,9 @@ export const FilterControls = ({
   const [threshold, setThreshold] = useState(3);
   // state for flat field correction filter params
   const [correctionMatrix, setCorrectionMatrix] = useState([]);
+  // state for dynamic ratio filter params
+  const [numerator, setNumerator] = useState(null);
+  const [denominator, setDenominator] = useState(null);
 
   // state for drawer - collapsing controls
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -164,6 +167,18 @@ export const FilterControls = ({
     setOpenDialog(true);
   };
 
+  const handleEditDynamicRatioFilterParams = (
+    numerator,
+    denominator,
+    setParams
+  ) => {
+    setNumerator(numerator);
+    setDenominator(denominator);
+    setCurrentFilter({ setParams });
+    setEditModalType("dynamicRatioFilter");
+    setOpenDialog(true);
+  };
+
   const handleSaveParams = () => {
     // Save logic depending on the filter type
     if (editModalType === "staticRatio") {
@@ -176,15 +191,11 @@ export const FilterControls = ({
       currentFilter.setParams(halfWindow, threshold);
     } else if (editModalType === "flatFieldCorrectionFilter") {
       currentFilter.setParams(correctionMatrix);
+    } else if (editModalType === "dynamicRatioFilter") {
+      currentFilter.setParams(numerator, denominator);
     }
-
     setOpenDialog(false);
   };
-
-  // const handleSaveParams = () => {
-  //   currentFilter.setParams(startValue, endValue);
-  //   setOpenDialog(false);
-  // };
 
   useEffect(() => {
     console.log("Updated selectedFilters: ", selectedFilters);
@@ -359,9 +370,14 @@ export const FilterControls = ({
       );
       console.log(newFlatFieldCorrectionFilter);
       setSelectedFilters([...selectedFilters, newFlatFieldCorrectionFilter]);
+    } else if (selectedValue === "dynamicRatio") {
+      const newDynamicRatioFilter = new DynamicRatio_Filter(
+        selectedFilters.length,
+        handleEditDynamicRatioFilterParams
+      );
+      console.log(newDynamicRatioFilter);
+      setSelectedFilters([...selectedFilters, newDynamicRatioFilter]);
     }
-
-    // Apply the list of selected filters
   };
 
   // handle radio button check in filter selection modal
@@ -419,6 +435,13 @@ export const FilterControls = ({
         );
         newFlatFieldCorrectionFilter.setParams(filter.correctionMatrix);
         newFilters.push(newFlatFieldCorrectionFilter);
+      } else if (filter.name === "Dynamic Ratio") {
+        const newDynamicRatioFilter = new DynamicRatio_Filter(
+          selectedFilters.length,
+          handleEditDynamicRatioFilterParams
+        );
+        newDynamicRatioFilter.setParams(filter.numerator, filter.denominator);
+        newFilters.push(newDynamicRatioFilter);
       }
       return newFilters;
     });
@@ -549,17 +572,19 @@ export const FilterControls = ({
               </Typography>
 
               {/* Edit Params Button */}
-              {filter.name !== "Derivative" && (
-                <IconButton
-                  className="filter-controls__edit-button"
-                  variant="outlined"
-                  size="small"
-                  onClick={() => filter.editParams()}
-                  sx={{ ml: 0, padding: 0, borderRadius: 100 }}
-                >
-                  <EditIcon sx={{ fontSize: 13 }} />
-                </IconButton>
-              )}
+              {/* {filter.name !== "Derivative" && ( */}
+              <IconButton
+                className="filter-controls__edit-button"
+                variant="outlined"
+                size="small"
+                onClick={() => filter.editParams()}
+                sx={{ ml: 0, padding: 0, borderRadius: 100 }}
+                disabled={filter.name === "Derivative"}
+              >
+                <EditIcon sx={{ fontSize: 13, padding: 0, margin: 0 }} />
+              </IconButton>
+              {/* )
+              } */}
             </ListItem>
           ))
         ) : (
@@ -614,6 +639,11 @@ export const FilterControls = ({
                 id: "flat-field-correction-filter",
                 label: "Flat Field Correction",
                 value: "flatFieldCorrection",
+              },
+              {
+                id: "dynamic-ratio-filter",
+                label: "Dynamic Ratio",
+                value: "dynamicRatio",
               },
             ].map(({ id, label, value }) => (
               <Box
@@ -710,6 +740,17 @@ export const FilterControls = ({
           onClose={() => setOpenDialog(false)}
           correctionMatrix={correctionMatrix}
           setCorrectionMatrix={setCorrectionMatrix}
+          onSave={handleSaveParams}
+        />
+      )}
+      {editModalType === "dynamicRatioFilter" && (
+        <DynamicRatioModal
+          open={openDialog}
+          onClose={() => setOpenDialog(false)}
+          numerator={numerator}
+          setNumerator={setNumerator}
+          denominator={denominator}
+          setDenominator={setDenominator}
           onSave={handleSaveParams}
         />
       )}

@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { DataContext } from "../../../providers/DataProvider";
 import DisabledByDefaultTwoToneIcon from "@mui/icons-material/DisabledByDefaultTwoTone";
 import {
@@ -29,6 +29,13 @@ export const MiniGraphControls = ({
   } = useContext(DataContext);
   console.log(extractedIndicators);
 
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  const handleClickClearSelectedWells = async () => {
+    await setIsAnimating(true);
+    handleClearSelectedWells();
+  };
+
   return (
     <div className="minigraph-and-controls__controls-container">
       {/* Show Raw or Filtered data radio buttons */}
@@ -53,30 +60,34 @@ export const MiniGraphControls = ({
       </div>
 
       {/* Visibility section with checkboxes for each unique indicator type */}
-      <div className="minigraph-and-controls__visibility">
-        <FormControl component="fieldset">
-          <FormLabel component="legend">Visibility</FormLabel>
-          {extractedIndicators.map((indicator) => (
-            <FormControlLabel
-              key={indicator.id}
-              control={
-                <Checkbox
-                  defaultChecked
-                  onChange={() => handleToggleVisibility(indicator.id)}
-                />
-              }
-              label={indicator.indicatorName}
-            />
-          ))}
-        </FormControl>
-      </div>
+      {/* <div className="minigraph-and-controls__visibility"> */}
+      <FormControl component="fieldset">
+        <FormLabel component="legend">Indicator</FormLabel>
+        {extractedIndicators.map((indicator) => (
+          <FormControlLabel
+            key={indicator.id}
+            control={
+              <Checkbox
+                defaultChecked
+                onChange={() => handleToggleVisibility(indicator.id)}
+              />
+            }
+            label={indicator.indicatorName}
+          />
+        ))}
+      </FormControl>
+      {/* </div> */}
 
       {/* Clear Selections button */}
       <Button
         variant="outlined"
         color="primary"
-        className="clear-selections-button"
-        onClick={() => handleClearSelectedWells()}
+        className={`clear-selections-button ${
+          isAnimating ? "animate-line" : ""
+        }`}
+        onClick={() => handleClickClearSelectedWells()}
+        onAnimationEnd={() => setIsAnimating(false)} // Reset animation state
+        disableRipple
       >
         <DisabledByDefaultTwoToneIcon />
         Clear Selections

@@ -1,4 +1,6 @@
 import { createTheme } from "@mui/material/styles";
+import { borderRadius } from "@mui/system";
+import { color } from "chart.js/helpers";
 
 export const theme = createTheme({
   palette: {
@@ -46,6 +48,7 @@ export const theme = createTheme({
             backgroundColor: "#e3f2fd", // Light background on hover
             borderColor: "#1565c0", // Darker border on hover
           },
+          fontSize: "0.75rem",
         },
         text: {
           color: "#1976d2", // Primary text color for text button
@@ -53,24 +56,31 @@ export const theme = createTheme({
             backgroundColor: "rgba(25, 118, 210, 0.08)", // Light background on hover
           },
         },
-        // // Custom variant
-        // primary: {
-        //   backgroundColor: "#f50057",
-        //   color: "#fff",
-        //   fontWeight: "bold",
-        //   //   textTransform: "uppercase", // Uppercase text
-        //   padding: "8px 20px",
-        //   borderRadius: "12px",
-        //   "&:hover": {
-        //     backgroundColor: "#c51162", // Darker background color on hover
-        //   },
-        // },
       },
     },
-
+    MuiIconButton: {
+      styleOverrides: {
+        root: {
+          padding: 0,
+        },
+      },
+    },
+    MuiTypography: {
+      styleOverrides: {
+        root: {
+          fontSize: "inherit",
+        },
+      },
+    },
     MuiRadio: {
       styleOverrides: {
-        root: { padding: 0 },
+        root: {
+          padding: 0,
+          "& .MuiSvgIcon-root": {},
+          "&.Mui-checked .MuiSvgIcon-root": {
+            color: "black",
+          },
+        },
       },
     },
 
@@ -79,21 +89,38 @@ export const theme = createTheme({
         root: { padding: 0 },
       },
     },
-    MuiFormControlLabel: {
+    MuiFormControl: {
       styleOverrides: {
-        root: { padding: 0, margin: 0 },
+        root: {
+          // border: "solid 1px black",
+          backgroundColor: "rgb(160,160,160)",
+          width: "100%",
+        },
       },
     },
-    // MuiInputLabel: {
-    //   variants: [
-    //     {
-    //       props: { variant: "headerVariant" },
-    //       style: {
-    //         // padding: 0,
-    //       },
-    //     },
-    //   ],
-    // },
+    MuiFormControlLabel: {
+      styleOverrides: {
+        root: {
+          padding: 0,
+          margin: 0,
+          fontSize: "0.7em",
+          borderBottom: "1px solid #eee",
+          backgroundColor: "rgb(180,180,180)",
+          // border: "solid 1px black",
+          // border: "solid 1px rgb(160,160,160)",
+          borderTop: "none",
+        },
+      },
+    },
+    MuiFormLabel: {
+      styleOverrides: {
+        root: {
+          fontSize: "0.85em",
+          backgroundColor: "rgb(160,160,160)",
+          width: "100%",
+        },
+      },
+    },
     MuiSelect: {
       styleOverrides: {
         // root: { padding: 0 },
@@ -103,6 +130,15 @@ export const theme = createTheme({
     MuiFormGroup: {
       styleOverrides: {
         root: { display: "flex", flexDirection: "column" },
+      },
+    },
+    MuiListItem: {
+      styleOverrides: {
+        root: {
+          borderBottom: "1px solid #eee",
+          backgroundColor: "rgb(180,180,180)",
+          justifyContent: "space-between",
+        },
       },
     },
   },

@@ -170,20 +170,18 @@ const Heatmap = ({
         );
       }
 
-      const maxYValue =
-        heatmapData.length > 0 ? d3.max(heatmapData, (d) => d.y) : 0;
-      const minYValue =
-        heatmapData.length > 0 ? d3.min(heatmapData, (d) => d.y) : 0;
-      const rangeOfYValues = maxYValue - minYValue;
+      const max = heatmapData.length > 0 ? d3.max(heatmapData, (d) => d.y) : 0;
+      const min = heatmapData.length > 0 ? d3.min(heatmapData, (d) => d.y) : 0;
+      const rangeOfYValues = max - min;
 
       // Calculate slope using the memoized function
       const slope = calculateSlope(heatmapData);
 
       const activeMetric =
-        metricType === "maxYValue"
-          ? maxYValue
-          : metricType === "minYValue"
-          ? minYValue
+        metricType === "max"
+          ? max
+          : metricType === "min"
+          ? min
           : metricType === "slope"
           ? slope
           : rangeOfYValues;
@@ -260,20 +258,18 @@ const Heatmap = ({
         );
       }
 
-      const maxYValue =
-        heatmapData.length > 0 ? d3.max(heatmapData, (d) => d.y) : 0;
-      const minYValue =
-        heatmapData.length > 0 ? d3.min(heatmapData, (d) => d.y) : 0;
+      const max = heatmapData.length > 0 ? d3.max(heatmapData, (d) => d.y) : 0;
+      const min = heatmapData.length > 0 ? d3.min(heatmapData, (d) => d.y) : 0;
       const slope = heatmapData.length > 0 ? linearRegression(heatmapData) : 0;
 
-      const rangeOfYValues = maxYValue - minYValue;
+      const rangeOfYValues = max - min;
 
       // Determine the active metric for the tooltip based on metricType
       const activeMetric =
-        metricType === "maxYValue"
-          ? maxYValue
-          : metricType === "minYValue"
-          ? minYValue
+        metricType === "max"
+          ? max
+          : metricType === "min"
+          ? min
           : metricType === "slope"
           ? slope
           : rangeOfYValues;

@@ -25,8 +25,8 @@ export const NavBar = () => {
       </section>
       <section className="navbar-middle">
         {/* Display the file name */}
-        {file && <Typography>file name: {file.name}</Typography>}
-        {project && <Typography>project: {project.title}</Typography>}
+        {/* {file && <Typography>file name: {file.name}</Typography>} */}
+        {project && <Typography>Project: {project.title}</Typography>}
       </section>
       <section className="navbar-right">
         <img

@@ -417,3 +417,69 @@ export class FlatFieldCorrection_Filter {
     }
   }
 }
+
+export class DynamicRatio_Filter {
+  constructor(num, onEdit) {
+    this.id = "dynamicRatio_" + JSON.stringify(num);
+    this.name = "Dynamic Ratio";
+    this.desc =
+      "Divides the values from the designated 'Numerator' indicator by the corresponding values from the designated 'Denominator' indicator";
+    this.isEnabled = false;
+    this.numerator = null;
+    this.denominator = null;
+    this.onEdit = onEdit;
+  }
+
+  setEnabled(value) {
+    this.isEnabled = value;
+  }
+
+  editParams() {
+    if (this.onEdit) {
+      this.onEdit(this.numerator, this.denominator, this.setParams.bind(this));
+    }
+  }
+
+  setParams(numerator, denominator) {
+    this.numerator = numerator;
+    this.denominator = denominator;
+  }
+
+  execute(data) {
+    for (let w = 0; w < data.length; w++) {
+      const numeratorData = data[w].indicators[this.numerator].filteredData;
+      const denominatorData = data[w].indicators[this.denominator].filteredData;
+
+      // Ensure both arrays are the same length by copying the last entry
+      while (numeratorData.length < denominatorData.length) {
+        numeratorData.push({ ...numeratorData[numeratorData.length - 1] });
+      }
+      while (denominatorData.length < numeratorData.length) {
+        denominatorData.push({
+          ...denominatorData[denominatorData.length - 1],
+        });
+      }
+
+      const resultData = [];
+
+      // Perform the division
+      for (let j = 0; j < numeratorData.length; j++) {
+        if (denominatorData[j].y === 0 || denominatorData[j].y === undefined) {
+          console.warn(
+            `Division by zero or invalid denominator data at well ${w}, index ${j}. Skipping this data point.`
+          );
+          continue; // Skip this data point
+        }
+
+        resultData.push({
+          x: numeratorData[j].x,
+          y: numeratorData[j].y / denominatorData[j].y,
+        });
+      }
+
+      // Set both indicators' filteredData to the result
+      data[w].indicators[this.numerator].filteredData = resultData;
+      data[w].indicators[this.denominator].filteredData = resultData;
+    }
+  }
+}

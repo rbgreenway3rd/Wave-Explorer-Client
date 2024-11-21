@@ -18,3 +18,27 @@
     bottom: 0;
     right: 0
 }
+
+.clear-selections-button.animate-line::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px; /* line width */
+  height: 100%;
+  transform-origin: left;
+  background-color: green;
+  animation: slide-line 0.5s ease-in-out ;
+}
+
+@keyframes slide-line {
+  0% {
+    transform: translateX(0%); /* start */
+  }
+  50% {
+    transform: translateX(2000%); /* midpoint */
+  }
+  100% {
+    transform: translateX(-100%); /* end */
+  }
+}
