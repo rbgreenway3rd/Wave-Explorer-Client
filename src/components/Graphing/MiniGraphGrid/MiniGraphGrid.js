@@ -22,6 +22,7 @@ import {
   boxesIntersect,
 } from "@air/react-drag-to-select";
 import DotWaveLoader from "../../../assets/animations/DotWaveLoader";
+import * as d3 from "d3";
 
 export const MiniGraphGrid = ({
   analysisData,
@@ -49,12 +50,6 @@ export const MiniGraphGrid = ({
   const numRows = rowLabels.length;
   const numColumns = columnLabels.length;
 
-  // State for grid and cell dimensions
-  // const [gridWidth, setGridWidth] = useState(window.innerWidth / 2.3);
-  // const [gridHeight, setGridHeight] = useState(window.innerHeight / 2.3);
-
-  // const cellWidth = gridWidth / numColumns;
-  // const cellHeight = gridHeight / numRows;
   // State for grid and cell dimensions, accounting for button areas
   const [availableWidth, setAvailableWidth] = useState(window.innerWidth / 2.3);
   const [availableHeight, setAvailableHeight] = useState(
@@ -65,13 +60,10 @@ export const MiniGraphGrid = ({
   const buttonWidth = 80; // Width of column buttons
 
   // Parent container dimensions (e.g., from the parent layout or window)
-  // const parentWidth = largeCanvasWidth;
-  // const parentHeight = largeCanvasHeight;
   const parentWidth = availableWidth - buttonWidth;
   const parentHeight = availableHeight - buttonHeight;
 
   // Dynamically calculate grid dimensions
-
   const gridWidth = availableWidth - buttonWidth / 4; // Deduct column button area
   const gridHeight = availableHeight - buttonHeight / 2; // Deduct row + "all" button area
 
@@ -130,6 +122,7 @@ export const MiniGraphGrid = ({
 
   // Handle selection change to track selected wells during drag
   const handleSelectionChange = (box) => {
+    console.log("handle selection change");
     // Adjust box coordinates for scrolling
     const scrollAwareBox = {
       ...box,
@@ -140,15 +133,17 @@ export const MiniGraphGrid = ({
     const newSelectedIndexes = []; // Array to store new selected indexes
 
     // Check which selectable items intersect with the selection box
-    selectableItems.current.forEach((item, index) => {
+    selectableItems.current.forEach((item) => {
       if (boxesIntersect(scrollAwareBox, item)) {
-        newSelectedIndexes.push(index); // Add the index of the intersecting item
+        newSelectedIndexes.push(item.index); // Add the index of the intersecting item
       }
     });
 
     // Store the newly selected indexes in the ref for later use
     selectedIndexes.current = newSelectedIndexes;
   };
+
+  console.log(selectableItems.current);
 
   // Handle selection end to finalize selected wells
   const handleSelectionEnd = () => {
@@ -175,21 +170,37 @@ export const MiniGraphGrid = ({
     selectedIndexes.current = [];
   };
 
-  const updateSelectableItems = () => {
-    selectableItems.current = []; // Reset selectable items
-    if (gridRef.current) {
-      const gridChildren = Array.from(
-        gridRef.current.querySelectorAll(
-          ".minigraph-and-controls__minigraph-canvas"
-        )
-      );
+  // NEW
+  useEffect(() => {
+    console.log("Selectable items:", selectableItems.current);
+  }, [selectableItems]);
 
-      gridChildren.forEach((child) => {
-        const { left, top, width, height } = child.getBoundingClientRect(); // Get bounding rect
-        selectableItems.current.push({ left, top, width, height });
+  const updateSelectableItems = () => {
+    selectableItems.current = [];
+    if (gridRef.current) {
+      Array.from(gridRef.current.children).forEach((child, index) => {
+        const { left, top, width, height } = child.getBoundingClientRect();
+        selectableItems.current.push({ left, top, width, height, index }); // Add index to track wells
       });
     }
   };
+  // NEW ^
+
+  // const updateSelectableItems = () => {
+  //   selectableItems.current = []; // Reset selectable items
+  //   if (gridRef.current) {
+  //     console.log("updatedSelectableItems: ", selectableItems);
+  //     const gridChildren = Array.from(
+  //       gridRef.current.querySelectorAll(
+  //         ".minigraph-and-controls__minigraph-canvas"
+  //       )
+  //     );
+  //     gridChildren.forEach((child) => {
+  //       const { left, top, width, height } = child.getBoundingClientRect(); // Get bounding rect
+  //       selectableItems.current.push({ left, top, width, height });
+  //     });
+  //   }
+  // };
 
   useEffect(() => {
     if (isRenderingComplete && gridRef.current) {
@@ -199,6 +210,7 @@ export const MiniGraphGrid = ({
 
   // Capture the bounding boxes of wells
   useEffect(() => {
+    console.log("update", selectableItems);
     updateSelectableItems(); // Initial update of selectable items
     window.addEventListener("resize", updateSelectableItems); // Re-capture on window resize
 
@@ -206,12 +218,16 @@ export const MiniGraphGrid = ({
   }, [wellArrays]); // Run effect when wellArrays changes
 
   // controls whether useSelectionContainer fires or not
+  // const shouldStartSelecting = (target) => {
+  //   // Check if the click originated from the grid container
+  //   if (gridRef.current && gridRef.current.contains(target)) {
+  //     return true; // Allow selection to start
+  //   }
+  //   return false; // Prevent selection from starting
+  // };
   const shouldStartSelecting = (target) => {
-    // Check if the click originated from the grid container
-    if (gridRef.current && gridRef.current.contains(target)) {
-      return true; // Allow selection to start
-    }
-    return false; // Prevent selection from starting
+    // Ensure the target is inside the gridRef
+    return gridRef.current && gridRef.current.contains(target);
   };
 
   // Setup drag selection container
@@ -224,7 +240,7 @@ export const MiniGraphGrid = ({
         borderRadius: 0, // Rounded corners for the box
         backgroundColor: "rgb(75, 192, 192)", // Background color for the selection box
         opacity: 0.4, // Opacity for the selection box
-        zIndex: 9999,
+        zIndex: 99999,
       },
     },
     isEnabled: true,
@@ -375,9 +391,33 @@ export const MiniGraphGrid = ({
             ))}
           </div>
 
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              // position: "relative",
+              width: "100%",
+              height: "100%",
+              pointerEvents: "none", // Prevent this container from interfering with clicks
+              zIndex: 99999, // prevents seleciton box from being drawn behind canvases
+            }}
+          >
+            <DragSelection
+              selectableTargets={".minigraph-and-controls__minigraph-canvas"}
+              onSelectionChange={handleSelectionChange}
+              selectionProps={{
+                // boundingElement: ".minigraph-and-controls__minigraph-grid", // Limits selection to grid bounds
+                boundingElement: ".minigraph-container", // Limits selection to grid bounds
+              }}
+            />
+          </div>
           {/* Minigraph canvases (Bottom-right nested grid) */}
           <div
             className="minigraph-canvas-grid"
+            ref={gridRef}
             style={{
               gridRow: "2 / 3",
               gridColumn: "2 / 3",
@@ -664,6 +704,7 @@ export default memo(MiniGraphGrid);
 //         borderRadius: 0, // Rounded corners for the box
 //         backgroundColor: "rgb(75, 192, 192)", // Background color for the selection box
 //         opacity: 0.4, // Opacity for the selection box
+//         zIndex: 99999,
 //       },
 //     },
 //     isEnabled: true,
