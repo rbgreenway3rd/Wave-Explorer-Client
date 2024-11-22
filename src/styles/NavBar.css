@@ -1,5 +1,6 @@
 .navbar-container {
-    background-color: lightgrey;
+    /* background-color: lightgrey; */
+    background-image: linear-gradient(grey, lightgrey, grey);
     /* background-color: grey; */
     /* padding: 0.25em; */
     padding-left: 0.5rem;

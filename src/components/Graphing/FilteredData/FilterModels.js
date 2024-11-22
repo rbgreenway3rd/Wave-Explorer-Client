@@ -425,8 +425,8 @@ export class DynamicRatio_Filter {
     this.desc =
       "Divides the values from the designated 'Numerator' indicator by the corresponding values from the designated 'Denominator' indicator";
     this.isEnabled = false;
-    this.numerator = null;
-    this.denominator = null;
+    this.numerator = 0;
+    this.denominator = 1;
     this.onEdit = onEdit;
   }
 

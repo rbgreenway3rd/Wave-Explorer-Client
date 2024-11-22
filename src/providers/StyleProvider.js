@@ -31,14 +31,19 @@ export const theme = createTheme({
           lineHeight: 1.25,
           letterSpacing: 0,
           borderRadius: 0,
+          boxShadow: "none",
         },
         contained: {
-          backgroundColor: "#1976d2", // Primary color for contained button
+          // backgroundColor: "#1976d2", // Primary color for contained button
           color: "#fff", // White text for contained button
           "&:hover": {
             backgroundColor: "#1565c0", // Darker shade for hover
           },
-          fontSize: "0.75rem",
+          fontSize: "0.65rem",
+          justifyContent: "center",
+          backgroundImage:
+            "linear-gradient(-180deg, rgb(96, 127, 190) 0%, rgb(0,32,96) 100%)",
+          boxShadow: "none",
         },
         outlined: {
           borderColor: "#1976d2", // Primary color for outlined button border
@@ -49,6 +54,9 @@ export const theme = createTheme({
             borderColor: "#1565c0", // Darker border on hover
           },
           fontSize: "0.75rem",
+          textAlign: "center",
+          alignContent: "center",
+          minWidth: "none",
         },
         text: {
           color: "#1976d2", // Primary text color for text button
@@ -104,7 +112,7 @@ export const theme = createTheme({
           padding: 0,
           margin: 0,
           fontSize: "0.7em",
-          borderBottom: "1px solid #eee",
+          // borderBottom: "1px solid #eee",
           backgroundColor: "rgb(180,180,180)",
           // border: "solid 1px black",
           // border: "solid 1px rgb(160,160,160)",
@@ -136,8 +144,12 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           borderBottom: "1px solid #eee",
+
           backgroundColor: "rgb(180,180,180)",
+          display: "flex",
           justifyContent: "space-between",
+          alignItems: "center",
+          padding: 0,
         },
       },
     },

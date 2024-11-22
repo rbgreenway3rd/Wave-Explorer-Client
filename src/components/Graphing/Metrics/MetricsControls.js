@@ -130,16 +130,16 @@ export const MetricsControls = ({
 
   return (
     <div className="metrics__controls-container">
+      <Button
+        variant="contained"
+        color="primary"
+        className="save-metric-button"
+        onClick={handleSaveMetric}
+      >
+        <BookmarkAddTwoToneIcon />
+        Save Metric
+      </Button>
       <div className="metrics__management">
-        <Button
-          variant="contained"
-          color="primary"
-          className="save-metric-button"
-          onClick={handleSaveMetric}
-        >
-          <BookmarkAddTwoToneIcon />
-          Save Metric
-        </Button>
         <FormControl component="fieldset" className="metrics__radio-container">
           <FormLabel component="legend">Indicator</FormLabel>
           <RadioGroup
@@ -197,7 +197,8 @@ export const MetricsControls = ({
         }`}
         variant="outlined"
         color="primary"
-        style={{ marginTop: "0.25em" }}
+        // style={{ marginTop: "0.25em" }}
+
         // onClick={handleResetAnnotations}
         // onClick={handleClick}
         onClick={handleResetAnnotations}
@@ -267,6 +268,7 @@ export const MetricsControls = ({
         ) : (
           <Typography
             style={{
+              display: "flex",
               padding: 0,
               color: "#888",
               textAlign: "center",

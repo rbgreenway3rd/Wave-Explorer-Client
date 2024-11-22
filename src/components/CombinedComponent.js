@@ -357,7 +357,10 @@ export const CombinedComponent = () => {
           <>
             {/* Main graphing section */}
             <section className="combined-component__wave-container">
-              <header className="combined-component__minigraph-header">
+              <header
+                style={{ fontWeight: "bold" }}
+                className="combined-component__minigraph-header"
+              >
                 All Waves
               </header>
               <div
@@ -415,7 +418,10 @@ export const CombinedComponent = () => {
                   handleToggleVisibility={handleToggleVisibility}
                 />
               </div>
-              <header className="combined-component__large-graph-header">
+              <header
+                style={{ fontWeight: "bold" }}
+                className="combined-component__large-graph-header"
+              >
                 Raw Waves
               </header>
               <div className="combined-component__large-graph">
@@ -446,7 +452,10 @@ export const CombinedComponent = () => {
 
             {/* Metrics and filtering section */}
             <section className="combined-component__metrics-filter-container">
-              <header className="combined-component__metrics-header">
+              <header
+                style={{ fontWeight: "bold" }}
+                className="combined-component__metrics-header"
+              >
                 Metrics
               </header>
               <div className="combined-component__metrics">
@@ -481,7 +490,10 @@ export const CombinedComponent = () => {
                   setAnnotationRangeEnd={setAnnotationRangeEnd}
                 />
               </div>
-              <header className="combined-component__filters-header">
+              <header
+                style={{ fontWeight: "bold" }}
+                className="combined-component__filters-header"
+              >
                 Filtered Waves
               </header>
               <div className="combined-component__filtered-graph">

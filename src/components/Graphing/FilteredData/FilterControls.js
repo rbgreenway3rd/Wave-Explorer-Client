@@ -88,8 +88,8 @@ export const FilterControls = ({
   // state for flat field correction filter params
   const [correctionMatrix, setCorrectionMatrix] = useState([]);
   // state for dynamic ratio filter params
-  const [numerator, setNumerator] = useState(null);
-  const [denominator, setDenominator] = useState(null);
+  const [numerator, setNumerator] = useState(0);
+  const [denominator, setDenominator] = useState(1);
 
   // state for drawer - collapsing controls
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -464,64 +464,59 @@ export const FilterControls = ({
         Apply Filters
       </Button>
 
-      <Box
-        className="filter-controls__selection-controls"
-        sx={{
-          display: "flex",
-          flexDirection: "row",
-          // gap: 1
-        }}
-      >
-        {/* Modal Trigger for Adding Filters */}
-        <IconButton
-          className="filter-controls__add-filter-button"
-          onClick={handleOpen}
-          variant="outlined"
-          color="primary"
-          sx={{ padding: 0, margin: 0 }}
-        >
-          {/* <AddCircleIcon /> */}
-          {/* <AddCircleOutlineIcon /> */}
-          <AddCircleTwoToneIcon />
-        </IconButton>
+      <section className="filter-controls__selection-controls">
+        <div className="selection-controls-group">
+          {/* Modal Trigger for Adding Filters */}
+          <button
+            className="selection-controls-button"
+            onClick={handleOpen}
+            // variant="outlined"
+            // sx={{ padding: 0, margin: 0 }}
+          >
+            {/* <AddCircleIcon /> */}
+            {/* <AddCircleOutlineIcon /> */}
+            <AddCircleTwoToneIcon sx={{ padding: 0, margin: 0 }} />
+          </button>
 
-        {/* Order Up Button */}
-        <IconButton
-          className="filter-controls__order-up-button"
-          onClick={handleChangeFilterOrderUp}
-          variant="outlined"
-          sx={{ padding: 0, margin: 0 }}
-        >
-          <ArrowUpwardIcon />
-        </IconButton>
-      </Box>
+          {/* Order Up Button */}
+          <button
+            className="selection-controls-button"
+            onClick={handleChangeFilterOrderUp}
+            // variant="outlined"
+            // sx={{ padding: 0, margin: 0, maxWidth: "50%" }}
+          >
+            <ArrowUpwardIcon sx={{ padding: 0, margin: 0 }} />
+          </button>
+        </div>
 
-      <Box
+        {/* <Box
         className="filter-controls__selection-controls"
         sx={{ display: "flex", flexDirection: "row" }}
-      >
+        > */}
         {/* Remove Filter Button */}
-        <IconButton
-          className="filter-controls__remove-filter-button"
-          onClick={handleRemoveHighlightedFilter}
-          variant="outlined"
-          color="error"
-          sx={{ padding: 0, margin: 0 }}
-        >
-          {/* <RemoveCircleOutlineIcon /> */}
-          <RemoveCircleTwoTone />
-        </IconButton>
+        <div className="selection-controls-group">
+          <button
+            className="selection-controls-button"
+            onClick={handleRemoveHighlightedFilter}
+            // variant="outlined"
+            // sx={{ padding: 0, margin: 0, maxWidth: "50%" }}
+          >
+            {/* <RemoveCircleOutlineIcon /> */}
+            <RemoveCircleTwoTone />
+          </button>
 
-        {/* Order Down Button */}
-        <IconButton
-          className="filter-controls__order-down-button"
-          onClick={handleChangeFilterOrderDown}
-          variant="outlined"
-          sx={{ padding: 0, margin: 0 }}
-        >
-          <ArrowDownwardIcon />
-        </IconButton>
-      </Box>
+          {/* Order Down Button */}
+          <button
+            className="selection-controls-button"
+            onClick={handleChangeFilterOrderDown}
+            // variant="outlined"
+            // sx={{ padding: 0, margin: 0, maxWidth: "50%" }}
+          >
+            <ArrowDownwardIcon />
+          </button>
+          {/* </Box> */}
+        </div>
+      </section>
 
       {/* Selected Filters List */}
       <section className="filter-controls__selected-filters">
@@ -541,7 +536,6 @@ export const FilterControls = ({
                   ? "filter-controls__filter-item--highlighted"
                   : ""
               }`}
-              sx={{ display: "flex", alignItems: "center", gap: 1, padding: 0 }}
             >
               <FormControlLabel
                 control={
@@ -557,6 +551,7 @@ export const FilterControls = ({
                 className="filter-controls__filter-name"
                 variant="body1"
                 sx={{
+                  textAlign: "center",
                   cursor: "pointer",
                   fontWeight:
                     highlightedFilter.id === filter.id ? "bold" : "normal",

@@ -9,6 +9,7 @@ import {
   Typography,
   FormControl,
 } from "@mui/material";
+import FitScreenTwoToneIcon from "@mui/icons-material/FitScreenTwoTone";
 import "../../../styles/LargeGraphControls.css";
 
 Chart.register(zoomPlugin);
@@ -46,11 +47,19 @@ export const LargeGraphControls = ({
                 defaultValue="zoomXY"
                 onChange={(e) => changeZoomMode(e.target.value)}
               >
-                <FormControlLabel value="zoomX" control={<Radio />} label="X" />
-                <FormControlLabel value="zoomY" control={<Radio />} label="Y" />
+                <FormControlLabel
+                  value="zoomX"
+                  control={<Radio disabled={!zoomState} />}
+                  label="X"
+                />
+                <FormControlLabel
+                  value="zoomY"
+                  control={<Radio disabled={!zoomState} />}
+                  label="Y"
+                />
                 <FormControlLabel
                   value="zoomXY"
-                  control={<Radio />}
+                  control={<Radio disabled={!zoomState} />}
                   label="X-Y"
                 />
               </RadioGroup>
@@ -78,11 +87,19 @@ export const LargeGraphControls = ({
                 defaultValue="panXY"
                 onChange={(e) => changePanMode(e.target.value)}
               >
-                <FormControlLabel value="panX" control={<Radio />} label="X" />
-                <FormControlLabel value="panY" control={<Radio />} label="Y" />
+                <FormControlLabel
+                  value="panX"
+                  control={<Radio disabled={!panState} />}
+                  label="X"
+                />
+                <FormControlLabel
+                  value="panY"
+                  control={<Radio disabled={!panState} />}
+                  label="Y"
+                />
                 <FormControlLabel
                   value="panXY"
-                  control={<Radio />}
+                  control={<Radio disabled={!panState} />}
                   label="X-Y"
                 />
               </RadioGroup>
@@ -92,10 +109,10 @@ export const LargeGraphControls = ({
       </section>
       <Button
         className="reset-zoom-button"
-        variant="contained"
-        color="secondary"
+        variant="outlined"
         onClick={resetZoom}
       >
+        <FitScreenTwoToneIcon />
         Reset Zoom
       </Button>
     </div>
