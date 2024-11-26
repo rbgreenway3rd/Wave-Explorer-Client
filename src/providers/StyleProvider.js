@@ -46,6 +46,7 @@ export const theme = createTheme({
           boxShadow: "none",
         },
         outlined: {
+          display: "flex",
           borderColor: "#1976d2", // Primary color for outlined button border
           backgroundColor: "#B4B4B4",
           color: "#1976d2", // Text color for outlined button
@@ -56,6 +57,8 @@ export const theme = createTheme({
           fontSize: "0.75rem",
           textAlign: "center",
           alignContent: "center",
+          alignItems: "center",
+          alignSelf: "center",
           minWidth: "none",
         },
         text: {
@@ -76,7 +79,14 @@ export const theme = createTheme({
     MuiTypography: {
       styleOverrides: {
         root: {
+          display: "flex",
           fontSize: "inherit",
+          textAlign: "center",
+          alignContent: "center",
+          alignItems: "center",
+          alignSelf: "center",
+          justifyContent: "center",
+          align: "center",
         },
       },
     },
@@ -86,7 +96,10 @@ export const theme = createTheme({
           padding: 0,
           "& .MuiSvgIcon-root": {},
           "&.Mui-checked .MuiSvgIcon-root": {
-            color: "black",
+            color: "rgb(0,32,96)",
+            backgroundImage:
+              "radial-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
+            borderRadius: "50%",
           },
         },
       },
@@ -94,7 +107,7 @@ export const theme = createTheme({
 
     MuiCheckbox: {
       styleOverrides: {
-        root: { padding: 0 },
+        root: { padding: 0, "&.Mui-checked": { color: "rgb(0,32,96, 0.85)" } },
       },
     },
     MuiFormControl: {
@@ -112,8 +125,8 @@ export const theme = createTheme({
           padding: 0,
           margin: 0,
           fontSize: "0.7em",
-          // borderBottom: "1px solid #eee",
-          backgroundColor: "rgb(180,180,180)",
+          borderBottom: "1px solid rgb(160,160,160)",
+          backgroundColor: "rgb(180,180,180, 0.7)",
           // border: "solid 1px black",
           // border: "solid 1px rgb(160,160,160)",
           borderTop: "none",
@@ -150,6 +163,13 @@ export const theme = createTheme({
           justifyContent: "space-between",
           alignItems: "center",
           padding: 0,
+        },
+      },
+    },
+    MuiBox: {
+      styleOverrides: {
+        root: {
+          width: "auto",
         },
       },
     },

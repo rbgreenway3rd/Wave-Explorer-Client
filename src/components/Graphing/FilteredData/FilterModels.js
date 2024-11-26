@@ -1,8 +1,9 @@
 export class StaticRatio_Filter {
+  static desc = "Static Ratio filter";
   constructor(num, onEdit) {
     this.id = "staticRatio_" + JSON.stringify(num);
     this.name = "Static Ratio";
-    this.desc = "Static Ratio filter";
+    // this.desc = "Static Ratio filter";
     this.isEnabled = false;
     this.start = 0;
     this.end = 5;
@@ -60,10 +61,10 @@ export class StaticRatio_Filter {
 }
 
 export class Smoothing_Filter {
+  static desc = "Applies a moving average filter to smooth the data curve.";
   constructor(num, onEdit) {
     this.id = "smoothingFilter_" + JSON.stringify(num);
     this.name = "Smoothing";
-    this.desc = "Applies a moving average filter to smooth the data curve.";
     this.isEnabled = false;
     this.windowWidth = 5; // Moving window width
     this.onEdit = onEdit;
@@ -121,10 +122,11 @@ export class Smoothing_Filter {
 }
 
 export class ControlSubtraction_Filter {
+  static desc = "Subtracts the average control curve from apply wells.";
   constructor(num, onEdit, number_of_columns, number_of_rows) {
     this.id = "controlSubtraction_" + JSON.stringify(num);
     this.name = "Control Subtraction";
-    this.desc = "Subtracts the average control curve from apply wells.";
+
     this.isEnabled = false;
     this.controlWellArray = []; // list of {row, col} for control wells
     this.applyWellArray = []; // list of {row, col} for apply wells
@@ -239,10 +241,11 @@ export class ControlSubtraction_Filter {
 }
 
 export class Derivative_Filter {
+  static desc = "Derivative Filter";
   constructor(num, onEdit) {
     this.id = "Derivative_" + JSON.stringify(num);
     this.name = "Derivative";
-    this.desc = "Derivative filter";
+
     this.isEnabled = false;
     this.onEdit = onEdit; // Callback to open the modal
   }
@@ -277,10 +280,11 @@ export class Derivative_Filter {
 }
 
 export class OutlierRemoval_Filter {
+  static desc = "Outlier Removal";
   constructor(num, onEdit) {
     this.id = "outlierRemovalFilter_" + JSON.stringify(num);
     this.name = "Outlier Removal";
-    this.desc = "Outlier Removal";
+
     this.isEnabled = false;
     this.halfWindow = 2;
     this.threshold = 3;
@@ -376,10 +380,11 @@ export class OutlierRemoval_Filter {
 }
 
 export class FlatFieldCorrection_Filter {
+  static desc = "Flat Field Correction";
   constructor(num, onEdit) {
     this.id = "flatfieldCorrection_" + JSON.stringify(num);
     this.name = "Flat Field Correction";
-    this.desc = "Flat Field Correction";
+
     this.isEnabled = false;
     this.correctionMatrix = [];
     this.onEdit = onEdit;
@@ -419,11 +424,12 @@ export class FlatFieldCorrection_Filter {
 }
 
 export class DynamicRatio_Filter {
+  static desc =
+    "Divides the values from the designated 'Numerator' indicator by the corresponding values from the designated 'Denominator' indicator";
   constructor(num, onEdit) {
     this.id = "dynamicRatio_" + JSON.stringify(num);
     this.name = "Dynamic Ratio";
-    this.desc =
-      "Divides the values from the designated 'Numerator' indicator by the corresponding values from the designated 'Denominator' indicator";
+
     this.isEnabled = false;
     this.numerator = 0;
     this.denominator = 1;

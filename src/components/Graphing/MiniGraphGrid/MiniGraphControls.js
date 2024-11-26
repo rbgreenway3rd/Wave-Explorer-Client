@@ -9,6 +9,7 @@ import {
   Checkbox,
   FormControl,
   FormLabel,
+  Typography,
 } from "@mui/material";
 import "../../../styles/MiniGraphControls.css";
 
@@ -90,7 +91,7 @@ export const MiniGraphControls = ({
         disableRipple
       >
         <DisabledByDefaultTwoToneIcon />
-        Clear Selections
+        <Typography variant="h1">Clear Selections</Typography>
       </Button>
     </div>
   );

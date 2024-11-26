@@ -44,7 +44,7 @@ export const MetricsControls = ({
 }) => {
   const { savedMetrics, setSavedMetrics, extractedIndicators } =
     useContext(DataContext);
-  const [selectedMetricType, setSelectedMetricType] = useState("max");
+  const [selectedMetricType, setSelectedMetricType] = useState("Max");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const [isAnimating, setIsAnimating] = useState(false);
@@ -102,10 +102,10 @@ export const MetricsControls = ({
     setAnnotations(() => {
       const updatedAnnotation = {
         type: "box",
-        xMax: metric.range ? metric.range[1] : "min",
-        xMin: metric.range ? metric.range[0] : "max",
-        yMin: "min", // chartjs attempts to dynamically calculate min and max
-        yMax: "max",
+        xMax: metric.range ? metric.range[1] : "Min",
+        xMin: metric.range ? metric.range[0] : "Max",
+        yMin: "Min", // chartjs attempts to dynamically calculate Min and Max
+        yMax: "Max",
         backgroundColor: "rgba(0, 255, 0, 0.2)",
         borderColor: "rgba(0, 255, 0, 1)",
         borderWidth: 2,
@@ -170,9 +170,9 @@ export const MetricsControls = ({
             onChange={handleMetricChange}
             row
           >
-            <FormControlLabel value="max" control={<Radio />} label="Max" />
-            <FormControlLabel value="min" control={<Radio />} label="Min" />
-            <FormControlLabel value="slope" control={<Radio />} label="Slope" />
+            <FormControlLabel value="Max" control={<Radio />} label="Max" />
+            <FormControlLabel value="Min" control={<Radio />} label="Min" />
+            <FormControlLabel value="Slope" control={<Radio />} label="Slope" />
             <FormControlLabel
               value="rangeOfYValues"
               control={<Radio />}
@@ -206,7 +206,7 @@ export const MetricsControls = ({
         disableRipple
       >
         <DisabledByDefaultTwoToneIcon />
-        Clear Range
+        <Typography variant="h1">Clear Range</Typography>
       </Button>
       <section className="saved-metrics-list" style={{ marginTop: "0.25em" }}>
         {/* Dropdown Label */}
@@ -260,6 +260,7 @@ export const MetricsControls = ({
                 <DeleteForeverTwoToneIcon
                   sx={{
                     fontSize: 15,
+                    color: "rgb(255,0,0, 0.7)",
                   }}
                 />
               </IconButton>

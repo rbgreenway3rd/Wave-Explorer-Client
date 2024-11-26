@@ -13,8 +13,12 @@ import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import AddCircleTwoToneIcon from "@mui/icons-material/AddCircleTwoTone";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
+import RefreshTwoToneIcon from "@mui/icons-material/RefreshTwoTone";
 import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
+import Tooltip from "@mui/material/Tooltip";
+import HelpTwoToneIcon from "@mui/icons-material/HelpTwoTone";
+import DoneOutlineTwoToneIcon from "@mui/icons-material/DoneOutlineTwoTone";
 
 import { ListItem, Checkbox, Radio, FormControlLabel } from "@mui/material";
 import {
@@ -23,7 +27,7 @@ import {
   RemoveCircleTwoTone,
 } from "@mui/icons-material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import { useState, useEffect, useContext } from "react";
+import { React, useState, useEffect, useContext } from "react";
 import { SmoothingFilterModal } from "./ParameterModals/SmoothingModal";
 import { StaticRatioModal } from "./ParameterModals/StaticRatioModal";
 import { ControlSubtractionModal } from "./ParameterModals/ControlSubtractionModal";
@@ -94,6 +98,9 @@ export const FilterControls = ({
   // state for drawer - collapsing controls
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  // State for controlling visibility of filter description within selection modal
+  const [isDescVisible, setIsDescVisible] = useState(false);
+
   const handleResetAnnotations = () => {
     // Reset the annotationRangeStart and annotationRangeEnd
     setAnnotationRangeStart(null);
@@ -106,13 +113,14 @@ export const FilterControls = ({
     top: "50%",
     left: "50%",
     transform: "translate(-50%, -50%)",
-    width: "80%",
-    maxWidth: 800,
+    // width: "80%",
+    // maxWidth: 800,
     bgcolor: "background.paper",
     border: "2px solid #000",
     boxShadow: 24,
     display: "flex",
     flexDirection: "column",
+    justifyContent: "center",
     p: 2,
   };
 
@@ -453,40 +461,46 @@ export const FilterControls = ({
   }, [uploadedFilters]);
 
   return (
-    <Box className="filter-controls">
+    <div className="filter-controls">
       {/* Apply Filters Button */}
-      <Button
-        className="filter-controls__apply-button"
-        variant="contained"
-        color="primary"
-        onClick={applyEnabledFilters}
+      <Tooltip
+        title="Apply all enabled filters"
+        arrow
+        placement="top"
+        disableInteractive
       >
-        Apply Filters
-      </Button>
+        <Button
+          className="filter-controls__apply-button"
+          variant="contained"
+          color="primary"
+          onClick={applyEnabledFilters}
+        >
+          <RefreshTwoToneIcon />
+          Apply Filters
+        </Button>
+      </Tooltip>
 
       <section className="filter-controls__selection-controls">
         <div className="selection-controls-group">
           {/* Modal Trigger for Adding Filters */}
-          <button
-            className="selection-controls-button"
-            onClick={handleOpen}
-            // variant="outlined"
-            // sx={{ padding: 0, margin: 0 }}
-          >
-            {/* <AddCircleIcon /> */}
-            {/* <AddCircleOutlineIcon /> */}
-            <AddCircleTwoToneIcon sx={{ padding: 0, margin: 0 }} />
-          </button>
+          <Tooltip title="Add a filter" disableInteractive>
+            <button className="selection-controls-button" onClick={handleOpen}>
+              <AddCircleTwoToneIcon
+                sx={{
+                  color: "green",
+                }}
+              />
+            </button>
+          </Tooltip>
 
-          {/* Order Up Button */}
-          <button
-            className="selection-controls-button"
-            onClick={handleChangeFilterOrderUp}
-            // variant="outlined"
-            // sx={{ padding: 0, margin: 0, maxWidth: "50%" }}
-          >
-            <ArrowUpwardIcon sx={{ padding: 0, margin: 0 }} />
-          </button>
+          <Tooltip title="Move filter up" disableInteractive>
+            <button
+              className="selection-controls-button"
+              onClick={handleChangeFilterOrderUp}
+            >
+              <ArrowUpwardIcon />
+            </button>
+          </Tooltip>
         </div>
 
         {/* <Box
@@ -495,25 +509,27 @@ export const FilterControls = ({
         > */}
         {/* Remove Filter Button */}
         <div className="selection-controls-group">
-          <button
-            className="selection-controls-button"
-            onClick={handleRemoveHighlightedFilter}
-            // variant="outlined"
-            // sx={{ padding: 0, margin: 0, maxWidth: "50%" }}
-          >
-            {/* <RemoveCircleOutlineIcon /> */}
-            <RemoveCircleTwoTone />
-          </button>
+          <Tooltip title="Remove highlighted filter" disableInteractive>
+            <button
+              className="selection-controls-button"
+              onClick={handleRemoveHighlightedFilter}
+            >
+              <RemoveCircleTwoTone
+                sx={{
+                  color: "red",
+                }}
+              />
+            </button>
+          </Tooltip>
 
-          {/* Order Down Button */}
-          <button
-            className="selection-controls-button"
-            onClick={handleChangeFilterOrderDown}
-            // variant="outlined"
-            // sx={{ padding: 0, margin: 0, maxWidth: "50%" }}
-          >
-            <ArrowDownwardIcon />
-          </button>
+          <Tooltip title="Move filter down" disableInteractive>
+            <button
+              className="selection-controls-button"
+              onClick={handleChangeFilterOrderDown}
+            >
+              <ArrowDownwardIcon />
+            </button>
+          </Tooltip>
           {/* </Box> */}
         </div>
       </section>
@@ -536,8 +552,20 @@ export const FilterControls = ({
                   ? "filter-controls__filter-item--highlighted"
                   : ""
               }`}
+              sx={{
+                background:
+                  highlightedFilter.id === filter.id
+                    ? "radial-gradient( rgba(255,255,0,1) 10%, rgba(0,0,0,0) 100%)"
+                    : "transparent",
+              }}
             >
               <FormControlLabel
+                sx={{
+                  background:
+                    highlightedFilter.id === filter.id
+                      ? "radial-gradient( rgba(255,255,0,1) 10%, rgba(0,0,0,0) 100%)"
+                      : "transparent",
+                }}
                 control={
                   <Checkbox
                     className="filter-controls__checkbox"
@@ -556,10 +584,12 @@ export const FilterControls = ({
                   fontWeight:
                     highlightedFilter.id === filter.id ? "bold" : "normal",
                   fontSize: "0.6em",
-                  backgroundColor:
-                    highlightedFilter.id === filter.id
-                      ? "yellow"
-                      : "transparent",
+                  // background:
+                  //   highlightedFilter.id === filter.id
+                  //     ? "radial-gradient( rgba(255,255,0,1) 10%, rgba(0,0,0,0) 100%)"
+                  //     : "transparent",
+                  borderRadius: "8px",
+                  padding: "0.25em",
                 }}
                 onClick={() => handleFilterHighlight(filter)}
               >
@@ -583,7 +613,18 @@ export const FilterControls = ({
             </ListItem>
           ))
         ) : (
-          <Typography className="filter-controls__no-filters" variant="body2">
+          <Typography
+            style={{
+              display: "flex",
+              padding: 0,
+              color: "#888",
+              textAlign: "center",
+              fontSize: "0.7em",
+              justifySelf: "center",
+              alignSelf: "center",
+              // height: "100%",
+            }}
+          >
             No filters selected.
           </Typography>
         )}
@@ -594,74 +635,128 @@ export const FilterControls = ({
         className="filter-controls__filter-selection-modal"
         open={open}
         onClose={handleClose}
+        sx={{ display: "flex", justifyContent: "center" }}
       >
         <Box
           className="filter-controls__filter-selection-modal-content"
           sx={modalStyle}
         >
-          <Typography id="modal-modal-title" variant="h6" component="h2">
-            Select Filters
-          </Typography>
-          <Box sx={{ marginTop: 2, display: "flex", flexDirection: "column" }}>
-            {/* Radio Buttons for Filter Selection */}
+          <Typography id="modal-modal-title">Select Filter</Typography>
+          <Box
+            sx={{
+              marginTop: 2,
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
             {[
               {
                 id: "static-ratio",
                 label: "Static Ratio",
                 value: "staticRatio",
+                desc: StaticRatio_Filter.desc,
               },
               {
                 id: "smoothing-filter",
                 label: "Smoothing",
                 value: "smoothingFilter",
+                desc: Smoothing_Filter.desc,
               },
               {
                 id: "control-subtraction-filter",
                 label: "Control Subtraction",
                 value: "controlSubtraction",
+                desc: ControlSubtraction_Filter.desc,
               },
               {
                 id: "derivative-filter",
                 label: "Derivative",
                 value: "derivative",
+                desc: Derivative_Filter.desc,
               },
               {
                 id: "outlier-removal-filter",
                 label: "Outlier Removal",
                 value: "outlierRemoval",
+                desc: OutlierRemoval_Filter.desc,
               },
               {
                 id: "flat-field-correction-filter",
                 label: "Flat Field Correction",
                 value: "flatFieldCorrection",
+                desc: FlatFieldCorrection_Filter.desc,
               },
               {
                 id: "dynamic-ratio-filter",
                 label: "Dynamic Ratio",
                 value: "dynamicRatio",
+                desc: DynamicRatio_Filter.desc,
               },
-            ].map(({ id, label, value }) => (
+            ].map(({ id, label, value, desc }) => (
               <Box
                 key={id}
                 className="filter-controls__filter-radio"
-                sx={{ mb: 1 }}
+                sx={{
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  borderBottom: "0.1em solid grey",
+                  marginBottom: "0.5em",
+                  alignItems: "center",
+                }}
               >
-                <Radio
-                  className="filter-controls__radio-input"
-                  id={id}
-                  value={value}
-                  name="filter-radio"
-                  checked={selectedValue === value}
-                  onChange={handleRadioCheck}
-                />
-                <Typography
-                  className="filter-controls__radio-label"
-                  variant="body2"
-                  component="label"
-                  htmlFor={id}
-                >
-                  {label}
-                </Typography>
+                {/* Radio and Label */}
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Radio
+                    className="filter-controls__radio-input"
+                    id={id}
+                    value={value}
+                    name="filter-radio"
+                    checked={selectedValue === value}
+                    onChange={handleRadioCheck}
+                    sx={{ pr: 1 }}
+                  />
+                  <Typography
+                    className="filter-controls__radio-label"
+                    variant="body2"
+                    component="label"
+                    htmlFor={id}
+                    sx={{ fontWeight: "bold", marginRight: 1 }}
+                  >
+                    {label}
+                  </Typography>
+                </Box>
+
+                {/* Help Icon and Description Box */}
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <HelpTwoToneIcon
+                    sx={{ cursor: "pointer", color: "gray", marginRight: 1 }}
+                    onClick={() =>
+                      setIsDescVisible((current) =>
+                        current === id ? null : id
+                      )
+                    } // Toggle visibility
+                  />
+                  {isDescVisible === id && (
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        backgroundColor: "lightgrey",
+                        border: "1px solid grey",
+                        borderRadius: "4px",
+                        boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+                        padding: "0.5em",
+                        zIndex: 1000,
+                        width: "100%",
+                        // maxWidth: "300px",
+                        marginLeft: "2em",
+                        // marginTop: "-2.5em",
+                      }}
+                    >
+                      <Typography variant="body2">{desc}</Typography>
+                    </Box>
+                  )}
+                </Box>
               </Box>
             ))}
           </Box>
@@ -669,9 +764,22 @@ export const FilterControls = ({
             className="filter-controls__confirm-selection-button"
             onClick={handleConfirm}
             variant="contained"
-            sx={{ marginTop: 2, alignSelf: "flex-end" }}
+            sx={{
+              marginTop: 2,
+              display: "flex",
+              marginLeft: "auto",
+              marginRight: "auto",
+              paddingLeft: "0.5em",
+              paddingRight: "0.5em",
+              width: "60%",
+              justifyContent: "center",
+              alignContent: "center",
+            }}
           >
-            Confirm Filter Selection
+            <DoneOutlineTwoToneIcon
+            // sx={{ mr: "0.25em" }}
+            />
+            Confirm Selection
           </Button>
         </Box>
       </Modal>
@@ -749,7 +857,7 @@ export const FilterControls = ({
           onSave={handleSaveParams}
         />
       )}
-    </Box>
+    </div>
   );
 };
 

@@ -111,7 +111,7 @@ const Heatmap = ({
     const extent = d3.extent(allValues);
     // console.log("Color scale extent: ", extent);
 
-    if (metricType === "slope") {
+    if (metricType === "Slope") {
       const slopeExtent = [minSlope, maxSlope];
       const midpoint =
         slopeExtent[0] > 0
@@ -178,11 +178,11 @@ const Heatmap = ({
       const slope = calculateSlope(heatmapData);
 
       const activeMetric =
-        metricType === "max"
+        metricType === "Max"
           ? max
-          : metricType === "min"
+          : metricType === "Min"
           ? min
-          : metricType === "slope"
+          : metricType === "Slope"
           ? slope
           : rangeOfYValues;
 
@@ -266,11 +266,11 @@ const Heatmap = ({
 
       // Determine the active metric for the tooltip based on metricType
       const activeMetric =
-        metricType === "max"
+        metricType === "Max"
           ? max
-          : metricType === "min"
+          : metricType === "Min"
           ? min
-          : metricType === "slope"
+          : metricType === "Slope"
           ? slope
           : rangeOfYValues;
 

@@ -113,7 +113,9 @@ export const LargeGraphControls = ({
         onClick={resetZoom}
       >
         <FitScreenTwoToneIcon />
-        Reset Zoom
+        <Typography align="center" variant="h1">
+          Reset Zoom
+        </Typography>
       </Button>
     </div>
   );

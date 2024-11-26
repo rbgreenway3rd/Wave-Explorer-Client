@@ -108,7 +108,7 @@ export const CombinedComponent = () => {
   const [annotationRangeEnd, setAnnotationRangeEnd] = useState(null);
 
   // State variable handling what metrics type is shown in heatmap
-  const [metricType, setMetricType] = useState("max"); // Default metric type
+  const [metricType, setMetricType] = useState("Max"); // Default metric type
   const [metricIndicator, setMetricIndicator] = useState(0); // Defaults to first indicator
 
   // Extracted plate and experiment data from the project

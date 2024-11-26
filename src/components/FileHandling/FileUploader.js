@@ -254,10 +254,12 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
         className={!project ? "glow-button" : ""} // Apply glow class if no project
         style={{
           padding: 0,
+          marginRight: "1.5em",
           minWidth: 30,
           display: "flex", // Flexbox for centering
           justifyContent: "center", // Center horizontally
           alignItems: "center", // Center vertically
+          borderRadius: "10%",
         }}
       >
         <DriveFolderUploadIcon />
