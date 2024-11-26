@@ -40,45 +40,50 @@ export const MiniGraphControls = ({
   return (
     <div className="minigraph-and-controls__controls-container">
       {/* Show Raw or Filtered data radio buttons */}
-      <div className="minigraph-and-controls__show-raw-or-filtered">
-        <FormControl component="fieldset">
-          <FormLabel component="legend">Show</FormLabel>
-          <RadioGroup
-            row
-            aria-label="data-display"
-            name="radio-group-1"
-            value={showFiltered ? "showFiltered" : "showRaw"}
-            onChange={() => handleToggleDataShown()}
-          >
-            <FormControlLabel value="showRaw" control={<Radio />} label="Raw" />
-            <FormControlLabel
-              value="showFiltered"
-              control={<Radio />}
-              label="Filtered"
-            />
-          </RadioGroup>
-        </FormControl>
-      </div>
-
-      {/* Visibility section with checkboxes for each unique indicator type */}
-      {/* <div className="minigraph-and-controls__visibility"> */}
-      <FormControl component="fieldset">
-        <FormLabel component="legend">Indicator</FormLabel>
-        {extractedIndicators.map((indicator) => (
-          <FormControlLabel
-            key={indicator.id}
-            control={
-              <Checkbox
-                defaultChecked
-                onChange={() => handleToggleVisibility(indicator.id)}
+      <section>
+        <div className="minigraph-and-controls__show-raw-or-filtered">
+          <FormControl component="fieldset">
+            <FormLabel component="legend">Show</FormLabel>
+            <RadioGroup
+              row
+              aria-label="data-display"
+              name="radio-group-1"
+              value={showFiltered ? "showFiltered" : "showRaw"}
+              onChange={() => handleToggleDataShown()}
+            >
+              <FormControlLabel
+                value="showRaw"
+                control={<Radio />}
+                label="Raw"
               />
-            }
-            label={indicator.indicatorName}
-          />
-        ))}
-      </FormControl>
-      {/* </div> */}
+              <FormControlLabel
+                value="showFiltered"
+                control={<Radio />}
+                label="Filtered"
+              />
+            </RadioGroup>
+          </FormControl>
+        </div>
 
+        {/* Visibility section with checkboxes for each unique indicator type */}
+        {/* <div className="minigraph-and-controls__visibility"> */}
+        <FormControl component="fieldset">
+          <FormLabel component="legend">Indicator</FormLabel>
+          {extractedIndicators.map((indicator) => (
+            <FormControlLabel
+              key={indicator.id}
+              control={
+                <Checkbox
+                  defaultChecked
+                  onChange={() => handleToggleVisibility(indicator.id)}
+                />
+              }
+              label={indicator.indicatorName}
+            />
+          ))}
+        </FormControl>
+        {/* </div> */}
+      </section>
       {/* Clear Selections button */}
       <Button
         variant="outlined"

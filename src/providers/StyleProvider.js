@@ -54,7 +54,7 @@ export const theme = createTheme({
             backgroundColor: "#e3f2fd", // Light background on hover
             borderColor: "#1565c0", // Darker border on hover
           },
-          fontSize: "0.75rem",
+          fontSize: "0.65rem",
           textAlign: "center",
           alignContent: "center",
           alignItems: "center",
