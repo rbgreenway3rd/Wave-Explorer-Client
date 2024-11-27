@@ -1,4 +1,5 @@
 // utilities/Helpers.js
+import html2canvas from "html2canvas";
 
 // Handle selecting a well
 export const handleSelectWell = (
@@ -55,53 +56,6 @@ export const handleAllSelectorClick = (
   }
 };
 
-// Handle selecting a row of wells
-// export const handleRowSelectorClick = (
-//   rowLabel,
-//   wellArrays,
-//   selectedWellArray,
-//   handleSelectWell,
-//   handleDeselectWell
-// ) => {
-//   const wellsInRow = wellArrays.filter((well) => well.key.startsWith(rowLabel));
-//   const allSelected = wellsInRow.every((well) =>
-//     selectedWellArray.includes(well)
-//   );
-
-//   if (allSelected) {
-//     wellsInRow.forEach((well) => handleDeselectWell(well));
-//   } else {
-//     wellsInRow.forEach((well) => {
-//       if (!selectedWellArray.includes(well)) {
-//         handleSelectWell(well);
-//       }
-//     });
-//   }
-// };
-
-// // Handle selecting a column of wells
-// export const handleColumnSelectorClick = (
-//   colIndex,
-//   wellArrays,
-//   selectedWellArray,
-//   handleSelectWell,
-//   handleDeselectWell
-// ) => {
-//   const wellsInCol = wellArrays.filter((well) => well.column + 1 === colIndex);
-//   const allSelected = wellsInCol.every((well) =>
-//     selectedWellArray.includes(well)
-//   );
-
-//   if (allSelected) {
-//     wellsInCol.forEach((well) => handleDeselectWell(well));
-//   } else {
-//     wellsInCol.forEach((well) => {
-//       if (!selectedWellArray.includes(well)) {
-//         handleSelectWell(well);
-//       }
-//     });
-//   }
-// };
 export const handleRowSelectorClick = (
   rowLabel,
   wellArrays,
@@ -149,5 +103,16 @@ export const handleColumnSelectorClick = (
         handleSelectWell(well); // Select the well
       }
     });
+  }
+};
+
+export const handleScreenshot = async (componentRef) => {
+  if (componentRef.current) {
+    const canvas = await html2canvas(componentRef.current);
+    const imgData = canvas.toDataURL("image/png");
+    const link = document.createElement("a");
+    link.href = imgData;
+    link.download = "component.png";
+    link.click();
   }
 };

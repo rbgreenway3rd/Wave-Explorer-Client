@@ -43,7 +43,15 @@ export const MiniGraphControls = ({
       <section>
         <div className="minigraph-and-controls__show-raw-or-filtered">
           <FormControl component="fieldset">
-            <FormLabel component="legend">Show</FormLabel>
+            <FormLabel
+              component="legend"
+              style={{
+                backgroundImage:
+                  "linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
+              }}
+            >
+              Show
+            </FormLabel>
             <RadioGroup
               row
               aria-label="data-display"
@@ -68,7 +76,15 @@ export const MiniGraphControls = ({
         {/* Visibility section with checkboxes for each unique indicator type */}
         {/* <div className="minigraph-and-controls__visibility"> */}
         <FormControl component="fieldset">
-          <FormLabel component="legend">Indicator</FormLabel>
+          <FormLabel
+            component="legend"
+            style={{
+              backgroundImage:
+                "linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
+            }}
+          >
+            Indicator
+          </FormLabel>
           {extractedIndicators.map((indicator) => (
             <FormControlLabel
               key={indicator.id}

@@ -28,6 +28,10 @@ export const LargeGraphControls = ({
       <section className="zoom-and-pan-controls">
         <div className="zoom-controls">
           <FormControlLabel
+            style={{
+              backgroundImage:
+                "linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
+            }}
             control={
               <Checkbox
                 id="zoom-state"
@@ -68,6 +72,10 @@ export const LargeGraphControls = ({
         </div>
         <div className="pan-controls">
           <FormControlLabel
+            style={{
+              backgroundImage:
+                "linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
+            }}
             control={
               <Checkbox
                 id="pan-state"

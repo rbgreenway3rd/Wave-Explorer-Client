@@ -137,11 +137,19 @@ export const MetricsControls = ({
         onClick={handleSaveMetric}
       >
         <BookmarkAddTwoToneIcon />
-        Save Metric
+        <Typography>Save Metric</Typography>
       </Button>
       <div className="metrics__management">
         <FormControl component="fieldset" className="metrics__radio-container">
-          <FormLabel component="legend">Indicator</FormLabel>
+          <FormLabel
+            component="legend"
+            style={{
+              backgroundImage:
+                "linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
+            }}
+          >
+            <Typography>Indicator</Typography>
+          </FormLabel>
           <RadioGroup
             className="metrics__radio-container"
             aria-label="indicator-type"
@@ -161,7 +169,15 @@ export const MetricsControls = ({
           </RadioGroup>
         </FormControl>
         <FormControl component="fieldset" className="metrics__radio-container">
-          <FormLabel component="legend">Metric</FormLabel>
+          <FormLabel
+            component="legend"
+            style={{
+              backgroundImage:
+                "linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
+            }}
+          >
+            <Typography>Metric</Typography>
+          </FormLabel>
           <RadioGroup
             className="metrics__radio-container"
             aria-label="metric-type"
@@ -224,6 +240,7 @@ export const MetricsControls = ({
             fontSize: "0.8em",
             fontWeight: "bold",
             textDecoration: "underline",
+            justifyContent: "center",
           }}
         >
           Saved Metrics:
@@ -242,7 +259,11 @@ export const MetricsControls = ({
                 alignItems: "center",
                 padding: 0,
                 cursor: "pointer",
-                borderBottom: "1px solid #eee",
+                borderBottom: "none",
+                backgroundImage:
+                  "linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
+                boxShadow:
+                  "0px 1px 2px 2px rgba(80, 80, 80, 0.25), 0px 1px 4px 4px rgb(100, 100, 100, 0.15), 0px 1px 8px 5px rgba(100, 100, 100, 0.07)",
               }}
             >
               <Typography style={{ fontSize: "0.75em" }}>

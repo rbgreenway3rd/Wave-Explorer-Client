@@ -11,12 +11,15 @@ import { Line } from "react-chartjs-2";
 import { Chart } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
 import { DataContext } from "../../../providers/DataProvider";
+import html2canvas from "html2canvas";
 
 Chart.register(zoomPlugin);
 
 export const LargeGraph = forwardRef(
   ({ rawGraphData, largeGraphConfig }, ref) => {
     const { wellArrays } = useContext(DataContext);
+
+    const componentRef = useRef(null);
 
     const chartRef = useRef(null);
 
@@ -67,8 +70,19 @@ export const LargeGraph = forwardRef(
       },
     }));
 
+    const handleDownload = async () => {
+      if (componentRef.current) {
+        const canvas = await html2canvas(componentRef.current);
+        const imgData = canvas.toDataURL("image/png");
+        const link = document.createElement("a");
+        link.href = imgData;
+        link.download = "component.png";
+        link.click();
+      }
+    };
+
     return (
-      // <div className="large-graph">
+      // <div ref={componentRef}>
       <Line
         key={`${largeCanvasWidth}-${largeCanvasHeight}`}
         className="large-graph-canvas"

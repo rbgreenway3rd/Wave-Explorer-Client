@@ -19,12 +19,15 @@ import UploadFileIcon from "@mui/icons-material/UploadFile";
 import Tooltip from "@mui/material/Tooltip";
 import HelpTwoToneIcon from "@mui/icons-material/HelpTwoTone";
 import DoneOutlineTwoToneIcon from "@mui/icons-material/DoneOutlineTwoTone";
+import TuneTwoToneIcon from "@mui/icons-material/TuneTwoTone";
 
 import { ListItem, Checkbox, Radio, FormControlLabel } from "@mui/material";
 import {
   ArrowForwardIos as ArrowIcon,
   ArrowBackIos as ArrowBackIcon,
   RemoveCircleTwoTone,
+  EqualizerTwoTone,
+  InsightsTwoTone,
 } from "@mui/icons-material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { React, useState, useEffect, useContext } from "react";
@@ -539,7 +542,18 @@ export const FilterControls = ({
         <Typography
           className="filter-controls__selected-filters-header"
           variant="body1"
+          style={{
+            borderBottom: "none",
+            // borderTop: "0.1em solid rgb(48, 79.5, 143)",
+            backgroundImage:
+              "linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
+            // boxShadow:
+            // "0px 1px 2px  rgba(80, 80, 80, 0.25), 0px 1px 3px 3px rgb(100, 100, 100, 0.15), 0px 1px 4px 4px rgba(100, 100, 100, 0.07)",
+          }}
         >
+          {/* <TuneTwoToneIcon /> */}
+          {/* <EqualizerTwoTone /> */}
+          <InsightsTwoTone />
           Filters:
         </Typography>
 

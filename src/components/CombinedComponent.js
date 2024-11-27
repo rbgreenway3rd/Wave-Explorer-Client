@@ -20,18 +20,22 @@ import {
   handleAllSelectorClick,
   handleRowSelectorClick,
   handleColumnSelectorClick,
+  handleScreenshot,
 } from "../utilities/Handlers.js";
 import deepEqual from "fast-deep-equal"; // for deep comparison of project state
 import annotationPlugin from "chartjs-plugin-annotation";
 import zoomPlugin from "chartjs-plugin-zoom";
 import { ControlSubtraction_Filter } from "./Graphing/FilteredData/FilterModels.js";
+import html2canvas from "html2canvas";
+import { IconButton, Tooltip } from "@mui/material";
+import { AddAPhotoTwoTone } from "@mui/icons-material";
+import AddAPhotoTwoToneIcon from "@mui/icons-material/AddAPhotoTwoTone";
 
 // Register Chart.js components and plugins
 Chart.register(...registerables, annotationPlugin, zoomPlugin);
 
 // Main component that integrates various functionalities
 export const CombinedComponent = () => {
-  // Context to manage shared data across components
   const {
     project,
     setProject,
@@ -47,8 +51,6 @@ export const CombinedComponent = () => {
     extractedIndicators,
     savedMetrics,
     selectedFilters,
-    // selectedIndicators,
-    // setSelectedIndicators,
   } = useContext(DataContext);
 
   // Ref to store the previous project state for comparison
@@ -62,15 +64,15 @@ export const CombinedComponent = () => {
   // Ref to access LargeGraph's chart instance
   const largeGraphRef = useRef(null);
 
-  // Ref to access FilteredGraph's chart instance
-  const filteredGraphRef = useRef(null);
+  // Ref to access each component instance for use in screenshotting
+  const combinedComponentRef = useRef(null);
+  const miniGraphGridComponentRef = useRef(null);
+  const largeGraphComponentRef = useRef(null);
+  const heatmapComponentRef = useRef(null);
+  const filteredGraphComponentRef = useRef(null);
 
   // Canvas dimensions for graphs
 
-  // const [largeCanvasWidth] = useState(window.innerWidth / 2);
-  // const [largeCanvasHeight] = useState(window.innerHeight / 2);
-  // const [smallCanvasWidth] = useState(window.innerWidth / 56);
-  // const [smallCanvasHeight] = useState(window.innerHeight / 40);
   const [largeCanvasWidth, setLargeCanvasWidth] = useState(
     window.innerWidth / 2.3
     // window.innerWidth / 2.5
@@ -89,10 +91,6 @@ export const CombinedComponent = () => {
   );
 
   const handleResize = () => {
-    // setLargeCanvasWidth(window.innerWidth / 2.5);
-    // setLargeCanvasHeight(window.innerHeight / 2.5);
-    // setSmallCanvasWidth(window.innerWidth / 70);
-    // setSmallCanvasHeight(window.innerHeight / 50);
     setLargeCanvasWidth(window.innerWidth / 2.3);
     setLargeCanvasHeight(window.innerHeight / 2.3);
     setSmallCanvasWidth(window.innerWidth / 64.4);
@@ -113,22 +111,12 @@ export const CombinedComponent = () => {
 
   // Extracted plate and experiment data from the project
   const plate = project?.plate || [];
-  // const experiment = plate[0]?.experiments[0] || {};
-  // const wellArrays = experiment.wells || [];
 
   // Generating labels for columns and rows
   const columnLabels = Array.from(
     { length: plate[0]?.numberOfColumns || 0 },
     (_, i) => i + 1
   );
-
-  // console.log(
-  //   "extractedRows: ",
-  //   extractedRows,
-  //   "extractedColumns: ",
-  //   extractedColumns
-  // );
-  // Resize handler function
 
   // Effect to listen to window resize events
   useEffect(() => {
@@ -144,16 +132,13 @@ export const CombinedComponent = () => {
   const toggleZoomState = (currentZoomState) => {
     setZoomState(!currentZoomState);
   };
-
   const changeZoomMode = (mode) => {
     setZoomMode(mode);
   };
-
   // Functions to handle pan state changes
   const togglePanState = (currentPanState) => {
     setPanState(!currentPanState);
   };
-
   const changePanMode = (mode) => {
     setPanMode(mode);
   };
@@ -167,7 +152,6 @@ export const CombinedComponent = () => {
 
   const applyEnabledFilters = () => {
     console.log(enabledFilters);
-
     // Step 0: reset filtered data to raw data for all wells by copying the wellArrays
     const updatedWellArrays = wellArrays.map((well) => ({
       ...well,
@@ -179,7 +163,6 @@ export const CombinedComponent = () => {
         return indicator;
       }),
     }));
-
     // Step 1: Apply filters to the copied updatedWellArrays and update indicators
     for (let f = 0; f < enabledFilters.length; f++) {
       if (enabledFilters[f] instanceof ControlSubtraction_Filter) {
@@ -187,7 +170,6 @@ export const CombinedComponent = () => {
       }
       enabledFilters[f].execute(updatedWellArrays);
     }
-
     // Update the project and selectedWellArray as before
     const updatedProject = {
       ...project,
@@ -210,14 +192,12 @@ export const CombinedComponent = () => {
       }),
     };
     setProject(updatedProject);
-
     const updatedSelectedWellArray = selectedWellArray.map(
       (selectedWell) =>
         updatedWellArrays.find((well) => well.id === selectedWell.id) ||
         selectedWell
     );
     setSelectedWellArray(updatedSelectedWellArray);
-
     console.log("updated project: ", updatedProject);
     console.log("updated selectedWellArray: ", updatedSelectedWellArray);
     console.log("filters: ", enabledFilters);
@@ -237,12 +217,6 @@ export const CombinedComponent = () => {
               const newIsDisplayed = !indicator.isDisplayed;
               indicator.setDisplayed(newIsDisplayed); // Directly toggle the property
             }
-            // console.log(
-            //   "indicator.id: ",
-            //   indicator.id,
-            //   "indicatorId: ",
-            //   indicatorId
-            // );
             return indicator;
           });
           return { ...well, indicators: updatedIndicators };
@@ -267,9 +241,7 @@ export const CombinedComponent = () => {
     }
   }, [project, wellArrays]);
 
-  // Preparing graph data for raw and filtered graphs
-  // Preparing graph data for raw and filtered graphs, considering all displayed indicators
-  // Define a color palette to differentiate indicators
+  // Defined color palette to differentiate between different indicators
   const indicatorColors = [
     "rgb(75, 192, 192)", // Teal
     "rgb(255, 99, 132)", // Red
@@ -277,7 +249,6 @@ export const CombinedComponent = () => {
     "rgb(255, 206, 86)", // Yellow
     "rgb(153, 102, 255)", // Purple
     "rgb(255, 159, 64)", // Orange
-    // Add more colors as needed
   ];
 
   // Preparing graph data for raw and filtered graphs, using color differentiation for each indicator
@@ -285,39 +256,30 @@ export const CombinedComponent = () => {
   const rawGraphData = {
     labels: indicatorTimes[0], // Adjust based on your indicator-specific times
     datasets: selectedWellArray.flatMap((well, wellIndex) =>
-      well.indicators
-        // .filter((indicator) => indicator.isDisplayed)
-        .map((indicator, indIndex) => ({
-          label: `${well.label} - Indicator ${indIndex + 1}`, // Label for each indicator
-          data: indicator.rawData,
-          fill: false,
-          borderColor: indicatorColors[indIndex % indicatorColors.length], // Cycle colors
-          tension: 0.1,
-          hidden: !indicator.isDisplayed,
-        }))
+      well.indicators.map((indicator, indIndex) => ({
+        label: `${well.label} - Indicator ${indIndex + 1}`, // Label for each indicator
+        data: indicator.rawData,
+        fill: false,
+        borderColor: indicatorColors[indIndex % indicatorColors.length], // Cycle colors
+        tension: 0.1,
+        hidden: !indicator.isDisplayed,
+      }))
     ),
   };
 
   const filteredGraphData = {
     labels: indicatorTimes[0], // Adjust based on your indicator-specific times
     datasets: selectedWellArray.flatMap((well, wellIndex) =>
-      well.indicators
-        // .filter((indicator) => indicator.isDisplayed)
-        .map((indicator, indIndex) => ({
-          label: `${well.label} - Indicator ${indIndex + 1}`, // Label for each indicator
-          data: indicator.filteredData,
-          fill: false,
-          borderColor: indicatorColors[indIndex % indicatorColors.length], // Cycle colors
-          tension: 0.1,
-          hidden: !indicator.isDisplayed,
-        }))
+      well.indicators.map((indicator, indIndex) => ({
+        label: `${well.label} - Indicator ${indIndex + 1}`, // Label for each indicator
+        data: indicator.filteredData,
+        fill: false,
+        borderColor: indicatorColors[indIndex % indicatorColors.length], // Cycle colors
+        tension: 0.1,
+        hidden: !indicator.isDisplayed,
+      }))
     ),
   };
-
-  useEffect(() => {
-    console.log(rawGraphData);
-    console.log(indicatorTimes[0]);
-  }, [rawGraphData]);
 
   // Configuration objects for graph options
   const largeGraphConfig = LargeGraphOptions(
@@ -337,8 +299,6 @@ export const CombinedComponent = () => {
     filteredGraphData,
     extractedIndicatorTimes,
     annotations
-    // minYValue,
-    // maxYValue
   );
 
   const handleToggleDataShown = () => {
@@ -349,30 +309,43 @@ export const CombinedComponent = () => {
   // Render the component
   return (
     <div className="combined-component">
-      <NavBar />
-      {/* File uploader to upload project data */}
-      {/* <FileUploader setWellArraysUpdated={setWellArraysUpdated} /> */}
-      <div className="combined-component__main-container">
+      <NavBar combinedComponentRef={combinedComponentRef} />
+      <div
+        className="combined-component__main-container"
+        ref={combinedComponentRef}
+      >
         {project ? (
           <>
-            {/* Main graphing section */}
             <section className="combined-component__wave-container">
               <header
                 style={{ fontWeight: "bold" }}
                 className="combined-component__minigraph-header"
               >
                 All Waves
+                <Tooltip
+                  title="Capture Screenshot of 'All Waves' Grid"
+                  disableInteractive
+                >
+                  <IconButton
+                    onClick={() => handleScreenshot(miniGraphGridComponentRef)}
+                  >
+                    <AddAPhotoTwoTone
+                      sx={{
+                        fontSize: "0.75em",
+                        paddingLeft: "1em",
+                      }}
+                    />
+                  </IconButton>
+                </Tooltip>
               </header>
               <div
                 className="combined-component__minigraph"
                 style={{ width: largeCanvasWidth, height: largeCanvasHeight }}
-                // onMouseLeave={handleHoverSelectedWellLeave}
+                ref={miniGraphGridComponentRef}
               >
                 <MiniGraphGrid
-                  // handleHoverSelectedWellEnter={handleHoverSelectedWellEnter} // Pass mouse enter handler to MiniGraphGrid
                   analysisData={analysisData}
                   extractedIndicatorTimes={extractedIndicatorTimes}
-                  // minigraphOptions={minigraphOptions}
                   largeCanvasWidth={largeCanvasWidth}
                   largeCanvasHeight={largeCanvasHeight}
                   smallCanvasWidth={smallCanvasWidth}
@@ -423,8 +396,26 @@ export const CombinedComponent = () => {
                 className="combined-component__large-graph-header"
               >
                 Raw Waves
+                <Tooltip
+                  title="Capture Screenshot of 'Raw Waves' Graph"
+                  disableInteractive
+                >
+                  <IconButton
+                    onClick={() => handleScreenshot(largeGraphComponentRef)}
+                  >
+                    <AddAPhotoTwoTone
+                      sx={{
+                        fontSize: "0.75em",
+                        paddingLeft: "1em",
+                      }}
+                    />
+                  </IconButton>
+                </Tooltip>
               </header>
-              <div className="combined-component__large-graph">
+              <div
+                className="combined-component__large-graph"
+                ref={largeGraphComponentRef}
+              >
                 <LargeGraph
                   ref={largeGraphRef}
                   zoomState={zoomState}
@@ -449,19 +440,33 @@ export const CombinedComponent = () => {
                 />
               </div>
             </section>
-
-            {/* Metrics and filtering section */}
             <section className="combined-component__metrics-filter-container">
               <header
                 style={{ fontWeight: "bold" }}
                 className="combined-component__metrics-header"
               >
                 Metrics
+                <Tooltip
+                  title="Capture Screenshot of 'Metrics' Heatmap"
+                  disableInteractive
+                >
+                  <IconButton
+                    onClick={() => handleScreenshot(heatmapComponentRef)}
+                  >
+                    <AddAPhotoTwoTone
+                      sx={{
+                        fontSize: "0.75em",
+                        paddingLeft: "1em",
+                      }}
+                    />
+                  </IconButton>
+                </Tooltip>
               </header>
-              <div className="combined-component__metrics">
+              <div
+                className="combined-component__metrics"
+                ref={heatmapComponentRef}
+              >
                 <Heatmap
-                  // className="combined-component__metrics"
-                  // wellArrays={wellArrays}
                   selectedWellArray={selectedWellArray}
                   timeData={extractedIndicatorTimes}
                   smallCanvasWidth={smallCanvasWidth}
@@ -495,10 +500,27 @@ export const CombinedComponent = () => {
                 className="combined-component__filters-header"
               >
                 Filtered Waves
+                <Tooltip
+                  title="Capture Screenshot of 'Filtered Waves' Graph"
+                  disableInteractive
+                >
+                  <IconButton
+                    onClick={() => handleScreenshot(filteredGraphComponentRef)}
+                  >
+                    <AddAPhotoTwoTone
+                      sx={{
+                        fontSize: "0.75em",
+                        paddingLeft: "1em",
+                      }}
+                    />
+                  </IconButton>
+                </Tooltip>
               </header>
-              <div className="combined-component__filtered-graph">
+              <div
+                className="combined-component__filtered-graph"
+                ref={filteredGraphComponentRef}
+              >
                 <FilteredGraph
-                  // ref={filteredGraphRef}
                   analysisData={analysisData}
                   wellArrays={wellArrays}
                   extractedIndicatorTimes={extractedIndicatorTimes}
@@ -517,10 +539,6 @@ export const CombinedComponent = () => {
                 <FilterControls
                   wellArrays={wellArrays}
                   extractedIndicatorTimes={extractedIndicatorTimes}
-                  // selectedFilters={selectedFilters}
-                  // setSelectedFilters={setSelectedFilters}
-                  // enabledFilters={enabledFilters}
-                  // setEnabledFilters={setEnabledFilters}
                   applyEnabledFilters={applyEnabledFilters}
                   showFiltered={showFiltered}
                   setShowFiltered={setShowFiltered}

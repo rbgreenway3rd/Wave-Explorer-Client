@@ -8,8 +8,19 @@ import FileUploader from "../FileHandling/FileUploader";
 import { DataContext } from "../../providers/DataProvider";
 import Typography from "@mui/material/Typography";
 import NavMenu from "./NavMenu";
+import {
+  FormLabel,
+  FormControlLabel,
+  IconButton,
+  Tooltip,
+} from "@mui/material";
+import {
+  AddAPhotoTwoTone,
+  ScreenshotMonitorTwoTone,
+} from "@mui/icons-material";
+import { handleScreenshot } from "../../utilities/Handlers";
 
-export const NavBar = () => {
+export const NavBar = ({ combinedComponentRef }) => {
   const { project } = useContext(DataContext);
   const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
   const [file, setFile] = useState(null); // State to store the uploaded file
@@ -22,11 +33,30 @@ export const NavBar = () => {
           setFile={setFile}
         />
         <NavMenu />
+        <Tooltip title="Capture Screenshot of Entire Window" disableInteractive>
+          <IconButton
+            onClick={() => handleScreenshot(combinedComponentRef)}
+            style={{ marginLeft: "0.75em" }}
+          >
+            <AddAPhotoTwoTone />
+          </IconButton>
+        </Tooltip>
       </section>
       <section className="navbar-middle">
         {/* Display the file name */}
         {/* {file && <Typography>file name: {file.name}</Typography>} */}
-        {project && <Typography>Project: {project.title}</Typography>}
+        {project ? (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+            }}
+          >
+            <Typography>{project.title}</Typography>
+          </div>
+        ) : (
+          ""
+        )}
       </section>
       <section className="navbar-right">
         <img

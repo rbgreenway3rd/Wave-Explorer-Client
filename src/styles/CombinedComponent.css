@@ -15,6 +15,8 @@
     padding-right: 0.25em;
     padding-bottom: 0.5em;
     background-color: gray;
+    /* background-color: rgb(101, 114, 144); */
+    /* background-image: linear-gradient(   rgb(101, 114, 144), grey, grey); */
     display: flex;
     flex-direction: column;
     /* align-items: center; */
@@ -41,10 +43,14 @@
 
 .combined-component__minigraph-header {
     /* grid-column: 1 /span 2; */
+    display: flex;
     grid-column: 1;
     grid-row: 1;
     text-align: center;
     padding-right: 0.5em;
+    align-content: center;
+    justify-content: center;
+    justify-items: center;
 }
 
 .combined-component__minigraph {
@@ -76,9 +82,12 @@
 
 .combined-component__large-graph-header {
     /* grid-column: 3 /span 2; */
+    display: flex;
     grid-column: 3;
     grid-row: 1;
     text-align: center;
+    justify-content: center;
+    align-content: center;
 }
 
 .combined-component__large-graph {
@@ -110,10 +119,13 @@
 }
 
 .combined-component__metrics-header {
+    display: flex;
     grid-column: 1;
     grid-row: 1;
     text-align: center;
     padding-right: 0.5em;
+    align-content: center;
+    justify-content: center;
 }
 
 .combined-component__metrics {
@@ -138,9 +150,12 @@
 }
 
 .combined-component__filters-header {
+    display: flex;
     grid-column: 3;
     grid-row: 1;
     text-align: center;
+    align-content: center;
+    justify-content: center;
 }
 
 .combined-component__filtered-graph {

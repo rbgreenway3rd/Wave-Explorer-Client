@@ -81,7 +81,7 @@ export const theme = createTheme({
         root: {
           display: "flex",
           fontSize: "inherit",
-          textAlign: "center",
+
           alignContent: "center",
           alignItems: "center",
           alignSelf: "center",
@@ -124,12 +124,14 @@ export const theme = createTheme({
         root: {
           padding: 0,
           margin: 0,
-          fontSize: "0.7em",
+          fontSize: "0.6em",
+
           borderBottom: "1px solid rgb(160,160,160)",
           backgroundColor: "rgb(180,180,180, 0.7)",
           // border: "solid 1px black",
           // border: "solid 1px rgb(160,160,160)",
           borderTop: "none",
+          textTransform: "uppercase",
         },
       },
     },

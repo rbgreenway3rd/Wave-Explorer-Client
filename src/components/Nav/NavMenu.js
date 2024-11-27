@@ -353,7 +353,13 @@ export const NavMenu = () => {
 
   return (
     <>
-      <IconButton onClick={handleClick}>
+      <IconButton
+        onClick={handleClick}
+        style={{
+          border: "solid rgba(0,0,0,0.15) 0.1em",
+          backgroundImage: "radial-gradient(lightgrey, grey)",
+        }}
+      >
         <MenuIcon />
       </IconButton>
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
