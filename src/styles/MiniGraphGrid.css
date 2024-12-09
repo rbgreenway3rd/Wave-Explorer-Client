@@ -1,5 +1,4 @@
 .minigraph-and-controls {
-
 }
 .container {
     display: flex; /* Ensures child centering applies */
@@ -13,7 +12,6 @@
     display: flex; /* Ensures child centering applies */
     align-items: center; /* Centers content vertically */
     justify-content: center; /* Centers content horizontally */
-
 /* background: rgb(50, 50, 50);  */
 /* border: solid 0.5em rgb(50, 50, 50);    */
     gap: 0;
@@ -39,31 +37,23 @@
 }
 
 .minigraph-and-controls__minigraph-canvas:hover {
-    
     border: solid 0.02em rgb(100, 100, 100);
 }
 
 .minigraph-and-controls__minigraph-grid {
-   
     display: grid;
-  
     gap: 0;
     box-sizing: border-box;
-   
     padding-top: 0.1em;
- 
     justify-content: center;
     align-items: center;
     margin: 0;
     justify-content: space-around,
 }
 
-.minigraph-and-controls__all-selector {
-   
-}
-
 .minigraph-and-controls__all-button {
     background-color: lightgray;    /* color:white; */
+    display: flex;
     border-style: solid;
     text-align: center;
     justify-self: center;
@@ -72,13 +62,21 @@
     align-content: center;
     /* padding: 0; */
     box-sizing: border-box; /* Include padding and border in button width */
-  
+   
+    padding: 0; /* Removes any default padding */
+    box-sizing: border-box; /* Includes padding and borders in size */
 }
 
 .minigraph-and-controls__column-selectors {
-    display: flex;
+    /* display: flex; */
     flex-direction: row;
- 
+     text-align: center;
+    justify-self: center;
+    align-self: center;
+    justify-content: center;
+    align-content: center;
+    justify-items: center;
+    align-items: center;
 }
 
 .minigraph-and-controls__row-selectors {
@@ -97,9 +95,15 @@
     
 }
 .minigraph-and-controls__column-button {
-     background-color: lightgray;
-     border-style: solid;
+     /* background-color: lightgray; */
+     /* border-style: solid; */
     align-items: center;
+     display: flex; /* Use flexbox */
+    align-items: center; /* Aligns text vertically */
+    justify-content: center; /* Aligns text horizontally */
+    text-align: center; /* Ensures multi-line alignment */
+    padding: 0; /* Removes any default padding */
+    box-sizing: border-box; /* Includes padding and borders in size */
 }
 
 .dotwave-loader {

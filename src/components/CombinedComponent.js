@@ -411,7 +411,7 @@ export const CombinedComponent = () => {
               </header>
               <div
                 className="combined-component__minigraph"
-                style={{ width: largeCanvasWidth, height: largeCanvasHeight }}
+                // style={{ width: largeCanvasWidth, height: largeCanvasHeight }}
                 ref={miniGraphGridComponentRef}
               >
                 <MiniGraphGrid
@@ -540,10 +540,10 @@ export const CombinedComponent = () => {
                 <Heatmap
                   selectedWellArray={selectedWellArray}
                   timeData={extractedIndicatorTimes}
-                  smallCanvasWidth={smallCanvasWidth}
-                  smallCanvasHeight={smallCanvasHeight}
-                  largeCanvasWidth={largeCanvasWidth}
-                  largeCanvasHeight={largeCanvasHeight}
+                  // smallCanvasWidth={smallCanvasWidth}
+                  // smallCanvasHeight={smallCanvasHeight}
+                  // largeCanvasWidth={largeCanvasWidth}
+                  // largeCanvasHeight={largeCanvasHeight}
                   columnLabels={columnLabels}
                   rowLabels={rowLabels}
                   analysisData={analysisData}
@@ -619,10 +619,10 @@ export const CombinedComponent = () => {
                   setAnnotations={setAnnotations}
                   setAnnotationRangeStart={setAnnotationRangeStart}
                   setAnnotationRangeEnd={setAnnotationRangeEnd}
-                  largeCanvasWidth={largeCanvasWidth}
-                  largeCanvasHeight={largeCanvasHeight}
-                  smallCanvasWidth={smallCanvasWidth}
-                  smallCanvasHeight={smallCanvasHeight}
+                  // largeCanvasWidth={largeCanvasWidth}
+                  // largeCanvasHeight={largeCanvasHeight}
+                  // smallCanvasWidth={smallCanvasWidth}
+                  // smallCanvasHeight={smallCanvasHeight}
                 />
               </div>
             </section>

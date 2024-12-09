@@ -318,7 +318,7 @@ export const MiniGraphGrid = ({
                 )
               }
             >
-              all
+              *
             </button>
           </div>
 
@@ -330,11 +330,12 @@ export const MiniGraphGrid = ({
               gridColumn: "2 / 3",
               display: "grid",
               gridTemplateColumns: `repeat(${numColumns}, ${cellWidth}px)`,
-              justifyContent: "start",
+              // justifyContent: "start",
             }}
           >
             {columnLabels.map((columnLabel) => (
               <button
+                className="minigraph-and-controls__column-button"
                 key={columnLabel}
                 style={{
                   width: cellWidth, // Match canvas width
