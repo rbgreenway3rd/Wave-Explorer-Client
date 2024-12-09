@@ -25,6 +25,7 @@
     "framer-motion": "^11.11.7",
     "html2canvas": "^1.4.1",
     "lodash.debounce": "^4.0.8",
+    "normalize.css": "^8.0.1",
     "react": "^18.2.0",
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^18.3.1",

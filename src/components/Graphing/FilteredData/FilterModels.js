@@ -158,9 +158,110 @@ export class ControlSubtraction_Filter {
     console.log("apply: ", applyWellArray);
   }
 
+  // calculate_average_curve(wells) {
+  //   console.log("avg curve calc");
+  //   this.average_curve = [];
+
+  //   // Ensure control wells are available
+  //   if (!this.controlWellArray.length) {
+  //     console.error("No control wells defined.");
+  //     return;
+  //   }
+
+  //   // Ensure filteredData and rawData have the same length in each well
+  //   wells.forEach((well) => {
+  //     well.indicators.forEach((indicator) => {
+  //       const rawData = indicator.rawData;
+  //       const filteredData = indicator.filteredData;
+
+  //       // Check if rawData and filteredData have the same length, and pad them if needed
+  //       const maxLength = Math.max(rawData.length, filteredData.length);
+
+  //       // Pad filteredData if shorter
+  //       while (filteredData.length < maxLength) {
+  //         filteredData.push({ ...filteredData[filteredData.length - 1] });
+  //       }
+
+  //       // Pad rawData if shorter
+  //       while (rawData.length < maxLength) {
+  //         rawData.push({ ...rawData[rawData.length - 1] });
+  //       }
+
+  //       // Handle missing rawData entries by copying the last available entry
+  //       for (let i = 1; i < rawData.length; i++) {
+  //         if (!rawData[i] || rawData[i].x === undefined) {
+  //           rawData[i] = { ...rawData[i - 1] }; // Use previous entry as fallback
+  //         }
+  //       }
+
+  //       // Handle missing filteredData entries by copying the last available entry
+  //       for (let i = 1; i < filteredData.length; i++) {
+  //         if (!filteredData[i] || filteredData[i].y === undefined) {
+  //           filteredData[i] = { ...filteredData[i - 1] }; // Use previous entry as fallback
+  //         }
+  //       }
+  //     });
+  //   });
+
+  //   // Loop through each data point (assumes rawData has same length across all wells)
+  //   for (let i = 0; i < wells[0].indicators[0].rawData.length; i++) {
+  //     // Loop over each indicator
+  //     for (let k = 0; k < wells[0].indicators.length; k++) {
+  //       let avg = 0.0;
+  //       let validControlCount = 0; // Track valid control wells
+
+  //       // Loop through each control well
+  //       for (let j = 0; j < this.controlWellArray.length; j++) {
+  //         const row = this.controlWellArray[j].row;
+  //         const col = this.controlWellArray[j].col;
+  //         const ndx = row * this.number_of_columns + col;
+
+  //         // Check if filteredData is available for this well and indicator
+  //         if (
+  //           wells[ndx] &&
+  //           wells[ndx].indicators[k] &&
+  //           wells[ndx].indicators[k].filteredData[i]
+  //         ) {
+  //           avg += wells[ndx].indicators[k].filteredData[i].y;
+  //           validControlCount++;
+  //         } else {
+  //           console.warn(
+  //             `Filtered data missing for well at row ${row}, col ${col}`
+  //           );
+  //         }
+  //       }
+
+  //       // Avoid division by zero
+  //       if (validControlCount > 0) {
+  //         avg = avg / validControlCount;
+  //       } else {
+  //         avg = 0; // No valid control wells, default to 0
+  //       }
+
+  //       // Safely access rawData and check if data exists before adding it to the average curve
+  //       const rawDataPoint = wells[0].indicators[k].rawData[i];
+
+  //       if (rawDataPoint && rawDataPoint.x !== undefined) {
+  //         this.average_curve.push({
+  //           x: rawDataPoint.x,
+  //           y: avg,
+  //         });
+  //       } else {
+  //         // Handle missing rawData here
+  //         console.warn(
+  //           `Missing rawData for indicator at index ${k}, data point ${i}`
+  //         );
+  //       }
+  //     }
+  //   }
+
+  //   console.log(this.average_curve);
+  // }
   calculate_average_curve(wells) {
     console.log("avg curve calc");
-    this.average_curve = [];
+    this.average_curve = Array(wells[0].indicators.length)
+      .fill(null)
+      .map(() => []);
 
     // Ensure control wells are available
     if (!this.controlWellArray.length) {
@@ -168,20 +269,47 @@ export class ControlSubtraction_Filter {
       return;
     }
 
-    // Loop through each data point (assumes rawData has same length across all wells)
+    // Ensure filteredData and rawData have the same length in each well
+    wells.forEach((well) => {
+      well.indicators.forEach((indicator) => {
+        const rawData = indicator.rawData;
+        const filteredData = indicator.filteredData;
+
+        // Check if rawData and filteredData have the same length, and pad them if needed
+        const maxLength = Math.max(rawData.length, filteredData.length);
+
+        while (filteredData.length < maxLength) {
+          filteredData.push({ ...filteredData[filteredData.length - 1] });
+        }
+
+        while (rawData.length < maxLength) {
+          rawData.push({ ...rawData[rawData.length - 1] });
+        }
+
+        for (let i = 1; i < rawData.length; i++) {
+          if (!rawData[i] || rawData[i].x === undefined) {
+            rawData[i] = { ...rawData[i - 1] };
+          }
+        }
+
+        for (let i = 1; i < filteredData.length; i++) {
+          if (!filteredData[i] || filteredData[i].y === undefined) {
+            filteredData[i] = { ...filteredData[i - 1] };
+          }
+        }
+      });
+    });
+
     for (let i = 0; i < wells[0].indicators[0].rawData.length; i++) {
-      // Loop over each indicator
       for (let k = 0; k < wells[0].indicators.length; k++) {
         let avg = 0.0;
-        let validControlCount = 0; // Track valid control wells
+        let validControlCount = 0;
 
-        // Loop through each control well
         for (let j = 0; j < this.controlWellArray.length; j++) {
           const row = this.controlWellArray[j].row;
           const col = this.controlWellArray[j].col;
           const ndx = row * this.number_of_columns + col;
 
-          // Check if filteredData is available for this well and indicator
           if (
             wells[ndx] &&
             wells[ndx].indicators[k] &&
@@ -196,22 +324,23 @@ export class ControlSubtraction_Filter {
           }
         }
 
-        // Avoid division by zero
-        if (validControlCount > 0) {
-          avg = avg / validControlCount;
-        } else {
-          avg = 0; // No valid control wells, default to 0
-        }
+        avg = validControlCount > 0 ? avg / validControlCount : 0;
 
-        // Add the calculated average to the curve
-        this.average_curve.push({
-          x: wells[0].indicators[k].rawData[i].x,
-          y: avg,
-        });
+        const rawDataPoint = wells[0].indicators[k].rawData[i];
+        if (rawDataPoint && rawDataPoint.x !== undefined) {
+          this.average_curve[k].push({
+            x: rawDataPoint.x,
+            y: avg,
+          });
+        } else {
+          console.warn(
+            `Missing rawData for indicator at index ${k}, data point ${i}`
+          );
+        }
       }
     }
 
-    console.log(this.average_curve);
+    console.log("avg curve: ", this.average_curve);
   }
 
   execute(data) {
@@ -225,14 +354,13 @@ export class ControlSubtraction_Filter {
       const row = this.applyWellArray[i].row;
       const col = this.applyWellArray[i].col;
       const ndx = row * this.number_of_columns + col;
-
-      for (let i = 0; i < data[ndx].indicators.length; i++) {
-        for (let j = 0; j < data[ndx].indicators[i].filteredData.length; j++) {
-          data[ndx].indicators[i].filteredData[j] = {
-            x: data[ndx].indicators[i].filteredData[j].x, // Keep x value unchanged
+      for (let m = 0; m < data[ndx].indicators.length; m++) {
+        for (let n = 0; n < data[ndx].indicators[m].filteredData.length; n++) {
+          data[ndx].indicators[m].filteredData[n] = {
+            x: data[ndx].indicators[m].filteredData[n].x,
             y:
-              data[ndx].indicators[i].filteredData[j].y -
-              this.average_curve[j].y, // Subtract control average curve's y
+              data[ndx].indicators[m].filteredData[n].y -
+                this.average_curve[m][n]?.y || 0, // the OR ZERO handles cases where one of the 'average_curve' arrays is shorter than the other
           };
         }
       }

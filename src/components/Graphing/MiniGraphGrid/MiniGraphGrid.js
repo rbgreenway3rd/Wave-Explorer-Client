@@ -274,7 +274,7 @@ export const MiniGraphGrid = ({
   ];
 
   return (
-    <>
+    <div className="container">
       {isRenderingComplete ? (
         <div
           className="minigraph-container"
@@ -426,8 +426,8 @@ export const MiniGraphGrid = ({
               gridTemplateRows: `repeat(${numRows}, ${cellHeight}px)`,
               // width: gridWidth,
               // height: gridHeight,
-              width: availableGridWidth,
-              height: availableGridHeight,
+              // width: availableGridWidth,
+              // height: availableGridHeight,
               gap: 0,
             }}
           >
@@ -490,7 +490,7 @@ export const MiniGraphGrid = ({
       ) : (
         <DotWaveLoader className="dotwave-loader" />
       )}
-    </>
+    </div>
   );
 };
 

@@ -109,6 +109,8 @@ export const CombinedComponent = () => {
   const [metricType, setMetricType] = useState("Max"); // Default metric type
   const [metricIndicator, setMetricIndicator] = useState(0); // Defaults to first indicator
 
+  const [isLoadingFilterResults, setIsLoadingFilterResults] = useState(false);
+
   // Extracted plate and experiment data from the project
   const plate = project?.plate || [];
 
@@ -152,6 +154,7 @@ export const CombinedComponent = () => {
 
   const applyEnabledFilters = () => {
     console.log(enabledFilters);
+    setIsLoadingFilterResults(true);
     // Step 0: reset filtered data to raw data for all wells by copying the wellArrays
     const updatedWellArrays = wellArrays.map((well) => ({
       ...well,
@@ -166,6 +169,7 @@ export const CombinedComponent = () => {
     // Step 1: Apply filters to the copied updatedWellArrays and update indicators
     for (let f = 0; f < enabledFilters.length; f++) {
       if (enabledFilters[f] instanceof ControlSubtraction_Filter) {
+        console.log(updatedWellArrays);
         enabledFilters[f].calculate_average_curve(updatedWellArrays);
       }
       enabledFilters[f].execute(updatedWellArrays);
@@ -202,6 +206,60 @@ export const CombinedComponent = () => {
     console.log("updated selectedWellArray: ", updatedSelectedWellArray);
     console.log("filters: ", enabledFilters);
   };
+  // const applyEnabledFilters = async () => {
+  //   setIsLoadingFilterResults(true); // Start loading animation
+  //   try {
+  //     console.log(enabledFilters);
+  //     const updatedWellArrays = wellArrays.map((well) => ({
+  //       ...well,
+  //       indicators: well.indicators.map((indicator) => {
+  //         indicator.filteredData = indicator.rawData.map((point) => ({
+  //           ...point,
+  //         }));
+  //         return indicator;
+  //       }),
+  //     }));
+
+  //     for (let f = 0; f < enabledFilters.length; f++) {
+  //       if (enabledFilters[f] instanceof ControlSubtraction_Filter) {
+  //         await enabledFilters[f].calculate_average_curve(updatedWellArrays);
+  //       }
+  //       await enabledFilters[f].execute(updatedWellArrays);
+  //     }
+
+  //     const updatedProject = {
+  //       ...project,
+  //       plate: project.plate.map((plate, index) => {
+  //         if (index === 0) {
+  //           return {
+  //             ...plate,
+  //             experiments: plate.experiments.map((experiment, expIndex) => {
+  //               if (expIndex === 0) {
+  //                 return {
+  //                   ...experiment,
+  //                   wells: updatedWellArrays,
+  //                 };
+  //               }
+  //               return experiment;
+  //             }),
+  //           };
+  //         }
+  //         return plate;
+  //       }),
+  //     };
+
+  //     setProject(updatedProject);
+  //     setSelectedWellArray(
+  //       selectedWellArray.map(
+  //         (selectedWell) =>
+  //           updatedWellArrays.find((well) => well.id === selectedWell.id) ||
+  //           selectedWell
+  //       )
+  //     );
+  //   } finally {
+  //     setIsLoadingFilterResults(false); // End loading animation
+  //   }
+  // };
 
   const handleToggleVisibility = (indicatorId) => {
     // Create a deep clone of the project to avoid mutating the original object directly
@@ -306,6 +364,8 @@ export const CombinedComponent = () => {
     setShowFiltered((prev) => !prev); // Update context state as well
   };
 
+  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
+
   // Render the component
   return (
     <div className="combined-component">
@@ -316,6 +376,17 @@ export const CombinedComponent = () => {
       >
         {project ? (
           <>
+            {/* {isLoadingFilterResults && (
+              <div
+                className="combined-component__loading-cursor"
+                style={{
+                  left: cursorPosition.x + 10,
+                  top: cursorPosition.y + 10,
+                }}
+              >
+                <div className="combined-component__spinner"></div>
+              </div>
+            )} */}
             <section className="combined-component__wave-container">
               <header
                 style={{ fontWeight: "bold" }}

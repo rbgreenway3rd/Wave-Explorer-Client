@@ -32,15 +32,24 @@ export const NavBar = ({ combinedComponentRef }) => {
           setWellArraysUpdated={setWellArraysUpdated}
           setFile={setFile}
         />
-        <NavMenu />
-        <Tooltip title="Capture Screenshot of Entire Window" disableInteractive>
-          <IconButton
-            onClick={() => handleScreenshot(combinedComponentRef)}
-            style={{ marginLeft: "0.75em" }}
-          >
-            <AddAPhotoTwoTone />
-          </IconButton>
-        </Tooltip>
+        {project ? (
+          <>
+            <NavMenu />
+            <Tooltip
+              title="Capture Screenshot of Entire Window"
+              disableInteractive
+            >
+              <IconButton
+                onClick={() => handleScreenshot(combinedComponentRef)}
+                style={{ marginLeft: "0.75em" }}
+              >
+                <AddAPhotoTwoTone />
+              </IconButton>
+            </Tooltip>
+          </>
+        ) : (
+          ""
+        )}
       </section>
       <section className="navbar-middle">
         {/* Display the file name */}
