@@ -38,6 +38,7 @@
 
 .minigraph-and-controls__minigraph-canvas:hover {
     border: solid 0.02em rgb(100, 100, 100);
+    
 }
 
 .minigraph-and-controls__minigraph-grid {

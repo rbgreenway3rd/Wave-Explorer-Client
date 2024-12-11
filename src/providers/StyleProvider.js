@@ -81,12 +81,15 @@ export const theme = createTheme({
         root: {
           display: "flex",
           fontSize: "inherit",
-
+          // lineHeight: 1,
           alignContent: "center",
           alignItems: "center",
           alignSelf: "center",
           justifyContent: "center",
           align: "center",
+          textAlign: "center",
+          padding: 0,
+          margin: 0,
         },
       },
     },
@@ -114,7 +117,7 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           // border: "solid 1px black",
-          backgroundColor: "rgb(160,160,160)",
+          // backgroundColor: "rgb(160,160,160)",
           width: "100%",
         },
       },
@@ -139,7 +142,7 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           fontSize: "0.85em",
-          backgroundColor: "rgb(160,160,160)",
+          // backgroundColor: "rgb(160,160,160)",
           width: "100%",
         },
       },

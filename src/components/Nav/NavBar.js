@@ -35,17 +35,6 @@ export const NavBar = ({ combinedComponentRef }) => {
         {project ? (
           <>
             <NavMenu />
-            <Tooltip
-              title="Capture Screenshot of Entire Window"
-              disableInteractive
-            >
-              <IconButton
-                onClick={() => handleScreenshot(combinedComponentRef)}
-                style={{ marginLeft: "0.75em" }}
-              >
-                <AddAPhotoTwoTone />
-              </IconButton>
-            </Tooltip>
           </>
         ) : (
           ""
@@ -61,7 +50,20 @@ export const NavBar = ({ combinedComponentRef }) => {
               flexDirection: "row",
             }}
           >
-            <Typography>{project.title}</Typography>
+            <Typography style={{ marginRight: "1em" }}>
+              {project.title}
+            </Typography>
+            <Tooltip
+              title="Capture Screenshot of Entire Window"
+              disableInteractive
+              arrow
+            >
+              <IconButton
+                onClick={() => handleScreenshot(combinedComponentRef)}
+              >
+                <AddAPhotoTwoTone />
+              </IconButton>
+            </Tooltip>
           </div>
         ) : (
           ""

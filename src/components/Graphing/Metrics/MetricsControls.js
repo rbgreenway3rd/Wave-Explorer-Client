@@ -143,10 +143,10 @@ export const MetricsControls = ({
         <FormControl component="fieldset" className="metrics__radio-container">
           <FormLabel
             component="legend"
-            style={{
-              backgroundImage:
-                "linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
-            }}
+            // style={{
+            //   backgroundImage:
+            //     "linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
+            // }}
           >
             <Typography>Indicator</Typography>
           </FormLabel>
@@ -171,10 +171,10 @@ export const MetricsControls = ({
         <FormControl component="fieldset" className="metrics__radio-container">
           <FormLabel
             component="legend"
-            style={{
-              backgroundImage:
-                "linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
-            }}
+            // style={{
+            //   backgroundImage:
+            //     "linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
+            // }}
           >
             <Typography>Metric</Typography>
           </FormLabel>

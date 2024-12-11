@@ -45,10 +45,10 @@ export const MiniGraphControls = ({
           <FormControl component="fieldset">
             <FormLabel
               component="legend"
-              style={{
-                backgroundImage:
-                  "linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
-              }}
+              // style={{
+              //   backgroundImage:
+              //     "linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
+              // }}
             >
               Show
             </FormLabel>
@@ -78,10 +78,10 @@ export const MiniGraphControls = ({
         <FormControl component="fieldset">
           <FormLabel
             component="legend"
-            style={{
-              backgroundImage:
-                "linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
-            }}
+            // style={{
+            //   backgroundImage:
+            //     "linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
+            // }}
           >
             Indicator
           </FormLabel>

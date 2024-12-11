@@ -83,6 +83,7 @@ export const DynamicRatioModal = ({
                 value={index}
                 control={<Radio />}
                 label={indicator.indicatorName || `Indicator ${index + 1}`}
+                sx={{ backgroundColor: "transparent" }}
               />
             ))}
           </RadioGroup>
@@ -91,7 +92,10 @@ export const DynamicRatioModal = ({
         <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
           Select Denominator Indicator:
         </Typography>
-        <FormControl component="fieldset">
+        <FormControl
+          component="fieldset"
+          style={{ backgroundColor: "transparent" }}
+        >
           <RadioGroup
             value={denominator}
             onChange={(e) => setDenominator(Number(e.target.value))}
@@ -102,6 +106,7 @@ export const DynamicRatioModal = ({
                 value={index}
                 control={<Radio />}
                 label={indicator.indicatorName || `Indicator ${index + 1}`}
+                sx={{ backgroundColor: "transparent" }}
               />
             ))}
           </RadioGroup>

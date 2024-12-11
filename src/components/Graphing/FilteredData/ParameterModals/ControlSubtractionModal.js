@@ -4,6 +4,10 @@ import {
   Box,
   boxesIntersect,
 } from "@air/react-drag-to-select";
+import NotInterestedIcon from "@mui/icons-material/NotInterested";
+import HighlightOffIcon from "@mui/icons-material/HighlightOff";
+import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
 import {
   Dialog,
   DialogTitle,
@@ -15,6 +19,8 @@ import {
   ListItem,
   ListItemText,
   IconButton,
+  Typography,
+  Tooltip,
 } from "@mui/material";
 
 import { Delete } from "@mui/icons-material";
@@ -147,6 +153,22 @@ export const ControlSubtractionModal = ({
     setApplyWellArray(selectedWells);
   };
 
+  const clearControlWellArray = () => {
+    setControlWellArray([]);
+    setControlGrid(
+      controlGrid.map((row) =>
+        row.map((cell) => ({ ...cell, selected: false }))
+      )
+    );
+  };
+
+  const clearApplyWellArray = () => {
+    setApplyWellArray([]);
+    setApplyGrid(
+      applyGrid.map((row) => row.map((cell) => ({ ...cell, selected: false })))
+    );
+  };
+
   const clearSelections = () => {
     // Reset selected wells arrays
     setControlWellArray([]);
@@ -202,14 +224,54 @@ export const ControlSubtractionModal = ({
     };
 
     return (
+      // <div
+      //   className="grid-container"
+      //   ref={gridRef}
+      //   style={{
+      //     display: "grid",
+      //     gridTemplateColumns: `repeat(${number_of_columns}, 1fr)`, // Set equal column distribution
+      //     gridAutoRows: "1fr", // Rows should scale evenly with columns
+      //     gap: "0px",
+      //     height: "calc(30vh - 2em)", // Each grid takes half the modal height
+      //   }}
+      // >
+      //   {grid.map((row, rowIndex) =>
+      //     row.map((cell, colIndex) => (
+      //       <div
+      //         key={`${rowIndex}-${colIndex}`}
+      //         className={isControl ? "control-cell" : "apply-cell"}
+      //         onClick={() => handleSingleCellClick(rowIndex, colIndex)}
+      //         style={{
+      //           // width: "100%", // Take full width of grid cell
+      //           height: "100%", // Take full height of grid cell
+      //           aspectRatio: "1.6 / 1", // Ensure each cell's width is twice its height
+
+      //           border: "0.05em solid #000",
+      //           backgroundColor: cell.selected ? "blue" : "lightgrey",
+      //           display: "flex",
+      //           justifyContent: "center",
+      //           alignItems: "center",
+      //           fontSize: "0.7em",
+      //           color: cell.selected ? "white" : "black",
+      //           cursor: "pointer",
+      //         }}
+      //       >
+      //         {getWellLabel(rowIndex, colIndex)}
+      //       </div>
+      //     ))
+      //   )}
+      // </div>
       <div
         className="grid-container"
         ref={gridRef}
         style={{
           display: "grid",
-          gridTemplateColumns: `repeat(${number_of_columns}, 1fr)`,
+          gridTemplateColumns: `repeat(${number_of_columns}, 1fr)`, // Set equal column distribution
+          gridAutoRows: "1fr", // Rows should scale evenly with columns
           gap: "0px",
-          border: "0.025em solid #000",
+          justifyContent: "center", // Center the grid horizontally
+          alignItems: "center", // Center grid cells vertically
+          height: "calc(30vh - 2em)", // Each grid takes half the modal height
         }}
       >
         {grid.map((row, rowIndex) =>
@@ -219,8 +281,8 @@ export const ControlSubtractionModal = ({
               className={isControl ? "control-cell" : "apply-cell"}
               onClick={() => handleSingleCellClick(rowIndex, colIndex)}
               style={{
-                width: smallCanvasWidth,
-                height: smallCanvasHeight,
+                height: "100%", // Take full height of grid cell
+                aspectRatio: "1.6 / 1", // Ensure each cell's width is twice its height
                 border: "0.05em solid #000",
                 backgroundColor: cell.selected ? "blue" : "lightgrey",
                 display: "flex",
@@ -271,36 +333,43 @@ export const ControlSubtractionModal = ({
       onClose={onClose}
       sx={{
         "& .MuiDialog-paper": {
-          width: largeCanvasWidth + smallCanvasWidth || "80vw",
+          width: "50vw",
           maxWidth: "none",
           margin: 0,
-          height: "100vh",
+          // height: "auto",
+          height: "80vh",
         },
       }} // Set width dynamically or default to 80vw
     >
-      {/* <DialogTitle sx={{ display: "flex", justifyContent: "center" }}>
-        Edit Control Subtraction Filter Parameters
-      </DialogTitle> */}
-      <DialogContent
+      {/* <DialogContent
         sx={{
           display: "flex",
-          flexDirection: "column",
+          flexDirection: "column", // Stack items vertically
+          // alignContent: "center",
           alignItems: "center",
-          // justifyContent: "space-between",
-          // height: "100vh",
-          width: largeCanvasWidth + smallCanvasWidth || "80vw",
-          padding: 0,
+          gap: "5em", // Add consistent, small spacing between elements
+          padding: 0, // Ensure no extra padding
+          height: "100%", // Allow content to take full height
         }}
       >
-        <div style={{ position: "relative", marginBottom: "0.25em" }}>
+        <div
+          style={{
+            position: "relative",
+            marginBottom: 0, // Remove unnecessary margin
+          }}
+        >
           <h4
             style={{
               margin: 0,
-              marginBottom: "0.2em",
-              marginTop: "0.2em",
+              marginBottom: "0.2em", // Keep the margin small
               fontSize: "0.8em",
             }}
           >
+            <Tooltip title="Clear Selected Control Wells" disableInteractive>
+              <Button onClick={clearControlWellArray}>
+                <HighlightOffIcon />
+              </Button>
+            </Tooltip>
             Select Control Wells
           </h4>
           <ControlDragSelection
@@ -315,9 +384,134 @@ export const ControlSubtractionModal = ({
           />
         </div>
 
-        <div style={{ position: "relative" }}>
-          <h4 style={{ margin: 0, marginBottom: "0.2em", fontSize: "0.8em" }}>
+        <div
+          style={{
+            position: "relative",
+            marginTop: 0,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          <h4
+            style={{
+              margin: 0,
+              marginBottom: "0.2em", // Keep the margin small
+              fontSize: "0.8em",
+            }}
+          >
+            <Tooltip title="Clear Selected Apply Wells" disableInteractive>
+              <Button onClick={clearApplyWellArray}>
+                <HighlightOffIcon />
+              </Button>
+            </Tooltip>
             Select Apply Wells
+          </h4>
+          <ApplyDragSelection
+            selectableTargets={".apply-cell"}
+            selectionProps={{ boundingElement: "apply-grid" }}
+          />
+          <Grid
+            grid={applyGrid}
+            gridRef={applyGridRef}
+            isControl={false}
+            className="apply-grid"
+          />
+        </div>
+      </DialogContent> */}
+      <DialogContent
+        sx={{
+          display: "flex",
+          flexDirection: "column", // Stack items vertically
+          alignItems: "center", // Center items horizontally
+          // justifyContent: "center",
+          gap: "2em", // Add consistent spacing between grids
+          padding: 0,
+          paddingTop: "1.5em",
+          height: "100%", // Allow content to take full height
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center", // Center content horizontally
+            marginBottom: "1em",
+          }}
+        >
+          <h4
+            style={{
+              margin: 0,
+              marginBottom: "0.5em",
+              fontSize: "0.8em",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <Tooltip title="Clear Selected Control Wells" disableInteractive>
+              <Button onClick={clearControlWellArray}>
+                <HighlightOffIcon
+                  sx={{
+                    "&:hover": {
+                      color: "red",
+                    },
+                  }}
+                />
+              </Button>
+            </Tooltip>
+            Select Control-Wells
+            <HighlightOffIcon
+              sx={{
+                color: "transparent",
+              }}
+            />
+          </h4>
+          <ControlDragSelection
+            selectableTargets={".control-cell"}
+            selectionProps={{ boundingElement: "control-grid" }}
+          />
+          <Grid
+            grid={controlGrid}
+            gridRef={controlGridRef}
+            isControl={true}
+            className="control-grid"
+          />
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center", // Center content horizontally
+            marginTop: "1em",
+          }}
+        >
+          <h4
+            style={{
+              margin: 0,
+              marginBottom: "0.5em",
+              fontSize: "0.8em",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <Tooltip title="Clear Selected Apply Wells" disableInteractive>
+              <Button onClick={clearApplyWellArray}>
+                <HighlightOffIcon
+                  sx={{
+                    "&:hover": {
+                      color: "red",
+                    },
+                  }}
+                />
+              </Button>
+            </Tooltip>
+            Select Apply-Wells
+            <HighlightOffIcon
+              sx={{
+                color: "transparent",
+              }}
+            />
           </h4>
           <ApplyDragSelection
             selectableTargets={".apply-cell"}
@@ -339,10 +533,37 @@ export const ControlSubtractionModal = ({
           // width: "100%",
         }}
       >
-        <Button onClick={clearSelections}>Clear</Button>
-        <div>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button onClick={onSave}>Confirm</Button>
+        <Tooltip title="Clear All Well Selections" disableInteractive>
+          <Button
+            variant="text"
+            onClick={clearSelections}
+            sx={{
+              "&:hover": {
+                color: "red",
+              },
+            }}
+          >
+            <NotInterestedIcon />
+            Clear All
+          </Button>
+        </Tooltip>
+        <div style={{ display: "flex", flexDirection: "row" }}>
+          <Button
+            variant="outlined"
+            onClick={onClose}
+            style={{ paddingRight: "0.5em", marginRight: "0.25em" }}
+          >
+            <CloseIcon />
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={onSave}
+            style={{ paddingRight: "0.5em" }}
+          >
+            <CheckIcon />
+            Confirm
+          </Button>
         </div>
       </DialogActions>
     </Dialog>

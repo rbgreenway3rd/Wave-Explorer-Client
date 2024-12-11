@@ -545,8 +545,8 @@ export const FilterControls = ({
           style={{
             borderBottom: "none",
             // borderTop: "0.1em solid rgb(48, 79.5, 143)",
-            backgroundImage:
-              "linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
+            // backgroundImage:
+            //   "linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
             // boxShadow:
             // "0px 1px 2px  rgba(80, 80, 80, 0.25), 0px 1px 3px 3px rgb(100, 100, 100, 0.15), 0px 1px 4px 4px rgba(100, 100, 100, 0.07)",
           }}

@@ -27,7 +27,7 @@ import annotationPlugin from "chartjs-plugin-annotation";
 import zoomPlugin from "chartjs-plugin-zoom";
 import { ControlSubtraction_Filter } from "./Graphing/FilteredData/FilterModels.js";
 import html2canvas from "html2canvas";
-import { IconButton, Tooltip } from "@mui/material";
+import { IconButton, Tooltip, Typography } from "@mui/material";
 import { AddAPhotoTwoTone } from "@mui/icons-material";
 import AddAPhotoTwoToneIcon from "@mui/icons-material/AddAPhotoTwoTone";
 
@@ -109,6 +109,8 @@ export const CombinedComponent = () => {
   const [metricType, setMetricType] = useState("Max"); // Default metric type
   const [metricIndicator, setMetricIndicator] = useState(0); // Defaults to first indicator
 
+  // State for tracking filter application progress
+  const [isApplyingFilters, setIsApplyingFilters] = useState(false);
   const [isLoadingFilterResults, setIsLoadingFilterResults] = useState(false);
 
   // Extracted plate and experiment data from the project
@@ -152,64 +154,15 @@ export const CombinedComponent = () => {
     }
   };
 
-  const applyEnabledFilters = () => {
-    console.log(enabledFilters);
-    setIsLoadingFilterResults(true);
-    // Step 0: reset filtered data to raw data for all wells by copying the wellArrays
-    const updatedWellArrays = wellArrays.map((well) => ({
-      ...well,
-      indicators: well.indicators.map((indicator) => {
-        // Reset filteredData without deep cloning the entire indicator
-        indicator.filteredData = indicator.rawData.map((point) => ({
-          ...point,
-        }));
-        return indicator;
-      }),
-    }));
-    // Step 1: Apply filters to the copied updatedWellArrays and update indicators
-    for (let f = 0; f < enabledFilters.length; f++) {
-      if (enabledFilters[f] instanceof ControlSubtraction_Filter) {
-        console.log(updatedWellArrays);
-        enabledFilters[f].calculate_average_curve(updatedWellArrays);
-      }
-      enabledFilters[f].execute(updatedWellArrays);
-    }
-    // Update the project and selectedWellArray as before
-    const updatedProject = {
-      ...project,
-      plate: project.plate.map((plate, index) => {
-        if (index === 0) {
-          return {
-            ...plate,
-            experiments: plate.experiments.map((experiment, expIndex) => {
-              if (expIndex === 0) {
-                return {
-                  ...experiment,
-                  wells: updatedWellArrays, // Use the updated wellArrays
-                };
-              }
-              return experiment;
-            }),
-          };
-        }
-        return plate;
-      }),
-    };
-    setProject(updatedProject);
-    const updatedSelectedWellArray = selectedWellArray.map(
-      (selectedWell) =>
-        updatedWellArrays.find((well) => well.id === selectedWell.id) ||
-        selectedWell
-    );
-    setSelectedWellArray(updatedSelectedWellArray);
-    console.log("updated project: ", updatedProject);
-    console.log("updated selectedWellArray: ", updatedSelectedWellArray);
-    console.log("filters: ", enabledFilters);
-  };
   // const applyEnabledFilters = async () => {
-  //   setIsLoadingFilterResults(true); // Start loading animation
+  //   // setIsApplyingFilters(true); // Set the cursor to "wait"
+  //   setIsLoadingFilterResults(true);
+  //   console.log("true1");
   //   try {
   //     console.log(enabledFilters);
+  //     // setIsLoadingFilterResults(true);
+  //     setIsApplyingFilters(true); // Set the cursor to "wait"
+  //     console.log("true2");
   //     const updatedWellArrays = wellArrays.map((well) => ({
   //       ...well,
   //       indicators: well.indicators.map((indicator) => {
@@ -222,9 +175,10 @@ export const CombinedComponent = () => {
 
   //     for (let f = 0; f < enabledFilters.length; f++) {
   //       if (enabledFilters[f] instanceof ControlSubtraction_Filter) {
-  //         await enabledFilters[f].calculate_average_curve(updatedWellArrays);
+  //         console.log(updatedWellArrays);
+  //         enabledFilters[f].calculate_average_curve(updatedWellArrays);
   //       }
-  //       await enabledFilters[f].execute(updatedWellArrays);
+  //       await enabledFilters[f].execute(updatedWellArrays); // Use `await` if execute is asynchronous
   //     }
 
   //     const updatedProject = {
@@ -247,19 +201,87 @@ export const CombinedComponent = () => {
   //         return plate;
   //       }),
   //     };
-
   //     setProject(updatedProject);
-  //     setSelectedWellArray(
-  //       selectedWellArray.map(
-  //         (selectedWell) =>
-  //           updatedWellArrays.find((well) => well.id === selectedWell.id) ||
-  //           selectedWell
-  //       )
+
+  //     const updatedSelectedWellArray = selectedWellArray.map(
+  //       (selectedWell) =>
+  //         updatedWellArrays.find((well) => well.id === selectedWell.id) ||
+  //         selectedWell
   //     );
+  //     setSelectedWellArray(updatedSelectedWellArray);
+  //     console.log("updated project: ", updatedProject);
+  //     console.log("updated selectedWellArray: ", updatedSelectedWellArray);
+  //     console.log("filters: ", enabledFilters);
+  //   } catch (error) {
+  //     console.error("Error applying filters:", error);
   //   } finally {
-  //     setIsLoadingFilterResults(false); // End loading animation
+  //     setIsApplyingFilters(false); // Reset the cursor to default
+  //     setIsLoadingFilterResults(false);
+  //     console.log("false");
   //   }
   // };
+
+  const applyEnabledFilters = async () => {
+    setIsApplyingFilters(true); // Move this to the very start
+    setIsLoadingFilterResults(true);
+    console.log("Applying filters started...");
+    setTimeout(async () => {
+      try {
+        const updatedWellArrays = wellArrays.map((well) => ({
+          ...well,
+          indicators: well.indicators.map((indicator) => {
+            indicator.filteredData = indicator.rawData.map((point) => ({
+              ...point,
+            }));
+            return indicator;
+          }),
+        }));
+
+        for (let f = 0; f < enabledFilters.length; f++) {
+          if (enabledFilters[f] instanceof ControlSubtraction_Filter) {
+            enabledFilters[f].calculate_average_curve(updatedWellArrays);
+          }
+          await enabledFilters[f].execute(updatedWellArrays);
+        }
+
+        const updatedProject = {
+          ...project,
+          plate: project.plate.map((plate, index) => ({
+            ...plate,
+            experiments: plate.experiments.map((experiment, expIndex) => ({
+              ...experiment,
+              wells: updatedWellArrays,
+            })),
+          })),
+        };
+
+        setProject(updatedProject);
+        const updatedSelectedWellArray = selectedWellArray.map(
+          (selectedWell) =>
+            updatedWellArrays.find((well) => well.id === selectedWell.id) ||
+            selectedWell
+        );
+        setSelectedWellArray(updatedSelectedWellArray);
+      } catch (error) {
+        console.error("Error applying filters:", error);
+      } finally {
+        setIsApplyingFilters(false);
+        setIsLoadingFilterResults(false);
+      }
+    }, 0);
+  };
+
+  // useEffect(() => {
+  //   if (isApplyingFilters) {
+  //     console.log("wait");
+  //     document.body.style.cursor = "wait"; // Set the cursor to wait
+  //   } else {
+  //     document.body.style.cursor = "default"; // Reset the cursor
+  //   }
+  //   return () => {
+  //     document.body.style.cursor = "default"; // Cleanup on component unmount
+  //   };
+  // }, [isApplyingFilters]); // Trigger on `isApplyingFilters` change
 
   const handleToggleVisibility = (indicatorId) => {
     // Create a deep clone of the project to avoid mutating the original object directly
@@ -368,34 +390,48 @@ export const CombinedComponent = () => {
 
   // Render the component
   return (
-    <div className="combined-component">
+    <div
+      className="combined-component"
+      // style={{
+      //   cursor:
+      //     isApplyingFilters || isLoadingFilterResults ? "wait" : "default",
+      // }}
+    >
       <NavBar combinedComponentRef={combinedComponentRef} />
       <div
         className="combined-component__main-container"
         ref={combinedComponentRef}
       >
         {project ? (
-          <>
-            {/* {isLoadingFilterResults && (
-              <div
-                className="combined-component__loading-cursor"
-                style={{
-                  left: cursorPosition.x + 10,
-                  top: cursorPosition.y + 10,
-                }}
-              >
-                <div className="combined-component__spinner"></div>
-              </div>
-            )} */}
-            <section className="combined-component__wave-container">
-              <header
-                style={{ fontWeight: "bold" }}
-                className="combined-component__minigraph-header"
-              >
-                All Waves
+          <div
+            style={{
+              cursor: isApplyingFilters ? "wait" : "default",
+            }}
+          >
+            <section
+              className="combined-component__wave-container"
+              // style={{
+              //   cursor:
+              //     isApplyingFilters || isLoadingFilterResults
+              //       ? "wait"
+              //       : "default",
+              // }}
+            >
+              <header className="combined-component__minigraph-header">
+                <Typography
+                  style={{
+                    marginRight: "1em",
+                    fontWeight: "bold",
+                    fontSize: 15,
+                  }}
+                >
+                  All Waves
+                </Typography>
                 <Tooltip
                   title="Capture Screenshot of 'All Waves' Grid"
                   disableInteractive
+                  arrow
+                  placement="top"
                 >
                   <IconButton
                     onClick={() => handleScreenshot(miniGraphGridComponentRef)}
@@ -403,7 +439,6 @@ export const CombinedComponent = () => {
                     <AddAPhotoTwoTone
                       sx={{
                         fontSize: "0.75em",
-                        paddingLeft: "1em",
                       }}
                     />
                   </IconButton>
@@ -462,14 +497,15 @@ export const CombinedComponent = () => {
                   handleToggleVisibility={handleToggleVisibility}
                 />
               </div>
-              <header
-                style={{ fontWeight: "bold" }}
-                className="combined-component__large-graph-header"
-              >
-                Raw Waves
+              <header className="combined-component__large-graph-header">
+                <Typography style={{ marginRight: "1em", fontWeight: "bold" }}>
+                  Raw Waves
+                </Typography>
                 <Tooltip
                   title="Capture Screenshot of 'Raw Waves' Graph"
                   disableInteractive
+                  arrow
+                  placement="top"
                 >
                   <IconButton
                     onClick={() => handleScreenshot(largeGraphComponentRef)}
@@ -477,7 +513,6 @@ export const CombinedComponent = () => {
                     <AddAPhotoTwoTone
                       sx={{
                         fontSize: "0.75em",
-                        paddingLeft: "1em",
                       }}
                     />
                   </IconButton>
@@ -512,14 +547,14 @@ export const CombinedComponent = () => {
               </div>
             </section>
             <section className="combined-component__metrics-filter-container">
-              <header
-                style={{ fontWeight: "bold" }}
-                className="combined-component__metrics-header"
-              >
-                Metrics
+              <header className="combined-component__metrics-header">
+                <Typography style={{ marginRight: "1em", fontWeight: "bold" }}>
+                  Metrics
+                </Typography>
                 <Tooltip
                   title="Capture Screenshot of 'Metrics' Heatmap"
                   disableInteractive
+                  arrow
                 >
                   <IconButton
                     onClick={() => handleScreenshot(heatmapComponentRef)}
@@ -527,7 +562,6 @@ export const CombinedComponent = () => {
                     <AddAPhotoTwoTone
                       sx={{
                         fontSize: "0.75em",
-                        paddingLeft: "1em",
                       }}
                     />
                   </IconButton>
@@ -566,14 +600,14 @@ export const CombinedComponent = () => {
                   setAnnotationRangeEnd={setAnnotationRangeEnd}
                 />
               </div>
-              <header
-                style={{ fontWeight: "bold" }}
-                className="combined-component__filters-header"
-              >
-                Filtered Waves
+              <header className="combined-component__filters-header">
+                <Typography style={{ marginRight: "1em", fontWeight: "bold" }}>
+                  Filtered Waves
+                </Typography>
                 <Tooltip
                   title="Capture Screenshot of 'Filtered Waves' Graph"
                   disableInteractive
+                  arrow
                 >
                   <IconButton
                     onClick={() => handleScreenshot(filteredGraphComponentRef)}
@@ -581,7 +615,6 @@ export const CombinedComponent = () => {
                     <AddAPhotoTwoTone
                       sx={{
                         fontSize: "0.75em",
-                        paddingLeft: "1em",
                       }}
                     />
                   </IconButton>
@@ -626,7 +659,7 @@ export const CombinedComponent = () => {
                 />
               </div>
             </section>
-          </>
+          </div>
         ) : (
           <NoDataUploaded className="combined-component__no-data" />
         )}
