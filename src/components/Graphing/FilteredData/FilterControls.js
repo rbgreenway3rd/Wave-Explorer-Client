@@ -346,6 +346,7 @@ export const FilterControls = ({
       // append it to filter list
       console.log(newStaticRatioFilter);
       setSelectedFilters([...selectedFilters, newStaticRatioFilter]);
+      setEnabledFilters([...enabledFilters, newStaticRatioFilter]);
     } else if (selectedValue === "smoothingFilter") {
       const newSmoothingFilter = new Smoothing_Filter(
         selectedFilters.length,
@@ -354,6 +355,7 @@ export const FilterControls = ({
 
       console.log(newSmoothingFilter);
       setSelectedFilters([...selectedFilters, newSmoothingFilter]);
+      setEnabledFilters([...enabledFilters, newSmoothingFilter]);
     } else if (selectedValue === "controlSubtraction") {
       const newControlSubtractionFilter = new ControlSubtraction_Filter(
         selectedFilters.length,
@@ -363,10 +365,12 @@ export const FilterControls = ({
       );
       console.log(newControlSubtractionFilter);
       setSelectedFilters([...selectedFilters, newControlSubtractionFilter]);
+      setEnabledFilters([...enabledFilters, newControlSubtractionFilter]);
     } else if (selectedValue === "derivative") {
       const newDerivativeFilter = new Derivative_Filter(selectedFilters.length);
       console.log(newDerivativeFilter);
       setSelectedFilters([...selectedFilters, newDerivativeFilter]);
+      setEnabledFilters([...enabledFilters, newDerivativeFilter]);
     } else if (selectedValue === "outlierRemoval") {
       const newOutlierRemovalFilter = new OutlierRemoval_Filter(
         selectedFilters.length,
@@ -374,6 +378,7 @@ export const FilterControls = ({
       );
       console.log(newOutlierRemovalFilter);
       setSelectedFilters([...selectedFilters, newOutlierRemovalFilter]);
+      setEnabledFilters([...enabledFilters, newOutlierRemovalFilter]);
     } else if (selectedValue === "flatFieldCorrection") {
       const newFlatFieldCorrectionFilter = new FlatFieldCorrection_Filter(
         selectedFilters.length,
@@ -381,6 +386,7 @@ export const FilterControls = ({
       );
       console.log(newFlatFieldCorrectionFilter);
       setSelectedFilters([...selectedFilters, newFlatFieldCorrectionFilter]);
+      setEnabledFilters([...enabledFilters, newFlatFieldCorrectionFilter]);
     } else if (selectedValue === "dynamicRatio") {
       const newDynamicRatioFilter = new DynamicRatio_Filter(
         selectedFilters.length,
@@ -388,6 +394,7 @@ export const FilterControls = ({
       );
       console.log(newDynamicRatioFilter);
       setSelectedFilters([...selectedFilters, newDynamicRatioFilter]);
+      setEnabledFilters([...enabledFilters, newDynamicRatioFilter]);
     }
   };
 

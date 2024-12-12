@@ -30,6 +30,7 @@ import html2canvas from "html2canvas";
 import { IconButton, Tooltip, Typography } from "@mui/material";
 import { AddAPhotoTwoTone } from "@mui/icons-material";
 import AddAPhotoTwoToneIcon from "@mui/icons-material/AddAPhotoTwoTone";
+import { motion } from "framer-motion";
 
 // Register Chart.js components and plugins
 Chart.register(...registerables, annotationPlugin, zoomPlugin);
@@ -132,6 +133,18 @@ export const CombinedComponent = () => {
     };
   }, []);
 
+  // Shows window alert before refresh
+  useEffect(() => {
+    const onBeforeUnload = (ev) => {
+      ev.returnValue = "prevent reload";
+      return "prevent reload";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+    };
+  }, []);
+
   // Functions to handle zoom state changes
   const toggleZoomState = (currentZoomState) => {
     setZoomState(!currentZoomState);
@@ -153,73 +166,6 @@ export const CombinedComponent = () => {
       largeGraphRef.current.resetZoom(); // Call resetZoom on the chart instance
     }
   };
-
-  // const applyEnabledFilters = async () => {
-  //   // setIsApplyingFilters(true); // Set the cursor to "wait"
-  //   setIsLoadingFilterResults(true);
-  //   console.log("true1");
-  //   try {
-  //     console.log(enabledFilters);
-  //     // setIsLoadingFilterResults(true);
-  //     setIsApplyingFilters(true); // Set the cursor to "wait"
-  //     console.log("true2");
-  //     const updatedWellArrays = wellArrays.map((well) => ({
-  //       ...well,
-  //       indicators: well.indicators.map((indicator) => {
-  //         indicator.filteredData = indicator.rawData.map((point) => ({
-  //           ...point,
-  //         }));
-  //         return indicator;
-  //       }),
-  //     }));
-
-  //     for (let f = 0; f < enabledFilters.length; f++) {
-  //       if (enabledFilters[f] instanceof ControlSubtraction_Filter) {
-  //         console.log(updatedWellArrays);
-  //         enabledFilters[f].calculate_average_curve(updatedWellArrays);
-  //       }
-  //       await enabledFilters[f].execute(updatedWellArrays); // Use `await` if execute is asynchronous
-  //     }
-
-  //     const updatedProject = {
-  //       ...project,
-  //       plate: project.plate.map((plate, index) => {
-  //         if (index === 0) {
-  //           return {
-  //             ...plate,
-  //             experiments: plate.experiments.map((experiment, expIndex) => {
-  //               if (expIndex === 0) {
-  //                 return {
-  //                   ...experiment,
-  //                   wells: updatedWellArrays,
-  //                 };
-  //               }
-  //               return experiment;
-  //             }),
-  //           };
-  //         }
-  //         return plate;
-  //       }),
-  //     };
-  //     setProject(updatedProject);
-
-  //     const updatedSelectedWellArray = selectedWellArray.map(
-  //       (selectedWell) =>
-  //         updatedWellArrays.find((well) => well.id === selectedWell.id) ||
-  //         selectedWell
-  //     );
-  //     setSelectedWellArray(updatedSelectedWellArray);
-  //     console.log("updated project: ", updatedProject);
-  //     console.log("updated selectedWellArray: ", updatedSelectedWellArray);
-  //     console.log("filters: ", enabledFilters);
-  //   } catch (error) {
-  //     console.error("Error applying filters:", error);
-  //   } finally {
-  //     setIsApplyingFilters(false); // Reset the cursor to default
-  //     setIsLoadingFilterResults(false);
-  //     console.log("false");
-  //   }
-  // };
 
   const applyEnabledFilters = async () => {
     setIsApplyingFilters(true); // Move this to the very start
@@ -270,18 +216,6 @@ export const CombinedComponent = () => {
       }
     }, 0);
   };
-
-  // useEffect(() => {
-  //   if (isApplyingFilters) {
-  //     console.log("wait");
-  //     document.body.style.cursor = "wait"; // Set the cursor to wait
-  //   } else {
-  //     document.body.style.cursor = "default"; // Reset the cursor
-  //   }
-  //   return () => {
-  //     document.body.style.cursor = "default"; // Cleanup on component unmount
-  //   };
-  // }, [isApplyingFilters]); // Trigger on `isApplyingFilters` change
 
   const handleToggleVisibility = (indicatorId) => {
     // Create a deep clone of the project to avoid mutating the original object directly
@@ -386,17 +320,9 @@ export const CombinedComponent = () => {
     setShowFiltered((prev) => !prev); // Update context state as well
   };
 
-  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
-
   // Render the component
   return (
-    <div
-      className="combined-component"
-      // style={{
-      //   cursor:
-      //     isApplyingFilters || isLoadingFilterResults ? "wait" : "default",
-      // }}
-    >
+    <div className="combined-component">
       <NavBar combinedComponentRef={combinedComponentRef} />
       <div
         className="combined-component__main-container"
@@ -408,15 +334,8 @@ export const CombinedComponent = () => {
               cursor: isApplyingFilters ? "wait" : "default",
             }}
           >
-            <section
-              className="combined-component__wave-container"
-              // style={{
-              //   cursor:
-              //     isApplyingFilters || isLoadingFilterResults
-              //       ? "wait"
-              //       : "default",
-              // }}
-            >
+            {" "}
+            <section className="combined-component__wave-container">
               <header className="combined-component__minigraph-header">
                 <Typography
                   style={{
@@ -446,7 +365,6 @@ export const CombinedComponent = () => {
               </header>
               <div
                 className="combined-component__minigraph"
-                // style={{ width: largeCanvasWidth, height: largeCanvasHeight }}
                 ref={miniGraphGridComponentRef}
               >
                 <MiniGraphGrid
@@ -574,10 +492,6 @@ export const CombinedComponent = () => {
                 <Heatmap
                   selectedWellArray={selectedWellArray}
                   timeData={extractedIndicatorTimes}
-                  // smallCanvasWidth={smallCanvasWidth}
-                  // smallCanvasHeight={smallCanvasHeight}
-                  // largeCanvasWidth={largeCanvasWidth}
-                  // largeCanvasHeight={largeCanvasHeight}
                   columnLabels={columnLabels}
                   rowLabels={rowLabels}
                   analysisData={analysisData}
@@ -652,10 +566,6 @@ export const CombinedComponent = () => {
                   setAnnotations={setAnnotations}
                   setAnnotationRangeStart={setAnnotationRangeStart}
                   setAnnotationRangeEnd={setAnnotationRangeEnd}
-                  // largeCanvasWidth={largeCanvasWidth}
-                  // largeCanvasHeight={largeCanvasHeight}
-                  // smallCanvasWidth={smallCanvasWidth}
-                  // smallCanvasHeight={smallCanvasHeight}
                 />
               </div>
             </section>

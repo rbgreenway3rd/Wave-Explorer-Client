@@ -4,7 +4,7 @@ export class StaticRatio_Filter {
     this.id = "staticRatio_" + JSON.stringify(num);
     this.name = "Static Ratio";
     // this.desc = "Static Ratio filter";
-    this.isEnabled = false;
+    this.isEnabled = true;
     this.start = 0;
     this.end = 5;
     this.onEdit = onEdit; // Callback to open the modal
@@ -65,7 +65,7 @@ export class Smoothing_Filter {
   constructor(num, onEdit) {
     this.id = "smoothingFilter_" + JSON.stringify(num);
     this.name = "Smoothing";
-    this.isEnabled = false;
+    this.isEnabled = true;
     this.windowWidth = 5; // Moving window width
     this.onEdit = onEdit;
   }
@@ -127,7 +127,7 @@ export class ControlSubtraction_Filter {
     this.id = "controlSubtraction_" + JSON.stringify(num);
     this.name = "Control Subtraction";
 
-    this.isEnabled = false;
+    this.isEnabled = true;
     this.controlWellArray = []; // list of {row, col} for control wells
     this.applyWellArray = []; // list of {row, col} for apply wells
     this.number_of_columns = number_of_columns; // Total columns in the grid layout (e.g., 24 for a 24x16 grid)
@@ -158,105 +158,6 @@ export class ControlSubtraction_Filter {
     console.log("apply: ", applyWellArray);
   }
 
-  // calculate_average_curve(wells) {
-  //   console.log("avg curve calc");
-  //   this.average_curve = [];
-
-  //   // Ensure control wells are available
-  //   if (!this.controlWellArray.length) {
-  //     console.error("No control wells defined.");
-  //     return;
-  //   }
-
-  //   // Ensure filteredData and rawData have the same length in each well
-  //   wells.forEach((well) => {
-  //     well.indicators.forEach((indicator) => {
-  //       const rawData = indicator.rawData;
-  //       const filteredData = indicator.filteredData;
-
-  //       // Check if rawData and filteredData have the same length, and pad them if needed
-  //       const maxLength = Math.max(rawData.length, filteredData.length);
-
-  //       // Pad filteredData if shorter
-  //       while (filteredData.length < maxLength) {
-  //         filteredData.push({ ...filteredData[filteredData.length - 1] });
-  //       }
-
-  //       // Pad rawData if shorter
-  //       while (rawData.length < maxLength) {
-  //         rawData.push({ ...rawData[rawData.length - 1] });
-  //       }
-
-  //       // Handle missing rawData entries by copying the last available entry
-  //       for (let i = 1; i < rawData.length; i++) {
-  //         if (!rawData[i] || rawData[i].x === undefined) {
-  //           rawData[i] = { ...rawData[i - 1] }; // Use previous entry as fallback
-  //         }
-  //       }
-
-  //       // Handle missing filteredData entries by copying the last available entry
-  //       for (let i = 1; i < filteredData.length; i++) {
-  //         if (!filteredData[i] || filteredData[i].y === undefined) {
-  //           filteredData[i] = { ...filteredData[i - 1] }; // Use previous entry as fallback
-  //         }
-  //       }
-  //     });
-  //   });
-
-  //   // Loop through each data point (assumes rawData has same length across all wells)
-  //   for (let i = 0; i < wells[0].indicators[0].rawData.length; i++) {
-  //     // Loop over each indicator
-  //     for (let k = 0; k < wells[0].indicators.length; k++) {
-  //       let avg = 0.0;
-  //       let validControlCount = 0; // Track valid control wells
-
-  //       // Loop through each control well
-  //       for (let j = 0; j < this.controlWellArray.length; j++) {
-  //         const row = this.controlWellArray[j].row;
-  //         const col = this.controlWellArray[j].col;
-  //         const ndx = row * this.number_of_columns + col;
-
-  //         // Check if filteredData is available for this well and indicator
-  //         if (
-  //           wells[ndx] &&
-  //           wells[ndx].indicators[k] &&
-  //           wells[ndx].indicators[k].filteredData[i]
-  //         ) {
-  //           avg += wells[ndx].indicators[k].filteredData[i].y;
-  //           validControlCount++;
-  //         } else {
-  //           console.warn(
-  //             `Filtered data missing for well at row ${row}, col ${col}`
-  //           );
-  //         }
-  //       }
-
-  //       // Avoid division by zero
-  //       if (validControlCount > 0) {
-  //         avg = avg / validControlCount;
-  //       } else {
-  //         avg = 0; // No valid control wells, default to 0
-  //       }
-
-  //       // Safely access rawData and check if data exists before adding it to the average curve
-  //       const rawDataPoint = wells[0].indicators[k].rawData[i];
-
-  //       if (rawDataPoint && rawDataPoint.x !== undefined) {
-  //         this.average_curve.push({
-  //           x: rawDataPoint.x,
-  //           y: avg,
-  //         });
-  //       } else {
-  //         // Handle missing rawData here
-  //         console.warn(
-  //           `Missing rawData for indicator at index ${k}, data point ${i}`
-  //         );
-  //       }
-  //     }
-  //   }
-
-  //   console.log(this.average_curve);
-  // }
   calculate_average_curve(wells) {
     console.log("avg curve calc");
     this.average_curve = Array(wells[0].indicators.length)
@@ -374,7 +275,7 @@ export class Derivative_Filter {
     this.id = "Derivative_" + JSON.stringify(num);
     this.name = "Derivative";
 
-    this.isEnabled = false;
+    this.isEnabled = true;
     this.onEdit = onEdit; // Callback to open the modal
   }
 
@@ -413,7 +314,7 @@ export class OutlierRemoval_Filter {
     this.id = "outlierRemovalFilter_" + JSON.stringify(num);
     this.name = "Outlier Removal";
 
-    this.isEnabled = false;
+    this.isEnabled = true;
     this.halfWindow = 2;
     this.threshold = 3;
     this.onEdit = onEdit;
@@ -513,7 +414,7 @@ export class FlatFieldCorrection_Filter {
     this.id = "flatfieldCorrection_" + JSON.stringify(num);
     this.name = "Flat Field Correction";
 
-    this.isEnabled = false;
+    this.isEnabled = true;
     this.correctionMatrix = [];
     this.onEdit = onEdit;
   }
@@ -558,7 +459,7 @@ export class DynamicRatio_Filter {
     this.id = "dynamicRatio_" + JSON.stringify(num);
     this.name = "Dynamic Ratio";
 
-    this.isEnabled = false;
+    this.isEnabled = true;
     this.numerator = 0;
     this.denominator = 1;
     this.onEdit = onEdit;

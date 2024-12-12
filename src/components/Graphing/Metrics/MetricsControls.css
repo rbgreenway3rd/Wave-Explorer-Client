@@ -1,62 +1,68 @@
-.metrics__controls-container {
-    display: flex;
-    flex-direction: column;
-    /* justify-content: space-between; */
-    align-content: center;
-    /* border: solid 1px black; */
-    /* padding-left: 2px;
-    padding-right: 2px; */
-    position: relative;
-    height: 100%;
-    margin-left: 0.25em;
-    margin-right: 0.25em;
-    background-color:  rgb(180, 180, 180);
-    clip-path: inset(0px -10px -10px -10px);
-box-shadow: 0px 1px 2px 2px rgba(80, 80, 80, 0.25), 0px 1px 4px 4px rgb(100, 100, 100, 0.15), 0px 1px 8px 5px rgba(100, 100, 100, 0.07);    /* box-shadow: 0px 3px 1px -2px rgb(0, 0, 0), 0px 2px 3px 1px rgba(0, 0, 0, 0.535), 0px 5px 5px 0px rgba(0, 0, 0, 0.393); */
+
+ .metrics__controls-container {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+  position: relative;
+  background-color: rgb(180, 180, 180);
+  margin-left: 0.25em;
+  margin-right: 0.25em;
+  clip-path: inset(0px -10px -10px -10px);
+  box-shadow: 0px 1px 2px 2px rgba(80, 80, 80, 0.25), 0px 1px 4px 4px rgb(100, 100, 100, 0.15), 0px 1px 8px 5px rgba(100, 100, 100, 0.07);
 }
 
 .metrics__management{
-    /* display: flex; */
-    /* flex-direction: column; */
-    /* width: 95%; */
-    /* border: solid 1px black; */
-    /* border: solid 0.2em rgb(140, 140, 140); */
     background-color:  rgb(140, 140, 140);
-/* box-shadow: 0px 1px 1px 1px rgba(100, 100, 100, 0.25), 0px 1px 4px 2px rgb(100, 100, 100, 0.15), 0px 2px 8px 3px rgba(100, 100, 100, 0.07);    border-top: none; */
-    /* border-radius: 0.2em; */
-    align-self: center;
-    align-content: center;
-    /* justify-content: space-between; */
+    padding-bottom: 0.25em;
+    flex-shrink: 0;
 }
+
+.metrics__controls-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* Fills the parent container */
+  position: relative;
+  overflow: hidden; /* Prevent overflow issues */
+}
+
+.saved-metrics-list-container {
+  flex-grow: 1; /* Take up remaining space within metrics__controls-container */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Constrain content inside */
+  position: relative;
+}
+
+.saved-metrics-list {
+  flex-grow: 1; /* Take up remaining space within the container */
+  overflow-y: auto; /* Enable scrolling when content overflows */
+  margin-bottom: 0.25em;
+  border: 1px solid white;
+  background-color: lightgray;
+}
+
 
 .metrics__radio-container {
     display: flex;
     flex-direction: column;
-    /* justify-items: center;
-    align-items: center; */
-    /* width: 95% */
-    /* width: 100%; */
     margin-left: 0.25em;
     margin-right: 0.25em;
 }
 
 .save-metric-button {
-   
-    background-image: linear-gradient(-180deg, rgb(96, 127, 190) 0%, rgb(0,32,96) 100%);
- 
+  background-image: linear-gradient(-180deg, rgb(96, 127, 190) 0%, rgb(0,32,96) 100%);
   box-shadow: none;
 }
 
 
-.metrics-controls__reset-annotations{
-  align-self: center;
-  /* overflow: hidden; */
-  /* width: 95%; */
-  margin-top: 0.25em;
-  /* margin-left: 0.5em; */
-  /* margin-right: 0.5em; */
-/* box-shadow: 0px 1px 2px 2px rgba(80, 80, 80, 0.25), 0px 1px 4px 4px rgb(100, 100, 100, 0.15), 0px 1px 8px 5px rgba(100, 100, 100, 0.07);    box-shadow: 0px 3px 1px -2px rgb(0, 0, 0), 0px 2px 3px 1px rgba(0, 0, 0, 0.535), 0px 5px 5px 0px rgba(0, 0, 0, 0.393); */
-
+ .metrics-controls__reset-annotations {
+  position: absolute;
+  bottom: 0;
+  margin-top: auto; /* Push to bottom of container */
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }
 .metrics-controls__reset-annotations.animate-line::before {
   content: "";
@@ -70,8 +76,6 @@ box-shadow: 0px 1px 2px 2px rgba(80, 80, 80, 0.25), 0px 1px 4px 4px rgb(100, 100
   animation: slide-line 0.5s ease-in-out ;
 }
 
-
-
 @keyframes slide-line {
   0% {
     transform: translateX(0%); /* start */
@@ -84,28 +88,43 @@ box-shadow: 0px 1px 2px 2px rgba(80, 80, 80, 0.25), 0px 1px 4px 4px rgb(100, 100
   }
 }
 
+  .saved-metrics-list-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    position: relative;
+  }
 
-
-.saved-metrics-list {
-    /* display: flex;
-  flex-direction: column; */
-  /* align-items: center; */
-  align-self: center;
-  /* width: 95%; */
-  height: 100%;
-  max-height: 10em;
+ .saved-metrics-list {
+  /* display: flex; */
+  flex-grow: 1;
+  overflow-y: auto;
   margin-bottom: 0.25em;
-  /* max-height: 100%; */
-  /* border: 1px solid rgb(180,180,180); */
-  
-  /* max-height: auto; */
-  overflow-y:auto;
+  border: 1px solid white;
   background-color: lightgray;
-  /* box-shadow: 0px 1px 1px 1px rgba(100, 100, 100, 0.25), 0px 1px 4px 2px rgb(100, 100, 100, 0.15), 0px 2px 8px 3px rgba(100, 100, 100, 0.07); */
-  /* position: relative; */
-  /* bottom: 0;
-  position: absolute; */
 }
+
+/* Default max-height for smaller displays */
+.saved-metrics-list {
+  max-height: 4em;
+  overflow-y: auto; /* Scrollbar appears when content overflows */
+}
+
+/* For larger displays (e.g., larger than 768px) */
+@media (min-height: 660px) {
+  .saved-metrics-list {
+    max-height: 8em;
+  }
+}
+
+/* For even larger displays (e.g., larger than 1024px) */
+@media (min-height: 1100px) {
+  .saved-metrics-list {
+    max-height: 16em;
+  }
+}
+
 
 /* For WebKit browsers (Chrome, Safari) */
 .saved-metrics-list::-webkit-scrollbar {

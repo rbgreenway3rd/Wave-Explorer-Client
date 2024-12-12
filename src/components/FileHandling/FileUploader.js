@@ -53,73 +53,6 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
       : "A" + String.fromCharCode(row + 40) + String(col + 1).padStart(2, "0");
   };
 
-  // Distribute extracted data into project, plate, experiment, wells, and indicators
-  // const distributeData = (rowLabels, analysisData, extractedIndicatorTimes) => {
-  //   const plateDimensions = extractedRows * extractedColumns;
-  //   const newProject = new Project(
-  //     extractedProjectTitle,
-  //     extractedProjectDate,
-  //     extractedProjectTime,
-  //     extractedProjectInstrument,
-  //     extractedProjectProtocol
-  //   ); // Create new project
-  //   const newPlate = new Plate(
-  //     extractedRows,
-  //     extractedColumns,
-  //     extractedAssayPlateBarcode,
-  //     extractedAddPlateBarcode,
-  //     plateDimensions
-  //   ); // Create new plate
-  //   newProject.plate.push(newPlate);
-  //   const newExperiment = new Experiment(
-  //     extractedBinning,
-  //     extractedRows,
-  //     extractedColumns,
-  //     extractedIndicatorConfigurations,
-  //     extractedOperator
-  //   ); // Create new experiment
-  //   newPlate.experiments.push(newExperiment);
-
-  //   let newWellArrays = [];
-  //   let wellId = 1;
-  //   for (let rowIndex = 0; rowIndex < rowLabels.length; rowIndex++) {
-  //     for (let colIndex = 1; colIndex <= extractedColumns; colIndex++) {
-  //       const wellKey = `${rowLabels[rowIndex]}${colIndex}`;
-  //       const wellLabel = getWellLabel(rowIndex, colIndex - 1);
-  //       const newWell = new Well(
-  //         wellId++,
-  //         wellKey,
-  //         wellLabel,
-  //         colIndex - 1,
-  //         rowIndex
-  //       ); // Create new well
-  //       let data = [];
-  //       let i = 0;
-  //       for (
-  //         let y = rowIndex * extractedColumns + (colIndex - 1);
-  //         y < analysisData.length;
-  //         y += extractedRows * extractedColumns
-  //       ) {
-  //         data.push({ x: extractedIndicatorTimes[i], y: analysisData[y] });
-  //         i++;
-  //       }
-  //       const indicator = new Indicator(
-  //         data,
-  //         [...data],
-  //         extractedIndicatorTimes,
-  //         true
-  //       ); // Create new indicator
-  //       newWell.indicators.push(indicator);
-  //       newExperiment.wells.push(newWell); // Add well to experiment
-  //       newWellArrays.push(newWell); // Add well to array
-  //     }
-  //   }
-  //   setWellArraysUpdated(true); // Notify that well arrays are updated
-  //   setSelectedWellArray([]);
-  //   setProject(newProject); // Set the new project in context
-  //   console.log(newProject);
-  //   console.log("extractedIndicators: ", extractedIndicators);
-  // };
   const distributeData = (
     rowLabels,
     analysisData, // Expecting an object with indicator names as keys, each containing an array of data points
@@ -256,14 +189,18 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
           padding: 0,
           marginRight: "1.5em",
           minWidth: 30,
-          display: "flex", // Flexbox for centering
-          justifyContent: "center", // Center horizontally
-          alignItems: "center", // Center vertically
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
           borderRadius: "10%",
         }}
       >
         <DriveFolderUploadIcon />
-        <VisuallyHiddenInput type="file" onChange={handleFileSelect} multiple />
+        <VisuallyHiddenInput
+          type="file"
+          accept="file/dat, .dat"
+          onChange={handleFileSelect}
+        />
       </Button>
     </Tooltip>
   );

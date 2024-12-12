@@ -143,8 +143,6 @@ export const MiniGraphGrid = ({
     selectedIndexes.current = newSelectedIndexes;
   };
 
-  console.log(selectableItems.current);
-
   // Handle selection end to finalize selected wells
   const handleSelectionEnd = () => {
     const wellsToSelect = []; // Array to keep track of wells to select
@@ -308,6 +306,7 @@ export const MiniGraphGrid = ({
                 height: buttonHeight / 2,
                 alignItems: "center",
                 padding: 0,
+                fontWeight: "bold",
               }}
               onClick={() =>
                 handleAllSelectorClick(

@@ -48,21 +48,21 @@ export const LargeGraphControls = ({
               <RadioGroup
                 aria-label="zoom mode"
                 name="zoom-mode"
-                defaultValue="zoomXY"
+                defaultValue="xy"
                 onChange={(e) => changeZoomMode(e.target.value)}
               >
                 <FormControlLabel
-                  value="zoomX"
+                  value="x"
                   control={<Radio disabled={!zoomState} />}
                   label="X"
                 />
                 <FormControlLabel
-                  value="zoomY"
+                  value="y"
                   control={<Radio disabled={!zoomState} />}
                   label="Y"
                 />
                 <FormControlLabel
-                  value="zoomXY"
+                  value="xy"
                   control={<Radio disabled={!zoomState} />}
                   label="X-Y"
                 />
@@ -92,21 +92,21 @@ export const LargeGraphControls = ({
               <RadioGroup
                 aria-label="pan mode"
                 name="pan-mode"
-                defaultValue="panXY"
+                defaultValue="xy"
                 onChange={(e) => changePanMode(e.target.value)}
               >
                 <FormControlLabel
-                  value="panX"
+                  value="x"
                   control={<Radio disabled={!panState} />}
                   label="X"
                 />
                 <FormControlLabel
-                  value="panY"
+                  value="y"
                   control={<Radio disabled={!panState} />}
                   label="Y"
                 />
                 <FormControlLabel
-                  value="panXY"
+                  value="xy"
                   control={<Radio disabled={!panState} />}
                   label="X-Y"
                 />
