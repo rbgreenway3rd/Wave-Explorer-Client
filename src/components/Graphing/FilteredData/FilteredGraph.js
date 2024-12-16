@@ -32,32 +32,13 @@ ChartJS.register(
 );
 
 export const FilteredGraph = ({
-  analysisData,
-  // wellArrays,
   filteredGraphData,
-  // extractedIndicatorTimes,
   annotationRangeStart,
   setAnnotationRangeStart,
   annotationRangeEnd,
   setAnnotationRangeEnd,
-  // annotations,
-  // setAnnotations,
   filteredGraphConfig,
 }) => {
-  // export const FilteredGraph = forwardRef(
-  //   (
-  //     {
-  //       filteredGraphData,
-  //       filteredGraphConfig,
-  //       annotationRangeStart,
-  //       setAnnotationRangeStart,
-  //       annotationRangeEnd,
-  //       setAnnotationRangeEnd,
-  //       annotations,
-  //       setAnnotations,
-  //     },
-  //     ref
-  //   ) => {
   const { wellArrays, extractedIndicatorTimes, annotations, setAnnotations } =
     useContext(DataContext);
   const chartRef = useRef(null);
@@ -95,12 +76,6 @@ export const FilteredGraph = ({
     };
   }, []);
 
-  // useEffect(() => {
-  //   if (chartRef.current) {
-  //     updateChart(chartRef.current, wellArrays, extractedIndicatorTimes);
-  //   }
-  // }, [wellArrays, extractedIndicatorTimes]);
-
   // Recalculate min/max y-values dynamically whenever filteredGraphData changes
   const calculateYMinMax = (data) => {
     const allYValues = data.datasets.flatMap((dataset) =>
@@ -115,19 +90,6 @@ export const FilteredGraph = ({
     () => calculateYMinMax(filteredGraphData),
     [filteredGraphData]
   );
-
-  // // Generate the chart options with dynamic min/max y-values
-  // const options = useMemo(() => {
-  //   return FilteredGraphOptions(
-  //     [],
-  //     wellArrays,
-  //     filteredGraphData,
-  //     extractedIndicatorTimes,
-  //     annotations
-  //     // minYValue,
-  //     // maxYValue
-  //   );
-  // }, [wellArrays, extractedIndicatorTimes, annotations, filteredGraphData]);
 
   // Update chart when annotations change
   useEffect(() => {
@@ -243,7 +205,7 @@ export const FilteredGraph = ({
 
   return (
     <Line
-      key={`${largeCanvasWidth}-${largeCanvasHeight}`}
+      key={JSON.stringify(filteredGraphData)}
       ref={chartRef}
       className="filtered-graph-canvas"
       data={filteredGraphData}

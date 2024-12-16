@@ -84,7 +84,7 @@ export const LargeGraph = forwardRef(
     return (
       // <div ref={componentRef}>
       <Line
-        key={`${largeCanvasWidth}-${largeCanvasHeight}`}
+        key={JSON.stringify(rawGraphData)}
         className="large-graph-canvas"
         data={rawGraphData}
         options={largeGraphConfig}
