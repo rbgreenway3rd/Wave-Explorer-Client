@@ -1,5 +1,4 @@
-
- .metrics__controls-container {
+.metrics__controls-container {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -12,103 +11,117 @@
   box-shadow: 0px 1px 2px 2px rgba(80, 80, 80, 0.25), 0px 1px 4px 4px rgb(100, 100, 100, 0.15), 0px 1px 8px 5px rgba(100, 100, 100, 0.07);
 }
 
-.metrics__management{
-    background-color:  rgb(140, 140, 140);
-    padding-bottom: 0.25em;
-    flex-shrink: 0;
+.metrics__management {
+  background-color: rgb(140, 140, 140);
+  padding-bottom: 0.25em;
+  flex-shrink: 0;
 }
 
 .metrics__controls-container {
   display: flex;
   flex-direction: column;
-  height: 100%; /* Fills the parent container */
+  height: 100%;
+  /* Fills the parent container */
   position: relative;
-  overflow: hidden; /* Prevent overflow issues */
+  overflow: hidden;
+  /* Prevent overflow issues */
 }
 
 .saved-metrics-list-container {
-  flex-grow: 1; /* Take up remaining space within metrics__controls-container */
+  flex-grow: 1;
+  /* Take up remaining space within metrics__controls-container */
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* Constrain content inside */
+  overflow: hidden;
+  /* Constrain content inside */
   position: relative;
 }
 
 .saved-metrics-list {
-  flex-grow: 1; /* Take up remaining space within the container */
-  overflow-y: auto; /* Enable scrolling when content overflows */
+  flex-grow: 1;
+  /* Take up remaining space within the container */
+  overflow-y: auto;
+  /* Enable scrolling when content overflows */
   margin-bottom: 0.25em;
+  margin-left: 0.25em;
+  margin-right: 0.25em;
   border: 1px solid white;
-  background-color: lightgray;
+  border-top: none;
+  background-color: white;
+  /* background-color: lightgray; */
 }
 
+.saved-metric {
+  /* border-top-left-radius: 25%; */
+  /* border-top-right-radius: 25%; */
+}
 
 .metrics__radio-container {
-    display: flex;
-    flex-direction: column;
-    margin-left: 0.25em;
-    margin-right: 0.25em;
+  display: flex;
+  flex-direction: column;
+  margin-left: 0.25em;
+  margin-right: 0.25em;
 }
 
 .save-metric-button {
-  background-image: linear-gradient(-180deg, rgb(96, 127, 190) 0%, rgb(0,32,96) 100%);
+  background-image: linear-gradient(-180deg, rgb(96, 127, 190) 0%, rgb(0, 32, 96) 100%);
   box-shadow: none;
 }
 
 
- .metrics-controls__reset-annotations {
+.metrics-controls__reset-annotations {
   position: absolute;
   bottom: 0;
-  margin-top: auto; /* Push to bottom of container */
+  margin-top: auto;
+  /* Push to bottom of container */
   display: flex;
   justify-content: center;
   width: 100%;
 }
+
 .metrics-controls__reset-annotations.animate-line::before {
   content: "";
   position: absolute;
   top: 0;
   left: 0;
-  width: 4px; /* line width */
+  width: 4px;
+  /* line width */
   height: 100%;
   transform-origin: left;
   background-color: green;
-  animation: slide-line 0.5s ease-in-out ;
+  animation: slide-line 0.5s ease-in-out;
 }
 
 @keyframes slide-line {
   0% {
-    transform: translateX(0%); /* start */
+    transform: translateX(0%);
+    /* start */
   }
+
   50% {
-    transform: translateX(2000%); /* midpoint */
+    transform: translateX(2000%);
+    /* midpoint */
   }
+
   100% {
-    transform: translateX(-100%); /* end */
+    transform: translateX(-100%);
+    /* end */
   }
 }
 
-  .saved-metrics-list-container {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    position: relative;
-  }
-
- .saved-metrics-list {
-  /* display: flex; */
-  flex-grow: 1;
+.saved-metrics-list-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
-  margin-bottom: 0.25em;
-  border: 1px solid white;
-  background-color: lightgray;
+  position: relative;
 }
 
 /* Default max-height for smaller displays */
 .saved-metrics-list {
   max-height: 4em;
-  overflow-y: auto; /* Scrollbar appears when content overflows */
+  overflow-y: auto;
+  /* Scrollbar appears when content overflows */
 }
 
 /* For larger displays (e.g., larger than 768px) */
@@ -128,28 +141,35 @@
 
 /* For WebKit browsers (Chrome, Safari) */
 .saved-metrics-list::-webkit-scrollbar {
-  width: 8px; /* Width of the scrollbar */
+  width: 8px;
+  /* Width of the scrollbar */
 }
 
 .saved-metrics-list::-webkit-scrollbar-track {
-  background: #f1f1f1; /* Background of the scrollbar track */
+  background: #f1f1f1;
+  /* Background of the scrollbar track */
   border-radius: 10px;
 }
 
 .saved-metrics-list::-webkit-scrollbar-thumb {
-  background-color: #888; /* Color of the scrollbar thumb */
+  background-color: #888;
+  /* Color of the scrollbar thumb */
   border-radius: 10px;
-  border: 2px solid #f1f1f1; /* Space around thumb for padding effect */
+  border: 2px solid #f1f1f1;
+  /* Space around thumb for padding effect */
 }
 
 .saved-metrics-list::-webkit-scrollbar-thumb:hover {
-  background-color: #555; /* Thumb color on hover */
+  background-color: #555;
+  /* Thumb color on hover */
 }
 
 /* For Firefox */
 @-moz-document url-prefix() {
   .saved-metrics-list {
-    scrollbar-color: #888 #f1f1f1; /* Thumb and track color */
-    scrollbar-width: thin; /* Width of the scrollbar */
+    scrollbar-color: #888 #f1f1f1;
+    /* Thumb and track color */
+    scrollbar-width: thin;
+    /* Width of the scrollbar */
   }
 }

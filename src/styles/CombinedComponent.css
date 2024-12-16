@@ -1,16 +1,17 @@
 .combined-component {
     /* padding-left: 0.25em; */
     /* padding-right: 0.25em; */
-   background-color: gray;
-   /* height: 100vh; */
-   height: 95%;
-   justify-content: center;
-   /* align-content: center; */
-   overflow: auto;
-   
+    background-color: gray;
+    /* height: 100vh; */
+    height: 95%;
+    justify-content: center;
+    /* align-content: center; */
+    overflow: auto;
+
 }
+
 body {
-  position: relative;
+    position: relative;
 }
 
 
@@ -26,23 +27,25 @@ body {
     /* align-items: center; */
     align-self: center;
     /* height: 95vh */
-    
-    
+
+
 }
 
 .combined-component__no-data {
-       background-color: gray;
-       /* height: 100vh; */
+    background-color: gray;
+    /* height: 100vh; */
 }
 
 .combined-component__wave-container {
     display: grid;
-    grid-template-columns: 6fr 1fr 6fr 1fr; /* Four columns */
-    grid-template-rows: auto auto; /* Two rows for header and content */
+    grid-template-columns: 6fr 1fr 6fr 1fr;
+    /* Four columns */
+    grid-template-rows: auto auto;
+    /* Two rows for header and content */
     /* border-bottom: 0.5em solid #808080; */
     /* gap: 1em;  */
     /* Space between elements */
-    
+
 }
 
 .combined-component__minigraph-header {
@@ -71,7 +74,7 @@ body {
     padding-bottom: 0.25em; */
     /* box-shadow: 0.2em 0em 0.2em 0.2em black; */
     /* justify-content:center ; */
-    
+
 }
 
 .combined-component__minigraph-controls {
@@ -81,7 +84,8 @@ body {
     /* padding-right: 0.5em; */
     height: 100%;
     /* width: 90%; */
-    box-sizing: border-box; /* Include padding and border in button width */
+    box-sizing: border-box;
+    /* Include padding and border in button width */
 }
 
 .combined-component__large-graph-header {
@@ -115,12 +119,14 @@ body {
 
 .combined-component__metrics-filter-container {
     display: grid;
-    grid-template-columns: 6fr 1fr 6fr 1fr; /* Four columns */
-    grid-template-rows: auto auto; /* Two rows for header and content */
+    grid-template-columns: 6fr 1fr 6fr 1fr;
+    /* Four columns */
+    grid-template-rows: auto auto;
+    /* Two rows for header and content */
     /* border-bottom: 0.5em solid gray; */
     /* gap: 1em; */
-     /* Space between elements */
-     
+    /* Space between elements */
+
 }
 
 .combined-component__metrics-header {
@@ -150,7 +156,7 @@ body {
 .combined-component__metrics-controls {
     grid-column: 2;
     grid-row: 2;
-    
+
     /* border-right: 0.5em solid gray; */
     /* padding-right: 0.5em; */
 }
@@ -177,16 +183,17 @@ body {
 .combined-component__filter-controls {
     /* padding-left: 0.25em; */
     /* padding-right: 0.25em; */
-  grid-column: 4;
-  grid-row: 2;
-  /* display: flex;
+    grid-column: 4;
+    grid-row: 2;
+    /* display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center; */
-  /* width: auto; */
-  /* margin: 0 auto; Center horizontally */
-  padding: 0;
-  height: 100%; /* Ensure full height for vertical centering */
+    /* width: auto; */
+    /* margin: 0 auto; Center horizontally */
+    padding: 0;
+    height: 100%;
+    /* Ensure full height for vertical centering */
 
 }
 
@@ -209,7 +216,3 @@ body {
     transform: rotate(360deg);
   }
 } */
-
-
-
-

@@ -52,6 +52,8 @@ export const CombinedComponent = () => {
     extractedIndicators,
     savedMetrics,
     selectedFilters,
+    annotations,
+    setAnnotations,
   } = useContext(DataContext);
 
   // Ref to store the previous project state for comparison
@@ -102,7 +104,7 @@ export const CombinedComponent = () => {
   const [isFiltered, setIsFiltered] = useState(false); // Default is raw data (false)
 
   // State variables to store range of y-values inside filteredGraph's annotation box
-  const [annotations, setAnnotations] = useState([]);
+  // const [annotations, setAnnotations] = useState([]);
   const [annotationRangeStart, setAnnotationRangeStart] = useState(null);
   const [annotationRangeEnd, setAnnotationRangeEnd] = useState(null);
 
@@ -506,10 +508,10 @@ export const CombinedComponent = () => {
                   setMetricType={setMetricType}
                   metricIndicator={metricIndicator}
                   setMetricIndicator={setMetricIndicator}
-                  annotations={annotations}
+                  // annotations={annotations}
                   annotationRangeStart={annotationRangeStart}
                   annotationRangeEnd={annotationRangeEnd}
-                  setAnnotations={setAnnotations}
+                  // setAnnotations={setAnnotations}
                   setAnnotationRangeStart={setAnnotationRangeStart}
                   setAnnotationRangeEnd={setAnnotationRangeEnd}
                 />
@@ -544,8 +546,8 @@ export const CombinedComponent = () => {
                   extractedIndicatorTimes={extractedIndicatorTimes}
                   selectedWellArray={selectedWellArray}
                   filteredGraphData={filteredGraphData}
-                  annotations={annotations}
-                  setAnnotations={setAnnotations}
+                  // annotations={annotations}
+                  // setAnnotations={setAnnotations}
                   annotationRangeStart={annotationRangeStart}
                   annotationRangeEnd={annotationRangeEnd}
                   setAnnotationRangeStart={setAnnotationRangeStart}
@@ -562,8 +564,8 @@ export const CombinedComponent = () => {
                   setShowFiltered={setShowFiltered}
                   columnLabels={columnLabels}
                   rowLabels={rowLabels}
-                  annotations={annotations}
-                  setAnnotations={setAnnotations}
+                  // annotations={annotations}
+                  // setAnnotations={setAnnotations}
                   setAnnotationRangeStart={setAnnotationRangeStart}
                   setAnnotationRangeEnd={setAnnotationRangeEnd}
                 />

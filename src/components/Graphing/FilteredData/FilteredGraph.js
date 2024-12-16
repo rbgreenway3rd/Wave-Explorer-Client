@@ -40,8 +40,8 @@ export const FilteredGraph = ({
   setAnnotationRangeStart,
   annotationRangeEnd,
   setAnnotationRangeEnd,
-  annotations,
-  setAnnotations,
+  // annotations,
+  // setAnnotations,
   filteredGraphConfig,
 }) => {
   // export const FilteredGraph = forwardRef(
@@ -58,7 +58,8 @@ export const FilteredGraph = ({
   //     },
   //     ref
   //   ) => {
-  const { wellArrays, extractedIndicatorTimes } = useContext(DataContext);
+  const { wellArrays, extractedIndicatorTimes, annotations, setAnnotations } =
+    useContext(DataContext);
   const chartRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const [annotationStartPos, setAnnotationStartPos] = useState({

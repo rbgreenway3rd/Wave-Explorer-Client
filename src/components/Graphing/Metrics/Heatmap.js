@@ -28,7 +28,8 @@ const Heatmap = ({
   metricType,
   metricIndicator,
 }) => {
-  const { wellArrays, extractedIndicators } = useContext(DataContext);
+  const { wellArrays, extractedIndicators, annotations } =
+    useContext(DataContext);
   const canvasRef = useRef(null);
   const [tooltip, setTooltip] = useState({
     visible: false,
@@ -113,6 +114,7 @@ const Heatmap = ({
 
     if (metricType === "Slope") {
       const slopeExtent = [minSlope, maxSlope];
+      // console.log(minSlope, maxSlope);
       const midpoint =
         slopeExtent[0] > 0
           ? slopeExtent[0]

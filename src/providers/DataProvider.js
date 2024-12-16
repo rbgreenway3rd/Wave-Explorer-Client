@@ -48,8 +48,11 @@ export const DataProvider = ({ children }) => {
   // state determining what data is shown in minigraph-grid (rawData or filteredData)
   const [showFiltered, setShowFiltered] = useState(false);
 
-  // state handling saved annotationRange for metric report
+  // state handling saved metrics
   const [savedMetrics, setSavedMetrics] = useState([]);
+
+  // state handling annotations
+  const [annotations, setAnnotations] = useState([]);
 
   useEffect(() => {
     // Compute wellArrays whenever the project changes
@@ -645,6 +648,8 @@ export const DataProvider = ({ children }) => {
         handleClearSelectedWells,
         savedMetrics,
         setSavedMetrics,
+        annotations,
+        setAnnotations,
         // annotationRangeStart,
         // setAnnotationRangeStart,
         // annotationRangeEnd,

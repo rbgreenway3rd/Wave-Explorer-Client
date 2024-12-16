@@ -142,7 +142,7 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           fontSize: "0.85em",
-          // backgroundColor: "rgb(160,160,160)",
+
           width: "100%",
         },
       },
@@ -163,7 +163,7 @@ export const theme = createTheme({
         root: {
           borderBottom: "1px solid #eee",
 
-          backgroundColor: "rgb(180,180,180)",
+          // backgroundColor: "rgb(180,180,180)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",

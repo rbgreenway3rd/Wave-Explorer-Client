@@ -2,8 +2,8 @@
 import * as d3 from "d3";
 
 export const linearRegression = (data) => {
-  let xsum = 0,
-    ysum = 0;
+  let xsum = 0;
+  let ysum = 0;
   for (let i = 0; i < data.length; i++) {
     xsum += data[i].x;
     ysum += data[i].y;
@@ -11,8 +11,8 @@ export const linearRegression = (data) => {
   const xmean = xsum / data.length;
   const ymean = ysum / data.length;
 
-  let num = 0,
-    denom = 0;
+  let num = 0;
+  let denom = 0;
   for (let i = 0; i < data.length; i++) {
     const x = data[i].x;
     const y = data[i].y;
@@ -23,6 +23,7 @@ export const linearRegression = (data) => {
 };
 
 export const calculateSlope = (heatmapData) => {
+  // console.log(heatmapData);
   return heatmapData.length > 0 ? linearRegression(heatmapData) : 0;
 };
 
@@ -38,6 +39,10 @@ export const calculateRange = (heatmapData) => {
 export const getAllValues = (wellArrays, annotationRange, metricIndicator) => {
   return wellArrays.flatMap((well) => {
     const filteredData = well.indicators[metricIndicator]?.filteredData || [];
+    // console.log(wellArrays[0]);
+    // console.log(wellArrays[0].indicators[0].filteredData);
+    // console.log(filteredData, annotationRange);
+    // console.log(metricIndicator);
     if (annotationRange.start !== null && annotationRange.end !== null) {
       return filteredData
         .filter(
@@ -49,15 +54,48 @@ export const getAllValues = (wellArrays, annotationRange, metricIndicator) => {
     }
   });
 };
+// export const getAllValues = (wellArrays, annotationRange, metricIndicator) => {
+//   const result = [];
+
+//   for (let i = 0; i < wellArrays.length; i++) {
+//     const well = wellArrays[i];
+//     const filteredData = well.indicators[metricIndicator]?.filteredData;
+//     console.log(wellArrays[0]);
+//     console.log(wellArrays[0].indicators[0].filteredData);
+//     console.log(filteredData, annotationRange);
+//     console.log(metricIndicator);
+
+//     if (annotationRange.start !== null && annotationRange.end !== null) {
+//       const rangeValues = [];
+//       for (let j = 0; j < filteredData.length; j++) {
+//         if (j >= annotationRange.start && j <= annotationRange.end) {
+//           rangeValues.push(filteredData[j].y);
+//         }
+//       }
+//       result.push(rangeValues);
+//     } else {
+//       const allValues = [];
+//       for (let j = 0; j < filteredData.length; j++) {
+//         allValues.push(filteredData[j].y);
+//       }
+//       result.push(allValues);
+//     }
+//   }
+
+//   return result;
+// };
 
 export const getAllSlopes = (wellArrays, annotationRange, metricIndicator) => {
-  return wellArrays.map((well) => {
+  return wellArrays.flatMap((well) => {
     let heatmapData = well.indicators[metricIndicator]?.filteredData || [];
+    // console.log(heatmapData);
     if (annotationRange.start !== null && annotationRange.end !== null) {
       heatmapData = heatmapData.filter(
         (_, i) => i >= annotationRange.start && i <= annotationRange.end
       );
     }
+    // console.log(heatmapData);
+
     return calculateSlope(heatmapData);
   });
 };
