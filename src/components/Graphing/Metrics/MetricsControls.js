@@ -41,6 +41,7 @@ export const MetricsControls = ({
     const newMetric = e.target.value;
     setSelectedMetricType(newMetric);
     setMetricType(newMetric);
+    console.log(e.target.value);
   };
 
   const handleSaveMetric = () => {
@@ -146,7 +147,7 @@ export const MetricsControls = ({
             <FormControlLabel value="Min" control={<Radio />} label="Min" />
             <FormControlLabel value="Slope" control={<Radio />} label="Slope" />
             <FormControlLabel
-              value="rangeOfYValues"
+              value="Range"
               control={<Radio />}
               label="Max-Min"
             />
@@ -185,7 +186,7 @@ export const MetricsControls = ({
                 }}
               >
                 <Typography style={{ fontSize: "1em", paddingLeft: "0.5em" }}>
-                  {metric.metricType === "rangeOfYValues"
+                  {metric.metricType === "Range"
                     ? "Max-Min"
                     : metric.metricType}
                 </Typography>

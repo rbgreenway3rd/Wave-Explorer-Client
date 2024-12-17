@@ -82,12 +82,28 @@ const Heatmap = ({
 
   const [selectedIndicator, setSelectedIndicator] = useState(0);
 
-  // Memoize annotationRange to prevent unnecessary recalculations and re-renders
   const annotationRange = useMemo(() => {
-    return annotationRangeStart > annotationRangeEnd
-      ? { start: annotationRangeEnd, end: annotationRangeStart }
-      : { start: annotationRangeStart, end: annotationRangeEnd };
-  }, [annotationRangeStart, annotationRangeEnd]);
+    if (!annotations || annotations.length === 0) {
+      return { start: null, end: null }; // Default value when no annotation is set
+    }
+
+    return annotations[0].xMin > annotations[0].xMax
+      ? { start: annotations[0].xMax, end: annotations[0].xMin }
+      : { start: annotations[0].xMin, end: annotations[0].xMax };
+  }, [annotations]);
+
+  // Memoize annotationRange to prevent unnecessary recalculations and re-renders
+  // const annotationRange = useMemo(() => {
+  //   return annotations[0].xMin > annotations[0].xMax
+  //     ? { start: annotations[0].xMax, end: annotations[0].xMin }
+  //     : { start: annotations[0].xMin, end: annotations[0].xMax };
+  // }, [annotations]);
+
+  // const annotationRange = useMemo(() => {
+  //   return annotationRangeStart > annotationRangeEnd
+  //     ? { start: annotationRangeEnd, end: annotationRangeStart }
+  //     : { start: annotationRangeStart, end: annotationRangeEnd };
+  // }, [annotationRangeStart, annotationRangeEnd]);
 
   const allValues = useMemo(
     () => getAllValues(wellArrays, annotationRange, metricIndicator),
@@ -123,7 +139,7 @@ const Heatmap = ({
         .scaleDiverging()
         .interpolator(d3.interpolateRgbBasis(ColormapValues))
         .domain([slopeExtent[0], midpoint, slopeExtent[1]]);
-    } else if (metricType === "range") {
+    } else if (metricType === "Range") {
       // Calculate the midpoint of the range extent
       const midpoint = (rangeExtent[0] + rangeExtent[1]) / 2;
       return d3

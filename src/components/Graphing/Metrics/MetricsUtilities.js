@@ -32,7 +32,7 @@ export const calculateRange = (heatmapData) => {
 
   const maxY = d3.max(heatmapData, (d) => d.y);
   const minY = d3.min(heatmapData, (d) => d.y);
-
+  // console.log(maxY - minY);
   return maxY - minY; // Return the range (difference between max and min)
 };
 
@@ -108,6 +108,7 @@ export const getAllRanges = (wellArrays, annotationRange, metricIndicator) => {
         (_, i) => i >= annotationRange.start && i <= annotationRange.end
       );
     }
+
     return calculateRange(heatmapData);
   });
 };

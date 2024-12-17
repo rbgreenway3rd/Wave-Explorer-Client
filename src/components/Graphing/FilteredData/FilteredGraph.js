@@ -111,7 +111,7 @@ export const FilteredGraph = ({
       annotationRangeStartIndex = 0; // Set to 0 if null
     }
 
-    setAnnotationStartPos({ x, y: 0 });
+    setAnnotationStartPos({ x: x, y: 0 });
     setIsDragging(true);
 
     if (
@@ -122,8 +122,12 @@ export const FilteredGraph = ({
     } else if (annotationRangeStartIndex < 0) {
       setAnnotationRangeStart(0);
     } else {
-      setAnnotationRangeStart(annotationRangeStartIndex);
+      // setAnnotationRangeStart(annotationRangeStartIndex);
+      setAnnotationRangeStart(
+        chart.scales.x.getValueForPixel(Math.min(annotationStartPos.x, x))
+      );
     }
+    console.log(annotationRangeStartIndex);
   };
 
   // Handle mouse move to dynamically update the annotation
@@ -170,15 +174,16 @@ export const FilteredGraph = ({
 
     if (annotationRangeEnd === null) {
       annotationRangeEndIndex = chart.scales.x.max; // Set to max value if null
-    }
-
-    if (
+    } else if (
       annotationRangeEndIndex > extractedIndicatorTimes.length ||
       annotationRangeEndIndex < 0
     ) {
       setAnnotationRangeEnd(extractedIndicatorTimes.length);
     } else {
-      setAnnotationRangeEnd(annotationRangeEndIndex);
+      // setAnnotationRangeStart(chart.scales.x.getValueForPixel(Math.min(annotationStartPos.x, x)));
+      setAnnotationRangeEnd(
+        chart.scales.x.getValueForPixel(Math.max(annotationStartPos.x, x))
+      );
     }
 
     const newAnnotation = {
@@ -197,7 +202,9 @@ export const FilteredGraph = ({
     console.log(
       "Final annotation range:",
       annotationRangeStart,
-      annotationRangeEnd
+      chart.scales.x.getValueForPixel(Math.min(annotationStartPos.x, x)),
+      annotationRangeEnd,
+      chart.scales.x.getValueForPixel(Math.max(annotationStartPos.x, x))
     );
     console.log("newAnnotation: ", newAnnotation);
     console.log("annotations: ", annotations);
