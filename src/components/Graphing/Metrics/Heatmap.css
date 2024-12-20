@@ -1,9 +1,52 @@
-.heatmap-canvas {
-  /* border: solid 0.5em grey; */
+.heatmap-container {
+  display: flex;
+  /* Use flexbox to lay out the child elements side by side */
+  flex-direction: row;
+  /* Align horizontally */
+  /* align-items: flex-start; */
+  /* Align at the top */
+}
+
+.color-scale {
+  display: flex;
+  flex-direction: column;
+  border: solid 0.05em white;
+  background-color: rgb(140, 140, 140);
+
+}
+
+.color-scale-toggle {
+  display: flex;
+  justify-content: center;
+  /* align-self: center; */
+  margin-bottom: 0.25em;
+  margin-top: 0.25em;
+
+}
+
+.color-scale-canvas {
+  display: flex;
+  height: 100%;
+  /* width: 20px; */
+  /* Fixed width for the color scale */
+  justify-items: flex-start;
+  justify-self: flex-start;
+  border-top: solid 0.05em white;
+  /* margin-right: 0.25em; */
+  /* border: 2.5px solid rgba(255, 255, 255, 0.25); */
+  /* margin-right: 0.1em; */
   /* height: 100%; */
-  /* margin-top: 1em; */
-  justify-self:center;
-  box-sizing: border-box;
+  /* Ensure it stretches to the height of the heatmap */
+}
+
+.heatmap-canvas {
+  justify-items: flex-end;
+  justify-self: flex-end;
+  margin-left: 0.25em;
+  flex-grow: 1;
+  /* Allow the heatmap canvas to take the remaining space */
+  /* height: 100%; */
+  /* Ensure it stretches to the height of the container */
 }
 
 .tooltip {
@@ -12,6 +55,8 @@
   color: white;
   padding: 5px;
   border-radius: 3px;
-  pointer-events: none; /* Prevent tooltip from blocking mouse events */
-  z-index: 10; /* Ensure tooltip is above other elements */
+  pointer-events: none;
+  /* Prevent tooltip from blocking mouse events */
+  z-index: 10;
+  /* Ensure tooltip is above other elements */
 }

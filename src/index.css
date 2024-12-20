@@ -7,14 +7,14 @@ body {
   -moz-osx-font-smoothing: grayscale;
   /* display: block; */
   /* height: 100vh; */
-  
+
 }
 
 html, body {
-    /* height: 100%; */
-    margin: 0;
-    padding: 0;
-    /* overflow: hidden; Prevent scrolling */
+  /* height: 100%; */
+  margin: 0;
+  padding: 0;
+  /* overflow: hidden; Prevent scrolling */
 }
 
 

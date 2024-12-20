@@ -75,7 +75,7 @@ export const NavBar = ({ combinedComponentRef }) => {
           alt="WaveGuide logo"
           className="wave-explorer-icon"
         />{" "}
-        <h1 className="logo">ave Explorer</h1>
+        <h1 className="logo">aveExplorer</h1>
       </section>
     </header>
   );

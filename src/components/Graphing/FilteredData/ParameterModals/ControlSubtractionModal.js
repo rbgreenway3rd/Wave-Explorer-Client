@@ -102,6 +102,31 @@ export const ControlSubtractionModal = ({
     });
     selectedControlIndexes.current = newSelectedIndexes; // Store selected indexes
   };
+  // const handleControlSelectionChange = (box) => {
+  //   const gridRect = controlGridRef.current.getBoundingClientRect(); // Get grid's bounding rectangle
+  //   const adjustedBox = {
+  //     left: box.left - gridRect.left,
+  //     top: box.top - gridRect.top,
+  //     width: box.width,
+  //     height: box.height,
+  //   };
+
+  //   const newSelectedIndexes = [];
+  //   controlSelectableItems.current.forEach((item, index) => {
+  //     const { left, top, width, height } = item.getBoundingClientRect();
+  //     const itemBox = {
+  //       left: left - gridRect.left,
+  //       top: top - gridRect.top,
+  //       width,
+  //       height,
+  //     };
+
+  //     if (boxesIntersect(adjustedBox, itemBox)) {
+  //       newSelectedIndexes.push(index);
+  //     }
+  //   });
+  //   selectedControlIndexes.current = newSelectedIndexes;
+  // };
 
   const handleControlSelectionEnd = () => {
     const updatedControlGrid = controlGrid.map((row, rowIndex) =>
@@ -224,43 +249,6 @@ export const ControlSubtractionModal = ({
     };
 
     return (
-      // <div
-      //   className="grid-container"
-      //   ref={gridRef}
-      //   style={{
-      //     display: "grid",
-      //     gridTemplateColumns: `repeat(${number_of_columns}, 1fr)`, // Set equal column distribution
-      //     gridAutoRows: "1fr", // Rows should scale evenly with columns
-      //     gap: "0px",
-      //     height: "calc(30vh - 2em)", // Each grid takes half the modal height
-      //   }}
-      // >
-      //   {grid.map((row, rowIndex) =>
-      //     row.map((cell, colIndex) => (
-      //       <div
-      //         key={`${rowIndex}-${colIndex}`}
-      //         className={isControl ? "control-cell" : "apply-cell"}
-      //         onClick={() => handleSingleCellClick(rowIndex, colIndex)}
-      //         style={{
-      //           // width: "100%", // Take full width of grid cell
-      //           height: "100%", // Take full height of grid cell
-      //           aspectRatio: "1.6 / 1", // Ensure each cell's width is twice its height
-
-      //           border: "0.05em solid #000",
-      //           backgroundColor: cell.selected ? "blue" : "lightgrey",
-      //           display: "flex",
-      //           justifyContent: "center",
-      //           alignItems: "center",
-      //           fontSize: "0.7em",
-      //           color: cell.selected ? "white" : "black",
-      //           cursor: "pointer",
-      //         }}
-      //       >
-      //         {getWellLabel(rowIndex, colIndex)}
-      //       </div>
-      //     ))
-      //   )}
-      // </div>
       <div
         className="grid-container"
         ref={gridRef}
@@ -300,6 +288,85 @@ export const ControlSubtractionModal = ({
       </div>
     );
   };
+  // const Grid = ({ grid, gridRef, isControl }) => {
+  //   // Create the grid cells manually without using map
+
+  //   const createGridCells = () => {
+  //     const cells = [];
+  //     for (let rowIndex = 0; rowIndex < number_of_rows; rowIndex++) {
+  //       for (let colIndex = 0; colIndex < number_of_columns; colIndex++) {
+  //         cells.push(
+  //           <div
+  //             key={`${rowIndex}-${colIndex}`}
+  //             className={isControl ? "control-cell" : "apply-cell"}
+  //             onClick={() => handleSingleCellClick(rowIndex, colIndex)}
+  //             style={{
+  //               height: "100%", // Take full height of grid cell
+  //               aspectRatio: "1.6 / 1", // Ensure each cell's width is twice its height
+  //               border: "0.05em solid #000",
+  //               backgroundColor: grid[rowIndex][colIndex].selected
+  //                 ? "blue"
+  //                 : "lightgrey",
+  //               display: "flex",
+  //               justifyContent: "center",
+  //               alignItems: "center",
+  //               fontSize: "0.7em",
+  //               color: grid[rowIndex][colIndex].selected ? "white" : "black",
+  //               cursor: "pointer",
+  //             }}
+  //           >
+  //             {getWellLabel(rowIndex, colIndex)}
+  //           </div>
+  //         );
+  //       }
+  //     }
+  //     return cells;
+  //   };
+
+  //   return (
+  //     <div
+  //       className="grid-container"
+  //       ref={gridRef}
+  //       style={{
+  //         display: "grid",
+  //         gridTemplateColumns: `repeat(${number_of_columns}, 1fr)`,
+  //         gridAutoRows: "1fr",
+  //         gap: "0px",
+  //         justifyContent: "center",
+  //         alignItems: "center",
+  //         height: "calc(30vh - 2em)", // Each grid takes half the modal height
+  //       }}
+  //     >
+  //       {createGridCells()} {/* Render cells manually */}
+  //     </div>
+  //   );
+  // };
+
+  // DragSelection for control grid
+  // const { DragSelection: ControlDragSelection } = useSelectionContainer({
+  //   onSelectionChange: handleControlSelectionChange,
+  //   onSelectionEnd: handleControlSelectionEnd,
+  //   isEnabled: true,
+  //   selectionProps: {
+  //     style: {
+  //       border: "0.2em solid yellow",
+  //       backgroundColor: "rgba(75, 192, 192, 0.4)",
+  //     },
+  //   },
+  // });
+
+  // // DragSelection for apply grid
+  // const { DragSelection: ApplyDragSelection } = useSelectionContainer({
+  //   onSelectionChange: handleApplySelectionChange,
+  //   onSelectionEnd: handleApplySelectionEnd,
+  //   isEnabled: true,
+  //   selectionProps: {
+  //     style: {
+  //       border: "0.2em solid yellow",
+  //       backgroundColor: "rgba(75, 192, 192, 0.4)",
+  //     },
+  //   },
+  // });
 
   // DragSelection for control grid
   const { DragSelection: ControlDragSelection } = useSelectionContainer({
@@ -307,6 +374,7 @@ export const ControlSubtractionModal = ({
     onSelectionEnd: handleControlSelectionEnd,
     isEnabled: true,
     selectionProps: {
+      boundingElement: controlGridRef.current, // Ensure it's relative to the grid container
       style: {
         border: "0.2em solid yellow",
         backgroundColor: "rgba(75, 192, 192, 0.4)",
@@ -320,6 +388,7 @@ export const ControlSubtractionModal = ({
     onSelectionEnd: handleApplySelectionEnd,
     isEnabled: true,
     selectionProps: {
+      boundingElement: applyGridRef.current, // Ensure it's relative to the grid container
       style: {
         border: "0.2em solid yellow",
         backgroundColor: "rgba(75, 192, 192, 0.4)",
@@ -341,84 +410,6 @@ export const ControlSubtractionModal = ({
         },
       }} // Set width dynamically or default to 80vw
     >
-      {/* <DialogContent
-        sx={{
-          display: "flex",
-          flexDirection: "column", // Stack items vertically
-          // alignContent: "center",
-          alignItems: "center",
-          gap: "5em", // Add consistent, small spacing between elements
-          padding: 0, // Ensure no extra padding
-          height: "100%", // Allow content to take full height
-        }}
-      >
-        <div
-          style={{
-            position: "relative",
-            marginBottom: 0, // Remove unnecessary margin
-          }}
-        >
-          <h4
-            style={{
-              margin: 0,
-              marginBottom: "0.2em", // Keep the margin small
-              fontSize: "0.8em",
-            }}
-          >
-            <Tooltip title="Clear Selected Control Wells" disableInteractive>
-              <Button onClick={clearControlWellArray}>
-                <HighlightOffIcon />
-              </Button>
-            </Tooltip>
-            Select Control Wells
-          </h4>
-          <ControlDragSelection
-            selectableTargets={".control-cell"}
-            selectionProps={{ boundingElement: "control-grid" }}
-          />
-          <Grid
-            grid={controlGrid}
-            gridRef={controlGridRef}
-            isControl={true}
-            className="control-grid"
-          />
-        </div>
-
-        <div
-          style={{
-            position: "relative",
-            marginTop: 0,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
-          <h4
-            style={{
-              margin: 0,
-              marginBottom: "0.2em", // Keep the margin small
-              fontSize: "0.8em",
-            }}
-          >
-            <Tooltip title="Clear Selected Apply Wells" disableInteractive>
-              <Button onClick={clearApplyWellArray}>
-                <HighlightOffIcon />
-              </Button>
-            </Tooltip>
-            Select Apply Wells
-          </h4>
-          <ApplyDragSelection
-            selectableTargets={".apply-cell"}
-            selectionProps={{ boundingElement: "apply-grid" }}
-          />
-          <Grid
-            grid={applyGrid}
-            gridRef={applyGridRef}
-            isControl={false}
-            className="apply-grid"
-          />
-        </div>
-      </DialogContent> */}
       <DialogContent
         sx={{
           display: "flex",
@@ -468,7 +459,8 @@ export const ControlSubtractionModal = ({
           </h4>
           <ControlDragSelection
             selectableTargets={".control-cell"}
-            selectionProps={{ boundingElement: "control-grid" }}
+            // selectionProps={{ boundingElement: "control-grid" }}
+            // selectionProps={{ boundingElement: "control-grid" }}
           />
           <Grid
             grid={controlGrid}
@@ -515,7 +507,8 @@ export const ControlSubtractionModal = ({
           </h4>
           <ApplyDragSelection
             selectableTargets={".apply-cell"}
-            selectionProps={{ boundingElement: "apply-grid" }}
+            // selectionProps={{ boundingElement: "apply-grid" }}
+            // selectionProps={{ boundingElement: "apply-grid" }}
           />
           <Grid
             grid={applyGrid}
