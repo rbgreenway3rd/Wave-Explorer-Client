@@ -54,36 +54,6 @@ export const getAllValues = (wellArrays, annotationRange, metricIndicator) => {
     }
   });
 };
-// export const getAllValues = (wellArrays, annotationRange, metricIndicator) => {
-//   const result = [];
-
-//   for (let i = 0; i < wellArrays.length; i++) {
-//     const well = wellArrays[i];
-//     const filteredData = well.indicators[metricIndicator]?.filteredData;
-//     console.log(wellArrays[0]);
-//     console.log(wellArrays[0].indicators[0].filteredData);
-//     console.log(filteredData, annotationRange);
-//     console.log(metricIndicator);
-
-//     if (annotationRange.start !== null && annotationRange.end !== null) {
-//       const rangeValues = [];
-//       for (let j = 0; j < filteredData.length; j++) {
-//         if (j >= annotationRange.start && j <= annotationRange.end) {
-//           rangeValues.push(filteredData[j].y);
-//         }
-//       }
-//       result.push(rangeValues);
-//     } else {
-//       const allValues = [];
-//       for (let j = 0; j < filteredData.length; j++) {
-//         allValues.push(filteredData[j].y);
-//       }
-//       result.push(allValues);
-//     }
-//   }
-
-//   return result;
-// };
 
 export const getAllSlopes = (wellArrays, annotationRange, metricIndicator) => {
   return wellArrays.flatMap((well) => {
