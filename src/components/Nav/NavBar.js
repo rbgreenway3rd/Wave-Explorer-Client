@@ -18,6 +18,7 @@ import {
   AddAPhotoTwoTone,
   ScreenshotMonitorTwoTone,
 } from "@mui/icons-material";
+import HelpTwoToneIcon from "@mui/icons-material/HelpTwoTone";
 import { handleScreenshot } from "../../utilities/Handlers";
 
 export const NavBar = ({ combinedComponentRef }) => {
@@ -28,6 +29,24 @@ export const NavBar = ({ combinedComponentRef }) => {
   return (
     <header className="navbar-container">
       <section className="navbar-left">
+        <Tooltip title="Help Getting Started" arrow>
+          <IconButton
+            onClick={() =>
+              window.open(
+                `${process.env.PUBLIC_URL}/WebWaveExplorer_QuickStart.pdf`
+              )
+            }
+          >
+            <HelpTwoToneIcon
+              sx={{
+                // bgcolor: "grey",
+                color: "rgb(0,32,96)",
+                borderRadius: "50%",
+              }}
+              // style={{ fill: "rgb(0,32,96)" }}
+            />
+          </IconButton>
+        </Tooltip>
         <FileUploader
           setWellArraysUpdated={setWellArraysUpdated}
           setFile={setFile}

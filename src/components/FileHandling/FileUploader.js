@@ -316,11 +316,12 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
           onClick={handleMainMenuOpen}
           style={{
             padding: 0,
-            marginRight: "1.5em",
+            marginRight: "0.5em",
+            marginLeft: "0.5em",
             minWidth: 30,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
+            // display: "flex",
+            // justifyContent: "center",
+            // alignItems: "center",
             borderRadius: "10%",
           }}
         >

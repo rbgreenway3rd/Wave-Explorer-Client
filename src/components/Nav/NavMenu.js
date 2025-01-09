@@ -26,6 +26,7 @@ import {
   OutlierRemoval_Filter,
   FlatFieldCorrection_Filter,
 } from "../Graphing/FilteredData/FilterModels";
+import { Tooltip } from "@mui/material";
 
 export const NavMenu = () => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -209,17 +210,19 @@ export const NavMenu = () => {
 
   return (
     <>
-      <IconButton
-        onClick={handleClick}
-        style={{
-          border: "solid rgb(130,130,130) 0.1em",
-          backgroundImage:
-            // "radial-gradient(rgb(240,240,240),rgb(220,220,220), rgb(200,200,200), rgb(180,180,180), rgb(160,160,160), rgb(140,140,140), rgb(120,120,120),rgb(100,100,100))",
-            "radial-gradient(rgb(240,240,240),rgb(220,220,220), rgb(200,200,210), rgb(180,180,190), rgb(160,160,170), rgb(140,140,150), rgb(120,120,130),rgb(100,100,110))",
-        }}
-      >
-        <MenuIcon />
-      </IconButton>
+      <Tooltip title="Generate Reports and More" arrow>
+        <IconButton
+          onClick={handleClick}
+          style={{
+            border: "solid rgb(130,130,130) 0.1em",
+            backgroundImage:
+              // "radial-gradient(rgb(240,240,240),rgb(220,220,220), rgb(200,200,200), rgb(180,180,180), rgb(160,160,160), rgb(140,140,140), rgb(120,120,120),rgb(100,100,100))",
+              "radial-gradient(rgb(240,240,240),rgb(220,220,220), rgb(200,200,210), rgb(180,180,190), rgb(160,160,170), rgb(140,140,150), rgb(120,120,130),rgb(100,100,110))",
+          }}
+        >
+          <MenuIcon style={{ fontSize: "0.9em" }} />
+        </IconButton>
+      </Tooltip>
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
         <MenuItem onClick={handleSaveProjectReport}>
           <FileDownloadTwoToneIcon />
