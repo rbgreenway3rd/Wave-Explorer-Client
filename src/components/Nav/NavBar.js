@@ -39,7 +39,6 @@ export const NavBar = ({ combinedComponentRef }) => {
           >
             <HelpTwoToneIcon
               sx={{
-                // bgcolor: "grey",
                 color: "rgb(0,32,96)",
                 borderRadius: "50%",
               }}
