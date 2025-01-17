@@ -96,9 +96,12 @@ const Heatmap = ({
   );
 
   const handleMouseMove = (e) => {
+    // const rect = heatmapRef.current.getBoundingClientRect();
+    // const mouseX = e.clientX - rect.left;
+    // const mouseY = e.clientY - rect.top;
     const rect = heatmapRef.current.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+    const mouseX = (e.clientX - rect.left) * (largeCanvasWidth / rect.width);
+    const mouseY = (e.clientY - rect.top) * (largeCanvasHeight / rect.height);
 
     const cellWidth = largeCanvasWidth / numColumns;
     const cellHeight = largeCanvasHeight / numRows;

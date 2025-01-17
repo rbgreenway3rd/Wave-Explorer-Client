@@ -50,7 +50,7 @@ export const MiniGraphControls = ({
               //     "linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
               // }}
             >
-              Show
+              Data Type:
             </FormLabel>
             <RadioGroup
               row
@@ -83,7 +83,7 @@ export const MiniGraphControls = ({
             //     "linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
             // }}
           >
-            Indicator
+            Indicator Shown:
           </FormLabel>
           {extractedIndicators.map((indicator) => (
             <FormControlLabel
