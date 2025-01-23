@@ -1,7 +1,5 @@
 .navbar-container {
     display: flex;
-    /* align-items: center; */
-    /* justify-items: center; */
     background-image: linear-gradient(grey, lightgrey, grey);
     padding-left: 0.75rem;
     padding-right: 0.75rem;

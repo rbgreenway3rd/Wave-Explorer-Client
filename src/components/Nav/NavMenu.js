@@ -16,16 +16,6 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Button from "@mui/material/Button";
 import { DataContext } from "../../providers/DataProvider";
 import { GenerateCSV } from "../FileHandling/GenerateReport";
-import {
-  StaticRatio_Filter,
-  DynamicRatio_Filter,
-  Div_Filter,
-  Smoothing_Filter,
-  ControlSubtraction_Filter,
-  Derivative_Filter,
-  OutlierRemoval_Filter,
-  FlatFieldCorrection_Filter,
-} from "../Graphing/FilteredData/FilterModels";
 import { Tooltip } from "@mui/material";
 
 export const NavMenu = () => {
@@ -33,12 +23,10 @@ export const NavMenu = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const {
     project,
-    enabledFilters,
     selectedFilters,
     savedMetrics,
     setSelectedFilters,
     setSavedMetrics,
-    uploadedFilters,
     setUploadedFilters,
   } = useContext(DataContext);
 
@@ -214,10 +202,12 @@ export const NavMenu = () => {
         <IconButton
           onClick={handleClick}
           style={{
-            border: "solid rgb(130,130,130) 0.1em",
+            border: "solid rgb(140, 140, 140) 1px",
+            borderRadius: 0,
             backgroundImage:
               // "radial-gradient(rgb(240,240,240),rgb(220,220,220), rgb(200,200,200), rgb(180,180,180), rgb(160,160,160), rgb(140,140,140), rgb(120,120,120),rgb(100,100,100))",
-              "radial-gradient(rgb(240,240,240),rgb(220,220,220), rgb(200,200,210), rgb(180,180,190), rgb(160,160,170), rgb(140,140,150), rgb(120,120,130),rgb(100,100,110))",
+              // "radial-gradient(rgb(240,240,240),rgb(220,220,220), rgb(200,200,210), rgb(180,180,190), rgb(160,160,170), rgb(140,140,150), rgb(120,120,130),rgb(100,100,110))",
+              "radial-gradient(rgb(240,240,240),rgb(230,230,230), rgb(220,220,230), rgb(210,210,220), rgb(200,200,210), rgb(180,180,190), rgb(160,160,170),rgb(140,140,150))",
           }}
         >
           <MenuIcon style={{ fontSize: "0.9em" }} />
