@@ -9,12 +9,8 @@ import { styled } from "@mui/material/styles";
 import { Menu, MenuItem } from "@mui/material";
 
 export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
-  // Row labels for wells
-
   const {
     extractedIndicators,
-
-    extractedLines,
     extractedRows,
     rowLabels,
     extractedColumns,
@@ -31,12 +27,9 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
     extractedIndicatorTimes,
     extractAllData,
     analysisData,
-    selectedWellArray,
     setSelectedWellArray,
     project,
     setProject,
-    wellArrays,
-    updateWellArrays,
   } = useContext(DataContext); // Accessing context data
 
   const [dataExtracted, setDataExtracted] = useState(false); // State to track if data is extracted
@@ -54,15 +47,6 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
 
   const handleMainMenuClose = () => {
     setAnchorEl(null);
-  };
-
-  const handleDemoMenuOpen = (event) => {
-    setDemoMenuAnchor(event.currentTarget);
-  };
-
-  const handleDemoMenuClose = () => {
-    setDemoMenuAnchor(null);
-    handleMainMenuClose(); // Close the main menu when demo menu is closed
   };
 
   useEffect(() => {
@@ -186,41 +170,6 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
     // minWidth: 3,
     width: 1,
   });
-
-  //   return (
-  //     <Tooltip title="Choose File" arrow>
-  //       <Button
-  //         component="label"
-  //         variant="contained"
-  //         className={!project ? "glow-button" : ""} // Apply glow class if no project
-  //         style={{
-  //           padding: 0,
-  //           marginRight: "1.5em",
-  //           minWidth: 30,
-  //           display: "flex",
-  //           justifyContent: "center",
-  //           alignItems: "center",
-  //           borderRadius: "10%",
-  //         }}
-  //       >
-  //         <DriveFolderUploadIcon />
-  //         <VisuallyHiddenInput
-  //           type="file"
-  //           accept="file/dat, .dat"
-  //           onChange={handleFileSelect}
-  //         />
-  //       </Button>
-  //     </Tooltip>
-  //   );
-  // };
-  const handleMenuOpen = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
   // Handle file selection and reading
   const handleFileSelect = async (event) => {
     const file = event.target.files[0];
@@ -236,6 +185,7 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
       };
       reader.readAsText(file); // Read file as text
     }
+    handleMainMenuClose();
   };
   // Handle demo file selection and reading
   const handleDemoFileSelect = async (event) => {
@@ -258,53 +208,8 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
 
       xhr.send();
     }
+    handleMainMenuClose();
   };
-
-  // const handleDemoFileSelect = (demoFileName) => {
-  //   const demoFileURL = `/demo-files/${demoFileName}`;
-
-  //   fetch(demoFileURL)
-  //     .then((response) => {
-  //       if (!response.ok) {
-  //         throw new Error(`Failed to fetch demo file: ${demoFileName}`);
-  //       }
-  //       return response.text(); // Read the content as text (use .text() instead of .blob())
-  //     })
-  //     .then((fileContent) => {
-  //       // Extract the data using the extractAllData function
-  //       // const extractedData = extractAllData(fileContent);
-
-  //       // Create a mock File object (to mimic file selection)
-  //       const demoFile = new File([fileContent], demoFileName, {
-  //         type: "application/octet-stream",
-  //       });
-
-  //       // Trigger the same logic as handleFileSelect
-  //       const fileInputEvent = {
-  //         target: { files: [demoFile] }, // Mimic the file input event
-  //       };
-
-  //       // Process the extracted data or pass it along
-  //       // console.log("Extracted Data:", extractedData);
-
-  //       // You can do something with extractedData, e.g., store it in state or pass it to other functions
-
-  //       handleFileSelect(fileInputEvent); // Reuse the existing handleFileSelect function for further processing
-  //     })
-  //     .catch((error) => {
-  //       console.error(
-  //         `Error fetching or processing demo file "${demoFileName}":`,
-  //         error
-  //       );
-  //     });
-  // };
-
-  // const handleFileSelect = (event) => {
-  //   const selectedFile = event.target.files[0];
-  //   setFile(selectedFile);
-  //   setWellArraysUpdated(true);
-  //   handleMenuClose();
-  // };
 
   return (
     <div>
@@ -319,9 +224,6 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
             marginRight: "0.5em",
             marginLeft: "0.5em",
             minWidth: 30,
-            // display: "flex",
-            // justifyContent: "center",
-            // alignItems: "center",
             borderRadius: "10%",
           }}
         >
@@ -369,31 +271,6 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
           <option value="demo384Well.dat">384 Well</option>
         </select>
       </Menu>
-
-      {/* Demo Files Menu */}
-      {/* <Menu
-        anchorEl={demoMenuAnchor}
-        open={isDemoMenuOpen}
-        onClose={handleDemoMenuClose}
-        anchorOrigin={{
-          vertical: "top",
-          horizontal: "right",
-        }}
-        transformOrigin={{
-          vertical: "top",
-          horizontal: "left",
-        }}
-      > */}
-      {/* <MenuItem onClick={() => handleDemoFileSelect("demo96Well.dat")}>
-          96 Well
-        </MenuItem>
-        <MenuItem onClick={() => console.log("Demo File 2 Selected")}>
-          Demo File 2
-        </MenuItem>
-        <MenuItem onClick={() => console.log("Demo File 3 Selected")}>
-          Demo File 3
-        </MenuItem> */}
-      {/* </Menu> */}
     </div>
   );
 };
