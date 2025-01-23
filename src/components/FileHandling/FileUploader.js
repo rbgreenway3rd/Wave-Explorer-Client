@@ -68,7 +68,6 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
     extractedIndicatorTimes // Expecting an object with indicator names as keys, each containing an array of time points
   ) => {
     const plateDimensions = extractedRows * extractedColumns;
-
     const newProject = new Project(
       extractedProjectTitle,
       extractedProjectDate,
@@ -76,7 +75,6 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
       extractedProjectInstrument,
       extractedProjectProtocol
     ); // Create new project
-
     const newPlate = new Plate(
       extractedRows,
       extractedColumns,
@@ -94,17 +92,14 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
       extractedIndicatorConfigurations,
       extractedOperator
     ); // Create new experiment
-
     newPlate.experiments.push(newExperiment);
 
     let newWellArrays = [];
     let wellId = 1;
-
     for (let rowIndex = 0; rowIndex < rowLabels.length; rowIndex++) {
       for (let colIndex = 1; colIndex <= extractedColumns; colIndex++) {
         const wellKey = `${rowLabels[rowIndex]}${colIndex}`;
         const wellLabel = getWellLabel(rowIndex, colIndex - 1);
-
         const newWell = new Well(
           wellId++,
           wellKey,
@@ -112,14 +107,12 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
           colIndex - 1,
           rowIndex
         ); // Create new well
-
         // Loop through each indicator for the well
         let indicatorId = 0;
         for (let indicatorName in analysisData) {
           let indicatorData = [];
           let timeData = extractedIndicatorTimes[indicatorName];
           let i = 0;
-
           // Collect data for this indicator in the current well
           for (
             let y = rowIndex * extractedColumns + (colIndex - 1);
@@ -132,7 +125,6 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
             });
             i++;
           }
-
           const indicator = new Indicator(
             indicatorId++,
             indicatorName,
@@ -141,19 +133,15 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
             timeData, // Time points specific to this indicator
             true
           ); // Create new indicator and add to well
-
           newWell.indicators.push(indicator);
         }
-
         newExperiment.wells.push(newWell); // Add well to experiment
         newWellArrays.push(newWell); // Add well to array
       }
     }
-
     setWellArraysUpdated(true); // Notify that well arrays are updated
     setSelectedWellArray([]);
     setProject(newProject); // Set the new project in context
-
     console.log(newProject);
     console.log("extractedIndicators: ", extractedIndicators);
   };
@@ -167,7 +155,6 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
     bottom: 0,
     left: 0,
     whiteSpace: "nowrap",
-    // minWidth: 3,
     width: 1,
   });
   // Handle file selection and reading
@@ -180,7 +167,6 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
         const fileContent = e.target.result;
         console.log(fileContent);
         await extractAllData(fileContent); // Extract all data from file
-
         setDataExtracted(true); // Set state to trigger data distribution
       };
       reader.readAsText(file); // Read file as text
@@ -195,7 +181,6 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
       const demoFileURL = `${process.env.PUBLIC_URL}/demo-files/${demoFileName}`;
       console.log(demoFileURL); // Check the URL
       const xhr = new XMLHttpRequest();
-
       xhr.open("GET", demoFileURL, true);
       xhr.onreadystatechange = () => {
         if (xhr.readyState === 4 && xhr.status === 200) {
@@ -205,7 +190,6 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
           setDataExtracted(true); // Trigger data extraction
         }
       };
-
       xhr.send();
     }
     handleMainMenuClose();
@@ -213,7 +197,6 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
 
   return (
     <div>
-      {/* Main File Options Button */}
       <Tooltip title="File Options" arrow>
         <Button
           variant="contained"
@@ -230,8 +213,6 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
           <DriveFolderUploadIcon />
         </Button>
       </Tooltip>
-
-      {/* Main Menu */}
       <Menu
         anchorEl={anchorEl}
         open={isMainMenuOpen}
@@ -245,7 +226,6 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
           horizontal: "center",
         }}
       >
-        {/* Upload File Option */}
         <MenuItem>
           <label
             style={{
@@ -263,8 +243,6 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
             />
           </label>
         </MenuItem>
-        {/* Use Demo File Option */}
-        {/* <MenuItem onClick={handleDemoMenuOpen}>Use Demo File</MenuItem> */}
         <select onChange={handleDemoFileSelect}>
           <option value="">Select a Demo File</option>
           <option value="demo96Well.dat">96 Well</option>

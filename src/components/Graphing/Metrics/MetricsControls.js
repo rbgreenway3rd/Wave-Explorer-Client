@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import BookmarkAddTwoToneIcon from "@mui/icons-material/BookmarkAddTwoTone";
 import DisabledByDefaultTwoToneIcon from "@mui/icons-material/DisabledByDefaultTwoTone";
 import DeleteForeverTwoToneIcon from "@mui/icons-material/DeleteForeverTwoTone";
@@ -20,8 +20,6 @@ export const MetricsControls = ({
   setMetricType,
   metricIndicator,
   setMetricIndicator,
-  // annotations,
-  // setAnnotations,
   setAnnotationRangeStart,
   setAnnotationRangeEnd,
 }) => {
@@ -34,14 +32,15 @@ export const MetricsControls = ({
   } = useContext(DataContext);
   const [selectedMetricType, setSelectedMetricType] = useState("Max");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
+  const [activeMetricId, setActiveMetricId] = useState(null); // Track active metric
   const [isAnimating, setIsAnimating] = useState(false);
+  const [activeMetricAnnotations, setActiveMetricAnnotations] = useState(null);
 
   const handleMetricChange = (e) => {
     const newMetric = e.target.value;
     setSelectedMetricType(newMetric);
     setMetricType(newMetric);
-    console.log(e.target.value);
+    setActiveMetricId(null); // Un-highlight metric when the type changes
   };
 
   const handleSaveMetric = () => {
@@ -53,13 +52,14 @@ export const MetricsControls = ({
         : [null, null],
     };
     setSavedMetrics((prevMetrics) => [...prevMetrics, newMetric]);
-    console.log("savedMetrics: ", savedMetrics);
   };
 
   const handleDeleteMetric = (id) => {
     setSavedMetrics((prevMetrics) =>
       prevMetrics.filter((metric) => metric.id !== id)
     );
+    // Reset active metric if deleted
+    if (id === activeMetricId) setActiveMetricId(null);
   };
 
   const handleSelectMetric = (metric) => {
@@ -67,7 +67,6 @@ export const MetricsControls = ({
     setMetricType(metric.metricType);
     setAnnotationRangeStart(metric.range[0]);
     setAnnotationRangeEnd(metric.range[1]);
-
     setAnnotations(() => {
       const updatedAnnotation = {
         type: "box",
@@ -79,10 +78,11 @@ export const MetricsControls = ({
         borderColor: "rgba(0, 255, 0, 1)",
         borderWidth: 2,
       };
-
-      console.log(updatedAnnotation);
+      setActiveMetricAnnotations([updatedAnnotation]); // Store annotations associated with the active metric
       return [updatedAnnotation]; // Replace with updated annotation
     });
+    setActiveMetricId(metric.id); // Set the clicked metric as active
+    setIsDropdownOpen(false); // Close dropdown after selection
   };
 
   const handleResetAnnotations = async () => {
@@ -90,12 +90,25 @@ export const MetricsControls = ({
     setAnnotationRangeStart(null);
     setAnnotationRangeEnd(null);
     setAnnotations([]);
+    setActiveMetricId(null); // Un-highlight metric when annotations are reset
   };
 
   const handleIndicatorChange = (e) => {
     const newIndicator = e.target.value;
     setMetricIndicator(newIndicator);
   };
+
+  useEffect(() => {
+    // If activeMetricAnnotations is set and the annotations change
+    if (activeMetricAnnotations && annotations.length > 0) {
+      const annotationsEqual =
+        JSON.stringify(annotations) === JSON.stringify(activeMetricAnnotations);
+      // If annotations differ from active metric annotations, un-highlight the active metric
+      if (!annotationsEqual) {
+        setActiveMetricId(null); // Un-highlight the active metric
+      }
+    }
+  }, [annotations, activeMetricAnnotations]); // Trigger when annotations change
 
   return (
     <div className="metrics__controls-container">
@@ -163,22 +176,19 @@ export const MetricsControls = ({
           {savedMetrics.length > 0 ? (
             savedMetrics.map((metric) => (
               <ListItem
-                className="saved-metric"
+                className={`saved-metric ${
+                  metric.id === activeMetricId ? "active-metric" : ""
+                }`}
                 key={metric.id}
-                onClick={() => {
-                  handleSelectMetric(metric);
-                  setIsDropdownOpen(false); // Close dropdown after selection
-                }}
+                onClick={() => handleSelectMetric(metric)}
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  // marginTop: '0.25em',
                   padding: 0,
                   cursor: "pointer",
                   borderBottom: "none",
                   backgroundImage:
                     "linear-gradient(rgb(0,32,96, 0.05) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(96, 127, 190, 0.25) 70%)",
-                  // "linear-gradient(rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
                   boxShadow:
                     "0px -1px 2px 2px inset rgba(80, 80, 80, 0.25), 0px -1px 4px 4px inset rgb(100, 100, 100, 0.15), 0px -1px 8px 5px inset rgba(100, 100, 100, 0.07)",
                   borderTopLeftRadius: "0.25em",
@@ -229,7 +239,7 @@ export const MetricsControls = ({
         variant="outlined"
         color="primary"
         onClick={handleResetAnnotations}
-        onAnimationEnd={() => setIsAnimating(false)} // Reset animation state
+        onAnimationEnd={() => setIsAnimating(false)}
         disableRipple
       >
         <DisabledByDefaultTwoToneIcon />
