@@ -1,18 +1,18 @@
 {
   "files": {
-    "main.css": "/Wave-Explorer-Client/static/css/main.4a79a69d.css",
-    "main.js": "/Wave-Explorer-Client/static/js/main.56bbcd7e.js",
+    "main.css": "/Wave-Explorer-Client/static/css/main.4bd34b25.css",
+    "main.js": "/Wave-Explorer-Client/static/js/main.98bd76e2.js",
     "static/js/787.9e9f4ffd.chunk.js": "/Wave-Explorer-Client/static/js/787.9e9f4ffd.chunk.js",
     "static/media/WaveGuideIcon.ico": "/Wave-Explorer-Client/static/media/WaveGuideIcon.cd737634105590d4fd8c.ico",
     "static/media/WaveFrontLogo.webp": "/Wave-Explorer-Client/static/media/WaveFrontLogo.e0cd0878e902aa8ab513.webp",
     "static/media/WaveGuideLogo.webp": "/Wave-Explorer-Client/static/media/WaveGuideLogo.0fba101da78db2310933.webp",
     "index.html": "/Wave-Explorer-Client/index.html",
-    "main.4a79a69d.css.map": "/Wave-Explorer-Client/static/css/main.4a79a69d.css.map",
-    "main.56bbcd7e.js.map": "/Wave-Explorer-Client/static/js/main.56bbcd7e.js.map",
+    "main.4bd34b25.css.map": "/Wave-Explorer-Client/static/css/main.4bd34b25.css.map",
+    "main.98bd76e2.js.map": "/Wave-Explorer-Client/static/js/main.98bd76e2.js.map",
     "787.9e9f4ffd.chunk.js.map": "/Wave-Explorer-Client/static/js/787.9e9f4ffd.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.4a79a69d.css",
-    "static/js/main.56bbcd7e.js"
+    "static/css/main.4bd34b25.css",
+    "static/js/main.98bd76e2.js"
   ]
 }
