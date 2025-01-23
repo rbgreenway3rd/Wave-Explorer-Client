@@ -1,44 +1,33 @@
-import React, {
-  useRef,
-  useEffect,
-  useState,
-  useMemo,
-  useCallback,
-  useContext,
-} from "react";
+import React, { useRef, useEffect, useState, useMemo, useContext } from "react";
 import * as d3 from "d3";
 import { DataContext } from "../../../providers/DataProvider";
 import { ColormapValues } from "../config/HeatmapConfig";
 import {
   linearRegression,
   calculateSlope,
-  calculateRange,
   getAllValues,
   getAllSlopes,
   getAllRanges,
 } from "./MetricsUtilities";
 import "./Heatmap.css";
-const Heatmap = ({
-  rowLabels,
-  columnLabels,
-  annotationRangeStart,
-  annotationRangeEnd,
-  metricType,
-  metricIndicator,
-}) => {
-  const { wellArrays, extractedIndicators, annotations } =
-    useContext(DataContext);
+
+const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
+  const { wellArrays, annotations } = useContext(DataContext);
+
   const heatmapRef = useRef(null);
   const colorScaleRef = useRef(null); // Canvas for color scale
-
   const [gradientState, setGradientState] = useState(false);
-
-  // const [currentCellColors, setCurrentCellColors] = useState([]);
-
-  // let currentCellColors = [];
-
   const [minMin, setMinMin] = useState(null);
   const [maxMin, setMaxMin] = useState(null);
+
+  const [currentCellColors, setCurrentCellColors] = useState([]);
+
+  const [largeCanvasWidth, setLargeCanvasWidth] = useState(
+    window.innerWidth / 2.3
+  );
+  const [largeCanvasHeight, setLargeCanvasHeight] = useState(
+    window.innerHeight / 2.3
+  );
 
   const [tooltip, setTooltip] = useState({
     visible: false,
@@ -50,13 +39,6 @@ const Heatmap = ({
 
   const numColumns = columnLabels.length;
   const numRows = rowLabels.length;
-
-  const [largeCanvasWidth, setLargeCanvasWidth] = useState(
-    window.innerWidth / 2.3
-  );
-  const [largeCanvasHeight, setLargeCanvasHeight] = useState(
-    window.innerHeight / 2.3
-  );
 
   const handleResize = () => {
     setLargeCanvasWidth(window.innerWidth / 2.3);
@@ -96,9 +78,6 @@ const Heatmap = ({
   );
 
   const handleMouseMove = (e) => {
-    // const rect = heatmapRef.current.getBoundingClientRect();
-    // const mouseX = e.clientX - rect.left;
-    // const mouseY = e.clientY - rect.top;
     const rect = heatmapRef.current.getBoundingClientRect();
     const mouseX = (e.clientX - rect.left) * (largeCanvasWidth / rect.width);
     const mouseY = (e.clientY - rect.top) * (largeCanvasHeight / rect.height);
@@ -166,34 +145,6 @@ const Heatmap = ({
     );
   }, [wellArrays, allValues, minSlope, maxSlope, rangeExtent]);
 
-  // const colorScale = useMemo(() => {
-  //   const extent = d3.extent(allValues);
-  //   if (!isDataReady) {
-  //     console.warn("Data not ready for color scale. Using fallback domain.");
-  //     return d3
-  //       .scaleSequential()
-  //       .interpolator(d3.interpolateGreys) // Fallback color scheme
-  //       .domain([0, 1]); // Default domain
-  //   } else if (metricType === "Slope") {
-  //     const midpoint = (minSlope + maxSlope) / 2;
-  //     return d3
-  //       .scaleDiverging()
-  //       .interpolator(d3.interpolateRgbBasis(ColormapValues))
-  //       .domain([minSlope, midpoint, maxSlope]);
-  //   } else if (metricType === "Range") {
-  //     const midpoint = (rangeExtent[0] + rangeExtent[1]) / 2;
-  //     return d3
-  //       .scaleDiverging()
-  //       .interpolator(d3.interpolateRgbBasis(ColormapValues))
-  //       .domain([rangeExtent[0], midpoint, rangeExtent[1]]);
-  //   } else {
-  //     return d3
-  //       .scaleSequential()
-  //       .interpolator(d3.interpolateRgbBasis(ColormapValues))
-  //       .domain(extent);
-  //   }
-  // }, [isDataReady, minSlope, maxSlope, rangeExtent, allValues, metricType]);
-
   // Calculate minMin and maxMin values
   useEffect(() => {
     const minValues = wellArrays.map((well) => {
@@ -215,14 +166,6 @@ const Heatmap = ({
 
   const colorScale = useMemo(() => {
     const extent = d3.extent(allValues);
-
-    // if (!gradientState) {
-    //   // Locked color scale when gradientState is false
-    //   return d3
-    //     .scaleSequential()
-    //     .interpolator(d3.interpolateRgbBasis(ColormapValues))
-    //     .domain(extent);
-    // }
 
     if (!isDataReady) {
       console.warn("Data not ready for color scale. Using fallback domain.");
@@ -250,6 +193,63 @@ const Heatmap = ({
     }
   }, [isDataReady, minSlope, maxSlope, rangeExtent, allValues, metricType]);
 
+  const sortRGBColors = (colors) => {
+    return colors.sort((colorA, colorB) => {
+      // Extract RGB values from the "rgb(r, g, b)" format
+      const rgbA = colorA.match(/\d+/g).map(Number); // [r, g, b]
+      const rgbB = colorB.match(/\d+/g).map(Number); // [r, g, b]
+
+      // Get dominant color
+      const dominantA = getDominantColor(rgbA);
+      const dominantB = getDominantColor(rgbB);
+
+      // Define order of dominant colors (Blues → Greens → Yellows → Oranges → Reds)
+      const order = { blue: 1, green: 2, yellow: 3, orange: 4, red: 5 };
+
+      if (order[dominantA] !== order[dominantB]) {
+        return order[dominantA] - order[dominantB]; // Primary sort by dominant color
+      }
+
+      // Sorting within each color group:
+      return refineSortWithinGroup(rgbA, rgbB, dominantA);
+    });
+  };
+
+  // COLOR SORTING
+  // Function to determine dominant color category
+  const getDominantColor = ([r, g, b]) => {
+    if (b > g && b > r) return "blue";
+    if (g > r && g > b) return "green";
+    if (r > g && g > b) return "orange";
+    if (r > g && b < g) return "yellow";
+    return "red";
+  };
+
+  // Function to refine sorting within each color category
+  const refineSortWithinGroup = (rgbA, rgbB, category) => {
+    const [rA, gA, bA] = rgbA;
+    const [rB, gB, bB] = rgbB;
+
+    if (category === "blue") {
+      return bA - bB || gA - gB; // Sort by blue, then green
+    }
+    if (category === "green") {
+      return gA - gB || rA - rB; // Sort by green, then red
+    }
+    if (category === "yellow") {
+      return rA - rB; // Sort by red
+    }
+    if (category === "orange") {
+      return rA - rB; // Sort by red
+    }
+    return rA - rB; // Reds sorted by red intensity
+  };
+
+  // const sortedColors = sortRGBColors(colors);
+  // console.log(sortedColors);
+  const sortedCellColors = sortRGBColors(currentCellColors);
+
+  // GRADIENT COLOR HANDLING
   const gradientColorScale = useMemo(() => {
     const extent = d3.extent(allValues);
 
@@ -267,33 +267,42 @@ const Heatmap = ({
         .scaleSequential()
         .interpolator(d3.interpolateGreys)
         .domain([0, 1]);
-    } else if (metricType === "Min") {
-      const midpoint = (minMin + maxMin) / 2;
-      return d3
-        .scaleDiverging()
-        .interpolator(d3.interpolateRgbBasis(ColormapValues))
-        .domain([minMin, midpoint, maxMin]);
-    } else if (metricType === "Slope") {
-      const midpoint = (minSlope + maxSlope) / 2;
+      // } else if (metricType === "Min") {
+      //   const midpoint = (minMin + maxMin) / 2;
+      //   return (
+      //     d3
+      //       .scaleDiverging()
+      //       .interpolator(d3.interpolateRgbBasis(sortedCellColors))
+      //       // .interpolator(d3.interpolateRgbBasis(ColormapValues))
+      //       .domain([minMin, midpoint, maxMin])
+      //   );
+      // } else if (metricType === "Slope") {
+      //   const midpoint = (minSlope + maxSlope) / 2;
+      //   return (
+      //     d3
+      //       .scaleDiverging()
+      //       // .interpolator(d3.interpolateRgbBasis(ColormapValues))
+      //       .interpolator(d3.interpolateRgbBasis(sortedCellColors))
+      //       .domain([minSlope, midpoint, maxSlope])
+      //   );
+      // } else if (metricType === "Range") {
+      //   console.log(rangeExtent);
+      //   const midpoint = (rangeExtent[0] + rangeExtent[1]) / 2;
+      //   return (
+      //     d3
+      //       .scaleDiverging()
+      //       // .interpolator(d3.interpolateRgbBasis(ColormapValues))
+      //       .interpolator(d3.interpolateRgbBasis(sortedCellColors))
+      //       .domain([rangeExtent[0], midpoint, rangeExtent[1]])
+      //   );
+    } else {
       return (
         d3
-          .scaleDiverging()
-          // .scaleSequential()
-          .interpolator(d3.interpolateRgbBasis(ColormapValues))
-          .domain([minSlope, midpoint, maxSlope])
+          .scaleSequential()
+          // .interpolator(d3.interpolateRgbBasis(ColormapValues))
+          .interpolator(d3.interpolateRgbBasis(sortedCellColors))
+          .domain(extent)
       );
-    } else if (metricType === "Range") {
-      console.log(rangeExtent);
-      const midpoint = (rangeExtent[0] + rangeExtent[1]) / 2;
-      return d3
-        .scaleDiverging()
-        .interpolator(d3.interpolateRgbBasis(ColormapValues))
-        .domain([rangeExtent[0], midpoint, rangeExtent[1]]);
-    } else {
-      return d3
-        .scaleSequential()
-        .interpolator(d3.interpolateRgbBasis(ColormapValues))
-        .domain(extent);
     }
   }, [
     gradientState,
@@ -307,102 +316,22 @@ const Heatmap = ({
     minMin,
   ]);
 
-  // useEffect(() => {
-  //   if (!colorScaleRef.current) {
-  //     console.warn("Color scale canvas ref is not yet initialized.");
-  //     return;
-  //   }
-
-  //   const canvas = colorScaleRef.current;
-  //   const context = canvas.getContext("2d");
-
-  //   if (!context) {
-  //     console.error("Failed to get 2D context for the color scale canvas.");
-  //     return;
-  //   }
-
-  //   const gradient = context.createLinearGradient(0, canvas.height, 0, 0);
-
-  //   for (let i = 0; i <= 1; i += 0.01) {
-  //     const value =
-  //       gradientColorScale.domain()[0] +
-  //       i * (gradientColorScale.domain()[1] - gradientColorScale.domain()[0]);
-  //     gradient.addColorStop(i, gradientColorScale(value));
-  //   }
-
-  //   context.clearRect(0, 0, canvas.width, canvas.height);
-  //   context.fillStyle = gradient;
-  //   context.fillRect(0, 0, canvas.width, canvas.height);
-  // }, [colorScaleRef, largeCanvasHeight, gradientColorScale]);
   useEffect(() => {
-    if (!colorScaleRef.current) {
-      console.warn("Color scale canvas ref is not yet initialized.");
-      return;
-    }
-
-    const canvas = colorScaleRef.current;
-    const context = canvas.getContext("2d");
-
-    if (!context) {
-      console.error("Failed to get 2D context for the color scale canvas.");
-      return;
-    }
-
-    const domain = gradientColorScale.domain();
-
-    if (!domain || domain.some((d) => d == null || isNaN(d))) {
-      console.error("Invalid colorScale domain:", domain);
-      return;
-    }
-
-    const gradient = context.createLinearGradient(0, canvas.height, 0, 0);
-
-    // Ensure values align with the domain
-    for (let i = 0; i <= 1; i += 0.01) {
-      const value = domain[0] + i * (domain[domain.length - 1] - domain[0]);
-      const color = gradientColorScale(value);
-
-      if (!color) {
-        console.error(
-          "Invalid color for value:",
-          value,
-          "with colorScale:",
-          gradientColorScale
-        );
-        continue; // Skip invalid color stops
-      }
-
-      gradient.addColorStop(i, color);
-    }
-
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    context.fillStyle = gradient;
-    context.fillRect(0, 0, canvas.width, canvas.height);
-  }, [colorScaleRef, largeCanvasHeight, gradientColorScale, gradientState]);
-
-  useEffect(() => {
-    if (!heatmapRef.current) {
-      console.warn("Heatmap canvas ref is not yet initialized.");
-      return;
-    }
+    if (!heatmapRef.current) return;
 
     const canvas = heatmapRef.current;
     const context = canvas.getContext("2d");
 
-    if (!context) {
-      console.error("Failed to get 2D context for the heatmap canvas.");
-      return;
-    }
+    if (!context) return;
 
-    const gradientWidth = 20; // Fixed width of the gradient canvas
-    const adjustedCanvasWidth = largeCanvasWidth - gradientWidth; // Subtract the gradient width
-    const cellWidth = adjustedCanvasWidth / numColumns; // Adjust cell width
+    const gradientWidth = 20;
+    const adjustedCanvasWidth = largeCanvasWidth - gradientWidth;
+    const cellWidth = adjustedCanvasWidth / numColumns;
     const cellHeight = largeCanvasHeight / numRows;
 
     context.clearRect(0, 0, largeCanvasWidth, largeCanvasHeight);
 
-    // let newCellColors = [];
-    // currentCellColors = [];
+    let newColors = [];
 
     wellArrays.forEach((well, i) => {
       const row = Math.floor(i / numColumns);
@@ -429,9 +358,10 @@ const Heatmap = ({
           ? slope
           : rangeOfYValues;
 
-      context.fillStyle = colorScale(activeMetric);
-      // newCellColors.push(colorScale(activeMetric));
+      const color = colorScale(activeMetric);
+      newColors.push(color);
 
+      context.fillStyle = color;
       context.fillRect(
         col * cellWidth,
         row * cellHeight,
@@ -439,7 +369,6 @@ const Heatmap = ({
         cellHeight
       );
 
-      // Add cell borders
       context.strokeStyle = "black";
       context.lineWidth = 1;
       context.strokeRect(
@@ -449,7 +378,6 @@ const Heatmap = ({
         cellHeight
       );
 
-      // Draw well labels
       context.fillStyle = "black";
       context.font = "12px Arial";
       context.textAlign = "center";
@@ -459,21 +387,66 @@ const Heatmap = ({
       const textY = row * cellHeight + cellHeight / 2;
       context.fillText(well.label || "", textX, textY);
     });
-    // setCurrentCellColors(newCellColors);
-    // console.log(newCellColors);
-    // currentCellColors = newCellColors;
+
+    setCurrentCellColors((prevColors) => {
+      if (
+        prevColors.length === newColors.length &&
+        prevColors.every((color, i) => color === newColors[i])
+      ) {
+        return prevColors; // No change, prevent update
+      }
+      console.log(newColors);
+      return newColors; // Update only if different
+    });
   }, [
     wellArrays,
-    allValues,
     largeCanvasWidth,
     largeCanvasHeight,
     numColumns,
     numRows,
     annotationRange,
     metricType,
-    colorScale,
+    // colorScale,
     metricIndicator,
+    // currentCellColors,
   ]);
+
+  // Helper function to compare arrays
+  const arraysEqual = (a, b) => {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
+  };
+
+  useEffect(() => {
+    if (!colorScaleRef.current) return;
+
+    const ctx = colorScaleRef.current.getContext("2d");
+    const { width, height } = colorScaleRef.current;
+
+    ctx.clearRect(0, 0, width, height);
+
+    // Create a linear gradient along the x-axis
+    const gradient = gradientState
+      ? ctx.createLinearGradient(0, 0, 0, height)
+      : ctx.createLinearGradient(0, height, 0, 0);
+
+    // Generate color stops using the gradientColorScale
+    const numStops = 10; // Adjust as needed for smoothness
+    for (let i = 0; i <= numStops; i++) {
+      const t = i / numStops;
+      const value =
+        gradientColorScale.domain()[0] +
+        t * (gradientColorScale.domain()[1] - gradientColorScale.domain()[0]);
+      gradient.addColorStop(t, gradientColorScale(value));
+    }
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+  }, [gradientColorScale, gradientState, heatmapRef, metricType]);
+
   return (
     <>
       {isDataReady ? (
@@ -491,6 +464,7 @@ const Heatmap = ({
             <canvas
               className="color-scale-canvas"
               ref={colorScaleRef}
+              // ref={gradientState ? heatmapRef : colorScaleRef}
               width={20}
             />
           </section>
