@@ -1,128 +1,250 @@
-// CREDIT: SamProell - https://github.com/SamProell - https://github.com/SamProell/samproell.io-code/blob/main/posts/signal/peak-finding-python-js/findpeaks.js
-// ARTICLE: https://www.samproell.io/posts/signal/peak-finding-python-js/
-
-// https://stackoverflow.com/a/47593316/10694594
-export function mulberry32(a) {
-  return function () {
-    var t = (a += 0x6d2b79f5);
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-var random_function = mulberry32(0);
-
-export function mulberry_seed(a) {
-  random_function = mulberry32(a);
-}
-
-// slight modification of solution taken from here:
-// https://riptutorial.com/javascript/example/8330/random--with-gaussian-distribution
-// distribution scale needs to be adjusted by 3.56/Math.sqrt(n)
-// value found empirically.
-export function uniform_sum_distribution(mean = 0.0, scale = 1.0, n = 5) {
-  var x = 0;
-  for (var i = 0; i < n; i++) {
-    x += random_function();
+export class Peak {
+  constructor(
+    peakCoords,
+    leftBaseCoords,
+    rightBaseCoords,
+    prominences,
+    data,
+    useAdjustedBases = false,
+    adjustedLeftBaseCoords = null,
+    adjustedRightBaseCoords = null
+  ) {
+    this.peakCoords = peakCoords;
+    this.leftBaseCoords = leftBaseCoords;
+    this.rightBaseCoords = rightBaseCoords;
+    this.prominences = prominences;
+    this.data = data;
+    this.useAdjustedBases = useAdjustedBases;
+    this.adjustedLeftBaseCoords = adjustedLeftBaseCoords;
+    this.adjustedRightBaseCoords = adjustedRightBaseCoords;
+    this.ascentAnalysis = this.analyzeAscent();
+    this.descentAnalysis = this.analyzeDescent();
   }
-  return mean + (((x - n / 2) * 3.56) / Math.sqrt(n)) * scale;
-}
 
-// https://stackoverflow.com/a/65410414/10694594
-let decor = (v, i) => [v, i]; // combine index and value as pair
-let undecor = (pair) => pair[1]; // remove value from pair
-const argsort = (arr) => arr.map(decor).sort().map(undecor);
+  analyzeAscent() {
+    const ascentPoints = [];
+    const baseCoords =
+      this.useAdjustedBases && this.adjustedLeftBaseCoords
+        ? this.adjustedLeftBaseCoords
+        : this.leftBaseCoords;
+    const yDistance = this.peakCoords.y - baseCoords.y;
 
-/**
- * Get indices of all local maxima in a sequence.
- * @param {number[]} xs - sequence of numbers
- * @returns {number[]} indices of local maxima
- */
-export function find_local_maxima(xs) {
-  let maxima = [];
-  // iterate through all points and compare direct neighbors
-  // NOTE: Does not consider edges (xs[0] and xs[xs.length - 1]).
-  for (let i = 1; i < xs.length - 1; ++i) {
-    if (xs[i] > xs[i - 1] && xs[i] > xs[i + 1]) maxima.push(i);
-  }
-  return maxima;
-}
-
-/**
- * Remove peaks below minimum height.
- * @param {number[]} indices - indices of peaks in xs
- * @param {number[]} xs - original signal
- * @param {number} height - minimum peak height
- * @returns {number[]} filtered peak index list
- */
-export function filter_by_height(indices, xs, height) {
-  return indices.filter((i) => xs[i] > height);
-}
-
-/**
- * Remove peaks that are too close to higher ones.
- * @param {number[]} indices - indices of peaks in xs
- * @param {number[]} xs - original signal
- * @param {number} dist - minimum distance between peaks
- * @returns {number[]} filtered peak index list
- */
-export function filter_by_distance(indices, xs, dist) {
-  let to_remove = Array(indices.length).fill(false);
-  let heights = indices.map((i) => xs[i]);
-  let sorted_index_positions = argsort(heights).reverse();
-
-  // adapted from SciPy find_peaks
-  for (let current of sorted_index_positions) {
-    if (to_remove[current]) {
-      continue; // peak will already be removed, move on.
+    for (let i = 1; i <= 9; i++) {
+      const percentage = i / 10;
+      const yValue = baseCoords.y + percentage * yDistance;
+      const xValue = this.getXValueAtY(yValue, baseCoords.x, this.peakCoords.x);
+      ascentPoints.push({ x: xValue, y: yValue });
     }
 
-    let neighbor = current - 1; // check on left side of current peak
-    while (neighbor >= 0 && indices[current] - indices[neighbor] < dist) {
-      to_remove[neighbor] = true;
-      --neighbor;
+    return ascentPoints;
+  }
+
+  analyzeDescent() {
+    const descentPoints = [];
+    const baseCoords =
+      this.useAdjustedBases && this.adjustedRightBaseCoords
+        ? this.adjustedRightBaseCoords
+        : this.rightBaseCoords;
+    const yDistance = this.peakCoords.y - baseCoords.y;
+
+    for (let i = 1; i <= 9; i++) {
+      const percentage = i / 10;
+      const yValue = this.peakCoords.y - percentage * yDistance;
+      const xValue = this.getXValueAtY(yValue, this.peakCoords.x, baseCoords.x);
+      descentPoints.push({ x: xValue, y: yValue });
     }
 
-    neighbor = current + 1; // check on right side of current peak
-    while (
-      neighbor < indices.length &&
-      indices[neighbor] - indices[current] < dist
+    return descentPoints;
+  }
+
+  getXValueAtY(yValue, xStart, xEnd) {
+    // Find the closest data points with the same y value within the range [xStart, xEnd]
+    const pointsInRange = this.data.filter(
+      (point) => point.x >= xStart && point.x <= xEnd
+    );
+    if (pointsInRange.length === 0) {
+      return null; // No points in range
+    }
+
+    let closestPoint = pointsInRange.reduce((prev, curr) => {
+      return Math.abs(curr.y - yValue) < Math.abs(prev.y - yValue)
+        ? curr
+        : prev;
+    });
+
+    // If the exact y value is found, return the corresponding x value
+    if (closestPoint.y === yValue) {
+      return closestPoint.x;
+    }
+
+    // Find the two closest points for interpolation
+    let lowerPoint = null;
+    let upperPoint = null;
+    for (let point of pointsInRange) {
+      if (point.y <= yValue && (!lowerPoint || point.y > lowerPoint.y)) {
+        lowerPoint = point;
+      }
+      if (point.y >= yValue && (!upperPoint || point.y < upperPoint.y)) {
+        upperPoint = point;
+      }
+    }
+
+    // If we have both lower and upper points, interpolate to estimate the x value
+    if (lowerPoint && upperPoint && lowerPoint !== upperPoint) {
+      const xDiff = upperPoint.x - lowerPoint.x;
+      const yDiff = upperPoint.y - lowerPoint.y;
+      const yRatio = (yValue - lowerPoint.y) / yDiff;
+      return lowerPoint.x + yRatio * xDiff;
+    }
+
+    // If we only have one point, return its x value
+    return closestPoint.x;
+  }
+}
+
+export function findPeaksClass(
+  data,
+  prominence = 0,
+  wlen = null,
+  useAdjustedBases = false,
+  adjustedPeaksData = []
+) {
+  if (!Array.isArray(data) || data.length === 0) {
+    throw new Error("Data must be a non-empty array.");
+  }
+  let peakIndices = [];
+  let peaks = [];
+
+  // Identify local maxima
+  for (let i = 1; i < data.length - 1; i++) {
+    if (data[i].y > data[i - 1].y && data[i].y > data[i + 1].y) {
+      peakIndices.push(i);
+    }
+  }
+
+  // Calculate prominence for each peak and filter based on prominence threshold
+  let filteredPeakIndices = [];
+  for (let peakIdx of peakIndices) {
+    let leftBaseIdx = peakIdx;
+    let rightBaseIdx = peakIdx;
+    let searchRange = wlen ? Math.floor(wlen / 2) : data.length;
+
+    // Find left base
+    for (let j = peakIdx - 1; j >= Math.max(0, peakIdx - searchRange); j--) {
+      if (data[j].y < data[leftBaseIdx].y) {
+        leftBaseIdx = j;
+      }
+    }
+
+    // Find right base
+    for (
+      let j = peakIdx + 1;
+      j <= Math.min(data.length - 1, peakIdx + searchRange);
+      j++
     ) {
-      to_remove[neighbor] = true;
-      ++neighbor;
+      if (data[j].y < data[rightBaseIdx].y) {
+        rightBaseIdx = j;
+      }
+    }
+
+    let leftProminence = data[peakIdx].y - data[leftBaseIdx].y;
+    let rightProminence = data[peakIdx].y - data[rightBaseIdx].y;
+    let prominenceValue = Math.min(leftProminence, rightProminence);
+
+    if (prominenceValue >= prominence) {
+      filteredPeakIndices.push(peakIdx);
     }
   }
-  return indices.filter((v, i) => !to_remove[i]);
-}
 
-/**
- * Filter peaks by required properties.
- * @param {number[]}} indices - indices of peaks in xs
- * @param {number[]} xs - original signal
- * @param {number} distance - minimum distance between peaks
- * @param {number} height - minimum height of peaks
- * @returns {number[]} filtered peak indices
- */
-export function filter_maxima(indices, xs, distance, height) {
-  let new_indices = indices;
-  if (height != undefined) {
-    new_indices = filter_by_height(indices, xs, height);
-  }
-  if (distance != undefined) {
-    new_indices = filter_by_distance(new_indices, xs, distance);
-  }
-  return new_indices;
-}
+  // Group peaks within the same window width and keep the peak with the highest y value
+  let finalFilteredPeakIndices = [];
+  let i = 0;
+  while (i < filteredPeakIndices.length) {
+    let group = [];
+    let currentPeakIdx = filteredPeakIndices[i];
+    group.push(currentPeakIdx);
 
-/**
- * Simplified version of SciPy's find_peaks function.
- * @param {number[]} xs - input signal
- * @param {number} distance - minimum distance between peaks
- * @param {number} height - minimum height of peaks
- * @returns {number[]} peak indices
- */
-export function minimal_find_peaks(xs, distance, height) {
-  let indices = find_local_maxima(xs);
-  return filter_maxima(indices, xs, distance, height);
+    // Find all peaks within the window width
+    for (let j = i + 1; j < filteredPeakIndices.length; j++) {
+      if (filteredPeakIndices[j] <= currentPeakIdx + wlen / 2) {
+        group.push(filteredPeakIndices[j]);
+      } else {
+        break;
+      }
+    }
+
+    // Find the peak with the highest y value in the group
+    let highestPeakIdx = group.reduce(
+      (maxIdx, idx) => (data[idx].y > data[maxIdx].y ? idx : maxIdx),
+      group[0]
+    );
+    finalFilteredPeakIndices.push(highestPeakIdx);
+
+    // Move to the next group
+    i += group.length;
+  }
+
+  // Create Peak instances for the final filtered peaks
+  for (let peakIdx of finalFilteredPeakIndices) {
+    let leftBaseIdx = peakIdx;
+    let rightBaseIdx = peakIdx;
+    let searchRange = wlen ? Math.floor(wlen / 2) : data.length;
+
+    // Find left base
+    for (let j = peakIdx - 1; j >= Math.max(0, peakIdx - searchRange); j--) {
+      if (data[j].y < data[leftBaseIdx].y) {
+        leftBaseIdx = j;
+      }
+    }
+
+    // Find right base
+    for (
+      let j = peakIdx + 1;
+      j <= Math.min(data.length - 1, peakIdx + searchRange);
+      j++
+    ) {
+      if (data[j].y < data[rightBaseIdx].y) {
+        rightBaseIdx = j;
+      }
+    }
+
+    let leftProminence = data[peakIdx].y - data[leftBaseIdx].y;
+    let rightProminence = data[peakIdx].y - data[rightBaseIdx].y;
+    let prominences = {
+      leftProminence: leftProminence,
+      rightProminence: rightProminence,
+    };
+
+    let leftBaseCoords = data[leftBaseIdx];
+    let peakCoords = data[peakIdx];
+    let rightBaseCoords = data[rightBaseIdx];
+
+    let adjustedLeftBaseCoords = null;
+    let adjustedRightBaseCoords = null;
+
+    if (useAdjustedBases) {
+      const adjustedPeak = adjustedPeaksData.find(
+        (adjustedPeak) => adjustedPeak.peakCoords.x === peakCoords.x
+      );
+      if (adjustedPeak) {
+        adjustedLeftBaseCoords = adjustedPeak.adjustedLeftBaseCoords;
+        adjustedRightBaseCoords = adjustedPeak.adjustedRightBaseCoords;
+      }
+    }
+
+    peaks.push(
+      new Peak(
+        peakCoords,
+        leftBaseCoords,
+        rightBaseCoords,
+        prominences,
+        data,
+        useAdjustedBases,
+        adjustedLeftBaseCoords,
+        adjustedRightBaseCoords
+      )
+    );
+  }
+
+  return peaks;
 }

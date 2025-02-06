@@ -64,7 +64,7 @@ export const MiniGraphOptions = (
       decimation: {
         enabled: true,
         algorithm: "lttb",
-        samples: 20,
+        samples: 40,
         threshold: 80,
       },
       tooltip: {
