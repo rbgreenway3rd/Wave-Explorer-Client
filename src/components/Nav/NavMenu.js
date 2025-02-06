@@ -17,6 +17,8 @@ import Button from "@mui/material/Button";
 import { DataContext } from "../../providers/DataProvider";
 import { GenerateCSV } from "../FileHandling/GenerateReport";
 import { Tooltip } from "@mui/material";
+import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
+import CardiacAnalysisModal from "../CardiacAnalysis/AnalysisModal";
 
 export const NavMenu = () => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -51,6 +53,15 @@ export const NavMenu = () => {
   const [threshold, setThreshold] = useState(3);
   // state for flat field correction filter params
   const [correctionMatrix, setCorrectionMatrix] = useState([]);
+  // state controlling Cardiac Analysis modal
+  const [cardiacModalOpen, setCardiacModalOpen] = useState(false);
+
+  const handleOpenCardiacModal = () => {
+    setCardiacModalOpen(true);
+  };
+  const handleCloseCardiacModal = () => {
+    setCardiacModalOpen(false);
+  };
 
   const handleEditStaticRatioParams = (start, end, setParams) => {
     setStartValue(start);
@@ -238,6 +249,13 @@ export const NavMenu = () => {
             onChange={handleLoadPreferencesFromJSON}
           />
         </MenuItem>
+        <MenuItem
+          className="cardiacAnalysisButton"
+          onClick={handleOpenCardiacModal}
+        >
+          <FavoriteBorderIcon />
+          Cardiac Analysis
+        </MenuItem>
         {/* Other menu items */}
       </Menu>
 
@@ -281,6 +299,10 @@ export const NavMenu = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      <CardiacAnalysisModal
+        open={cardiacModalOpen}
+        onClose={handleCloseCardiacModal}
+      />
     </>
   );
 };
