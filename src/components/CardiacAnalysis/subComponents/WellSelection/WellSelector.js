@@ -203,11 +203,11 @@
 // export default WellSelector;
 import React, { useEffect, useRef, useState } from "react";
 import { useContext } from "react";
-import { DataContext } from "../../../providers/DataProvider";
-import { AnalysisContext } from "../AnalysisProvider";
+import { DataContext } from "../../../../providers/DataProvider";
+import { AnalysisContext } from "../../AnalysisProvider";
 import { Line } from "react-chartjs-2";
-import DotWaveLoader from "../../../assets/animations/DotWaveLoader";
-import "../styles/WellSelector.css";
+import DotWaveLoader from "../../../../assets/animations/DotWaveLoader";
+import "../../styles/WellSelector.css";
 
 export const WellSelector = () => {
   const { project, wellArrays, rowLabels } = useContext(DataContext);

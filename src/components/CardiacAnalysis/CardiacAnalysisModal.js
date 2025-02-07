@@ -7,8 +7,8 @@ import {
   Tooltip,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import { WellSelector } from "./subComponents/WellSelector";
-import CardiacGraph from "./subComponents/CardiacGraph";
+import { WellSelector } from "./subComponents/WellSelection/WellSelector";
+import CardiacGraph from "./subComponents/CardiacGraph/CardiacGraph";
 import { AnalysisProvider } from "./AnalysisProvider";
 
 const CardiacAnalysisModal = ({ open, onClose }) => {

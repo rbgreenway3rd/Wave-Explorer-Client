@@ -58,6 +58,7 @@ export const NavMenu = () => {
 
   const handleOpenCardiacModal = () => {
     setCardiacModalOpen(true);
+    handleClose();
   };
   const handleCloseCardiacModal = () => {
     setCardiacModalOpen(false);
@@ -159,6 +160,7 @@ export const NavMenu = () => {
     document.body.removeChild(link);
 
     setDialogOpen(false);
+    handleClose();
   };
 
   const handleSavePreferencesAsJSON = () => {
