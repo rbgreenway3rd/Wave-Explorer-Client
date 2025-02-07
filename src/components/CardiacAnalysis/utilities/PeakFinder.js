@@ -102,7 +102,7 @@
 //   }
 // }
 
-import { Peak } from "../../components/CardiacAnalysis/classes/Peak";
+import { Peak } from "../classes/Peak";
 
 export function findPeaks(
   data,
