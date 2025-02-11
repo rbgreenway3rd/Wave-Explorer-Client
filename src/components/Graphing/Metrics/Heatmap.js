@@ -325,7 +325,7 @@ const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
     if (!context) return;
 
     const gradientWidth = 20;
-    const adjustedCanvasWidth = largeCanvasWidth - gradientWidth;
+    const adjustedCanvasWidth = largeCanvasWidth;
     const cellWidth = adjustedCanvasWidth / numColumns;
     const cellHeight = largeCanvasHeight / numRows;
 
@@ -452,27 +452,27 @@ const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
       {isDataReady ? (
         <div className="heatmap-container" style={{ position: "relative" }}>
           {/* Color Scale Gradient */}
-          <section className="color-scale" height="100%">
-            {/* Checkbox in the top-left corner */}
-            <div className="color-scale-toggle">
+          {/* <section className="color-scale" height="100%"> */}
+          {/* Checkbox in the top-left corner */}
+          {/* <div className="color-scale-toggle">
               <input
                 type="checkbox"
                 checked={gradientState}
                 onChange={() => toggleGradientState(gradientState)}
               />
-            </div>
-            <canvas
+            </div> */}
+          {/* <canvas
               className="color-scale-canvas"
               ref={colorScaleRef}
               // ref={gradientState ? heatmapRef : colorScaleRef}
               width={20}
-            />
-          </section>
+            /> */}
+          {/* </section> */}
           {/* Heatmap Canvas */}
           <canvas
             className="heatmap-canvas"
             ref={heatmapRef}
-            width={largeCanvasWidth - 20}
+            width={largeCanvasWidth}
             height={largeCanvasHeight}
             onMouseLeave={handleMouseLeave}
             onMouseMove={handleMouseMove}

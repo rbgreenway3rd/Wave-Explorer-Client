@@ -298,6 +298,308 @@
 // };
 
 // export default CardiacGraph;
+// import React, { useEffect, useState, useContext } from "react";
+// import { Line } from "react-chartjs-2";
+// import { Chart, registerables } from "chart.js";
+// import { AnalysisContext } from "../../AnalysisProvider";
+// import { DataContext } from "../../../../providers/DataProvider";
+// import { findPeaks } from "../../utilities/PeakFinder";
+// import { prepareChartData } from "../../utilities/PrepareChartData";
+// import { getChartOptions } from "./ChartOptions";
+
+// Chart.register(...registerables);
+
+// export const CardiacGraph = () => {
+//   const { selectedWell } = useContext(AnalysisContext);
+//   const { extractedIndicatorTimes } = useContext(DataContext);
+//   const [chartData, setChartData] = useState(null);
+//   const [peakResults, setPeakResults] = useState([]);
+//   const [smoothedData, setSmoothedData] = useState([]);
+//   const [peakProminence, setPeakProminence] = useState(25000); // State for peak prominence
+//   const [findPeaksWindowWidth, setFindPeaksWindowWidth] = useState(80); // State for peak prominence
+//   const [useAdjustedBases, setUseAdjustedBases] = useState(true); // State to track checkbox
+
+//   useEffect(() => {
+//     if (!selectedWell) {
+//       console.error("No well selected");
+//       return;
+//     }
+
+//     const selectedData = selectedWell.indicators[0].filteredData;
+
+//     if (!selectedData || selectedData.length === 0) {
+//       console.error("Selected data is empty or undefined");
+//       return;
+//     }
+
+//     // Detect peaks using the new findPeaks function
+//     const peaksData = findPeaks(
+//       selectedData, // Data
+//       peakProminence, // Prominence
+//       findPeaksWindowWidth // Window Width
+//     );
+
+//     setPeakResults(peaksData);
+
+//     // Prepare chart data
+//     const chartData = prepareChartData(
+//       selectedData,
+//       peaksData,
+//       smoothedData,
+//       peakProminence,
+//       findPeaksWindowWidth,
+//       extractedIndicatorTimes,
+//       useAdjustedBases
+//     );
+
+//     setChartData(chartData);
+//     // console.log(peakResults);
+//   }, [
+//     selectedWell,
+//     smoothedData,
+//     peakProminence,
+//     findPeaksWindowWidth,
+//     extractedIndicatorTimes,
+//     useAdjustedBases,
+//   ]);
+
+//   const chartOptions = getChartOptions(extractedIndicatorTimes);
+
+//   // Calculate average descent at each percentage
+//   const averageDescent = Array.from({ length: 9 }, (_, i) => {
+//     // const percentage = (i + 1) * 10;
+//     const totalDescent = peakResults.reduce((sum, peak) => {
+//       const descent = peak.descentAnalysis[i];
+//       return sum + (descent ? descent.x - peak.peakCoords.x : 0);
+//     }, 0);
+//     return totalDescent / peakResults.length;
+//   });
+
+//   return (
+//     <div>
+//       {selectedWell ? (
+//         <div>
+//           <h2>Cardiac Graph for Well {selectedWell.label}</h2>
+//           <div
+//             className="chart-controls"
+//             style={{ display: "flex", flexDirection: "column" }}
+//           >
+//             <label>
+//               Use Normalized Bases{" "}
+//               <input
+//                 type="checkbox"
+//                 checked={useAdjustedBases}
+//                 onChange={(e) => setUseAdjustedBases(e.target.checked)}
+//               />
+//             </label>
+//             <label>
+//               Window width:{" "}
+//               <input
+//                 type="number"
+//                 step={10}
+//                 value={findPeaksWindowWidth}
+//                 onChange={(e) => setFindPeaksWindowWidth(e.target.value)}
+//               />
+//             </label>
+//             <label>
+//               Peak Prominence:{" "}
+//               <input
+//                 type="number"
+//                 step={1000}
+//                 value={peakProminence}
+//                 onChange={(e) => setPeakProminence(e.target.value)}
+//               />
+//             </label>
+//           </div>
+//           {chartData && (
+//             <Line
+//               data={chartData}
+//               options={chartOptions}
+//               style={{
+//                 background: "rgb(0, 0, 0)",
+//               }}
+//             />
+//           )}
+//           <div>
+//             <ul>
+//               {peakResults.map((peak, index) => (
+//                 <li key={index}>
+//                   Peak {index + 1}: {peak.peakCoords.x.toFixed(2)}
+//                   <section>
+//                     Descent Time:
+//                     {peak.descentAnalysis.map((descent, index) => (
+//                       <div key={index}>
+//                         at {(index + 1) * 10}%:{" "}
+//                         {(descent.x - peak.peakCoords.x).toFixed(2)}
+//                       </div>
+//                     ))}
+//                     <div>
+//                       at baseline: {peak.rightBaseCoords.x - peak.peakCoords.x}
+//                     </div>
+//                   </section>
+//                 </li>
+//               ))}
+//             </ul>
+//           </div>
+//           <div>
+//             <h3>Average Descent Times</h3>
+//             <ul>
+//               {averageDescent.map((descent, index) => (
+//                 <li key={index}>
+//                   {(index + 1) * 10}%: {descent.toFixed(2)}
+//                 </li>
+//               ))}
+//             </ul>
+//           </div>
+//         </div>
+//       ) : (
+//         <p>No well selected</p>
+//       )}
+//     </div>
+//   );
+// };
+
+// export default CardiacGraph;
+
+// import React, { useEffect, useState, useContext } from "react";
+// import { Line } from "react-chartjs-2";
+// import { Chart, registerables } from "chart.js";
+// import { AnalysisContext } from "../../AnalysisProvider";
+// import { DataContext } from "../../../../providers/DataProvider";
+// import { findPeaks } from "../../utilities/PeakFinder";
+// import { prepareChartData } from "../../utilities/PrepareChartData";
+// import { getChartOptions } from "./ChartOptions";
+// import "../../styles/CardiacGraph.css";
+
+// Chart.register(...registerables);
+
+// export const CardiacGraph = ({
+//   useAdjustedBases,
+//   findPeaksWindowWidth,
+//   peakProminence,
+// }) => {
+//   const { selectedWell } = useContext(AnalysisContext);
+//   const { extractedIndicatorTimes } = useContext(DataContext);
+//   const [chartData, setChartData] = useState(null);
+//   const [peakResults, setPeakResults] = useState([]);
+//   const [smoothedData, setSmoothedData] = useState([]);
+
+//   useEffect(() => {
+//     if (!selectedWell) {
+//       console.error("No well selected");
+//       return;
+//     }
+
+//     const selectedData = selectedWell.indicators[0].filteredData;
+
+//     if (!selectedData || selectedData.length === 0) {
+//       console.error("Selected data is empty or undefined");
+//       return;
+//     }
+
+//     // Detect peaks using the new findPeaks function
+//     const peaksData = findPeaks(
+//       selectedData, // Data
+//       peakProminence, // Prominence
+//       findPeaksWindowWidth // Window Width
+//     );
+
+//     setPeakResults(peaksData);
+
+//     // Prepare chart data
+//     const chartData = prepareChartData(
+//       selectedData,
+//       peaksData,
+//       smoothedData,
+//       peakProminence,
+//       findPeaksWindowWidth,
+//       extractedIndicatorTimes,
+//       useAdjustedBases
+//     );
+
+//     setChartData(chartData);
+//     // console.log(peakResults);
+//   }, [
+//     selectedWell,
+//     smoothedData,
+//     peakProminence,
+//     findPeaksWindowWidth,
+//     extractedIndicatorTimes,
+//     useAdjustedBases,
+//   ]);
+
+//   const chartOptions = getChartOptions(extractedIndicatorTimes);
+
+//   // Calculate average descent at each percentage
+//   const averageDescent = Array.from({ length: 9 }, (_, i) => {
+//     // const percentage = (i + 1) * 10;
+//     const totalDescent = peakResults.reduce((sum, peak) => {
+//       const descent = peak.descentAnalysis[i];
+//       return sum + (descent ? descent.x - peak.peakCoords.x : 0);
+//     }, 0);
+//     return totalDescent / peakResults.length;
+//   });
+
+//   return (
+//     <div>
+//       {selectedWell ? (
+//         <div className="cardiac-graph-container">
+//           <h2>Cardiac Graph for Well {selectedWell.label}</h2>
+//           {chartData && (
+//             <Line
+//               data={chartData}
+//               options={chartOptions}
+//               style={{
+//                 background: "rgb(0, 0, 0)",
+//               }}
+//             />
+//           )}
+//           <section className="cardiac-graph-results">
+//             <div>
+//               <ul>
+//                 {peakResults.map((peak, index) => (
+//                   <li key={index}>
+//                     Peak {index + 1}: {peak.peakCoords.x.toFixed(2)}
+//                     <section>
+//                       Descent Time:
+//                       {peak.descentAnalysis.map((descent, index) => (
+//                         <div key={index}>
+//                           at {(index + 1) * 10}%:{" "}
+//                           {(descent.x - peak.peakCoords.x).toFixed(2)}
+//                         </div>
+//                       ))}
+//                       <div>
+//                         at baseline:{" "}
+//                         {(peak.rightBaseCoords.x - peak.peakCoords.x).toFixed(
+//                           2
+//                         )}
+//                       </div>
+//                     </section>
+//                   </li>
+//                 ))}
+//               </ul>
+//             </div>
+//             <div>
+//               <h3>Average Descent Times</h3>
+//               <ul>
+//                 {averageDescent.map((descent, index) => (
+//                   <li key={index}>
+//                     {(index + 1) * 10}%: {descent.toFixed(2)}
+//                   </li>
+//                 ))}
+//               </ul>
+//             </div>
+//           </section>
+//         </div>
+//       ) : (
+//         <p>No well selected</p>
+//       )}
+//     </div>
+//   );
+// };
+
+// export default CardiacGraph;
+
 import React, { useEffect, useState, useContext } from "react";
 import { Line } from "react-chartjs-2";
 import { Chart, registerables } from "chart.js";
@@ -306,18 +608,21 @@ import { DataContext } from "../../../../providers/DataProvider";
 import { findPeaks } from "../../utilities/PeakFinder";
 import { prepareChartData } from "../../utilities/PrepareChartData";
 import { getChartOptions } from "./ChartOptions";
+import AnalysisResults from "../AnalysisResults/AnalysisResults";
+import "../../styles/CardiacGraph.css";
 
 Chart.register(...registerables);
 
-export const CardiacGraph = () => {
+export const CardiacGraph = ({
+  useAdjustedBases,
+  findPeaksWindowWidth,
+  peakProminence,
+}) => {
   const { selectedWell } = useContext(AnalysisContext);
   const { extractedIndicatorTimes } = useContext(DataContext);
   const [chartData, setChartData] = useState(null);
   const [peakResults, setPeakResults] = useState([]);
   const [smoothedData, setSmoothedData] = useState([]);
-  const [peakProminence, setPeakProminence] = useState(25000); // State for peak prominence
-  const [findPeaksWindowWidth, setFindPeaksWindowWidth] = useState(80); // State for peak prominence
-  const [useAdjustedBases, setUseAdjustedBases] = useState(true); // State to track checkbox
 
   useEffect(() => {
     if (!selectedWell) {
@@ -332,11 +637,9 @@ export const CardiacGraph = () => {
       return;
     }
 
-    const dataToUse = smoothedData.length > 0 ? smoothedData : selectedData;
-
     // Detect peaks using the new findPeaks function
     const peaksData = findPeaks(
-      dataToUse, // Data
+      selectedData, // Data
       peakProminence, // Prominence
       findPeaksWindowWidth // Window Width
     );
@@ -355,6 +658,7 @@ export const CardiacGraph = () => {
     );
 
     setChartData(chartData);
+    // console.log(peakResults);
   }, [
     selectedWell,
     smoothedData,
@@ -366,20 +670,34 @@ export const CardiacGraph = () => {
 
   const chartOptions = getChartOptions(extractedIndicatorTimes);
 
+  // Calculate average descent at each percentage
+  const averageDescent = Array.from({ length: 9 }, (_, i) => {
+    // const percentage = (i + 1) * 10;
+    const totalDescent = peakResults.reduce((sum, peak) => {
+      const descent = peak.descentAnalysis[i];
+      return sum + (descent ? descent.x - peak.peakCoords.x : 0);
+    }, 0);
+    return totalDescent / peakResults.length;
+  });
+
   return (
     <div>
-      <label>
-        <input
-          type="checkbox"
-          checked={useAdjustedBases}
-          onChange={(e) => setUseAdjustedBases(e.target.checked)}
-        />
-        Use Adjusted Bases
-      </label>
       {selectedWell ? (
-        <div>
+        <div className="cardiac-graph-container">
           <h2>Cardiac Graph for Well {selectedWell.label}</h2>
-          {chartData && <Line data={chartData} options={chartOptions} />}
+          {chartData && (
+            <Line
+              data={chartData}
+              options={chartOptions}
+              style={{
+                background: "rgb(0, 0, 0)",
+              }}
+            />
+          )}
+          <AnalysisResults
+            peakResults={peakResults}
+            averageDescent={averageDescent}
+          />
         </div>
       ) : (
         <p>No well selected</p>

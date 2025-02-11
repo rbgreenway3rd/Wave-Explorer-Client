@@ -237,17 +237,17 @@ export const WellSelector = () => {
 
   const getChartData = (well) => ({
     datasets: [
-      {
-        label: "Raw Data",
-        data: well.indicators[0].rawData,
-        borderColor: "rgba(75, 192, 192, 1)",
-        borderWidth: 1,
-        fill: false,
-      },
+      // {
+      //   label: "Raw Data",
+      //   data: well.indicators[0].rawData,
+      //   borderColor: "rgba(75, 192, 192, 1)",
+      //   borderWidth: 1,
+      //   fill: false,
+      // },
       {
         label: "Filtered Data",
         data: well.indicators[0].filteredData,
-        borderColor: "rgba(153, 102, 255, 1)",
+        borderColor: "rgb(153, 102, 255)",
         borderWidth: 1,
         fill: false,
       },
