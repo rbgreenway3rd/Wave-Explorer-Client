@@ -20,7 +20,8 @@ body {
     padding-left: 0.25em;
     padding-right: 0.25em;
     padding-bottom: 0.5em;
-    background-color: gray;
+    /* background-color: gray; */
+    background-color: rgb(100, 100, 100);
     /* background-color: rgb(101, 114, 144); */
     /* background-image: linear-gradient(   rgb(101, 114, 144), grey, grey); */
     display: flex;
@@ -84,10 +85,11 @@ body {
     grid-row: 2;
     /* border-right: 0.5em solid gray; */
     /* padding-right: 0.5em; */
-    height: 100%;
+    /* height: 100%; */
     /* width: 90%; */
     box-sizing: border-box;
     /* Include padding and border in button width */
+    /* background-color: rgb(120, 120, 120) */
 }
 
 .combined-component__large-graph-header {
