@@ -25,13 +25,19 @@ export const LargeGraphControls = ({
 }) => {
   return (
     <div className="large-graph-controls">
-      <section className="zoom-and-pan-controls">
+      <section
+        className="zoom-and-pan-controls"
+        style={{
+          backgroundColor: "rgb(120, 120, 120)",
+        }}
+      >
         <div className="zoom-controls">
           <FormControlLabel
-            // style={{
-            //   backgroundImage:
-            //     "linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
-            // }}
+            style={{
+              // backgroundColor: "rgb(120, 120, 120)",
+              backgroundColor: "rgba(0, 0, 0, 0)",
+              borderBottom: "none",
+            }}
             control={
               <Checkbox
                 id="zoom-state"
@@ -72,10 +78,11 @@ export const LargeGraphControls = ({
         </div>
         <div className="pan-controls">
           <FormControlLabel
-            // style={{
-            //   backgroundImage:
-            //     "linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
-            // }}
+            style={{
+              // backgroundColor: "rgb(120, 120, 120)",
+              backgroundColor: "rgba(0, 0, 0, 0)",
+              borderBottom: "none",
+            }}
             control={
               <Checkbox
                 id="pan-state"
@@ -87,7 +94,10 @@ export const LargeGraphControls = ({
             label="Pan"
           />
 
-          <section className="pan-controls-radios">
+          <section
+            className="pan-controls-radios"
+            style={{ marginBottom: "0.25em" }}
+          >
             <FormControl component="fieldset">
               <RadioGroup
                 aria-label="pan mode"

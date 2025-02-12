@@ -40,7 +40,7 @@ export const MiniGraphControls = ({
   return (
     <div className="minigraph-and-controls__controls-container">
       {/* Show Raw or Filtered data radio buttons */}
-      <section>
+      <section className="minigraph-and-controls__main-controls">
         <div className="minigraph-and-controls__show-raw-or-filtered">
           <FormControl component="fieldset">
             <FormLabel
@@ -74,33 +74,34 @@ export const MiniGraphControls = ({
         </div>
 
         {/* Visibility section with checkboxes for each unique indicator type */}
-        {/* <div className="minigraph-and-controls__visibility"> */}
-        <FormControl component="fieldset">
-          <FormLabel
-            component="legend"
-            // style={{
-            //   backgroundImage:
-            //     "linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
-            // }}
-          >
-            Indicator Shown:
-          </FormLabel>
-          {extractedIndicators.map((indicator) => (
-            <FormControlLabel
-              key={indicator.id}
-              control={
-                <Checkbox
-                  defaultChecked
-                  onChange={() => handleToggleVisibility(indicator.id)}
-                />
-              }
-              label={indicator.indicatorName}
-            />
-          ))}
-        </FormControl>
-        {/* </div> */}
+        <div className="minigraph-and-controls__visibility">
+          <FormControl component="fieldset">
+            <FormLabel
+              component="legend"
+              // style={{
+              //   backgroundImage:
+              //     "linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%)",
+              // }}
+            >
+              Indicator Shown:
+            </FormLabel>
+            {extractedIndicators.map((indicator) => (
+              <FormControlLabel
+                key={indicator.id}
+                control={
+                  <Checkbox
+                    defaultChecked
+                    onChange={() => handleToggleVisibility(indicator.id)}
+                  />
+                }
+                label={indicator.indicatorName}
+              />
+            ))}
+          </FormControl>
+        </div>
       </section>
       {/* Clear Selections button */}
+      {/* <section> */}
       <Button
         variant="outlined"
         color="primary"
@@ -114,6 +115,7 @@ export const MiniGraphControls = ({
         <DisabledByDefaultTwoToneIcon />
         <Typography variant="h1">Clear Selections</Typography>
       </Button>
+      {/* </section> */}
     </div>
   );
 };

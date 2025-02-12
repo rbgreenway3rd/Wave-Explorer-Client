@@ -1,51 +1,82 @@
 .minigraph-and-controls__controls-container {
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    /* box-sizing: border-box;  */
-    justify-content: space-between;
-    /* justify-self: center; */
-    height: 100%;
-    /* width: 100%; */
-    margin-left: 0.25em;
-    margin-right: 0.25em;
-         box-shadow: 0px 1px 2px 2px rgba(80, 80, 80, 0.25), 0px 1px 4px 4px rgb(100, 100, 100, 0.15), 0px 1px 8px 5px rgba(100, 100, 100, 0.07);  
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  /* box-sizing: border-box;  */
+  justify-content: space-between;
+  align-content: space-evenly;
+  /* justify-self: center; */
+  height: 100%;
+  /* width: 100%; */
+  margin-left: 0.25em;
+  margin-right: 0.25em;
+  /* margin-top: 0.25em; */
+  /* margin-bottom: 0.25em; */
+  /* padding-left: 0.25em; */
+  /* padding-right: 0.25em; */
+  /* padding-top: 0.25em; */
+  /* padding-bottom: 0.25em; */
+  /* box-shadow: 0px 1px 2px 2px rgba(80, 80, 80, 0.25), 0px 1px 4px 4px rgb(100, 100, 100, 0.15), 0px 1px 8px 5px rgba(100, 100, 100, 0.07); */
+  /* background-color: rgb(120, 120, 120) */
+}
+
+.minigraph-and-controls__main-controls {
+  background-color: rgb(120, 120, 120);
+  box-shadow: 0px 1px 2px 2px rgba(80, 80, 80, 0.25), 0px 1px 4px 4px rgb(100, 100, 100, 0.15), 0px 1px 8px 5px rgba(100, 100, 100, 0.07);
 
 }
+
 .minigraph-and-controls__show-raw-or-filtered {
-    display: flex;
-    flex-direction: column
+  display: flex;
+  flex-direction: column;
+  margin-left: 0.25em;
+  margin-right: 0.25em;
+}
+
+.minigraph-and-controls__visibility {
+  display: flex;
+  flex-direction: column;
+  margin-left: 0.25em;
+  margin-right: 0.25em;
+  margin-bottom: 0.25em;
 }
 
 .clear-selections-button {
-    /* position: absolute; */
-    width: 100%;
-    /* bottom: 0; */
-    /* right: 0 */
-    display: flex;
-    
+  position: absolute;
+  width: 100%;
+  bottom: 0;
+  /* right: 0 */
+  display: flex;
+
 }
 
 .clear-selections-button.animate-line::before {
   content: "";
   position: absolute;
+  /* top: 0; */
   top: 0;
   left: 0;
-  width: 4px; /* line width */
+  width: 4px;
+  /* line width */
   height: 100%;
   transform-origin: left;
   background-color: green;
-  animation: slide-line 0.5s ease-in-out ;
+  animation: slide-line 0.5s ease-in-out;
 }
 
 @keyframes slide-line {
   0% {
-    transform: translateX(0%); /* start */
+    transform: translateX(0%);
+    /* start */
   }
+
   50% {
-    transform: translateX(2000%); /* midpoint */
+    transform: translateX(2000%);
+    /* midpoint */
   }
+
   100% {
-    transform: translateX(-100%); /* end */
+    transform: translateX(-100%);
+    /* end */
   }
 }

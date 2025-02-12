@@ -18,7 +18,7 @@ import { DataContext } from "../../providers/DataProvider";
 import { GenerateCSV } from "../FileHandling/GenerateReport";
 import { Tooltip } from "@mui/material";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
-import CardiacAnalysisModal from "../CardiacAnalysis/AnalysisModal";
+import CardiacAnalysisModal from "../CardiacAnalysis/CardiacAnalysisModal";
 
 export const NavMenu = () => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -58,6 +58,7 @@ export const NavMenu = () => {
 
   const handleOpenCardiacModal = () => {
     setCardiacModalOpen(true);
+    handleClose();
   };
   const handleCloseCardiacModal = () => {
     setCardiacModalOpen(false);
@@ -159,6 +160,7 @@ export const NavMenu = () => {
     document.body.removeChild(link);
 
     setDialogOpen(false);
+    handleClose();
   };
 
   const handleSavePreferencesAsJSON = () => {

@@ -1,18 +1,53 @@
 .glow-button {
-  animation: glow 1s infinite alternate; /* Apply animation */
+  animation: glow 1s infinite alternate;
+  /* Apply animation */
 }
 
 @keyframes glow {
   0% {
-    box-shadow: 0 0 0.3em rgba(0, 255, 0, 0.5); /* Change color and intensity */
+    box-shadow: 0 0 0.3em rgba(0, 255, 0, 0.5);
+    /* Change color and intensity */
   }
+
   100% {
-    box-shadow: 0 0 1.3em rgb(0, 255, 0, 1); /* More intense glow */
+    box-shadow: 0 0 1.3em rgb(0, 255, 0, 1);
+    /* More intense glow */
   }
+
   /* 0% {
     box-shadow: 0 0 5px rgba(75, 192, 192, 0.7); 
   }
   100% {
     box-shadow: 0 0 20px rgba(75, 192, 192, 1); 
   } */
+}
+
+.file-menu {
+  margin-top: 8px;
+  position: relative;
+}
+
+
+.file-menu-item {
+  padding: none
+}
+
+.upload-file-label {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 1px solid rgb(120, 120, 120);
+  /* padding: 10px; */
+  transition: border-color 0.3s;
+  border-radius: 2px;
+}
+
+.upload-file-label:hover {
+  border-color: black;
+}
+
+.demo-option {
+  cursor: pointer;
 }
