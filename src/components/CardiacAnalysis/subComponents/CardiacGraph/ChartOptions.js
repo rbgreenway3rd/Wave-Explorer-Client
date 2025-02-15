@@ -1,3 +1,5 @@
+import { display } from "@mui/system";
+
 export const getChartOptions = (extractedIndicatorTimes) => ({
   normalized: true,
   maintainAspectRatio: true,
@@ -6,12 +8,15 @@ export const getChartOptions = (extractedIndicatorTimes) => ({
 
   spanGaps: false,
   events: ["onHover"],
-  animation: {
-    duration: 0,
-  },
+
   parsing: false,
   plugins: {
-    legend: true,
+    legend: {
+      display: true,
+      labels: {
+        color: "white",
+      },
+    },
     decimation: {
       enabled: false,
       algorithm: "lttb",
@@ -40,17 +45,21 @@ export const getChartOptions = (extractedIndicatorTimes) => ({
       max: Math.max(extractedIndicatorTimes[0]),
       ticks: {
         display: true,
+        color: "white",
       },
       grid: {
         display: false,
+        color: "grey",
       },
     },
     y: {
       ticks: {
         display: true,
+        color: "white",
       },
       grid: {
         display: false,
+        color: "grey",
       },
     },
   },

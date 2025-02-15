@@ -1,0 +1,11 @@
+.analysis-results-container {
+    display: flex;
+    flex-direction: row;
+    overflow-y: auto;
+
+}
+
+.peak-results {
+    /* flex: 1; */
+    overflow-y: auto;
+}

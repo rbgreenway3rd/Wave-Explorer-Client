@@ -19,6 +19,7 @@ import { GenerateCSV } from "../FileHandling/GenerateReport";
 import { Tooltip } from "@mui/material";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import CardiacAnalysisModal from "../CardiacAnalysis/CardiacAnalysisModal";
+import { AnalysisProvider } from "../CardiacAnalysis/AnalysisProvider";
 
 export const NavMenu = () => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -301,10 +302,12 @@ export const NavMenu = () => {
           </Button>
         </DialogActions>
       </Dialog>
-      <CardiacAnalysisModal
-        open={cardiacModalOpen}
-        onClose={handleCloseCardiacModal}
-      />
+      <AnalysisProvider>
+        <CardiacAnalysisModal
+          open={cardiacModalOpen}
+          onClose={handleCloseCardiacModal}
+        />
+      </AnalysisProvider>
     </>
   );
 };

@@ -1,31 +1,34 @@
+.well-grid {
+    border: 0.1em solid grey;
+    background-color: grey;
+    /* padding: 0.2em; */
+    /* display: grid; */
+    box-sizing: border-box;
+    justify-content: space-around;
+    align-content: center;
+    width: fit-content;
+    /* width: auto; */
+    /* height: auto */
+}
+
+.well-canvas-container {}
+
 .well-canvas {
-    /* background: rgb(0, 0, 0), */
+    background-color: black;
+    /* border: 0.05em solid grey; */
+    justify-self: space-between;
+    align-self: space-around;
 }
 
 .well-canvas:hover {
-    border: 0.2em solid red;
-    /* Change the border color on hover */
-}
-
-.well-canvas-container {
-    /* position: relative;
-    width: 150px;
-    height: 150px; */
-}
-
-.well-canvas-container canvas {
-    border: 0.1em solid gray;
-    /* Set the border color */
-    /* background: rgb(0, 0, 0), */
-
-}
-
-.well-canvas-container canvas:hover {
-    border: solid 0.02em rgb(255, 0, 0);
-    /* Change the border color on hover */
+    border: 0.1em solid red
 }
 
 .well-canvas.selected {
-    border: 0.06em solid yellow;
-    background: white;
+    border: 0.1em solid yellow;
+}
+
+.dotwave-loader {
+    width: 50px;
+    height: 50px;
 }

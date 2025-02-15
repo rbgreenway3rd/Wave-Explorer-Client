@@ -618,10 +618,11 @@ export const CardiacGraph = ({
   findPeaksWindowWidth,
   peakProminence,
 }) => {
-  const { selectedWell } = useContext(AnalysisContext);
+  const { selectedWell, peakResults, setPeakResults } =
+    useContext(AnalysisContext);
   const { extractedIndicatorTimes } = useContext(DataContext);
   const [chartData, setChartData] = useState(null);
-  const [peakResults, setPeakResults] = useState([]);
+  // const [peakResults, setPeakResults] = useState([]);
   const [smoothedData, setSmoothedData] = useState([]);
 
   useEffect(() => {
@@ -670,39 +671,38 @@ export const CardiacGraph = ({
 
   const chartOptions = getChartOptions(extractedIndicatorTimes);
 
-  // Calculate average descent at each percentage
-  const averageDescent = Array.from({ length: 9 }, (_, i) => {
-    // const percentage = (i + 1) * 10;
-    const totalDescent = peakResults.reduce((sum, peak) => {
-      const descent = peak.descentAnalysis[i];
-      return sum + (descent ? descent.x - peak.peakCoords.x : 0);
-    }, 0);
-    return totalDescent / peakResults.length;
-  });
+  // // Calculate average descent at each percentage
+  // const averageDescent = Array.from({ length: 9 }, (_, i) => {
+  //   // const percentage = (i + 1) * 10;
+  //   const totalDescent = peakResults.reduce((sum, peak) => {
+  //     const descent = peak.descentAnalysis[i];
+  //     return sum + (descent ? descent.x - peak.peakCoords.x : 0);
+  //   }, 0);
+  //   return totalDescent / peakResults.length;
+  // });
 
   return (
-    <div>
+    <>
       {selectedWell ? (
-        <div className="cardiac-graph-container">
-          <h2>Cardiac Graph for Well {selectedWell.label}</h2>
+        <div className="cardiac-graph">
           {chartData && (
             <Line
               data={chartData}
               options={chartOptions}
               style={{
                 background: "rgb(0, 0, 0)",
+                // maxHeight: "100vh",
+                width: "100%",
+                // width: "75vw",
+                // height: "50%",
               }}
             />
           )}
-          <AnalysisResults
-            peakResults={peakResults}
-            averageDescent={averageDescent}
-          />
         </div>
       ) : (
         <p>No well selected</p>
       )}
-    </div>
+    </>
   );
 };
 

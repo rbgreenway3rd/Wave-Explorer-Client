@@ -10,10 +10,7 @@ const ChartControls = ({
   setPeakProminence,
 }) => {
   return (
-    <div
-      className="chart-controls"
-      style={{ display: "flex", flexDirection: "column" }}
-    >
+    <div className="chart-controls" style={{ width: "100%" }}>
       <label>
         Use Adjusted Bases{" "}
         <input

@@ -1,25 +1,36 @@
 // import React, { useEffect, useRef, useState } from "react";
 // import { useContext } from "react";
-// import { DataContext } from "../../../providers/DataProvider";
-// import { Chart } from "chart.js";
+// import { DataContext } from "../../../../providers/DataProvider";
+// import { AnalysisContext } from "../../AnalysisProvider";
 // import { Line } from "react-chartjs-2";
-// import DotWaveLoader from "../../../assets/animations/DotWaveLoader";
+// // import { getChartOptions } from "../CardiacGraph/ChartOptions";
+// import DotWaveLoader from "../../../../assets/animations/DotWaveLoader";
+// import "../../styles/WellSelector.css";
 
 // export const WellSelector = () => {
-//   const { project, wellArrays, rowLabels } = useContext(DataContext);
-//   //   const wells = project?.plate[0]?.experiments[0]?.wells || [];
-//   const chartRefs = useRef([]);
-//   const gridRef = useRef(null); // Ref to the grid container
+//   const { project, wellArrays, rowLabels, extractedIndicatorTimes } =
+//     useContext(DataContext);
+//   const { selectedWell, setSelectedWell, handleSelectWell } =
+//     useContext(AnalysisContext);
 //   const [isRenderingComplete, setIsRenderingComplete] = useState(false);
 
 //   // Extracted plate and experiment data from the project
-//   const plate = project?.plate || [];
-
+//   const plate = project?.plate[0] || [];
+//   // const xTimes = extractedIndicatorTimes;
 //   // Generating labels for columns and rows
 //   const columnLabels = Array.from(
 //     { length: plate[0]?.numberOfColumns || 0 },
 //     (_, i) => i + 1
 //   );
+
+//   // State for grid and cell dimensions, accounting for button areas
+//   const [availableWidth, setAvailableWidth] = useState(window.innerWidth / 2.3);
+//   const [availableHeight, setAvailableHeight] = useState(
+//     window.innerHeight / 2.3
+//   );
+
+//   const cellWidth = availableWidth / plate.numberOfColumns;
+//   const cellHeight = availableHeight / plate.numberOfRows;
 
 //   useEffect(() => {
 //     if (wellArrays.length > 0) {
@@ -32,55 +43,41 @@
 //     }
 //   }, [wellArrays]);
 
-//   const renderChart = (canvas, well, index) => {
-//     const ctx = canvas.getContext("2d");
-
-//     // Destroy existing chart instance if it exists
-//     if (chartRefs.current[index]) {
-//       chartRefs.current[index].destroy();
-//     }
-
-//     // Create new chart instance
-//     const chartInstance = new Chart(ctx, {
-//       type: "line",
-//       data: {
-//         datasets: [
-//           {
-//             label: "Raw Data",
-//             data: well.indicators[0].rawData,
-//             borderColor: "rgba(75, 192, 192, 1)",
-//             borderWidth: 1,
-//             fill: false,
-//           },
-//           {
-//             label: "Filtered Data",
-//             data: well.indicators[0].filteredData,
-//             borderColor: "rgba(153, 102, 255, 1)",
-//             borderWidth: 1,
-//             fill: false,
-//           },
-//         ],
-//       },
-//       options: {
-//         responsive: true,
-//         maintainAspectRatio: false,
-//         scales: {
-//           x: {
-//             type: "linear",
-//             position: "bottom",
-//           },
-//         },
-//       },
-//     });
-
-//     // Store chart instance in ref
-//     chartRefs.current[index] = chartInstance;
+//   // Update available dimensions on window resize
+//   const handleResize = () => {
+//     setAvailableWidth(window.innerWidth / 2.3);
+//     setAvailableHeight(window.innerHeight / 2.3);
 //   };
 
-//   const chartOptions = {
+//   useEffect(() => {
+//     window.addEventListener("resize", handleResize);
+//     return () => window.removeEventListener("resize", handleResize);
+//   }, []);
+
+//   const getChartData = (well) => ({
+//     datasets: [
+//       // {
+//       //   label: "Raw Data",
+//       //   data: well.indicators[0].rawData,
+//       //   borderColor: "rgba(75, 192, 192, 1)",
+//       //   borderWidth: 1,
+//       //   fill: false,
+//       // },
+//       {
+//         label: "Filtered Data",
+//         data: well.indicators[0].filteredData,
+//         borderColor: "rgb(153, 102, 255)",
+//         borderWidth: 1,
+//         fill: false,
+//       },
+//     ],
+//   });
+
+//   const getChartOptions = () => ({
 //     normalized: true,
 //     maintainAspectRatio: true,
 //     responsive: true,
+//     // devicePixelRatio: 6, // Match screen pixel density
 //     devicePixelRatio: window.devicePixelRatio || 1, // Match screen pixel density
 
 //     spanGaps: false,
@@ -121,12 +118,7 @@
 //     scales: {
 //       x: {
 //         type: "time",
-//         // min: Math.min(extractedIndicatorTimes[0]),
-//         // max: Math.max(extractedIndicatorTimes[0]),
-//         // min: Math.min(...extractedIndicatorTimes[0]),
-//         // max: Math.max(...extractedIndicatorTimes[0]),
-//         // min: minXValue,
-//         // max: maxXValue,
+
 //         ticks: {
 //           display: false,
 //         },
@@ -135,9 +127,6 @@
 //         },
 //       },
 //       y: {
-//         // min: minYValue,
-//         // max: maxYValue,
-
 //         ticks: {
 //           display: false,
 //         },
@@ -146,57 +135,63 @@
 //         },
 //       },
 //     },
-//   };
+//   });
+
+//   console.log(plate.numberOfRows, plate.numberOfColumns);
+//   console.log(plate);
 
 //   useEffect(() => {
-//     const currentChartRefs = chartRefs.current;
-
-//     wellArrays.forEach((well, index) => {
-//       const canvas = document.getElementById(`well-canvas-${index}`);
-//       if (canvas) {
-//         renderChart(canvas, well, index);
-//       }
+//     const canvases = document.querySelectorAll(".well-canvas");
+//     canvases.forEach((canvas) => {
+//       const context = canvas.getContext("2d");
+//       const scale = window.devicePixelRatio || 2;
+//       canvas.width = cellWidth * scale;
+//       canvas.height = cellHeight * scale;
+//       context.scale(scale, scale);
 //     });
-
-//     // Cleanup function to destroy chart instances on unmount
-//     return () => {
-//       currentChartRefs.forEach((chart) => chart && chart.destroy());
-//     };
-//   }, [wellArrays]);
+//   }, [isRenderingComplete, cellWidth, cellHeight]);
 
 //   return (
-//     <div className="well-selector-container">
+//     // <div className="well-selector-container">
+//     <>
 //       {isRenderingComplete ? (
-//         <div>
+//         <div
+//           className="well-grid"
+//           style={{
+//             display: "grid",
+//             // gap: 10,
+//             gridTemplateColumns: `repeat(${plate.numberOfColumns}, ${
+//               cellWidth / 2
+//             }px)`,
+//             gridTemplateRows: `repeat(${plate.numberOfRows}, ${
+//               cellHeight / 2
+//             }px)`,
+//             width: (cellWidth / 2) * plate.numberOfColumns,
+//             height: (cellHeight / 2) * plate.numberOfRows,
+//           }}
+//         >
 //           {wellArrays.map((well, index) => (
-//             <div
-//               key={well.id}
-//               ref={gridRef}
+//             <Line
+//               type="line"
+//               className="well-canvas"
+//               data={getChartData(well)}
+//               options={getChartOptions()}
+//               id={index}
 //               style={{
-//                 display: "grid",
-//                 gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
-//                 gap: "10px",
+//                 maxWidth: "100%",
+//                 maxHeight: "100%",
+//                 width: cellWidth / 2,
+//                 height: cellHeight / 2,
 //               }}
-//             >
-//               <Line
-//                 data={{
-//                   datasets: well.indicators.map((indicator, indIndex) => ({
-//                     label: `${well.label} - Indicator ${indIndex + 1}`, // Label for each indicator
-//                     data: indicator.rawData,
-//                     fill: false,
-//                     tension: 0.1,
-//                     hidden: !indicator.isDisplayed,
-//                   })),
-//                 }}
-//                 options={chartOptions}
-//               />
-//             </div>
+//               onClick={() => handleSelectWell(well)}
+//               // objectFit="contain"
+//             />
 //           ))}
 //         </div>
 //       ) : (
 //         <DotWaveLoader className="dotwave-loader" />
 //       )}
-//     </div>
+//     </>
 //   );
 // };
 
@@ -210,19 +205,29 @@ import DotWaveLoader from "../../../../assets/animations/DotWaveLoader";
 import "../../styles/WellSelector.css";
 
 export const WellSelector = () => {
-  const { project, wellArrays, rowLabels } = useContext(DataContext);
+  const { project, wellArrays, rowLabels, extractedIndicatorTimes } =
+    useContext(DataContext);
   const { selectedWell, setSelectedWell, handleSelectWell } =
     useContext(AnalysisContext);
   const [isRenderingComplete, setIsRenderingComplete] = useState(false);
 
   // Extracted plate and experiment data from the project
   const plate = project?.plate[0] || [];
-
+  // const xTimes = extractedIndicatorTimes;
   // Generating labels for columns and rows
   const columnLabels = Array.from(
     { length: plate[0]?.numberOfColumns || 0 },
     (_, i) => i + 1
   );
+
+  // State for grid and cell dimensions, accounting for button areas
+  const [availableWidth, setAvailableWidth] = useState(window.innerWidth / 2.3);
+  const [availableHeight, setAvailableHeight] = useState(
+    window.innerHeight / 2.3
+  );
+
+  const cellWidth = availableWidth / plate.numberOfColumns;
+  const cellHeight = availableHeight / plate.numberOfRows;
 
   useEffect(() => {
     if (wellArrays.length > 0) {
@@ -235,15 +240,19 @@ export const WellSelector = () => {
     }
   }, [wellArrays]);
 
+  // Update available dimensions on window resize
+  const handleResize = () => {
+    setAvailableWidth(window.innerWidth / 2.3);
+    setAvailableHeight(window.innerHeight / 2.3);
+  };
+
+  // useEffect(() => {
+  //   window.addEventListener("resize", handleResize);
+  //   return () => window.removeEventListener("resize", handleResize);
+  // }, []);
+
   const getChartData = (well) => ({
     datasets: [
-      // {
-      //   label: "Raw Data",
-      //   data: well.indicators[0].rawData,
-      //   borderColor: "rgba(75, 192, 192, 1)",
-      //   borderWidth: 1,
-      //   fill: false,
-      // },
       {
         label: "Filtered Data",
         data: well.indicators[0].filteredData,
@@ -256,7 +265,7 @@ export const WellSelector = () => {
 
   const getChartOptions = () => ({
     normalized: true,
-    maintainAspectRatio: true,
+    maintainAspectRatio: false,
     responsive: true,
     devicePixelRatio: window.devicePixelRatio || 1, // Match screen pixel density
 
@@ -298,12 +307,7 @@ export const WellSelector = () => {
     scales: {
       x: {
         type: "time",
-        // min: Math.min(extractedIndicatorTimes[0]),
-        // max: Math.max(extractedIndicatorTimes[0]),
-        // min: Math.min(...extractedIndicatorTimes[0]),
-        // max: Math.max(...extractedIndicatorTimes[0]),
-        // min: minXValue,
-        // max: maxXValue,
+
         ticks: {
           display: false,
         },
@@ -312,9 +316,6 @@ export const WellSelector = () => {
         },
       },
       y: {
-        // min: minYValue,
-        // max: maxYValue,
-
         ticks: {
           display: false,
         },
@@ -325,59 +326,67 @@ export const WellSelector = () => {
     },
   });
 
-  console.log(plate.numberOfRows, plate.numberOfColumns);
-  console.log(plate);
+  // useEffect(() => {
+  //   if (isRenderingComplete) {
+  //     const canvases = document.querySelectorAll(".well-canvas");
+  //     canvases.forEach((canvas) => {
+  //       const context = canvas.getContext("2d");
+  //       const scale = window.devicePixelRatio || 2;
+  //       canvas.width = cellWidth * scale;
+  //       canvas.height = cellHeight * scale;
+  //       context.scale(scale, scale);
+  //     });
+  //   }
+  // }, [isRenderingComplete, cellWidth, cellHeight]);
 
   return (
-    <div className="well-selector-container">
-      {isRenderingComplete ? (
+    // <>
+    //   {isRenderingComplete ? (
+    <div
+      className="well-grid"
+      style={{
+        display: "grid",
+        // padding: 1,
+        gap: 1,
+        gridTemplateColumns: `repeat(${plate.numberOfColumns}, ${(
+          cellWidth / 2
+        ).toFixed(0)}px)`,
+        gridTemplateRows: `repeat(${plate.numberOfRows}, ${(
+          cellHeight / 2
+        ).toFixed(0)}px)`,
+        width: ((cellWidth / 2) * plate.numberOfColumns).toFixed(0),
+        height: ((cellHeight / 2) * plate.numberOfRows).toFixed(0),
+      }}
+    >
+      {wellArrays.map((well, index) => (
         <div
+          className="well-canvas-container"
           style={{
-            display: "grid",
-            gridTemplateColumns: `repeat(${plate.numberOfColumns}, 40px)`,
-            gridTemplateRows: `repeat(${plate.numberOfRows}, 20px)`,
-            gap: "0px",
-            border: "0.2em solid black",
-            width: "fit-content",
-            height: "fit-content",
-            padding: "0em",
+            width: "100%",
+            height: "100%",
           }}
         >
-          {wellArrays.map((well, index) => (
-            <div key={well.id} className="well-canvas-container">
-              <Line
-                // className="well-canvas"
-                className={`well-canvas ${
-                  selectedWell?.id === well.id ? "selected" : ""
-                }`}
-                data={getChartData(well)}
-                options={getChartOptions()}
-                key={well.id}
-                id={index}
-                style={{
-                  background: "rgb(0, 0, 0)",
-                }}
-                onClick={() => handleSelectWell(well)}
-              />
-            </div>
-          ))}
-          <div>
-            {selectedWell ? (
-              <div>
-                <h3>Selected Well</h3>
-                <p>{selectedWell.label}</p>
-              </div>
-            ) : (
-              <div>
-                <h3>No Well Selected</h3>
-              </div>
-            )}
-          </div>
+          <Line
+            type="line"
+            className={`well-canvas ${
+              selectedWell && selectedWell.id === well.id ? "selected" : ""
+            }`}
+            data={getChartData(well)}
+            options={getChartOptions()}
+            id={index}
+            style={{
+              width: "100%",
+              height: "100%",
+            }}
+            onClick={() => handleSelectWell(well)}
+          />
         </div>
-      ) : (
-        <DotWaveLoader className="dotwave-loader" />
-      )}
+      ))}
     </div>
+    //   ) : (
+    //     <DotWaveLoader className="dotwave-loader" />
+    //   )}
+    // </>
   );
 };
 
