@@ -1,13 +1,20 @@
 import { display } from "@mui/system";
 
-export const getChartOptions = (extractedIndicatorTimes) => ({
+export const getChartOptions = (extractedIndicatorTimes, chartData) => ({
   normalized: true,
   maintainAspectRatio: true,
   responsive: true,
   devicePixelRatio: window.devicePixelRatio || 1, // Match screen pixel density
 
   spanGaps: false,
-  events: ["onHover"],
+  events: [
+    "onHover",
+    "mousemove",
+    "mouseout",
+    "click",
+    "touchstart",
+    "touchmove",
+  ],
 
   parsing: false,
   plugins: {
@@ -15,6 +22,10 @@ export const getChartOptions = (extractedIndicatorTimes) => ({
       display: true,
       labels: {
         color: "white",
+        filter: (legendItem, chartData) => {
+          // Exclude datasets with the label "vertical" from the legend
+          return legendItem.text !== "vertical";
+        },
       },
     },
     decimation: {
@@ -23,10 +34,44 @@ export const getChartOptions = (extractedIndicatorTimes) => ({
       samples: 40,
       threshold: 80,
     },
+    // interaction: { mode: "index" },
     tooltip: {
-      enabled: true, // set to FALSE if using an external function for tooltip
+      enabled: false, // Ensure tooltips are enabled
       mode: "nearest",
-      intersect: false,
+      intersect: true,
+      titleFont: {
+        size: 14,
+        weight: "bold",
+        color: "#fff",
+      },
+      callbacks: {
+        // title: function (tooltipItems) {
+        //   // Customize the title content
+        //   const item = tooltipItems[0];
+        //   return `Peak at ${item.parsed.x.toFixed(2)} ms`;
+        // },
+        title: function () {
+          // Return an empty string to remove the title
+          return "";
+        },
+        label: function (context) {
+          let label = context.dataset.label || "";
+
+          if (label) {
+            label += ": ";
+          }
+          if (context.parsed.x !== null && context.parsed.y !== null) {
+            label += `X: ${context.parsed.x.toFixed(
+              2
+            )}, Y: ${context.parsed.y.toFixed(2)}`;
+          }
+          return label;
+        },
+        filter: function (tooltipItem) {
+          // Exclude elements with the label "vertical" from tooltips
+          return tooltipItem.dataset.label !== "vertical" || "Raw Signal";
+        },
+      },
     },
   },
   elements: {
@@ -51,6 +96,10 @@ export const getChartOptions = (extractedIndicatorTimes) => ({
         display: false,
         color: "grey",
       },
+      title: {
+        display: true,
+        text: "miliseconds",
+      },
     },
     y: {
       ticks: {
@@ -60,6 +109,10 @@ export const getChartOptions = (extractedIndicatorTimes) => ({
       grid: {
         display: false,
         color: "grey",
+      },
+      title: {
+        display: true,
+        text: "intensity",
       },
     },
   },

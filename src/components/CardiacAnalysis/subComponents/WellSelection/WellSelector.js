@@ -346,16 +346,19 @@ export const WellSelector = () => {
       className="well-grid"
       style={{
         display: "grid",
-        // padding: 1,
-        gap: 1,
+        gap: 0,
         gridTemplateColumns: `repeat(${plate.numberOfColumns}, ${(
           cellWidth / 2
-        ).toFixed(0)}px)`,
+        ).toFixed(0)}fr)`,
         gridTemplateRows: `repeat(${plate.numberOfRows}, ${(
           cellHeight / 2
-        ).toFixed(0)}px)`,
-        width: ((cellWidth / 2) * plate.numberOfColumns).toFixed(0),
-        height: ((cellHeight / 2) * plate.numberOfRows).toFixed(0),
+        ).toFixed(0)}fr)`,
+        // width: ((cellWidth / 2) * plate.numberOfColumns).toFixed(0),
+        // height: ((cellHeight / 2) * plate.numberOfRows).toFixed(0),
+        // gridTemplateColumns: `repeat(${plate.numberOfColumns}, 1.6fr)`,
+        // gridTemplateRows: `repeat(${plate.numberOfRows}, 1fr)`,
+        // width: "100%",
+        // height: "100%",
       }}
     >
       {wellArrays.map((well, index) => (
@@ -363,6 +366,7 @@ export const WellSelector = () => {
           className="well-canvas-container"
           style={{
             width: "100%",
+            // width: `${plate.numberOfColumns}fr`,
             height: "100%",
           }}
         >

@@ -1,14 +1,15 @@
 .well-grid {
     border: 0.1em solid grey;
     background-color: grey;
-    /* padding: 0.2em; */
+    padding: 0.2em;
     /* display: grid; */
     box-sizing: border-box;
     justify-content: space-around;
     align-content: center;
-    width: fit-content;
+    /* width: fit-content; */
     /* width: auto; */
     /* height: auto */
+    /* margin-right: 1em; */
 }
 
 .well-canvas-container {}
@@ -18,6 +19,7 @@
     /* border: 0.05em solid grey; */
     justify-self: space-between;
     align-self: space-around;
+    /* width: fill */
 }
 
 .well-canvas:hover {

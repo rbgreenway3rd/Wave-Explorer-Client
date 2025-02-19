@@ -1,3 +1,8 @@
+import {
+  prepareQuadraticData,
+  quadraticRegression,
+} from "../utilities/Regression";
+
 export class Peak {
   constructor(
     peakCoords,
@@ -5,7 +10,7 @@ export class Peak {
     rightBaseCoords,
     prominences,
     data,
-    useAdjustedBases = false,
+    useAdjustedBases = true,
     adjustedLeftBaseCoords = null,
     adjustedRightBaseCoords = null
   ) {
@@ -19,6 +24,7 @@ export class Peak {
     this.adjustedRightBaseCoords = adjustedRightBaseCoords;
     this.ascentAnalysis = this.analyzeAscent();
     this.descentAnalysis = this.analyzeDescent();
+    this.magnitude = this.calculateMagnitude();
   }
 
   analyzeAscent() {
@@ -99,5 +105,16 @@ export class Peak {
 
     // If we only have one point, return its x value
     return closestPoint.x;
+  }
+
+  calculateMagnitude() {
+    const filteredData = prepareQuadraticData(this.data, [this]);
+    const regressionCoefficients = quadraticRegression(filteredData);
+    const x = this.peakCoords.x;
+    const baselineY =
+      regressionCoefficients.a * x ** 2 +
+      regressionCoefficients.b * x +
+      regressionCoefficients.c;
+    return parseFloat((this.peakCoords.y - baselineY).toFixed(2));
   }
 }

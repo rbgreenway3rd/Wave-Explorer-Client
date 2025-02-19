@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useContext } from "react";
 import "../../styles/ChartControls.css";
+import { AnalysisContext } from "../../AnalysisProvider";
 
 const ChartControls = ({
   useAdjustedBases,
@@ -8,11 +9,17 @@ const ChartControls = ({
   setFindPeaksWindowWidth,
   peakProminence,
   setPeakProminence,
+  onToggleVerticalLines,
 }) => {
+  const { showVerticalLines, setShowVerticalLines } =
+    useContext(AnalysisContext);
+  const handleCheckboxChange = (event) => {
+    setShowVerticalLines(event.target.checked);
+  };
   return (
     <div className="chart-controls" style={{ width: "100%" }}>
       <label>
-        Use Adjusted Bases{" "}
+        Use Normalized Bases{" "}
         <input
           type="checkbox"
           checked={useAdjustedBases}
@@ -36,6 +43,14 @@ const ChartControls = ({
           value={peakProminence}
           onChange={(e) => setPeakProminence(e.target.value)}
         />
+      </label>
+      <label>
+        <input
+          type="checkbox"
+          checked={showVerticalLines}
+          onChange={handleCheckboxChange}
+        />
+        Show Vertical Lines
       </label>
     </div>
   );
