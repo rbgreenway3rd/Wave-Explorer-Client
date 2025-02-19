@@ -59,10 +59,18 @@ import "./styles/CardiacAnalysisModal.css";
 import AnalysisResults from "./subComponents/AnalysisResults/AnalysisResults";
 
 const CardiacAnalysisModal = ({ open, onClose }) => {
-  const [useAdjustedBases, setUseAdjustedBases] = useState(true);
-  const [findPeaksWindowWidth, setFindPeaksWindowWidth] = useState(80);
-  const [peakProminence, setPeakProminence] = useState(25000);
-  const { selectedWell } = useContext(AnalysisContext);
+  // const [useAdjustedBases, setUseAdjustedBases] = useState(true);
+  // const [findPeaksWindowWidth, setFindPeaksWindowWidth] = useState(80);
+  // const [peakProminence, setPeakProminence] = useState(25000);
+  const {
+    selectedWell,
+    useAdjustedBases,
+    setUseAdjustedBases,
+    findPeaksWindowWidth,
+    setFindPeaksWindowWidth,
+    peakProminence,
+    setPeakProminence,
+  } = useContext(AnalysisContext);
 
   return (
     // <AnalysisProvider>

@@ -1,11 +1,17 @@
 .analysis-results-container {
     display: flex;
+    flex: 0;
     flex-direction: row;
     overflow-y: auto;
-
+    /* overflow: hidden; */
+    border-bottom: 1px solid black;
+    /* height: 100% */
+    /* height: 50vh */
+    height: initial
 }
 
 .peak-results {
-    /* flex: 1; */
+    /* flex: 0; */
     overflow-y: auto;
+    /* height: 15% */
 }

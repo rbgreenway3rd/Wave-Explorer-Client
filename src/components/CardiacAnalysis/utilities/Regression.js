@@ -21,6 +21,7 @@ function prepareQuadraticData(data, peaks) {
       omitRanges.push([leftBaseIndex + 1, rightBaseIndex - 1]);
     }
   }
+  // console.log(data);
 
   // Filter data points
   for (let i = 0; i < data.length; i++) {
