@@ -241,18 +241,18 @@ export const CombinedComponent = () => {
     }));
     let indicatorTimes = Object.values(extractedIndicatorTimes);
     // Update the project in the context
-    console.log("extractedIndicatorTimes: ", indicatorTimes[0]);
-    console.log("savedMetrics: ", savedMetrics);
-    console.log("selectedFilters: ", selectedFilters);
+    // console.log("extractedIndicatorTimes: ", indicatorTimes[0]);
+    // console.log("savedMetrics: ", savedMetrics);
+    // console.log("selectedFilters: ", selectedFilters);
     console.log(updatedProject);
     setProject(updatedProject);
   };
   // Effect to track changes in project state
   useEffect(() => {
     if (!deepEqual(prevProjectRef.current, project)) {
-      console.log("Project Data:", project);
+      // console.log("Project Data:", project);
 
-      console.log("newInd: ", extractedIndicators);
+      // console.log("newInd: ", extractedIndicators);
       prevProjectRef.current = project; // Update the previous project reference only if there's a change
     }
   }, [project, wellArrays]);

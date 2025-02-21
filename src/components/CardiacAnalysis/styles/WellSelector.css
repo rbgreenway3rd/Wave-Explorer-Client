@@ -4,7 +4,7 @@
     padding: 0.2em;
     /* display: grid; */
     box-sizing: border-box;
-    justify-content: space-around;
+    justify-content: center;
     align-content: center;
     /* width: fit-content; */
     /* width: auto; */
@@ -20,6 +20,7 @@
     justify-self: space-between;
     align-self: space-around;
     /* width: fill */
+
 }
 
 .well-canvas:hover {

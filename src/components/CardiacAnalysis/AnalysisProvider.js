@@ -48,6 +48,7 @@ export const AnalysisProvider = ({ children }) => {
   // const [peakMagnitudes, setPeakMagnitudes] = useState([]);
   const [averageMagnitude, setAverageMagnitude] = useState(0);
   const [showVerticalLines, setShowVerticalLines] = useState(false);
+  const [showDataPoints, setShowDataPoints] = useState(false);
   const [useAdjustedBases, setUseAdjustedBases] = useState(true);
   const [findPeaksWindowWidth, setFindPeaksWindowWidth] = useState(80);
   const [peakProminence, setPeakProminence] = useState(25000);
@@ -88,12 +89,12 @@ export const AnalysisProvider = ({ children }) => {
         setPeakResults,
         averageDescent,
         setAverageDescent,
-        // peakMagnitudes,
-        // setPeakMagnitudes,
         averageMagnitude,
         setAverageMagnitude,
         showVerticalLines,
         setShowVerticalLines,
+        showDataPoints,
+        setShowDataPoints,
         useAdjustedBases,
         setUseAdjustedBases,
         findPeaksWindowWidth,

@@ -834,7 +834,7 @@ export const usePrepareChartData = (
   useAdjustedBases,
   peakMagnitudes
 ) => {
-  const { showVerticalLines } = useContext(AnalysisContext);
+  const { showVerticalLines, showDataPoints } = useContext(AnalysisContext);
 
   if (!selectedData || selectedData.length === 0) {
     console.error("Selected data is empty or undefined");
@@ -944,6 +944,9 @@ export const usePrepareChartData = (
       pointRadius: 0,
     };
   });
+  // const dataPointScatterPlot = {
+
+  // }
 
   // console.log(magnitudeBaselines);
   return {
@@ -956,6 +959,15 @@ export const usePrepareChartData = (
         tension: 0.1,
         fill: false,
         type: "line",
+      },
+      {
+        label: "Raw Points",
+        data: selectedData,
+        borderColor: "rgb(170, 170, 170)",
+        borderWidth: 1,
+        fill: false,
+        pointRadius: showDataPoints ? 3 : 0, // Conditionally set pointRadius
+        pointBackgroundColor: "rgba(255, 255, 255, 10)",
       },
       {
         label: "Line of Best Fit",

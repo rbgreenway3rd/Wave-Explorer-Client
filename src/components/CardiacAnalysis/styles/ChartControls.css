@@ -1,5 +1,22 @@
 .chart-controls {
-    outline: solid 1px black;
+    /* outline: solid 1px black; */
     display: flex;
     flex-direction: row;
+    align-self: flex-end;
+}
+
+.parameters {
+    display: flex;
+    flex-direction: column;
+}
+
+.parameter-item {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.checkboxes {
+    display: flex;
+    flex-direction: column
 }

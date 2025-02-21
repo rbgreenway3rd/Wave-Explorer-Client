@@ -346,45 +346,40 @@ export const WellSelector = () => {
       className="well-grid"
       style={{
         display: "grid",
-        gap: 0,
+        gap: 1,
         gridTemplateColumns: `repeat(${plate.numberOfColumns}, ${(
           cellWidth / 2
         ).toFixed(0)}fr)`,
         gridTemplateRows: `repeat(${plate.numberOfRows}, ${(
           cellHeight / 2
         ).toFixed(0)}fr)`,
-        // width: ((cellWidth / 2) * plate.numberOfColumns).toFixed(0),
-        // height: ((cellHeight / 2) * plate.numberOfRows).toFixed(0),
-        // gridTemplateColumns: `repeat(${plate.numberOfColumns}, 1.6fr)`,
-        // gridTemplateRows: `repeat(${plate.numberOfRows}, 1fr)`,
-        // width: "100%",
-        // height: "100%",
       }}
     >
       {wellArrays.map((well, index) => (
-        <div
-          className="well-canvas-container"
+        // <div
+        //   className="well-canvas-container"
+        //   style={{
+        //     width: "100%",
+        //     height: "100%",
+        //   }}
+        // >
+        <Line
+          type="line"
+          className={`well-canvas ${
+            selectedWell && selectedWell.id === well.id ? "selected" : ""
+          }`}
+          data={getChartData(well)}
+          options={getChartOptions()}
+          id={index}
           style={{
             width: "100%",
-            // width: `${plate.numberOfColumns}fr`,
             height: "100%",
+            maxHeight: cellHeight / 1.5,
+            maxWidth: cellWidth / 1.5,
           }}
-        >
-          <Line
-            type="line"
-            className={`well-canvas ${
-              selectedWell && selectedWell.id === well.id ? "selected" : ""
-            }`}
-            data={getChartData(well)}
-            options={getChartOptions()}
-            id={index}
-            style={{
-              width: "100%",
-              height: "100%",
-            }}
-            onClick={() => handleSelectWell(well)}
-          />
-        </div>
+          onClick={() => handleSelectWell(well)}
+        />
+        // </div>
       ))}
     </div>
     //   ) : (

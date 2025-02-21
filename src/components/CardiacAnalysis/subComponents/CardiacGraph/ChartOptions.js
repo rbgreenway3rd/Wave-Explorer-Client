@@ -1,6 +1,13 @@
 import { display } from "@mui/system";
 
-export const getChartOptions = (extractedIndicatorTimes, chartData) => ({
+export const getChartOptions = (
+  extractedIndicatorTimes,
+  chartData,
+  zoomState,
+  zoomMode,
+  panState,
+  panMode
+) => ({
   normalized: true,
   maintainAspectRatio: true,
   responsive: true,
@@ -33,6 +40,34 @@ export const getChartOptions = (extractedIndicatorTimes, chartData) => ({
       algorithm: "lttb",
       samples: 40,
       threshold: 80,
+    },
+    zoom: {
+      pan: {
+        enabled: panState,
+        mode: panMode,
+        threshold: 50,
+      },
+      zoom: {
+        wheel: {
+          enabled: zoomState,
+        },
+        pinch: {
+          enabled: false,
+        },
+        drag: {
+          enabled: false,
+          modifierKey: "shift",
+        },
+        mode: zoomMode,
+        // rangeMin: {
+        //   x: minXValue,
+        //   y: minYValue,
+        // },
+        // rangeMax: {
+        //   x: maxXValue,
+        //   y: maxYValue,
+        // },
+      },
     },
     // interaction: { mode: "index" },
     tooltip: {

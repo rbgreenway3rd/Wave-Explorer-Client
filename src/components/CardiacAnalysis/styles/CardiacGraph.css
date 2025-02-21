@@ -1,11 +1,5 @@
-.cardiac-graph-container {
-    border: solid 1px black
-}
-
 .cardiac-graph {
-    /* position: relative; */
-    /* width: 70vw; */
+
     width: 100%;
-    /* height: 70vh; */
-    height: 100%;
+    border: solid grey 0.25em;
 }

@@ -395,7 +395,7 @@ const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
       ) {
         return prevColors; // No change, prevent update
       }
-      console.log(newColors);
+      // console.log(newColors);
       return newColors; // Update only if different
     });
   }, [
