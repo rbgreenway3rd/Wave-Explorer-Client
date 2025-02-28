@@ -1,5 +1,5 @@
 .well-grid {
-    border: 0.1em solid grey;
+    border: 0.1em solid rgb(100, 100, 100);
     background-color: grey;
     padding: 0.2em;
     /* display: grid; */

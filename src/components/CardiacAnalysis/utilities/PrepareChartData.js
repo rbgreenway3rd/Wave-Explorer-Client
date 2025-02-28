@@ -834,7 +834,12 @@ export const usePrepareChartData = (
   useAdjustedBases,
   peakMagnitudes
 ) => {
-  const { showVerticalLines, showDataPoints } = useContext(AnalysisContext);
+  const {
+    showVerticalLines,
+    showDataPoints,
+    showAscentPoints,
+    showDescentPoints,
+  } = useContext(AnalysisContext);
 
   if (!selectedData || selectedData.length === 0) {
     console.error("Selected data is empty or undefined");
@@ -957,6 +962,7 @@ export const usePrepareChartData = (
         data: selectedData,
         borderColor: "rgb(153, 102, 255)",
         tension: 0.1,
+        borderWidth: 1,
         fill: false,
         type: "line",
       },
@@ -968,17 +974,19 @@ export const usePrepareChartData = (
         fill: false,
         pointRadius: showDataPoints ? 3 : 0, // Conditionally set pointRadius
         pointBackgroundColor: "rgba(255, 255, 255, 10)",
+        type: "scatter",
       },
       {
         label: "Line of Best Fit",
         data: lineOfBestFit,
         borderColor: "rgb(255, 255, 255)",
-        borderWidth: 2,
+        borderWidth: 1.5,
         fill: false,
+        showLine: useAdjustedBases,
         type: "line",
       },
       {
-        label: "Magnitude Baseline",
+        label: "Amplitude Baseline",
         data: magnitudeBaselines,
         borderColor: "rgb(255, 255, 255)",
         borderWidth: 1,
@@ -1022,7 +1030,7 @@ export const usePrepareChartData = (
         data: ascentEntries,
         borderColor: "orange",
         backgroundColor: "orange",
-        pointRadius: 2,
+        pointRadius: showAscentPoints ? 2 : 0,
         type: "scatter",
       },
       {
@@ -1030,7 +1038,7 @@ export const usePrepareChartData = (
         data: descentEntries,
         borderColor: "rgb(0, 135, 0)",
         backgroundColor: "rgb(0, 135, 0)",
-        pointRadius: 2,
+        pointRadius: showDescentPoints ? 2 : 0,
         type: "scatter",
       },
       ...verticalLineDatasets, // Spread the vertical line datasets into the main datasets array

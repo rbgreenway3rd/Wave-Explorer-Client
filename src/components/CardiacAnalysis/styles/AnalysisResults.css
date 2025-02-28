@@ -47,7 +47,7 @@
     position: absolute;
     /* top: 0 */
     /* left: 0 */
-    overflow-y: scroll;
+    overflow-y: auto;
     overflow-x: auto;
     height: 100%;
     /* width: 50%; */

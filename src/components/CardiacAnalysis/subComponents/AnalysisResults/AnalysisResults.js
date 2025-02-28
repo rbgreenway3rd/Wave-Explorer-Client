@@ -43,21 +43,21 @@
 //     const regressionCoefficients = quadraticRegression(filteredData);
 //     console.log(peakResults);
 
-//     // Calculate magnitude for each Peak
+//     // Calculate amplitude for each Peak
 //     const magnitudes = peakResults.map((peak) => {
 //       const x = peak.peakCoords.x;
 //       const baselineY =
 //         regressionCoefficients.a * x ** 2 +
 //         regressionCoefficients.b * x +
 //         regressionCoefficients.c;
-//       const magnitude = peak.peakCoords.y - baselineY;
-//       // console.log(baselineY, peak.peakCoords.y, magnitude);
-//       return magnitude;
+//       const amplitude = peak.peakCoords.y - baselineY;
+//       // console.log(baselineY, peak.peakCoords.y, amplitude);
+//       return amplitude;
 //     });
 
 //     setPeakMagnitudes(magnitudes);
 
-//     // Calculate average magnitude
+//     // Calculate average amplitude
 //     const totalMagnitude = magnitudes.reduce((acc, curr) => acc + curr, 0);
 //     const averageMagnitude =
 //       magnitudes.length > 0 ? totalMagnitude / magnitudes.length : 0;
@@ -72,7 +72,7 @@
 //           {peakResults.map((peak, index) => (
 //             <li key={index}>
 //               Peak {index + 1}: {peak.peakCoords.x.toFixed(2)}
-//               <div key={index}>Magnitude: {peakMagnitudes[index]}</div>
+//               <div key={index}>Amplitude: {peakMagnitudes[index]}</div>
 //               <section>
 //                 Descent Time:
 //                 {peak.descentAnalysis.map((descent, index) => (
@@ -101,7 +101,7 @@
 //         </ul>
 //       </section>
 
-//       {peakResults ? <div>Average Magnitude: {averageMagnitude}</div> : ""}
+//       {peakResults ? <div>Average Amplitude: {averageMagnitude}</div> : ""}
 //     </div>
 //   );
 // };
@@ -133,9 +133,9 @@ const AnalysisResults = () => {
     }
 
     // quantify all peak magnitudes
-    const magnitudes = peakResults.map((peak) => peak.magnitude);
+    const magnitudes = peakResults.map((peak) => peak.amplitude);
 
-    // Calculate average magnitude
+    // Calculate average amplitude
     const totalMagnitude = magnitudes.reduce((acc, curr) => acc + curr, 0);
     // console.log(magnitudes);
     const averageMagnitude =
@@ -193,7 +193,7 @@ const AnalysisResults = () => {
           {peakResults.map((peak, index) => (
             <li key={index} className="list-group-item">
               Peak {index + 1}: at {peak.peakCoords.x.toFixed(2)}ms
-              <div key={index}>Magnitude: {peak.magnitude}</div>
+              <div key={index}>Amplitude: {peak.amplitude}</div>
               <section>
                 Descent Time:
                 {peak.descentAnalysis.map((descent, index) => (
@@ -244,7 +244,7 @@ const AnalysisResults = () => {
         </ul>
       </section> */}
       {/* {peakResults ? (
-        <section className="magnitude-results">
+        <section className="amplitude-results">
           <h3>Magnitudes</h3>
           <div>Maximum: {maximumMagnitude}</div>
           <div>Average: {averageMagnitude}</div>

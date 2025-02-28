@@ -458,7 +458,6 @@ export class DynamicRatio_Filter {
   constructor(num, onEdit) {
     this.id = "dynamicRatio_" + JSON.stringify(num);
     this.name = "Dynamic Ratio";
-
     this.isEnabled = true;
     this.numerator = 0;
     this.denominator = 1;

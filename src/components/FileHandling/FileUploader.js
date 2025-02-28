@@ -310,6 +310,14 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
     setAnchorEl(null);
   };
 
+  const handleDemoMenuOpen = (event) => {
+    setDemoMenuAnchor(event.currentTarget);
+  };
+
+  const handleDemoMenuClose = () => {
+    setDemoMenuAnchor(null);
+  };
+
   useEffect(() => {
     if (dataExtracted) {
       distributeData(rowLabels, analysisData, extractedIndicatorTimes); // Distribute data after extraction
@@ -520,12 +528,17 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
               cursor: "pointer",
             }}
           >
-            <option value="">Select a Demo File</option>
+            <option value="" hidden>
+              Select a Demo File
+            </option>
             <option value="demo96Well.dat" className="demo-option">
-              96 Well
+              <span>Demo x96</span>
             </option>
             <option value="demo384Well.dat" className="demo-option">
-              384 Well
+              <span>Demo x384</span>
+            </option>
+            <option value="demoCardiac96Well.dat" className="demo-option">
+              <span>Cardiac Demo x96</span>
             </option>
           </select>
         </MenuItem>

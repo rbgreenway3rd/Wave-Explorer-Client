@@ -139,9 +139,18 @@ import AnalysisResults from "./subComponents/AnalysisResults/AnalysisResults";
 import { DataContext } from "../../providers/DataProvider";
 import { Chart } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
+import { makeStyles } from "@mui/styles";
+
 Chart.register(zoomPlugin);
 
+const useStyles = makeStyles((theme) => ({
+  dialogPaper: {
+    backgroundColor: "rgb(140, 140, 140)", // Change this to your desired background color
+  },
+}));
+
 const CardiacAnalysisModal = ({ open, onClose }) => {
+  const classes = useStyles();
   const {
     selectedWell,
     useAdjustedBases,
@@ -164,7 +173,12 @@ const CardiacAnalysisModal = ({ open, onClose }) => {
   };
 
   return (
-    <Dialog open={open} onClose={null} fullScreen>
+    <Dialog
+      open={open}
+      onClose={null}
+      fullScreen
+      classes={{ paper: classes.dialogPaper }}
+    >
       <DialogTitle>
         Cardiac Analysis
         <Tooltip title="Exit Cardiac Analysis" arrow>
@@ -202,7 +216,7 @@ const CardiacAnalysisModal = ({ open, onClose }) => {
                   Selected Well: {selectedWell.label}
                 </h2>
               ) : (
-                <h2>No Well Selected</h2>
+                <h2 className="no-well-selected">No Well Selected</h2>
               )}
             </div>
             <ChartControls

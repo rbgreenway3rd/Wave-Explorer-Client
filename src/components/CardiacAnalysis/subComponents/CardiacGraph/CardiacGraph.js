@@ -155,6 +155,8 @@ export const CardiacGraph = forwardRef(
       peakMagnitudes,
       showVerticalLines,
       showDataPoints,
+      showAscentPoints,
+      showDescentPoints,
     } = useContext(AnalysisContext);
     const { extractedIndicatorTimes } = useContext(DataContext);
     const [chartData, setChartData] = useState(null);
@@ -217,6 +219,8 @@ export const CardiacGraph = forwardRef(
       useAdjustedBases,
       showVerticalLines,
       showDataPoints,
+      showAscentPoints,
+      showDescentPoints,
     ]);
 
     const chartOptions = getChartOptions(
@@ -251,7 +255,9 @@ export const CardiacGraph = forwardRef(
             }}
           />
         ) : (
-          <p>No well selected or no chart data available</p>
+          <p className="no-well-selected">
+            No well selected or no chart data available
+          </p>
         )}
       </>
     );
