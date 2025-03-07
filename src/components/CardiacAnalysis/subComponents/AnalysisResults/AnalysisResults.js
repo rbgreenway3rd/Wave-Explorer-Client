@@ -115,7 +115,7 @@ import {
   prepareQuadraticData,
   quadraticRegression,
 } from "../../utilities/Regression";
-
+import { calculatePeakAPDs } from "../../utilities/CalculateAPD";
 const AnalysisResults = () => {
   const {
     peakResults,
@@ -174,7 +174,7 @@ const AnalysisResults = () => {
       return peak.peakCoords.x - previousPeak.peakCoords.x;
     })
     .filter((time) => time !== null); // Remove the null value for the first peak
-  console.log(timeDifferences);
+  // console.log(timeDifferences);
 
   const sumOfTimeDifferences = timeDifferences.reduce(
     (acc, curr) => acc + curr,
@@ -183,6 +183,8 @@ const AnalysisResults = () => {
   const averageTimeDifference = (
     sumOfTimeDifferences / timeDifferences.length
   ).toFixed(2);
+
+  // const selectedData = selectedWell.indicators[0].filteredData;
 
   return (
     <div className="analysis-results-container">

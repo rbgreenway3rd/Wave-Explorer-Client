@@ -42,6 +42,8 @@ export const MiniGraphGrid = ({
     handleSelectWell,
     handleDeselectWell,
     handleClearSelectedWells,
+    // rowLabels,
+    // columnLabels,
   } = useContext(DataContext);
 
   // // State to track if rendering is complete

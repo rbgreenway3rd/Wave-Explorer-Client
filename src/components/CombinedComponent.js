@@ -268,6 +268,7 @@ export const CombinedComponent = () => {
   ];
 
   // Preparing graph data for raw and filtered graphs, using color differentiation for each indicator
+  console.log(extractedIndicatorTimes);
   let indicatorTimes = Object.values(extractedIndicatorTimes);
   const rawGraphData = {
     labels: indicatorTimes[0], // Adjust based on your indicator-specific times

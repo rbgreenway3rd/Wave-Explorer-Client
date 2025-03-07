@@ -71,7 +71,7 @@ export const getChartOptions = (
     },
     // interaction: { mode: "index" },
     tooltip: {
-      enabled: false, // Ensure tooltips are enabled
+      enabled: true, // Ensure tooltips are enabled
       mode: "nearest",
       intersect: true,
       titleFont: {
@@ -80,16 +80,16 @@ export const getChartOptions = (
         color: "#fff",
       },
       callbacks: {
-        // title: function (tooltipItems) {
-        //   // Customize the title content
-        //   const item = tooltipItems[0];
-        //   return `Peak at ${item.parsed.x.toFixed(2)} ms`;
-        // },
         title: function () {
           // Return an empty string to remove the title
           return "";
         },
         label: function (context) {
+          const excludedLabels = ["vertical", "Raw Signal", "Raw Points"]; // Add any other labels you want to exclude
+          if (excludedLabels.includes(context.dataset.label)) {
+            return null; // Exclude this dataset from the tooltip
+          }
+
           let label = context.dataset.label || "";
 
           if (label) {
@@ -101,10 +101,6 @@ export const getChartOptions = (
             )}, Y: ${context.parsed.y.toFixed(2)}`;
           }
           return label;
-        },
-        filter: function (tooltipItem) {
-          // Exclude elements with the label "vertical" from tooltips
-          return tooltipItem.dataset.label !== "vertical" || "Raw Signal";
         },
       },
     },

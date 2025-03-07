@@ -414,7 +414,7 @@ export class FlatFieldCorrection_Filter {
     this.id = "flatfieldCorrection_" + JSON.stringify(num);
     this.name = "Flat Field Correction";
 
-    this.isEnabled = true;
+    this.isEnabled = false;
     this.correctionMatrix = [];
     this.onEdit = onEdit;
   }

@@ -20,6 +20,7 @@ import Tooltip from "@mui/material/Tooltip";
 import HelpTwoToneIcon from "@mui/icons-material/HelpTwoTone";
 import DoneOutlineTwoToneIcon from "@mui/icons-material/DoneOutlineTwoTone";
 import TuneTwoToneIcon from "@mui/icons-material/TuneTwoTone";
+import FileUploadTwoToneIcon from "@mui/icons-material/FileUploadTwoTone";
 
 import { ListItem, Checkbox, Radio, FormControlLabel } from "@mui/material";
 import {
@@ -212,7 +213,44 @@ export const FilterControls = ({
     console.log("Updated selectedFilters: ", selectedFilters);
   }, [selectedFilters]);
 
+  // const handleCheckboxChange = (filter) => {
+  //   // Toggle the isEnabled value directly on the instance
+  //   filter.setEnabled(!filter.isEnabled);
+
+  //   // Update selectedFilters immutably
+  //   const updatedSelectedFilters = selectedFilters.map((f) =>
+  //     f.id === filter.id ? filter : f
+  //   );
+
+  //   setSelectedFilters(updatedSelectedFilters);
+
+  //   // Update enabledFilters based on isEnabled
+  //   if (filter.isEnabled) {
+  //     setEnabledFilters((prevEnabledFilters) => [
+  //       ...prevEnabledFilters,
+  //       filter,
+  //     ]);
+  //   } else {
+  //     setEnabledFilters((prevEnabledFilters) =>
+  //       prevEnabledFilters.filter((f) => f.id !== filter.id)
+  //     );
+  //   }
+
+  //   console.log(filter);
+  //   // console.log("enabledFilters: ", enabledFilters);
+  // };
   const handleCheckboxChange = (filter) => {
+    // Check if the filter is "Flat Field Correction" and if the correctionMatrix is empty
+    if (
+      filter.name === "Flat Field Correction" &&
+      correctionMatrix.length === 0
+    ) {
+      alert(
+        "Please upload a correction matrix before enabling the Flat Field Correction filter."
+      );
+      return; // Prevent enabling the filter
+    }
+
     // Toggle the isEnabled value directly on the instance
     filter.setEnabled(!filter.isEnabled);
 
@@ -605,10 +643,6 @@ export const FilterControls = ({
                   fontWeight:
                     highlightedFilter.id === filter.id ? "bold" : "normal",
                   fontSize: "0.6em",
-                  // background:
-                  //   highlightedFilter.id === filter.id
-                  //     ? "radial-gradient( rgba(255,255,0,1) 10%, rgba(0,0,0,0) 100%)"
-                  //     : "transparent",
                   borderRadius: "8px",
                   padding: "0.25em",
                 }}
@@ -618,19 +652,40 @@ export const FilterControls = ({
               </Typography>
 
               {/* Edit Params Button */}
-              {/* {filter.name !== "Derivative" && ( */}
               <IconButton
                 className="filter-controls__edit-button"
                 variant="outlined"
                 size="small"
                 onClick={() => filter.editParams()}
-                sx={{ ml: 0, padding: 0, borderRadius: 100 }}
+                sx={{
+                  ml: 0,
+                  padding: 0,
+                  borderRadius: 100,
+                  ...(filter.name === "Flat Field Correction" &&
+                  correctionMatrix.length === 0
+                    ? {
+                        animation: "glow 1s infinite alternate",
+                        "@keyframes glow": {
+                          from: {
+                            boxShadow: "0 0 5px #ff0000",
+                          },
+                          to: {
+                            boxShadow: "0 0 20px #ff0000",
+                          },
+                        },
+                      }
+                    : {}),
+                }}
                 disabled={filter.name === "Derivative"}
               >
-                <EditIcon sx={{ fontSize: 13, padding: 0, margin: 0 }} />
+                {filter.name === "Flat Field Correction" ? (
+                  <FileUploadTwoToneIcon
+                    sx={{ fontSize: 13, padding: 0, margin: 0 }}
+                  />
+                ) : (
+                  <EditIcon sx={{ fontSize: 13, padding: 0, margin: 0 }} />
+                )}
               </IconButton>
-              {/* )
-              } */}
             </ListItem>
           ))
         ) : (
@@ -643,7 +698,6 @@ export const FilterControls = ({
               fontSize: "0.7em",
               justifySelf: "center",
               alignSelf: "center",
-              // height: "100%",
             }}
           >
             No filters selected.

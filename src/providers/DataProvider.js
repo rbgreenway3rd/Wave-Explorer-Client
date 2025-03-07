@@ -4,7 +4,6 @@ import React, { createContext, useState, useReducer, useEffect } from "react";
 export const DataContext = createContext();
 
 export const DataProvider = ({ children }) => {
-  // const [state, dispatch] = useReducer(dataReducer, initialState);
   // State variables to store extracted data
   const [extractedLines, setExtractedLines] = useState([]);
   const [extractedRows, setExtractedRows] = useState(0);
@@ -72,11 +71,6 @@ export const DataProvider = ({ children }) => {
     setSelectedWellArray((prevArray) => [...prevArray, well]);
   };
 
-  // const handleDeselectWell = (wellToRemove) => {
-  //   setSelectedWellArray((prevArray) =>
-  //     prevArray.filter((well) => well !== wellToRemove)
-  //   );
-  // };
   const handleDeselectWell = (wellIdToRemove) => {
     setSelectedWellArray((prevArray) =>
       prevArray.filter((well) => well.id !== wellIdToRemove)
@@ -187,21 +181,6 @@ export const DataProvider = ({ children }) => {
     return "";
   };
 
-  // const extractIndicatorConfigurations = (content) => {
-  //   const lines = content.split("\n");
-  //   const startIndex = lines.findIndex((line) => line.includes("Indicator"));
-
-  //   if (startIndex !== -1) {
-  //     const indicatorLine = lines[startIndex];
-  //     const indicatorParts = indicatorLine.split("\t");
-
-  //     if (indicatorParts.length > 1) {
-  //       return indicatorParts[1].trim();
-  //     }
-  //   }
-
-  //   return "";
-  // };
   const extractIndicatorConfigurations = (content) => {
     const lines = content.split("\n");
     const indicatorConfigurations = [];
@@ -356,41 +335,6 @@ export const DataProvider = ({ children }) => {
     return indicators;
   };
 
-  // Function to extract lines related to indicators from content
-  // const extractLines = (content) => {
-  //   const lines = content.split("\n");
-  //   const startIndex = lines.findIndex((line) => line.includes("P24"));
-  //   const endIndex = lines.findIndex((line) =>
-  //     line.includes("</INDICATOR_DATA>")
-  //   );
-  //   if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
-  //     return lines.slice(startIndex + 1, endIndex);
-  //   }
-  //   console.log(lines);
-  //   return [];
-  // };
-
-  // // Function to extract indicator times and analysis data from lines
-  // const extractIndicatorTimes = (extractedLines) => {
-  //   const joinedLines = extractedLines.join("");
-  //   const elements = joinedLines.split("\t").slice(0, -1);
-  //   let extractedIndicatorTimes = []; // Time values pulled from extractedLines
-  //   let analysisData = []; // Datapoints to be sorted by well; pulled from extractedLines
-  //   for (let i = 0; i < elements.length; i++) {
-  //     if (i % 385 === 0) {
-  //       extractedIndicatorTimes.push(
-  //         parseFloat(elements[i].replace("\r", "") * 1000)
-  //       );
-  //     } else {
-  //       analysisData.push(parseFloat(elements[i]));
-  //     }
-  //   }
-  //   // console.log("Extracted Indicator Times:", extractedIndicatorTimes);
-  //   // console.log("Analysis Data:", analysisData);
-  //   setExtractedIndicatorTimes(extractedIndicatorTimes);
-  //   setAnalysisData(analysisData);
-  //   return { extractedIndicatorTimes, analysisData };
-  // };
   const extractLines = (content, indicators) => {
     const lines = content.split("\n");
     let extractedLinesByIndicator = {};
@@ -406,87 +350,6 @@ export const DataProvider = ({ children }) => {
     return extractedLinesByIndicator;
   };
 
-  // const extractIndicatorTimes = (
-  //   extractedLinesByIndicator,
-  //   extractedRows,
-  //   extractedColumns
-  // ) => {
-  //   let indicatorTimes = {};
-  //   let analysisData = {};
-
-  //   for (let indicator in extractedLinesByIndicator) {
-  //     const extractedLines = extractedLinesByIndicator[indicator];
-  //     const joinedLines = extractedLines.join("");
-  //     const elements = joinedLines.split("\t").slice(0, -1);
-
-  //     console.log(elements);
-
-  //     let times = [];
-  //     let dataPoints = [];
-  //     let plateDimensions = extractedRows * extractedColumns;
-  //     for (let i = 0; i < elements.length; i++) {
-  //       if (i % (plateDimensions + 1) === 0) {
-  //         // if (i % 385 === 0) {
-  //         times.push(parseFloat(elements[i].replace("\r", "")) * 1000);
-  //       } else {
-  //         dataPoints.push(parseFloat(elements[i]));
-  //       }
-  //     }
-
-  //     indicatorTimes[indicator] = times;
-  //     analysisData[indicator] = dataPoints;
-  //   }
-
-  //   console.log("Extracted Indicator Times:", indicatorTimes);
-  //   console.log("Analysis Data by Indicator:", analysisData);
-
-  //   // Set or return the values as needed
-  //   setExtractedIndicatorTimes(indicatorTimes);
-  //   setAnalysisData(analysisData);
-
-  //   return { indicatorTimes, analysisData };
-  // };
-
-  // const extractIndicatorTimes = (
-  //   extractedLinesByIndicator,
-  //   extractedRows,
-  //   extractedColumns
-  // ) => {
-  //   let indicatorTimes = {};
-  //   let analysisData = {};
-  //   const plateDimensions = extractedRows * extractedColumns;
-
-  //   for (let indicator in extractedLinesByIndicator) {
-  //     const extractedLines = extractedLinesByIndicator[indicator];
-  //     const joinedLines = extractedLines.join("");
-  //     const elements = joinedLines.split("\t").slice(0, -1);
-
-  //     console.log(extractedLines[0].split("\t"));
-  //     let times = [];
-  //     let dataPoints = [];
-
-  //     for (let i = 0; i < elements.length; i++) {
-  //       // Dynamically determine if the index corresponds to 'times'
-  //       if (i % (plateDimensions + 1) === 0) {
-  //         times.push(parseFloat(elements[i].replace("\r", "")) * 1000);
-  //       } else {
-  //         dataPoints.push(parseFloat(elements[i]));
-  //       }
-  //     }
-  //     console.log(elements[96]);
-  //     indicatorTimes[indicator] = times;
-  //     analysisData[indicator] = dataPoints;
-  //   }
-
-  //   console.log("Extracted Indicator Times:", indicatorTimes);
-  //   console.log("Analysis Data by Indicator:", analysisData);
-
-  //   // Set or return the values as needed
-  //   setExtractedIndicatorTimes(indicatorTimes);
-  //   setAnalysisData(analysisData);
-
-  //   return { indicatorTimes, analysisData };
-  // };
   const extractIndicatorTimes = (
     extractedLinesByIndicator,
     extractedRows,
@@ -530,7 +393,7 @@ export const DataProvider = ({ children }) => {
     // Set or return the values as needed
     setExtractedIndicatorTimes(indicatorTimes);
     setAnalysisData(analysisData);
-
+    console.log(indicatorTimes, analysisData);
     return { indicatorTimes, analysisData };
   };
 
@@ -603,12 +466,10 @@ export const DataProvider = ({ children }) => {
     <DataContext.Provider
       value={{
         extractedIndicators,
-        // selectedIndicators,
-        // setSelectedIndicators,
-
         extractedLines,
         extractedRows,
         rowLabels,
+        setRowLabels,
         extractedColumns,
         extractedProjectTitle,
         extractedProjectDate,
@@ -623,7 +484,9 @@ export const DataProvider = ({ children }) => {
         extractAllData,
         extractIndicatorTimes,
         extractedIndicatorTimes,
+        setExtractedIndicatorTimes,
         analysisData,
+        setAnalysisData,
         project,
         setProject,
         wellArrays, // Expose wellArrays to all components
@@ -641,8 +504,6 @@ export const DataProvider = ({ children }) => {
         setEnabledFilters,
         uploadedFilters,
         setUploadedFilters,
-        // hoveredSelectedWellId,
-        // setHoveredSelectedWellId,
         handleSelectWell,
         handleDeselectWell,
         handleClearSelectedWells,
@@ -650,13 +511,9 @@ export const DataProvider = ({ children }) => {
         setSavedMetrics,
         annotations,
         setAnnotations,
-        // annotationRangeStart,
-        // setAnnotationRangeStart,
-        // annotationRangeEnd,
-        // setAnnotationRangeEnd,
       }}
     >
-      {children} {/* Provide context to children components */}
+      {children}
     </DataContext.Provider>
   );
 };

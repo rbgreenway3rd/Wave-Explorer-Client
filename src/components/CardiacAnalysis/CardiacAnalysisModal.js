@@ -145,7 +145,7 @@ Chart.register(zoomPlugin);
 
 const useStyles = makeStyles((theme) => ({
   dialogPaper: {
-    backgroundColor: "rgb(140, 140, 140)", // Change this to your desired background color
+    backgroundColor: "rgb(150, 150, 150)", // Change this to your desired background color
   },
 }));
 

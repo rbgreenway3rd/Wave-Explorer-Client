@@ -132,7 +132,7 @@ const ChartControls = ({
               Window width:{" "}
               <input
                 type="number"
-                step={10}
+                step={1}
                 value={findPeaksWindowWidth}
                 onChange={(e) => setFindPeaksWindowWidth(e.target.value)}
               />
@@ -189,7 +189,6 @@ const ChartControls = ({
               Show Decent Points
             </label>
           </div>
-
           <div>
             <Button
               className="reset-zoom-button"
