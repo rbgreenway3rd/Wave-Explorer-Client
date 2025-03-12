@@ -1,132 +1,3 @@
-// import React, { useEffect, useState, useContext, useRef } from "react";
-// import { Line } from "react-chartjs-2";
-// import { Chart, registerables, Tooltip } from "chart.js";
-// import { AnalysisContext } from "../../AnalysisProvider";
-// import { DataContext } from "../../../../providers/DataProvider";
-// import usePrepareChartData from "../../utilities/PrepareChartData";
-// import { getChartOptions } from "./ChartOptions";
-// import zoomPlugin from "chartjs-plugin-zoom";
-
-// import "../../styles/CardiacGraph.css";
-
-// Chart.register(...registerables, Tooltip, zoomPlugin);
-
-// export const CardiacGraph = ({
-//   useAdjustedBases,
-//   findPeaksWindowWidth,
-//   peakProminence,
-// }) => {
-//   const {
-//     selectedWell,
-//     peakResults,
-//     peakMagnitudes,
-//     showVerticalLines,
-//     showDataPoints,
-//   } = useContext(AnalysisContext);
-//   const { extractedIndicatorTimes } = useContext(DataContext);
-//   const [chartData, setChartData] = useState(null);
-//   const [smoothedData, setSmoothedData] = useState([]);
-//   // Zoom and Pan state for Cardiac Graph
-//   const [zoomState, setZoomState] = useState(true);
-//   const [zoomMode, setZoomMode] = useState("xy");
-//   const [panState, setPanState] = useState(true);
-//   const [panMode, setPanMode] = useState("xy");
-//   // Ref to access Cardiac Graph's chart instance
-//   const cardiacGraphRef = useRef(null);
-
-//   const selectedData = selectedWell?.indicators?.[0]?.filteredData;
-
-//   const preparedChartData = usePrepareChartData(
-//     selectedData,
-//     peakResults,
-//     smoothedData,
-//     peakProminence,
-//     findPeaksWindowWidth,
-//     extractedIndicatorTimes,
-//     useAdjustedBases,
-//     peakMagnitudes
-//   );
-
-//   // Functions to handle zoom state changes
-//   const toggleZoomState = (currentZoomState) => {
-//     setZoomState(!currentZoomState);
-//   };
-//   const changeZoomMode = (mode) => {
-//     setZoomMode(mode);
-//   };
-//   // Functions to handle pan state changes
-//   const togglePanState = (currentPanState) => {
-//     setPanState(!currentPanState);
-//   };
-//   const changePanMode = (mode) => {
-//     setPanMode(mode);
-//   };
-
-//   // Reset zoom handler
-//   const resetZoom = () => {
-//     if (cardiacGraphRef.current) {
-//       cardiacGraphRef.current.resetZoom(); // Call resetZoom on the chart instance
-//     }
-//   };
-
-//   // console.log(selectedData);
-
-//   useEffect(() => {
-//     if (!selectedWell) {
-//       console.error("No well selected");
-//       return;
-//     }
-
-//     if (!selectedData || selectedData.length === 0) {
-//       console.error("Selected data is empty or undefined");
-//       return;
-//     }
-
-//     setChartData(preparedChartData);
-//   }, [
-//     selectedWell,
-//     peakResults,
-//     smoothedData,
-//     peakProminence,
-//     findPeaksWindowWidth,
-//     extractedIndicatorTimes,
-//     useAdjustedBases,
-//     showVerticalLines,
-//     showDataPoints,
-//     // preparedChartData,
-//     // selectedData,
-//   ]);
-
-//   const chartOptions = getChartOptions(
-//     extractedIndicatorTimes,
-//     chartData,
-//     zoomState,
-//     zoomMode,
-//     panState,
-//     panMode
-//   );
-
-//   return (
-//     <>
-//       {selectedWell && chartData ? (
-//         <Line
-//           className="cardiac-graph"
-//           data={chartData}
-//           options={chartOptions}
-//           style={{
-//             background: "rgb(0, 0, 0)",
-//             width: "100%",
-//           }}
-//         />
-//       ) : (
-//         <p>No well selected or no chart data available</p>
-//       )}
-//     </>
-//   );
-// };
-
-// export default CardiacGraph;
-
 import React, {
   useEffect,
   useState,
@@ -144,6 +15,7 @@ import { getChartOptions } from "./ChartOptions";
 import zoomPlugin from "chartjs-plugin-zoom";
 
 import "../../styles/CardiacGraph.css";
+import ProcessApdData from "../../../FileHandling/Matlab/MatlabClone";
 
 Chart.register(...registerables, Tooltip, zoomPlugin);
 
@@ -157,6 +29,7 @@ export const CardiacGraph = forwardRef(
       showDataPoints,
       showAscentPoints,
       showDescentPoints,
+      baseline,
     } = useContext(AnalysisContext);
     const { extractedIndicatorTimes } = useContext(DataContext);
     const [chartData, setChartData] = useState(null);
@@ -182,6 +55,15 @@ export const CardiacGraph = forwardRef(
       peakMagnitudes
     );
 
+    console.log(
+      "peakResults",
+      peakResults.map((peak) => peak.peakCoords.y)
+    );
+
+    const adpData = selectedData ? ProcessApdData(selectedData) : null;
+    // const adpData = baseline ? ProcessApdData(baseline) : null;
+
+    console.log(adpData);
     // Functions to handle zoom state changes
     const toggleZoomState = (currentZoomState) => {
       setZoomState(!currentZoomState);

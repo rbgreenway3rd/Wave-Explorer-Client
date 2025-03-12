@@ -8,6 +8,7 @@ import DriveFolderUploadIcon from "@mui/icons-material/DriveFolderUpload";
 import { styled } from "@mui/material/styles";
 import { Menu, MenuItem } from "@mui/material";
 import { handleTxtFileUpload } from "./txtFileUploader.js";
+import { ProcessApdData } from "./Matlab/MatlabClone.js"; // Import processExcelData
 
 export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
   const {
@@ -34,6 +35,8 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
     setRowLabels,
     setAnalysisData,
     setExtractedIndicatorTimes,
+    ApdData,
+    setApdData,
   } = useContext(DataContext); // Accessing context data
 
   const [dataExtracted, setDataExtracted] = useState(false); // State to track if data is extracted
@@ -169,6 +172,19 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
     setProject(newProject); // Set the new project in context
     console.log(newProject);
     console.log("extractedIndicators: ", extractedIndicators);
+  };
+
+  const handleExcelFileSelect = async (file) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const fileContent = e.target.result;
+      const apdData = ProcessApdData(fileContent);
+      setApdData(apdData); // Store APD data in context
+      console.log(apdData);
+      setFileType("excel");
+      setDataExtracted(true); // Set state to trigger data distribution
+    };
+    reader.readAsText(file);
   };
 
   // Handle file selection and reading for .txt files
@@ -321,6 +337,7 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
       if (file.name.endsWith(".txt")) {
         await handleTxtFileSelect(file);
       } else {
+        // await handleExcelFileSelect(file);
         await handleDatFileSelect(file);
       }
     }

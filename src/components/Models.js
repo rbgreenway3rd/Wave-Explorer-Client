@@ -61,8 +61,39 @@ export class Indicator {
     this.filteredData = filteredData;
     this.time = time;
     this.isDisplayed = isDisplayed; // boolean
+
+    // New properties for calculated metrics
+    this.APD90 = null;
+    this.APD80 = null;
+    this.APD70 = null;
+    this.APD60 = null;
+    this.APD50 = null;
+    this.APD40 = null;
+    this.APD30 = null;
+    this.APD20 = null;
+    this.APD10 = null;
+    this.Num_Peaks_Detected = null;
+    this.Num_Peaks_Analyzed = null;
+    this.Peak_Amplitude = null;
+    this.RR_Interval = null;
   }
   setDisplayed(value) {
     this.isDisplayed = value;
+  }
+
+  setMetrics(metrics) {
+    this.APD90 = metrics.APD90;
+    this.APD80 = metrics.APD80;
+    this.APD70 = metrics.APD70;
+    this.APD60 = metrics.APD60;
+    this.APD50 = metrics.APD50;
+    this.APD40 = metrics.APD40;
+    this.APD30 = metrics.APD30;
+    this.APD20 = metrics.APD20;
+    this.APD10 = metrics.APD10;
+    this.Num_Peaks_Detected = metrics.Num_Peaks_Detected;
+    this.Num_Peaks_Analyzed = metrics.Num_Peaks_Analyzed;
+    this.Peak_Amplitude = metrics.Peak_Amplitude;
+    this.RR_Interval = metrics.RR_Interval;
   }
 }

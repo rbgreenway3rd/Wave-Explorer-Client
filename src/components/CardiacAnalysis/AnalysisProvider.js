@@ -82,6 +82,7 @@
 // };
 import React, { createContext, useState, useEffect } from "react";
 import { findPeaks } from "./utilities/PeakFinder";
+import { findBaseline } from "./utilities/FindBaseline";
 import { adjustBase } from "./utilities/AdjustBase";
 import { Peak } from "./classes/Peak";
 import {
@@ -115,6 +116,8 @@ export const AnalysisProvider = ({ children }) => {
   const [leftBaseEntries, setLeftBaseEntries] = useState([]);
   const [rightBaseEntries, setRightBaseEntries] = useState([]);
   const [peakEntries, setPeakEntries] = useState([]);
+  const [ApdData, setApdData] = useState([]);
+  const [baselineData, setBaselineData] = useState([]);
 
   useEffect(() => {
     if (!selectedWell) {
@@ -129,15 +132,26 @@ export const AnalysisProvider = ({ children }) => {
       return;
     }
 
+    const baseline = selectedData ? findBaseline(selectedData) : null;
+
+    setBaselineData(baseline);
+    console.log("sd: ", selectedData);
+    console.log("bl: ", baseline);
     const peaksData = findPeaks(
-      selectedData, // Data
+      baseline, // Data
       peakProminence, // Prominence
       findPeaksWindowWidth // Window Width
     );
+    // const peaksData = findPeaks(
+    //   selectedData, // Data
+    //   peakProminence, // Prominence
+    //   findPeaksWindowWidth // Window Width
+    // );
 
     setPeakResults(peaksData);
-
-    const dataToUse = selectedData;
+    console.log("pd: ", peaksData);
+    // const dataToUse = selectedData;
+    const dataToUse = baseline;
 
     // Extract peak and baseline coordinates
     const newPeakEntries = peaksData?.map((peak) => peak.peakCoords) || [];
@@ -151,11 +165,11 @@ export const AnalysisProvider = ({ children }) => {
     setRightBaseEntries(newRightBaseEntries);
 
     // Filter data and perform quadratic regression
-    const filteredData = prepareQuadraticData(dataToUse, peaksData || []);
-    const regressionCoefficients = quadraticRegression(filteredData);
+    const quadraticData = prepareQuadraticData(dataToUse, peaksData || []);
+    const regressionCoefficients = quadraticRegression(quadraticData);
 
     // Generate line-of-best-fit data
-    const newLineOfBestFit = filteredData.map((point) => {
+    const newLineOfBestFit = quadraticData.map((point) => {
       const x = point.x;
       const y =
         regressionCoefficients.a * x ** 2 +
@@ -206,38 +220,38 @@ export const AnalysisProvider = ({ children }) => {
       );
     });
 
-    // Calculate APD values for each peak
-    const newApdResults = recalculatedPeaksData
-      .map((peak, index) => {
-        const peakIndex = dataToUse.findIndex(
-          (point) => point.x === peak.peakCoords.x
-        );
-        if (peakIndex === -1) {
-          console.error("Peak index not found in data");
-          return null;
-        }
-        return calculatePeakAPDs(
-          dataToUse,
-          peakIndex,
-          regressionCoefficients.a,
-          regressionCoefficients.b,
-          regressionCoefficients.c
-        );
-      })
-      .filter((result) => result !== null); // Filter out null results
-    setApdResults(newApdResults);
+    // // Calculate APD values for each peak
+    // const newApdResults = recalculatedPeaksData
+    //   .map((peak, index) => {
+    //     const peakIndex = dataToUse.findIndex(
+    //       (point) => point.x === peak.peakCoords.x
+    //     );
+    //     if (peakIndex === -1) {
+    //       console.error("Peak index not found in data");
+    //       return null;
+    //     }
+    //     return calculatePeakAPDs(
+    //       dataToUse,
+    //       peakIndex,
+    //       regressionCoefficients.a,
+    //       regressionCoefficients.b,
+    //       regressionCoefficients.c
+    //     );
+    //   })
+    //   .filter((result) => result !== null); // Filter out null results
+    // setApdResults(newApdResults);
 
-    // Extract APD values, ascent points, and descent points
-    const newApdValues = newApdResults.map((result) => result.apdValues);
-    const newApdAscentPoints = newApdResults.flatMap(
-      (result) => result.ascentPoints
-    );
-    const newApdDescentPoints = newApdResults.flatMap(
-      (result) => result.descentPoints
-    );
-    setApdValues(newApdValues);
-    setApdAscentPoints(newApdAscentPoints);
-    setApdDescentPoints(newApdDescentPoints);
+    // // Extract APD values, ascent points, and descent points
+    // const newApdValues = newApdResults.map((result) => result.apdValues);
+    // const newApdAscentPoints = newApdResults.flatMap(
+    //   (result) => result.ascentPoints
+    // );
+    // const newApdDescentPoints = newApdResults.flatMap(
+    //   (result) => result.descentPoints
+    // );
+    // setApdValues(newApdValues);
+    // setApdAscentPoints(newApdAscentPoints);
+    // setApdDescentPoints(newApdDescentPoints);
 
     // Calculate magnitude baselines
     const newMagnitudeBaselines = newPeakEntries.map((peak) => {
@@ -293,6 +307,9 @@ export const AnalysisProvider = ({ children }) => {
         leftBaseEntries,
         rightBaseEntries,
         peakEntries,
+        ApdData,
+        setApdData,
+        baselineData,
       }}
     >
       {children}

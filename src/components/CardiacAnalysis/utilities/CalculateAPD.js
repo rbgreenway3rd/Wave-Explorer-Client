@@ -63,9 +63,6 @@ function findLineQuadraticIntersections(a, b, c, m, lineB) {
   ];
 }
 
-// Example usage:
-// console.log(findLineQuadraticIntersections(1, -2, 1, 1, 0)); // Example values
-
 // given:
 //   series of points [(x1,y1), (x2,y2), ...., (xn,yn)], with the first point
 //   having the minimum y value in the series and the last point having the
