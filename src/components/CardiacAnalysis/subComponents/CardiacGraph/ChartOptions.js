@@ -8,7 +8,7 @@ export const getChartOptions = (
   panState,
   panMode
 ) => ({
-  normalized: true,
+  // normalized: true,
   maintainAspectRatio: true,
   responsive: true,
   devicePixelRatio: window.devicePixelRatio || 1, // Match screen pixel density
@@ -132,11 +132,22 @@ export const getChartOptions = (
         text: "miliseconds",
       },
     },
+    // y: {
+    //   ticks: {
+    //     display: true,
+    //     color: "white",
+    //   },
+    //   grid: {
+    //     display: false,
+    //     color: "grey",
+    //   },
+    //   title: {
+    //     display: true,
+    //     text: "intensity",
+    //   },
+    // },
     y: {
-      ticks: {
-        display: true,
-        color: "white",
-      },
+      beginAtZero: true,
       grid: {
         display: false,
         color: "grey",
@@ -145,6 +156,29 @@ export const getChartOptions = (
         display: true,
         text: "intensity",
       },
+      ticks: {
+        display: true,
+        color: "white",
+        // Include a dollar sign in the ticks
+        callback: function (value, index, values) {
+          return value;
+        },
+      },
+      // Automatically adjust the scale based on the visible data
+      suggestedMin: chartData
+        ? Math.min(
+            ...chartData.datasets
+              .filter((dataset) => dataset.showLine || dataset.pointRadius > 0)
+              .flatMap((dataset) => dataset.data.map((point) => point.y))
+          )
+        : undefined,
+      suggestedMax: chartData
+        ? Math.max(
+            ...chartData.datasets
+              .filter((dataset) => dataset.showLine || dataset.pointRadius > 0)
+              .flatMap((dataset) => dataset.data.map((point) => point.y))
+          )
+        : undefined,
     },
   },
 });

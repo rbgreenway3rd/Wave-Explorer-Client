@@ -30,6 +30,8 @@ export const CardiacGraph = forwardRef(
       showAscentPoints,
       showDescentPoints,
       baseline,
+      showSelectedData,
+      showBaselineData,
     } = useContext(AnalysisContext);
     const { extractedIndicatorTimes } = useContext(DataContext);
     const [chartData, setChartData] = useState(null);
@@ -55,10 +57,10 @@ export const CardiacGraph = forwardRef(
       peakMagnitudes
     );
 
-    console.log(
-      "peakResults",
-      peakResults.map((peak) => peak.peakCoords.y)
-    );
+    // console.log(
+    //   "peakResults",
+    //   peakResults.map((peak) => peak.peakCoords.y)
+    // );
 
     const adpData = selectedData ? ProcessApdData(selectedData) : null;
     // const adpData = baseline ? ProcessApdData(baseline) : null;
@@ -79,6 +81,14 @@ export const CardiacGraph = forwardRef(
       setPanMode(mode);
     };
 
+    const chartOptions = getChartOptions(
+      extractedIndicatorTimes,
+      chartData,
+      zoomState,
+      zoomMode,
+      panState,
+      panMode
+    );
     useEffect(() => {
       if (!selectedWell) {
         console.error("No well selected");
@@ -103,16 +113,11 @@ export const CardiacGraph = forwardRef(
       showDataPoints,
       showAscentPoints,
       showDescentPoints,
+      showSelectedData,
+      showBaselineData,
+      // chartOptions,
+      selectedData,
     ]);
-
-    const chartOptions = getChartOptions(
-      extractedIndicatorTimes,
-      chartData,
-      zoomState,
-      zoomMode,
-      panState,
-      panMode
-    );
 
     // Expose resetZoom function to parent via ref
     useImperativeHandle(ref, () => ({

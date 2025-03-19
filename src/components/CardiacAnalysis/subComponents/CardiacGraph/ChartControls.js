@@ -159,6 +159,10 @@ const ChartControls = ({
     showDescentPoints,
     setShowAscentPoints,
     setShowDescentPoints,
+    showBaselineData,
+    setShowBaselineData,
+    showSelectedData,
+    setShowSelectedData,
   } = useContext(AnalysisContext);
 
   // Local state for input values
@@ -185,7 +189,7 @@ const ChartControls = ({
       if (!isNaN(numValue)) {
         setFindPeaksWindowWidth(numValue);
       }
-    }, 500),
+    }, 1000),
     [setFindPeaksWindowWidth]
   );
 
@@ -211,6 +215,14 @@ const ChartControls = ({
   };
   const handleShowDescentPointsChange = (event) => {
     setShowDescentPoints(event.target.checked);
+  };
+
+  const handleShowBaselineDataChange = (event) => {
+    setShowBaselineData(event.target.checked);
+  };
+
+  const handleShowSelectedDataChange = (event) => {
+    setShowSelectedData(event.target.checked);
   };
 
   return (
@@ -281,6 +293,22 @@ const ChartControls = ({
                 onChange={handleShowDescentPointsChange}
               />
               Show Decent Points
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={showBaselineData}
+                onChange={handleShowBaselineDataChange}
+              />
+              Show Regularized Wave
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={showSelectedData}
+                onChange={handleShowSelectedDataChange}
+              />
+              Show Raw Wave
             </label>
           </div>
           <div>

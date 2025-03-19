@@ -12,9 +12,8 @@
     :         S u p e r B  W A S  H E R E            :
     :................................................:
 
-\[Build status badge\]
 
-Front End application oriented to ...
+Front End application designed to recieve an uploaded .dat or .txt file and visualize the data through graphs and a heatmap, while allowing the user to run configurable filters and metrics on the data for further analysis and visualization.
 
 ## Technologies Used
 

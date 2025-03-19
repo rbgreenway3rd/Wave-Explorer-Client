@@ -20,6 +20,8 @@ export const usePrepareChartData = (
     showDataPoints,
     showAscentPoints,
     showDescentPoints,
+    showBaselineData,
+    showSelectedData,
     // apdAscentPoints,
     // apdDescentPoints,
     lineOfBestFit,
@@ -59,6 +61,16 @@ export const usePrepareChartData = (
       pointRadius: 0,
     };
   });
+  // const selectedDataWave = {
+  //   label: "Raw Signal",
+  //   data: selectedData,
+  //   borderColor: "rgb(153, 102, 255)",
+  //   tension: 0.1,
+  //   borderWidth: 1,
+  //   fill: false,
+  //   type: "line",
+  //   showLine: showSelectedData,
+  // };
 
   // const baseline = selectedData ? findBaseline(selectedData) : null;
   // console.log(baseline);
@@ -82,6 +94,7 @@ export const usePrepareChartData = (
         borderWidth: 1,
         fill: false,
         type: "line",
+        showLine: showBaselineData,
       },
       // {
       //   label: "Raw Signal",
@@ -91,6 +104,7 @@ export const usePrepareChartData = (
       //   borderWidth: 1,
       //   fill: false,
       //   type: "line",
+      //   showLine: showSelectedData,
       // },
       // {
       //   label: "Raw Points",
@@ -178,6 +192,7 @@ export const usePrepareChartData = (
       //   type: "scatter",
       // },
       ...verticalLineDatasets, // Spread the vertical line datasets into the main datasets array
+      // selectedDataWave,
     ],
   };
 };

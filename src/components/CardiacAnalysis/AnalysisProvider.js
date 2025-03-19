@@ -1,85 +1,3 @@
-// import React, { createContext, useState, useEffect } from "react";
-// import { findPeaks } from "./utilities/PeakFinder";
-// // import { calculatePeakAPDs } from "./utilities/CalculateAPD";
-
-// export const AnalysisContext = createContext();
-
-// export const AnalysisProvider = ({ children }) => {
-//   const [selectedWell, setSelectedWell] = useState(null);
-//   const [peakResults, setPeakResults] = useState([]);
-//   const [averageDescent, setAverageDescent] = useState([]);
-//   // const [peakMagnitudes, setPeakMagnitudes] = useState([]);
-//   const [averageMagnitude, setAverageMagnitude] = useState(0);
-//   const [showVerticalLines, setShowVerticalLines] = useState(false);
-//   const [showDataPoints, setShowDataPoints] = useState(false);
-//   const [showAscentPoints, setShowAscentPoints] = useState(true);
-//   const [showDescentPoints, setShowDescentPoints] = useState(true);
-//   const [useAdjustedBases, setUseAdjustedBases] = useState(true);
-//   const [findPeaksWindowWidth, setFindPeaksWindowWidth] = useState(50);
-//   const [peakProminence, setPeakProminence] = useState(15000);
-//   const [maximumMagnitude, setMaximumMagnitude] = useState(0);
-//   useEffect(() => {
-//     if (!selectedWell) {
-//       setPeakResults([]);
-//       return;
-//     }
-
-//     const selectedData = selectedWell.indicators[0].filteredData;
-
-//     if (!selectedData || selectedData.length === 0) {
-//       console.error("Selected data is empty or undefined");
-//       return;
-//     }
-
-//     const peaksData = findPeaks(
-//       selectedData, // Data
-//       peakProminence, // Prominence
-//       findPeaksWindowWidth // Window Width
-//     );
-
-//     setPeakResults(peaksData);
-
-//     // console.log(calculatePeakAPDs(selectedData));
-//   }, [selectedWell, peakProminence, findPeaksWindowWidth]);
-
-//   const handleSelectWell = (well) => {
-//     setSelectedWell(well);
-//   };
-
-//   return (
-//     <AnalysisContext.Provider
-//       value={{
-//         selectedWell,
-//         setSelectedWell,
-//         handleSelectWell,
-//         peakResults,
-//         setPeakResults,
-//         averageDescent,
-//         setAverageDescent,
-//         averageMagnitude,
-//         setAverageMagnitude,
-//         showVerticalLines,
-//         setShowVerticalLines,
-//         showDataPoints,
-//         setShowDataPoints,
-//         showAscentPoints,
-//         setShowAscentPoints,
-//         showDescentPoints,
-//         setShowDescentPoints,
-//         useAdjustedBases,
-//         setUseAdjustedBases,
-//         findPeaksWindowWidth,
-//         setFindPeaksWindowWidth,
-//         peakProminence,
-//         setPeakProminence,
-//         maximumMagnitude,
-//         setMaximumMagnitude,
-//       }}
-//     >
-//       {children}
-//     </AnalysisContext.Provider>
-//   );
-// };
 import React, { createContext, useState, useEffect } from "react";
 import { findPeaks } from "./utilities/PeakFinder";
 import { findBaseline } from "./utilities/FindBaseline";
@@ -118,6 +36,8 @@ export const AnalysisProvider = ({ children }) => {
   const [peakEntries, setPeakEntries] = useState([]);
   const [ApdData, setApdData] = useState([]);
   const [baselineData, setBaselineData] = useState([]);
+  const [showSelectedData, setShowSelectedData] = useState(true);
+  const [showBaselineData, setShowBaselineData] = useState(true);
 
   useEffect(() => {
     if (!selectedWell) {
@@ -310,6 +230,10 @@ export const AnalysisProvider = ({ children }) => {
         ApdData,
         setApdData,
         baselineData,
+        showBaselineData,
+        setShowBaselineData,
+        showSelectedData,
+        setShowSelectedData,
       }}
     >
       {children}
