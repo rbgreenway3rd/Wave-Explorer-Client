@@ -7,6 +7,7 @@ import {
   prepareQuadraticData,
   quadraticRegression,
 } from "./utilities/Regression";
+import { calculateWindowWidth } from "./utilities/CalculateWindowWidth";
 import { calculatePeakAPDs } from "./utilities/CalculateAPD";
 
 export const AnalysisContext = createContext();
@@ -22,6 +23,7 @@ export const AnalysisProvider = ({ children }) => {
   const [showDescentPoints, setShowDescentPoints] = useState(true);
   const [useAdjustedBases, setUseAdjustedBases] = useState(true);
   const [findPeaksWindowWidth, setFindPeaksWindowWidth] = useState(70);
+  const [optimalWindowWidth, setOptimalWindowWidth] = useState(0);
   const [peakProminence, setPeakProminence] = useState(25000);
   const [maximumMagnitude, setMaximumMagnitude] = useState(0);
   const [apdResults, setApdResults] = useState([]);
@@ -38,6 +40,7 @@ export const AnalysisProvider = ({ children }) => {
   const [baselineData, setBaselineData] = useState([]);
   const [showSelectedData, setShowSelectedData] = useState(true);
   const [showBaselineData, setShowBaselineData] = useState(true);
+  // const [visibleCardiacDatasets, setVisibleCardiacDatasets] = useState({});
 
   useEffect(() => {
     if (!selectedWell) {
@@ -55,21 +58,21 @@ export const AnalysisProvider = ({ children }) => {
     const baseline = selectedData ? findBaseline(selectedData) : null;
 
     setBaselineData(baseline);
-    console.log("sd: ", selectedData);
-    console.log("bl: ", baseline);
+
+    const optimalWindowWidth = calculateWindowWidth(
+      baseline,
+      peakProminence,
+      3
+    );
+    // console.log(optimalWindowWidth);
     const peaksData = findPeaks(
       baseline, // Data
       peakProminence, // Prominence
-      findPeaksWindowWidth // Window Width
+      // findPeaksWindowWidth // Window Width
+      optimalWindowWidth
     );
-    // const peaksData = findPeaks(
-    //   selectedData, // Data
-    //   peakProminence, // Prominence
-    //   findPeaksWindowWidth // Window Width
-    // );
 
     setPeakResults(peaksData);
-    console.log("pd: ", peaksData);
     // const dataToUse = selectedData;
     const dataToUse = baseline;
 
@@ -139,39 +142,6 @@ export const AnalysisProvider = ({ children }) => {
         peak.adjustedRightBaseCoords
       );
     });
-
-    // // Calculate APD values for each peak
-    // const newApdResults = recalculatedPeaksData
-    //   .map((peak, index) => {
-    //     const peakIndex = dataToUse.findIndex(
-    //       (point) => point.x === peak.peakCoords.x
-    //     );
-    //     if (peakIndex === -1) {
-    //       console.error("Peak index not found in data");
-    //       return null;
-    //     }
-    //     return calculatePeakAPDs(
-    //       dataToUse,
-    //       peakIndex,
-    //       regressionCoefficients.a,
-    //       regressionCoefficients.b,
-    //       regressionCoefficients.c
-    //     );
-    //   })
-    //   .filter((result) => result !== null); // Filter out null results
-    // setApdResults(newApdResults);
-
-    // // Extract APD values, ascent points, and descent points
-    // const newApdValues = newApdResults.map((result) => result.apdValues);
-    // const newApdAscentPoints = newApdResults.flatMap(
-    //   (result) => result.ascentPoints
-    // );
-    // const newApdDescentPoints = newApdResults.flatMap(
-    //   (result) => result.descentPoints
-    // );
-    // setApdValues(newApdValues);
-    // setApdAscentPoints(newApdAscentPoints);
-    // setApdDescentPoints(newApdDescentPoints);
 
     // Calculate magnitude baselines
     const newMagnitudeBaselines = newPeakEntries.map((peak) => {

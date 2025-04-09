@@ -57,15 +57,10 @@ export const CardiacGraph = forwardRef(
       peakMagnitudes
     );
 
-    // console.log(
-    //   "peakResults",
-    //   peakResults.map((peak) => peak.peakCoords.y)
-    // );
-
     const adpData = selectedData ? ProcessApdData(selectedData) : null;
     // const adpData = baseline ? ProcessApdData(baseline) : null;
 
-    console.log(adpData);
+    // console.log(adpData);
     // Functions to handle zoom state changes
     const toggleZoomState = (currentZoomState) => {
       setZoomState(!currentZoomState);

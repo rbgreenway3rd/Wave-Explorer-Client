@@ -371,7 +371,8 @@ export const DataProvider = ({ children }) => {
         const lineElements = extractedLines[i].split("\t");
 
         // Push the first element (time) to the times array
-        times.push(parseFloat(lineElements[0].replace("\r", "")) * 1000);
+        // times.push(parseFloat(lineElements[0].replace("\r", "")) * 1000);
+        times.push(parseFloat(lineElements[0].replace("\r", "")));
 
         // Push all other elements (data points) to the dataPoints array
         for (let j = 1; j < lineElements.length; j++) {

@@ -29,7 +29,7 @@ export const ProcessApdData = (fluorescenceData) => {
   const { extractedIndicatorTimes } = useContext(DataContext);
   const { peakResults } = useContext(AnalysisContext);
   const time = findTimeArray(extractedIndicatorTimes);
-  console.log("time", time);
+  // console.log("time", time);
   const pre_AP_window = 20;
   const num_of_index_after_peak = 20;
   const windowSize = 100;
@@ -42,8 +42,8 @@ export const ProcessApdData = (fluorescenceData) => {
   let locsValues = peakResults.map((peak) => peak.peakCoords.x);
   let locs = locsValues.map((locValue) => time.indexOf(locValue));
 
-  console.log(peaks);
-  console.log(locs);
+  // console.log(peaks);
+  // console.log(locs);
 
   let num_peaks_detected = locs.length;
   if (peaks.length === 0) {
@@ -52,7 +52,7 @@ export const ProcessApdData = (fluorescenceData) => {
   }
 
   let peak_amplitudes = math.mean(peaks);
-  console.log("peak_amplitudes:", peak_amplitudes);
+  // console.log("peak_amplitudes:", peak_amplitudes);
   let rr_intervals =
     locs.length > 1
       ? math.mean(
@@ -63,7 +63,7 @@ export const ProcessApdData = (fluorescenceData) => {
             .filter((v) => v !== null)
         )
       : NaN;
-  console.log("rr_intervals: ", rr_intervals);
+  // console.log("rr_intervals: ", rr_intervals);
 
   let dVdt = selectedWell.map((val, idx, arr) =>
     idx < arr.length - 1 ? arr[idx + 1] - val : 0
@@ -81,9 +81,9 @@ export const ProcessApdData = (fluorescenceData) => {
       let crossingIdx = selectedWell
         .slice(loc)
         .findIndex((val) => val <= thresholdValue);
-      console.log(
-        `Peak ${j}: thresholdValue = ${thresholdValue}, crossingIdx = ${crossingIdx}`
-      );
+      // console.log(
+      //   `Peak ${j}: thresholdValue = ${thresholdValue}, crossingIdx = ${crossingIdx}`
+      // );
       return crossingIdx !== -1
         ? time[loc + crossingIdx] - time[dvdt_max_time_idx[j]]
         : NaN;
@@ -101,10 +101,10 @@ export const ProcessApdData = (fluorescenceData) => {
       : Array(9).fill(NaN);
   let num_peaks_analyzed = APD_values.filter((row) => !isNaN(row[0])).length;
 
-  console.log("APD_metrics:", APD_metrics);
-  console.log("APD_values:", APD_values);
-  console.log("peaks:", peaks);
-  console.log("locs:", locs);
+  // console.log("APD_metrics:", APD_metrics);
+  // console.log("APD_values:", APD_values);
+  // console.log("peaks:", peaks);
+  // console.log("locs:", locs);
   // console.log("filteredData:", filteredData);
 
   return {
