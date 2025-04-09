@@ -44,6 +44,7 @@ export const calculateWindowWidth = (data, prominence, num) => {
       const allEqualToAverage = foundPeaks.every((value) => value === average);
 
       if (allEqualToAverage) {
+        console.log("4");
         optimalWindowWidth = ww;
         break;
       }
