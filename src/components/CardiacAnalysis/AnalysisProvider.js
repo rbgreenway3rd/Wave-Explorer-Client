@@ -22,7 +22,7 @@ export const AnalysisProvider = ({ children }) => {
   const [showAscentPoints, setShowAscentPoints] = useState(true);
   const [showDescentPoints, setShowDescentPoints] = useState(true);
   const [useAdjustedBases, setUseAdjustedBases] = useState(true);
-  const [findPeaksWindowWidth, setFindPeaksWindowWidth] = useState(70);
+  const [findPeaksWindowWidth, setFindPeaksWindowWidth] = useState(0);
   const [optimalWindowWidth, setOptimalWindowWidth] = useState(0);
   const [peakProminence, setPeakProminence] = useState(25000);
   const [maximumMagnitude, setMaximumMagnitude] = useState(0);
@@ -64,15 +64,19 @@ export const AnalysisProvider = ({ children }) => {
       peakProminence,
       3
     );
-    // console.log(optimalWindowWidth);
+
     const peaksData = findPeaks(
       baseline, // Data
       peakProminence, // Prominence
       // findPeaksWindowWidth // Window Width
-      optimalWindowWidth
+      optimalWindowWidth,
+      setFindPeaksWindowWidth
     );
-
+    setFindPeaksWindowWidth(optimalWindowWidth);
+    console.log(findPeaksWindowWidth);
+    // setPeakResults(peaksData);
     setPeakResults(peaksData);
+    console.log(peakResults);
     // const dataToUse = selectedData;
     const dataToUse = baseline;
 
@@ -86,6 +90,9 @@ export const AnalysisProvider = ({ children }) => {
     setPeakEntries(newPeakEntries);
     setLeftBaseEntries(newLeftBaseEntries);
     setRightBaseEntries(newRightBaseEntries);
+    console.log("New peakEntries:", newPeakEntries);
+    console.log("New leftBaseEntries:", newLeftBaseEntries);
+    console.log("New rightBaseEntries:", newRightBaseEntries);
 
     // Filter data and perform quadratic regression
     const quadraticData = prepareQuadraticData(dataToUse, peaksData || []);

@@ -57,7 +57,7 @@ export const CardiacGraph = forwardRef(
       peakMagnitudes
     );
 
-    const adpData = selectedData ? ProcessApdData(selectedData) : null;
+    // const adpData = selectedData ? ProcessApdData(selectedData) : null;
     // const adpData = baseline ? ProcessApdData(baseline) : null;
 
     // console.log(adpData);
@@ -123,6 +123,7 @@ export const CardiacGraph = forwardRef(
       },
     }));
 
+    console.log("chartData.datasets:", chartData?.datasets);
     return (
       <>
         {selectedWell && chartData ? (

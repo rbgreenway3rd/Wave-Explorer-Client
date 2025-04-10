@@ -142,6 +142,7 @@ export function findPeaks(
         adjustedRightBaseCoords
       )
     );
+    console.log(peaks);
   }
 
   return peaks;
