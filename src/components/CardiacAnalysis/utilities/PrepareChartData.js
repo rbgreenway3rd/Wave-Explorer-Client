@@ -4,6 +4,7 @@ import { processExcelData } from "../../FileHandling/Matlab/MatlabClone";
 import { findBaseline } from "./FindBaseline";
 import { borderColor } from "@mui/system";
 import { findPeaks } from "./PeakFinder";
+import { interpolatePoints } from "./InterpolatePoints";
 
 export const usePrepareChartData = (
   selectedData,
@@ -32,35 +33,15 @@ export const usePrepareChartData = (
     peakEntries,
     ApdData, // Add ApdData to context
     baselineData,
+    peakResults,
   } = useContext(AnalysisContext);
-
-  // Update chart data based on checkbox state
-  const finalLeftBaseEntries = useAdjustedBases
-    ? adjustedPeaksData.map((peak) => peak.adjustedLeftBaseCoords)
-    : leftBaseEntries;
-  const finalRightBaseEntries = useAdjustedBases
-    ? adjustedPeaksData.map((peak) => peak.adjustedRightBaseCoords)
-    : rightBaseEntries;
 
   let indicatorTimes = Object.values(extractedIndicatorTimes);
 
-  // Create vertical lines between each peak and its corresponding baseline
-  // const verticalLineDatasets = peakEntries.map((peak, index) => {
-  //   const baseline = magnitudeBaselines[index];
-  //   return {
-  //     label: "vertical", // Disabled label for vertical lines in options
-  //     data: [
-  //       { x: peak.x, y: peak.y },
-  //       { x: baseline.x, y: baseline.y },
-  //     ],
-  //     borderColor: "rgb(255, 255, 255)",
-  //     borderWidth: 1,
-  //     fill: false,
-  //     type: "line",
-  //     showLine: showVerticalLines,
-  //     pointRadius: 0,
-  //   };
-  // });
+  let interpolatedRisePoints =
+    Array.isArray(peakResults) && peakResults.length > 0
+      ? interpolatePoints(peakResults)
+      : [];
 
   return {
     labels: indicatorTimes[0],
@@ -107,6 +88,16 @@ export const usePrepareChartData = (
         pointBackgroundColor: "rgb(0, 135, 0)",
         type: "scatter",
       },
+      // {
+      //   label: "interpolated rise points",
+      //   data: interpolatedRisePoints,
+      //   borderColor: "rgb(255, 255, 255)",
+      //   borderWidth: 1,
+      //   fill: false,
+      //   pointRadius: 2.5,
+      //   pointBackgroundColor: "rgb(200, 202, 133)",
+      //   type: "scatter",
+      // },
       // ...verticalLineDatasets, // Spread the vertical line datasets into the main datasets array
     ],
   };

@@ -204,6 +204,7 @@ export const AnalysisProvider = ({ children }) => {
         leftBaseEntries,
         rightBaseEntries,
         peakEntries,
+
         ApdData,
         setApdData,
         baselineData,

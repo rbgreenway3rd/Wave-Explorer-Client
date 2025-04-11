@@ -47,7 +47,7 @@ const ChartControls = ({
       if (!isNaN(numValue)) {
         setPeakProminence(numValue);
       }
-    }, 250),
+    }, 0),
     [setPeakProminence]
   );
 
@@ -85,14 +85,7 @@ const ChartControls = ({
         <>
           <div className="parameters">
             <label className="parameter-item">
-              Window width:{" "}
-              <input
-                type="text"
-                value={findPeaksWindowWidth} // Directly use context state
-                onChange={(e) => {
-                  debouncedSetWindowWidth(e.target.value);
-                }}
-              />
+              Window width: {findPeaksWindowWidth}
             </label>
             <label className="parameter-item">
               Peak Prominence:{" "}
@@ -107,7 +100,7 @@ const ChartControls = ({
             </label>
           </div>
           <div className="checkboxes">
-            <label>
+            {/* <label>
               <input
                 type="checkbox"
                 checked={useAdjustedBases}
@@ -162,7 +155,7 @@ const ChartControls = ({
                 onChange={handleShowSelectedDataChange}
               />
               Show Raw Wave
-            </label>
+            </label> */}
           </div>
           <div>
             <Button
