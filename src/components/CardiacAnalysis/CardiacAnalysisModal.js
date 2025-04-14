@@ -244,9 +244,10 @@ const CardiacAnalysisModal = ({ open, onClose }) => {
             </section>
             <section className="selector-and-results">
               <WellSelector className="well-selector" />
-              {/* <AnalysisResults className="analysis-results" /> */}
               <AverageSignalGraph className="average-signal-graph" />
             </section>
+
+            {/* <AnalysisResults className="analysis-results" /> */}
           </div>
         </div>
       </DialogContent>
