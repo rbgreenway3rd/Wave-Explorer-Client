@@ -10,7 +10,7 @@ Indicator	Red	Excitation	524	Emission	550(88)	Exposure	100	Gain	1
 Binning	4 x 4
 NumRows	16
 NumCols	24
-Operator	b	Greenway	Bryan
+Operator	jenkinsleeroy	Jenkins 	Leeroy
 Project	Test Project
 </HEADER>
 <INDICATOR_DATA	Green	>
