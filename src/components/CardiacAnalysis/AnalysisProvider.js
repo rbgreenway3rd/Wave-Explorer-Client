@@ -9,6 +9,12 @@ import {
 } from "./utilities/Regression";
 import { calculateWindowWidth } from "./utilities/CalculateWindowWidth";
 import { calculatePeakAPDs } from "./utilities/CalculateAPD";
+import { applyMedianFilter } from "./utilities/MedianFilter";
+import {
+  calculateAPDValues,
+  findBaselineAndPeak,
+} from "./utilities/CalculateAPD";
+import { calculateMedianSignal } from "./utilities/CalculateMedianSignal";
 
 export const AnalysisContext = createContext();
 
@@ -40,6 +46,11 @@ export const AnalysisProvider = ({ children }) => {
   const [baselineData, setBaselineData] = useState([]);
   const [showSelectedData, setShowSelectedData] = useState(true);
   const [showBaselineData, setShowBaselineData] = useState(true);
+  const [filteredMedianSignal, setFilteredMedianSignal] = useState([]);
+
+  const [baseline, setBaseline] = useState(null);
+  const [peak, setPeak] = useState(null);
+
   // const [visibleCardiacDatasets, setVisibleCardiacDatasets] = useState({});
 
   useEffect(() => {
@@ -166,6 +177,44 @@ export const AnalysisProvider = ({ children }) => {
     setSelectedWell(well);
   };
 
+  useEffect(() => {
+    if (!selectedWell || !baselineData || peakResults.length === 0) {
+      setFilteredMedianSignal([]);
+      setApdValues([]);
+      setBaseline(null);
+      setPeak(null);
+      return;
+    }
+
+    // Calculate the median signal
+    const medianSignal = calculateMedianSignal(
+      baselineData,
+      peakResults,
+      findPeaksWindowWidth
+    );
+
+    // Apply the median filter
+    const filteredSignal = applyMedianFilter(medianSignal, 3);
+    setFilteredMedianSignal(filteredSignal);
+
+    // Find baseline and peak
+    const { baseline: calculatedBaseline, peak: calculatedPeak } =
+      findBaselineAndPeak(filteredSignal);
+    setBaseline(calculatedBaseline);
+    setPeak(calculatedPeak);
+
+    // Calculate APD values
+    if (calculatedBaseline && calculatedPeak) {
+      const apdResults = calculateAPDValues(
+        filteredSignal,
+        calculatedBaseline,
+        calculatedPeak,
+        [10, 20, 30, 40, 50, 60, 70, 80, 90]
+      );
+      setApdValues(apdResults);
+    }
+  }, [selectedWell, baselineData, peakResults, findPeaksWindowWidth]);
+
   return (
     <AnalysisContext.Provider
       value={{
@@ -212,6 +261,10 @@ export const AnalysisProvider = ({ children }) => {
         setShowBaselineData,
         showSelectedData,
         setShowSelectedData,
+        filteredMedianSignal,
+
+        baseline,
+        peak,
       }}
     >
       {children}

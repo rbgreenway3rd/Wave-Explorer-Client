@@ -147,3 +147,147 @@ export function findPeaks(
 
   return peaks;
 }
+
+export function findPeaksMedian(
+  data,
+  prominence = 0,
+  wlen = null,
+  useAdjustedBases = false,
+  adjustedPeaksData = []
+) {
+  if (!Array.isArray(data) || data.length === 0) {
+    throw new Error("Data must be a non-empty array.");
+    // return;
+  }
+
+  let peakIndices = [];
+  let peaks = [];
+
+  // Identify local maxima, including plateaus
+  for (let i = 1; i < data.length - 1; i++) {
+    if (data[i].y > data[i - 1].y && data[i].y >= data[i + 1].y) {
+      // Strict peak
+      peakIndices.push(i);
+    } else if (data[i].y === data[i + 1].y && data[i].y > data[i - 1].y) {
+      // Start of a plateau
+      let plateauStart = i;
+      let plateauEnd = i;
+
+      // Find the end of the plateau
+      while (
+        plateauEnd + 1 < data.length &&
+        data[plateauEnd].y === data[plateauEnd + 1].y
+      ) {
+        plateauEnd++;
+      }
+
+      // Check if the plateau is a peak
+      if (data[plateauStart].y > data[plateauEnd + 1]?.y) {
+        // Add the middle point of the plateau as the peak
+        const plateauPeak = Math.floor((plateauStart + plateauEnd) / 2);
+        peakIndices.push(plateauPeak);
+      }
+
+      // Skip the rest of the plateau
+      i = plateauEnd;
+    }
+  }
+
+  // Calculate prominence for each peak and filter based on prominence threshold
+  let filteredPeakIndices = [];
+  for (let peakIdx of peakIndices) {
+    let leftBaseIdx = peakIdx;
+    let rightBaseIdx = peakIdx;
+    let searchRange = wlen ? Math.floor(wlen / 2) : data.length;
+
+    // Find left base
+    for (let j = peakIdx - 1; j >= Math.max(0, peakIdx - searchRange); j--) {
+      if (data[j].y < data[leftBaseIdx].y) {
+        leftBaseIdx = j;
+      }
+    }
+
+    // Find right base
+    for (
+      let j = peakIdx + 1;
+      j <= Math.min(data.length - 1, peakIdx + searchRange);
+      j++
+    ) {
+      if (data[j].y < data[rightBaseIdx].y) {
+        rightBaseIdx = j;
+      }
+    }
+
+    let leftProminence = data[peakIdx].y - data[leftBaseIdx].y;
+    let rightProminence = data[peakIdx].y - data[rightBaseIdx].y;
+    let prominenceValue = Math.min(leftProminence, rightProminence);
+
+    if (prominenceValue >= prominence) {
+      filteredPeakIndices.push(peakIdx);
+    }
+  }
+
+  // Create Peak instances for the final filtered peaks
+  for (let peakIdx of filteredPeakIndices) {
+    let leftBaseIdx = peakIdx;
+    let rightBaseIdx = peakIdx;
+    let searchRange = wlen ? Math.floor(wlen / 2) : data.length;
+
+    // Find left base
+    for (let j = peakIdx - 1; j >= Math.max(0, peakIdx - searchRange); j--) {
+      if (data[j].y < data[leftBaseIdx].y) {
+        leftBaseIdx = j;
+      }
+    }
+
+    // Find right base
+    for (
+      let j = peakIdx + 1;
+      j <= Math.min(data.length - 1, peakIdx + searchRange);
+      j++
+    ) {
+      if (data[j].y < data[rightBaseIdx].y) {
+        rightBaseIdx = j;
+      }
+    }
+
+    let leftProminence = data[peakIdx].y - data[leftBaseIdx].y;
+    let rightProminence = data[peakIdx].y - data[rightBaseIdx].y;
+    let prominences = {
+      leftProminence: leftProminence,
+      rightProminence: rightProminence,
+    };
+
+    let leftBaseCoords = data[leftBaseIdx];
+    let peakCoords = data[peakIdx];
+    let rightBaseCoords = data[rightBaseIdx];
+
+    let adjustedLeftBaseCoords = null;
+    let adjustedRightBaseCoords = null;
+
+    if (useAdjustedBases) {
+      const adjustedPeak = adjustedPeaksData.find(
+        (adjustedPeak) => adjustedPeak.peakCoords.x === peakCoords.x
+      );
+      if (adjustedPeak) {
+        adjustedLeftBaseCoords = adjustedPeak.adjustedLeftBaseCoords;
+        adjustedRightBaseCoords = adjustedPeak.adjustedRightBaseCoords;
+      }
+    }
+
+    peaks.push(
+      new Peak(
+        peakCoords,
+        leftBaseCoords,
+        rightBaseCoords,
+        prominences,
+        data,
+        useAdjustedBases,
+        adjustedLeftBaseCoords,
+        adjustedRightBaseCoords
+      )
+    );
+  }
+
+  return peaks;
+}

@@ -160,6 +160,7 @@ const CardiacAnalysisModal = ({ open, onClose }) => {
     setFindPeaksWindowWidth,
     peakProminence,
     setPeakProminence,
+    peakResults,
   } = useContext(AnalysisContext);
   const { project } = useContext(DataContext);
 
@@ -171,6 +172,18 @@ const CardiacAnalysisModal = ({ open, onClose }) => {
     if (cardiacGraphRef.current) {
       cardiacGraphRef.current.resetZoom(); // Call resetZoom on the chart instance
     }
+  };
+
+  let averageTimeBetweenPeaks = (peakResults) => {
+    let timeBetweenPeaks = [];
+    for (let i = 1; i < peakResults.length; i++) {
+      timeBetweenPeaks.push(
+        peakResults[i].peakCoords.x - peakResults[i - 1].peakCoords.x
+      );
+    }
+    return (
+      timeBetweenPeaks.reduce((a, b) => a + b, 0) / timeBetweenPeaks.length
+    );
   };
 
   return (
@@ -207,15 +220,38 @@ const CardiacAnalysisModal = ({ open, onClose }) => {
                 Plate Barcode: {project.plate[0].assayPlateBarcode}
               </h5>
               {selectedWell ? (
-                <h2
-                  style={{
-                    padding: 0,
-                    margin: 0,
-                    borderTop: "solid black 1px",
-                  }}
-                >
-                  Selected Well: {selectedWell.label}
-                </h2>
+                <>
+                  <h2
+                    style={{
+                      padding: 0,
+                      margin: 0,
+                      borderTop: "solid black 1px",
+                      // borderBottom: "solid black 1px",
+                    }}
+                  >
+                    Selected Well: {selectedWell.key}
+                  </h2>
+
+                  {/* <h5
+                    style={{
+                      padding: 0,
+                      margin: 0,
+                    }}
+                  >
+                    <li>Peaks Detected: {peakResults.length}</li>
+                  </h5>
+                  <h5
+                    style={{
+                      padding: 0,
+                      margin: 0,
+                    }}
+                  >
+                    <li>
+                      avg time between peaks:{" "}
+                      {averageTimeBetweenPeaks(peakResults).toFixed(2)}ms
+                    </li>
+                  </h5> */}
+                </>
               ) : (
                 <h2 className="no-well-selected">No Well Selected</h2>
               )}
@@ -242,12 +278,11 @@ const CardiacAnalysisModal = ({ open, onClose }) => {
                 peakProminence={peakProminence}
               />
             </section>
-            <section className="selector-and-results">
+            <section className="selector-and-average-graph">
               <WellSelector className="well-selector" />
               <AverageSignalGraph className="average-signal-graph" />
             </section>
-
-            {/* <AnalysisResults className="analysis-results" /> */}
+            <AnalysisResults className="analysis-results" />
           </div>
         </div>
       </DialogContent>

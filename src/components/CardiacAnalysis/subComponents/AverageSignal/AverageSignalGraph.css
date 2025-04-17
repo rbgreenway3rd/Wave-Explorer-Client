@@ -1,0 +1,94 @@
+.average-signal-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0px;
+    /* No space between elements */
+}
+
+.average-signal-container-header {
+    display: flex;
+    flex-direction: column;
+    /* justify-content: center; */
+    align-self: center;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    border: solid black 1px;
+    width: fit-content;
+    background-color: lightgray;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+
+    height: 100%;
+    /* width: 100%; */
+
+    width: fill;
+}
+
+.average-signal-apd-values-container {
+    margin-top: auto;
+    margin-bottom: auto;
+    display: flex;
+    flex-direction: column;
+    /* flex-wrap: wrap; */
+
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-height: 200px;
+    /* Set a fixed height for the container */
+    overflow-y: auto;
+    /* Add scrolling if content overflows vertically */
+}
+
+/* .average-signal-apd-values {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    justify-content: space-evenly;
+    align-items: center;
+    margin: 0;
+    height: fixed
+} */
+.average-signal-apd-values {
+    /* display: flex;
+    flex-wrap: wrap; */
+
+    /* Allow wrapping of list items */
+    /* justify-content: space-evenly; */
+    /* Distribute columns evenly */
+
+    /* align-items: flex-end; */
+    /* Align items to the top of each column */
+    /* gap: 1em; */
+    /* Add spacing between columns */
+    max-height: 100%;
+    /* Ensure the list doesn't exceed the container's height */
+    list-style: none;
+    /* Remove default list styling */
+    padding: 0;
+    margin: 0;
+    column-count: 3;
+    /* Number of columns */
+    column-gap: 1em;
+    /* Spacing between columns */
+    max-height: 100%;
+    /* Ensure the list doesn't exceed the container's height */
+    list-style: none;
+    /* Remove default list styling */
+
+}
+
+.apd-value {
+    break-inside: avoid;
+    /* Prevent items from breaking across columns */
+    font-size: 0.8em;
+    text-align: left;
+    word-wrap: break-word;
+    /* Ensure long text wraps within the item */
+
+    /* Add spacing between items */
+}
