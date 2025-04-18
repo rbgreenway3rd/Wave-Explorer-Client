@@ -202,6 +202,7 @@ import { DataContext } from "../../../../providers/DataProvider";
 import { AnalysisContext } from "../../AnalysisProvider";
 import { Line } from "react-chartjs-2";
 import DotWaveLoader from "../../../../assets/animations/DotWaveLoader";
+import Tooltip from "@mui/material/Tooltip";
 import "../../styles/WellSelector.css";
 
 export const WellSelector = () => {
@@ -270,7 +271,7 @@ export const WellSelector = () => {
     devicePixelRatio: window.devicePixelRatio || 1, // Match screen pixel density
 
     spanGaps: false,
-    events: ["onHover"],
+    events: ["mousemove", "mouseout", "click", "touchstart", "touchmove"],
     animation: {
       duration: 0,
     },
@@ -356,30 +357,56 @@ export const WellSelector = () => {
       }}
     >
       {wellArrays.map((well, index) => (
-        // <div
-        //   className="well-canvas-container"
+        // <Line
+        //   type="line"
+        //   className={`well-canvas ${
+        //     selectedWell && selectedWell.id === well.id ? "selected" : ""
+        //   }`}
+        //   data={getChartData(well)}
+        //   options={getChartOptions()}
+        //   id={index}
         //   style={{
         //     width: "100%",
         //     height: "100%",
+        //     maxHeight: cellHeight / 1.5,
+        //     maxWidth: cellWidth / 1.5,
         //   }}
-        // >
-        <Line
-          type="line"
-          className={`well-canvas ${
-            selectedWell && selectedWell.id === well.id ? "selected" : ""
-          }`}
-          data={getChartData(well)}
-          options={getChartOptions()}
-          id={index}
-          style={{
-            width: "100%",
-            height: "100%",
-            maxHeight: cellHeight / 1.5,
-            maxWidth: cellWidth / 1.5,
+        //   onClick={() => handleSelectWell(well)}
+        // />
+        <Tooltip
+          key={index}
+          title={` ${well.key}`} // Tooltip content
+          arrow
+          PopperProps={{
+            modifiers: [
+              {
+                name: "offset",
+                options: {
+                  offset: [0, 3], // Adjust the offset [horizontal, vertical]
+                },
+              },
+            ],
           }}
-          onClick={() => handleSelectWell(well)}
-        />
-        // </div>
+        >
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              maxHeight: cellHeight / 1.5,
+              maxWidth: cellWidth / 1.5,
+            }}
+          >
+            <Line
+              type="line"
+              className={`well-canvas ${
+                selectedWell && selectedWell.id === well.id ? "selected" : ""
+              }`}
+              data={getChartData(well)}
+              options={getChartOptions()}
+              onClick={() => handleSelectWell(well)}
+            />
+          </div>
+        </Tooltip>
       ))}
     </div>
     //   ) : (

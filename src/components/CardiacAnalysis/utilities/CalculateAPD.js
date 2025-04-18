@@ -350,7 +350,8 @@ export const calculateAPDValues = (
   // Calculate the threshold y-values for each percentage
   const thresholds = percentages.map((percent) => ({
     percent,
-    threshold: baseline.y + (percent / 100) * (peak.y - baseline.y),
+    // threshold: baseline.y + (percent / 100) * (peak.y - baseline.y),
+    threshold: peak.y - (percent / 100) * (peak.y - baseline.y),
   }));
 
   // Iterate over each threshold to calculate the corresponding APD
@@ -422,20 +423,45 @@ export const calculateAPDValues = (
  * @param {Array} signal - Array of {x, y} objects representing the signal.
  * @returns {Object} - An object containing the baseline and peak as {x, y} coordinates.
  */
+// export const findBaselineAndPeak = (signal) => {
+//   if (!signal || signal.length === 0) {
+//     return { baseline: null, peak: null };
+//   }
+
+//   let baseline = signal[0];
+//   let peak = signal[0];
+
+//   signal.forEach((point) => {
+//     if (point.y < baseline.y) {
+//       baseline = point; // Update baseline to the point with the lowest y-value
+//     }
+//     if (point.y > peak.y) {
+//       peak = point; // Update peak to the point with the highest y-value
+//     }
+//   });
+
+//   return { baseline, peak };
+// };
+
 export const findBaselineAndPeak = (signal) => {
   if (!signal || signal.length === 0) {
     return { baseline: null, peak: null };
   }
 
-  let baseline = signal[0];
+  let baseline = null;
   let peak = signal[0];
 
+  // Find the peak (point with the highest y-value)
   signal.forEach((point) => {
-    if (point.y < baseline.y) {
-      baseline = point; // Update baseline to the point with the lowest y-value
-    }
     if (point.y > peak.y) {
       peak = point; // Update peak to the point with the highest y-value
+    }
+  });
+
+  // Find the baseline (point with the lowest y-value before the peak)
+  signal.forEach((point) => {
+    if (point.x <= peak.x && (baseline === null || point.y < baseline.y)) {
+      baseline = point; // Update baseline to the lowest y-value before the peak
     }
   });
 

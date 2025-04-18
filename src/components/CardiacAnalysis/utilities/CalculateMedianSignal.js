@@ -240,7 +240,7 @@ export const calculateMedianSignal = (
   baselineData,
   peakResults,
   windowWidth,
-  interpolationFactor = 2 // Number of points to interpolate between each pair of points
+  interpolationFactor = 1 // Number of points to interpolate between each pair of points
 ) => {
   let filteredPeakData = [];
 
