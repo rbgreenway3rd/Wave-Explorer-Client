@@ -54,6 +54,7 @@ export const CombinedComponent = () => {
     selectedFilters,
     annotations,
     setAnnotations,
+    overlayRawAndFiltered,
   } = useContext(DataContext);
 
   // Ref to store the previous project state for comparison
@@ -270,6 +271,8 @@ export const CombinedComponent = () => {
   // Preparing graph data for raw and filtered graphs, using color differentiation for each indicator
   console.log(extractedIndicatorTimes);
   let indicatorTimes = Object.values(extractedIndicatorTimes);
+
+  // Prepare data for raw graph
   const rawGraphData = {
     labels: indicatorTimes[0], // Adjust based on your indicator-specific times
     datasets: selectedWellArray.flatMap((well, wellIndex) =>
@@ -284,6 +287,7 @@ export const CombinedComponent = () => {
     ),
   };
 
+  // Prepare data for filtered graph
   const filteredGraphData = {
     labels: indicatorTimes[0], // Adjust based on your indicator-specific times
     datasets: selectedWellArray.flatMap((well, wellIndex) =>
@@ -450,6 +454,7 @@ export const CombinedComponent = () => {
                   panState={panState}
                   panMode={panMode}
                   rawGraphData={rawGraphData}
+                  filteredGraphData={filteredGraphData}
                   analysisData={analysisData}
                   extractedIndicatorTimes={extractedIndicatorTimes}
                   largeGraphConfig={largeGraphConfig}

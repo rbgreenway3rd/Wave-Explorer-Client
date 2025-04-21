@@ -16,8 +16,8 @@ import html2canvas from "html2canvas";
 Chart.register(zoomPlugin);
 
 export const LargeGraph = forwardRef(
-  ({ rawGraphData, largeGraphConfig }, ref) => {
-    const { wellArrays } = useContext(DataContext);
+  ({ rawGraphData, filteredGraphData, largeGraphConfig }, ref) => {
+    const { wellArrays, overlayRawAndFiltered } = useContext(DataContext);
 
     const componentRef = useRef(null);
 
@@ -81,12 +81,31 @@ export const LargeGraph = forwardRef(
       }
     };
 
+    const combinedGraphData = {
+      ...rawGraphData,
+      datasets: overlayRawAndFiltered
+        ? [
+            ...filteredGraphData.datasets.map((dataset) => ({
+              ...dataset,
+              borderColor: "rgba(255, 99, 132, 1)", // Red for filtered data
+              backgroundColor: "rgba(255, 99, 132, 0.2)", // Light red for fill
+            })),
+            ...rawGraphData.datasets.map((dataset) => ({
+              ...dataset,
+              borderColor: "rgba(75, 192, 192, 1)", // Teal for raw data
+              backgroundColor: "rgba(75, 192, 192, 0.2)", // Light teal for fill
+            })),
+          ]
+        : rawGraphData.datasets,
+    };
+
     return (
       // <div ref={componentRef}>
       <Line
         key={JSON.stringify(rawGraphData)}
         className="large-graph-canvas"
-        data={rawGraphData}
+        // data={rawGraphData}
+        data={combinedGraphData}
         options={largeGraphConfig}
         ref={chartRef}
         width={largeCanvasWidth}

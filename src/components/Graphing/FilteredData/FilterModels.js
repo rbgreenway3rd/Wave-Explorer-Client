@@ -60,13 +60,75 @@ export class StaticRatio_Filter {
   }
 }
 
+// export class Smoothing_Filter {
+//   static desc = "Applies a moving average filter to smooth the data curve.";
+//   constructor(num, onEdit) {
+//     this.id = "smoothingFilter_" + JSON.stringify(num);
+//     this.name = "Smoothing";
+//     this.isEnabled = true;
+//     this.windowWidth = 5; // Moving window width
+//     this.onEdit = onEdit;
+//   }
+
+//   setEnabled(value) {
+//     this.isEnabled = value;
+//   }
+
+//   editParams() {
+//     if (this.onEdit) {
+//       this.onEdit(this.windowWidth, this.setParams.bind(this)); // Open the modal and pass the setter callback
+//     }
+//     console.log("Window width updated to:" + this.windowWidth);
+//   }
+
+//   setParams(windowWidth) {
+//     this.windowWidth = windowWidth;
+//   }
+
+//   execute(data) {
+//     // Ensure there's enough data for the moving average
+//     if (data.length < this.windowWidth) {
+//       console.error(
+//         `Insufficient data points for moving average. Required: ${this.windowWidth}, Available: ${data.length}`
+//       );
+//       return data; // Return original data if not enough points
+//     }
+//     for (let w = 0; w < data.length; ++w) {
+//       for (let i = 0; i < data[w].indicators.length; ++i) {
+//         for (let j = 0; j < data[w].indicators[i].rawData.length; ++j) {
+//           let windowSum = 0;
+//           let windowStart = Math.max(Math.floor(j - this.windowWidth / 2), 0);
+//           let windowEnd = Math.min(
+//             data[w].indicators[i].rawData.length - 1,
+//             j + this.windowWidth / 2
+//           );
+//           for (let k = windowStart; k < windowEnd + 1; k++) {
+//             // Sum up values in the initial window
+//             try {
+//               // windowSum += data[w].indicators[i].rawData[k].y;
+//               windowSum += data[w].indicators[i].filteredData[k].y;
+//             } catch (err) {
+//               console.log(err);
+//             }
+//           }
+//           data[w].indicators[i].filteredData[j] = {
+//             x: data[w].indicators[i].rawData[j].x,
+//             y: windowSum / (windowEnd - windowStart + 1),
+//           };
+//         }
+//       }
+//     }
+//   }
+// }
 export class Smoothing_Filter {
-  static desc = "Applies a moving average filter to smooth the data curve.";
+  static desc =
+    "Applies a moving average or median filter to smooth the data curve.";
   constructor(num, onEdit) {
     this.id = "smoothingFilter_" + JSON.stringify(num);
     this.name = "Smoothing";
     this.isEnabled = true;
     this.windowWidth = 5; // Moving window width
+    this.useMedian = false; // New property to toggle median mode
     this.onEdit = onEdit;
   }
 
@@ -74,46 +136,64 @@ export class Smoothing_Filter {
     this.isEnabled = value;
   }
 
+  setUseMedian(value) {
+    this.useMedian = value; // Update the median mode
+  }
+
   editParams() {
     if (this.onEdit) {
-      this.onEdit(this.windowWidth, this.setParams.bind(this)); // Open the modal and pass the setter callback
+      this.onEdit(this.windowWidth, this.useMedian, this.setParams.bind(this)); // Pass the setter callback
     }
     console.log("Window width updated to:" + this.windowWidth);
   }
 
-  setParams(windowWidth) {
+  setParams(windowWidth, useMedian) {
     this.windowWidth = windowWidth;
+    this.useMedian = useMedian;
+  }
+
+  median(arr) {
+    const sorted = arr.slice().sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 !== 0
+      ? sorted[mid]
+      : (sorted[mid - 1] + sorted[mid]) / 2;
   }
 
   execute(data) {
-    // Ensure there's enough data for the moving average
     if (data.length < this.windowWidth) {
       console.error(
-        `Insufficient data points for moving average. Required: ${this.windowWidth}, Available: ${data.length}`
+        `Insufficient data points for smoothing. Required: ${this.windowWidth}, Available: ${data.length}`
       );
-      return data; // Return original data if not enough points
+      return data;
     }
+
     for (let w = 0; w < data.length; ++w) {
       for (let i = 0; i < data[w].indicators.length; ++i) {
         for (let j = 0; j < data[w].indicators[i].rawData.length; ++j) {
-          let windowSum = 0;
+          let windowValues = [];
           let windowStart = Math.max(Math.floor(j - this.windowWidth / 2), 0);
           let windowEnd = Math.min(
             data[w].indicators[i].rawData.length - 1,
             j + this.windowWidth / 2
           );
-          for (let k = windowStart; k < windowEnd + 1; k++) {
-            // Sum up values in the initial window
+
+          for (let k = windowStart; k <= windowEnd; k++) {
             try {
-              // windowSum += data[w].indicators[i].rawData[k].y;
-              windowSum += data[w].indicators[i].filteredData[k].y;
+              windowValues.push(data[w].indicators[i].filteredData[k].y);
             } catch (err) {
               console.log(err);
             }
           }
+
+          const smoothedValue = this.useMedian
+            ? this.median(windowValues) // Use median if enabled
+            : windowValues.reduce((sum, val) => sum + val, 0) /
+              windowValues.length; // Otherwise, use average
+
           data[w].indicators[i].filteredData[j] = {
             x: data[w].indicators[i].rawData[j].x,
-            y: windowSum / (windowEnd - windowStart + 1),
+            y: smoothedValue,
           };
         }
       }

@@ -1,4 +1,6 @@
 import { Chart } from "chart.js";
+import { useContext } from "react";
+import { DataContext } from "../../../providers/DataProvider";
 import zoomPlugin from "chartjs-plugin-zoom";
 import {
   Button,
@@ -23,6 +25,8 @@ export const LargeGraphControls = ({
   changePanMode,
   togglePanState,
 }) => {
+  const { overlayRawAndFiltered, setOverlayRawAndFiltered } =
+    useContext(DataContext);
   return (
     <div className="large-graph-controls">
       <section
@@ -125,6 +129,18 @@ export const LargeGraphControls = ({
           </section>
         </div>
       </section>
+      {/* Overlay Checkbox */}
+      <FormControlLabel
+        control={
+          <Checkbox
+            id="overlay-raw-filtered"
+            checked={overlayRawAndFiltered}
+            onChange={(e) => setOverlayRawAndFiltered(e.target.checked)}
+            color="primary"
+          />
+        }
+        label="Overlay Filtered Data"
+      />
       <Button
         className="reset-zoom-button"
         variant="outlined"

@@ -32,6 +32,7 @@ export const DataProvider = ({ children }) => {
   const [wellArrays, setWellArrays] = useState([]);
   const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
   const [selectedWellArray, setSelectedWellArray] = useState([]);
+  const [overlayRawAndFiltered, setOverlayRawAndFiltered] = useState(false);
 
   // TESTING
   const [extractedIndicators, setExtractedIndicators] = useState([]);
@@ -512,6 +513,8 @@ export const DataProvider = ({ children }) => {
         setSavedMetrics,
         annotations,
         setAnnotations,
+        overlayRawAndFiltered,
+        setOverlayRawAndFiltered,
       }}
     >
       {children}

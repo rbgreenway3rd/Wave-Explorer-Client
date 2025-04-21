@@ -87,6 +87,7 @@ export const FilterControls = ({
   const [endValue, setEndValue] = useState(5);
   // state for smoothing filter params
   const [windowWidth, setWindowWidth] = useState(0);
+  const [useMedian, setUseMedian] = useState(false); // New state
   // state for control subtraction filter params
   const [controlWellArray, setControlWellArray] = useState([]);
   const [applyWellArray, setApplyWellArray] = useState([]);
@@ -136,13 +137,24 @@ export const FilterControls = ({
     setOpenDialog(true);
   };
 
-  const handleEditSmoothingFilterParams = (windowWidth, setParams) => {
+  // const handleEditSmoothingFilterParams = (windowWidth, setParams) => {
+  //   setWindowWidth(windowWidth);
+  //   setCurrentFilter({ setParams });
+  //   setEditModalType("smoothingFilter");
+  //   setOpenDialog(true);
+
+  //   // console.log(currentFilter);
+  // };
+  const handleEditSmoothingFilterParams = (
+    windowWidth,
+    useMedian,
+    setParams
+  ) => {
     setWindowWidth(windowWidth);
+    setUseMedian(useMedian); // Add this line
     setCurrentFilter({ setParams });
     setEditModalType("smoothingFilter");
     setOpenDialog(true);
-
-    // console.log(currentFilter);
   };
 
   const handleEditControlSubtractionFilterParams = (
@@ -196,7 +208,7 @@ export const FilterControls = ({
     if (editModalType === "staticRatio") {
       currentFilter.setParams(startValue, endValue);
     } else if (editModalType === "smoothingFilter") {
-      currentFilter.setParams(windowWidth);
+      currentFilter.setParams(windowWidth, useMedian);
     } else if (editModalType === "controlSubtractionFilter") {
       currentFilter.setParams(controlWellArray, applyWellArray);
     } else if (editModalType === "outlierRemovalFilter") {
@@ -873,11 +885,20 @@ export const FilterControls = ({
       )}
 
       {editModalType === "smoothingFilter" && (
+        // <SmoothingFilterModal
+        //   open={openDialog}
+        //   onClose={() => setOpenDialog(false)}
+        //   windowWidth={windowWidth}
+        //   setWindowWidth={setWindowWidth}
+        //   onSave={handleSaveParams}
+        // />
         <SmoothingFilterModal
           open={openDialog}
           onClose={() => setOpenDialog(false)}
           windowWidth={windowWidth}
           setWindowWidth={setWindowWidth}
+          useMedian={useMedian} // Pass the state
+          setUseMedian={setUseMedian} // Pass the setter
           onSave={handleSaveParams}
         />
       )}
