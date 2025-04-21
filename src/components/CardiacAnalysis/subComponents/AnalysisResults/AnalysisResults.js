@@ -1,12 +1,7 @@
 import React, { useContext, useEffect } from "react";
 import { AnalysisContext } from "../../AnalysisProvider";
 import "../../styles/AnalysisResults.css";
-import { Peak } from "../../classes/Peak";
-import {
-  prepareQuadraticData,
-  quadraticRegression,
-} from "../../utilities/Regression";
-import { calculatePeakAPDs } from "../../utilities/CalculateAPD";
+
 const AnalysisResults = () => {
   const { peakResults, selectedWell, currentWellAnalysis } =
     useContext(AnalysisContext);
@@ -57,12 +52,6 @@ const AnalysisResults = () => {
   };
 
   return (
-    // <div className="analysis-results-container">
-    //   <section>
-    //     average time between peaks:{" "}
-    //     {averageTimeBetweenPeaks(peakResults).toFixed(2)}ms
-    //   </section>
-    // </div>
     <div className="analysis-results-container">
       {currentWellAnalysis ? (
         <section>
