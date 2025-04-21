@@ -126,21 +126,22 @@ export const LargeGraphControls = ({
                 />
               </RadioGroup>
             </FormControl>
+            <FormControlLabel
+              sx={{ marginTop: "0.5em", fontSize: "0.5em" }}
+              control={
+                <Checkbox
+                  id="overlay-raw-filtered"
+                  checked={overlayRawAndFiltered}
+                  onChange={(e) => setOverlayRawAndFiltered(e.target.checked)}
+                  color="primary"
+                />
+              }
+              label="Overlay Filtered Data"
+            />
           </section>
         </div>
       </section>
       {/* Overlay Checkbox */}
-      <FormControlLabel
-        control={
-          <Checkbox
-            id="overlay-raw-filtered"
-            checked={overlayRawAndFiltered}
-            onChange={(e) => setOverlayRawAndFiltered(e.target.checked)}
-            color="primary"
-          />
-        }
-        label="Overlay Filtered Data"
-      />
       <Button
         className="reset-zoom-button"
         variant="outlined"

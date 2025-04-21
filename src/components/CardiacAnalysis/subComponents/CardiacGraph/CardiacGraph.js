@@ -32,6 +32,7 @@ export const CardiacGraph = forwardRef(
       baseline,
       showSelectedData,
       showBaselineData,
+      prominenceFactor,
     } = useContext(AnalysisContext);
     const { extractedIndicatorTimes } = useContext(DataContext);
     const [chartData, setChartData] = useState(null);
@@ -112,6 +113,7 @@ export const CardiacGraph = forwardRef(
       showBaselineData,
       // chartOptions,
       selectedData,
+      prominenceFactor,
     ]);
 
     // Expose resetZoom function to parent via ref

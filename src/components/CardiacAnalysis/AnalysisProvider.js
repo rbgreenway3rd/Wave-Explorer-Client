@@ -48,6 +48,7 @@ export const AnalysisProvider = ({ children }) => {
   const [showSelectedData, setShowSelectedData] = useState(true);
   const [showBaselineData, setShowBaselineData] = useState(true);
   const [filteredMedianSignal, setFilteredMedianSignal] = useState([]);
+  const [prominenceFactor, setProminenceFactor] = useState(0.5);
 
   const [baseline, setBaseline] = useState(null);
   const [peak, setPeak] = useState(null);
@@ -71,7 +72,10 @@ export const AnalysisProvider = ({ children }) => {
 
     setBaselineData(baseline);
 
-    const optimalPeakProminence = calculatePeakProminence(baseline);
+    const optimalPeakProminence = calculatePeakProminence(
+      baseline,
+      prominenceFactor
+    );
     setPeakProminence(optimalPeakProminence);
 
     const optimalWindowWidth = calculateWindowWidth(
@@ -175,7 +179,13 @@ export const AnalysisProvider = ({ children }) => {
       return { x: x, y: baselineY };
     });
     setMagnitudeBaselines(newMagnitudeBaselines);
-  }, [selectedWell, peakProminence, findPeaksWindowWidth, useAdjustedBases]);
+  }, [
+    selectedWell,
+    peakProminence,
+    findPeaksWindowWidth,
+    useAdjustedBases,
+    prominenceFactor,
+  ]);
 
   const handleSelectWell = (well) => {
     setSelectedWell(well);
@@ -269,6 +279,8 @@ export const AnalysisProvider = ({ children }) => {
 
         baseline,
         peak,
+        prominenceFactor,
+        setProminenceFactor,
       }}
     >
       {children}

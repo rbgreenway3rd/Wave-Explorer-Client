@@ -1,9 +1,12 @@
 import React, { useContext, useCallback, useEffect } from "react";
 import "../../styles/ChartControls.css";
 import { AnalysisContext } from "../../AnalysisProvider";
-import { Button, Typography } from "@mui/material";
+import { Button, Typography, IconButton } from "@mui/material";
 import FitScreenTwoToneIcon from "@mui/icons-material/FitScreenTwoTone";
 import debounce from "lodash/debounce";
+
+import AddIcon from "@mui/icons-material/Add";
+import RemoveIcon from "@mui/icons-material/Remove";
 
 const ChartControls = ({
   resetZoom,
@@ -28,28 +31,9 @@ const ChartControls = ({
     setShowSelectedData,
     findPeaksWindowWidth, // From context
     peakProminence, // From context
+    prominenceFactor,
+    setProminenceFactor,
   } = useContext(AnalysisContext);
-
-  // Debounced setters for updating parent state
-  const debouncedSetWindowWidth = useCallback(
-    debounce((value) => {
-      const numValue = parseFloat(value);
-      if (!isNaN(numValue)) {
-        setFindPeaksWindowWidth(numValue);
-      }
-    }, 250),
-    [setFindPeaksWindowWidth]
-  );
-
-  const debouncedSetPeakProminence = useCallback(
-    debounce((value) => {
-      const numValue = parseFloat(value);
-      if (!isNaN(numValue)) {
-        setPeakProminence(numValue);
-      }
-    }, 0),
-    [setPeakProminence]
-  );
 
   // useEffect to detect changes in findPeaksWindowWidth
   useEffect(() => {
@@ -57,26 +41,12 @@ const ChartControls = ({
     // Perform any additional updates or actions here if needed
   }, [findPeaksWindowWidth]);
 
-  // Checkbox handlers (unchanged)
-  const handleShowVerticalLinesChange = (event) => {
-    setShowVerticalLines(event.target.checked);
-  };
-  const handleShowDataPointsChange = (event) => {
-    setShowDataPoints(event.target.checked);
-  };
-  const handleShowAscentPointsChange = (event) => {
-    setShowAscentPoints(event.target.checked);
-  };
-  const handleShowDescentPointsChange = (event) => {
-    setShowDescentPoints(event.target.checked);
+  const incrementProminenceFactor = () => {
+    setProminenceFactor((prev) => Math.min(prev + 0.05, 1)); // Cap at 1
   };
 
-  const handleShowBaselineDataChange = (event) => {
-    setShowBaselineData(event.target.checked);
-  };
-
-  const handleShowSelectedDataChange = (event) => {
-    setShowSelectedData(event.target.checked);
+  const decrementProminenceFactor = () => {
+    setProminenceFactor((prev) => Math.max(prev - 0.05, 0)); // Floor at 0
   };
 
   return (
@@ -97,6 +67,15 @@ const ChartControls = ({
                   debouncedSetPeakProminence(e.target.value);
                 }}
               /> */}
+            </label>
+            <label className="parameter-item">
+              Prominence Factor: {prominenceFactor.toFixed(2)}
+              <IconButton onClick={decrementProminenceFactor} size="small">
+                <RemoveIcon />
+              </IconButton>
+              <IconButton onClick={incrementProminenceFactor} size="small">
+                <AddIcon />
+              </IconButton>
             </label>
           </div>
           <div className="checkboxes"></div>

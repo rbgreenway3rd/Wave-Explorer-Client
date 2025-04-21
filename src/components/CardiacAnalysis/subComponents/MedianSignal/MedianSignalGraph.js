@@ -37,7 +37,7 @@ export const MedianSignalGraph = () => {
     findPeaksWindowWidth,
     baselineData,
     peakProminence,
-
+    prominenceFactor,
     filteredMedianSignal,
     apdValues,
     baseline,
@@ -130,6 +130,38 @@ export const MedianSignalGraph = () => {
       pointRadius: 0, // Hide points
       showLine: showAPDSegments,
     }));
+
+  useEffect(() => {
+    if (
+      !baselineData ||
+      !Array.isArray(peakResults) ||
+      peakResults.length === 0
+    ) {
+      return;
+    }
+
+    const medianSignal = calculateMedianSignal(
+      baselineData,
+      peakResults,
+      findPeaksWindowWidth
+    );
+
+    const filteredSignal = applyMedianFilter(medianSignal, 3);
+
+    const peaks = findPeaks(
+      filteredSignal,
+      peakProminence,
+      findPeaksWindowWidth
+    );
+
+    // Update state or perform additional calculations
+  }, [
+    baselineData,
+    peakResults,
+    findPeaksWindowWidth,
+    peakProminence,
+    prominenceFactor,
+  ]); // Add prominenceFactor as a dependency
 
   return (
     <div className="average-signal-graph" ref={averageSignalGraphRef}>
