@@ -140,7 +140,7 @@ import { DataContext } from "../../providers/DataProvider";
 import { Chart } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
 import { makeStyles } from "@mui/styles";
-import { AverageSignalGraph } from "./subComponents/AverageSignal/AverageSignalGraph";
+import { MedianSignalGraph } from "./subComponents/MedianSignal/MedianSignalGraph";
 
 Chart.register(zoomPlugin);
 
@@ -280,7 +280,7 @@ const CardiacAnalysisModal = ({ open, onClose }) => {
             </section>
             <section className="selector-and-average-graph">
               <WellSelector className="well-selector" />
-              <AverageSignalGraph className="average-signal-graph" />
+              <MedianSignalGraph className="average-signal-graph" />
             </section>
             <AnalysisResults className="analysis-results" />
           </div>

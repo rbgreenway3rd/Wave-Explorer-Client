@@ -88,75 +88,18 @@ const ChartControls = ({
               Window width: {findPeaksWindowWidth}
             </label>
             <label className="parameter-item">
-              Peak Prominence:{" "}
-              <input
+              Peak Prominence: {peakProminence}
+              {/* <input
                 type="number"
                 step={1000}
                 value={peakProminence} // Directly use context state
                 onChange={(e) => {
                   debouncedSetPeakProminence(e.target.value);
                 }}
-              />
+              /> */}
             </label>
           </div>
-          <div className="checkboxes">
-            {/* <label>
-              <input
-                type="checkbox"
-                checked={useAdjustedBases}
-                onChange={(e) => setUseAdjustedBases(e.target.checked)}
-              />
-              Use Regressed Bases
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={showVerticalLines}
-                onChange={handleShowVerticalLinesChange}
-              />
-              Amplitude Lines
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={showDataPoints}
-                onChange={handleShowDataPointsChange}
-              />
-              Show Raw Data Points
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={showAscentPoints}
-                onChange={handleShowAscentPointsChange}
-              />
-              Show Ascent Points
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={showDescentPoints}
-                onChange={handleShowDescentPointsChange}
-              />
-              Show Decent Points
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={showBaselineData}
-                onChange={handleShowBaselineDataChange}
-              />
-              Show Regularized Wave
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={showSelectedData}
-                onChange={handleShowSelectedDataChange}
-              />
-              Show Raw Wave
-            </label> */}
-          </div>
+          <div className="checkboxes"></div>
           <div>
             <Button
               className="reset-zoom-button"

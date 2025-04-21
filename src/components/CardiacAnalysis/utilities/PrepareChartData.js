@@ -47,7 +47,7 @@ export const usePrepareChartData = (
     labels: indicatorTimes[0],
     datasets: [
       {
-        label: "adjusted signal",
+        label: "Adjusted Signal",
         data: baselineData,
         borderColor: "rgb(153, 102, 255)",
         tension: 0.1,
@@ -69,7 +69,7 @@ export const usePrepareChartData = (
       },
 
       {
-        label: "Left Bases",
+        label: "Left Base",
         data: leftBaseEntries,
         borderColor: "rgb(255, 255, 255)",
         borderWidth: 1,
@@ -79,7 +79,7 @@ export const usePrepareChartData = (
         type: "scatter",
       },
       {
-        label: "Right Bases",
+        label: "Right Base",
         data: rightBaseEntries,
         borderColor: "rgb(255, 255, 255)",
         borderWidth: 1,

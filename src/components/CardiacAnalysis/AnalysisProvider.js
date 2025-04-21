@@ -15,6 +15,7 @@ import {
   findBaselineAndPeak,
 } from "./utilities/CalculateAPD";
 import { calculateMedianSignal } from "./utilities/CalculateMedianSignal";
+import { calculatePeakProminence } from "./utilities/CalculatePeakProminence";
 
 export const AnalysisContext = createContext();
 
@@ -70,15 +71,18 @@ export const AnalysisProvider = ({ children }) => {
 
     setBaselineData(baseline);
 
+    const optimalPeakProminence = calculatePeakProminence(baseline);
+    setPeakProminence(optimalPeakProminence);
+
     const optimalWindowWidth = calculateWindowWidth(
       baseline,
-      peakProminence,
+      optimalPeakProminence,
       3
     );
 
     const peaksData = findPeaks(
       baseline, // Data
-      peakProminence, // Prominence
+      optimalPeakProminence, // Prominence
       // findPeaksWindowWidth // Window Width
       optimalWindowWidth,
       setFindPeaksWindowWidth

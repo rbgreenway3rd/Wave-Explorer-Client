@@ -17,7 +17,7 @@ import {
   calculateAverageSignal,
   calculateMedianSignal,
 } from "../../utilities/CalculateMedianSignal";
-import "./AverageSignalGraph.css";
+import "./MedianSignalGraph.css";
 import { applyMedianFilter } from "../../utilities/MedianFilter";
 import { findPeaksMedian, findPeaks } from "../../utilities/PeakFinder";
 import {
@@ -30,7 +30,7 @@ import { handleScreenshot } from "../../../../utilities/Handlers";
 
 Chart.register(...registerables, Tooltip, zoomPlugin);
 
-export const AverageSignalGraph = () => {
+export const MedianSignalGraph = () => {
   const {
     selectedWell,
     peakResults,
@@ -213,6 +213,7 @@ export const AverageSignalGraph = () => {
                     label: "Filtered Median Signal",
                     data: filteredMedianSignal,
                     borderColor: "rgb(255, 217, 1)",
+                    backgroundColor: "rgb(255, 217, 1)",
                     tension: 0.1,
                     borderWidth: 1,
                     fill: false,
