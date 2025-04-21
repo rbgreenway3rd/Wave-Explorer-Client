@@ -16,6 +16,7 @@ import {
 } from "./utilities/CalculateAPD";
 import { calculateMedianSignal } from "./utilities/CalculateMedianSignal";
 import { calculatePeakProminence } from "./utilities/CalculatePeakProminence";
+import { WellAnalysis } from "./classes/WellAnalysis";
 
 export const AnalysisContext = createContext();
 
@@ -49,6 +50,7 @@ export const AnalysisProvider = ({ children }) => {
   const [showBaselineData, setShowBaselineData] = useState(true);
   const [filteredMedianSignal, setFilteredMedianSignal] = useState([]);
   const [prominenceFactor, setProminenceFactor] = useState(0.5);
+  const [currentWellAnalysis, setCurrentWellAnalysis] = useState(null); // New state for WellAnalysis
 
   const [baseline, setBaseline] = useState(null);
   const [peak, setPeak] = useState(null);
@@ -192,6 +194,85 @@ export const AnalysisProvider = ({ children }) => {
   };
 
   useEffect(() => {
+    if (!selectedWell || !peakProminence || !findPeaksWindowWidth) {
+      return;
+    }
+
+    // Create a new instance of WellAnalysis
+    const newWellAnalysis = new WellAnalysis(
+      selectedWell.key, // Well label
+      selectedWell.column + 1, // Column
+      selectedWell.row + 1, // Row
+      peakResults.length, // Number of peaks
+      peakResults.length > 1
+        ? peakResults
+            .slice(1)
+            .reduce(
+              (sum, peak, index) =>
+                sum + (peak.peakCoords.x - peakResults[index].peakCoords.x),
+              0
+            ) /
+          (peakResults.length - 1)
+        : 0, // Average time between peaks
+      findPeaksWindowWidth, // Window width
+      peakProminence, // Peak prominence
+      prominenceFactor, // Prominence factor
+      apdValues // APD values
+    );
+
+    // Print the new instance to the console
+    console.log("New WellAnalysis instance:", newWellAnalysis);
+  }, [
+    selectedWell,
+    peakProminence,
+    findPeaksWindowWidth,
+    peakResults,
+    apdValues,
+    // prominenceFactor,
+  ]);
+  useEffect(() => {
+    if (!selectedWell || !peakProminence || !findPeaksWindowWidth) {
+      setCurrentWellAnalysis(null); // Reset if no well is selected
+      return;
+    }
+
+    // Create a new instance of WellAnalysis
+    const newWellAnalysis = new WellAnalysis(
+      selectedWell.key, // Well label
+      selectedWell.column + 1, // Column
+      selectedWell.row + 1, // Row
+      peakResults.length, // Number of peaks
+      peakResults.length > 1
+        ? peakResults
+            .slice(1)
+            .reduce(
+              (sum, peak, index) =>
+                sum + (peak.peakCoords.x - peakResults[index].peakCoords.x),
+              0
+            ) /
+          (peakResults.length - 1)
+        : 0, // Average time between peaks
+      findPeaksWindowWidth, // Window width
+      peakProminence, // Peak prominence
+      prominenceFactor, // Prominence factor
+      apdValues // APD values
+    );
+
+    // Update the state with the new WellAnalysis instance
+    setCurrentWellAnalysis(newWellAnalysis);
+
+    // Optionally log the instance
+    console.log("New WellAnalysis instance:", newWellAnalysis);
+  }, [
+    selectedWell,
+    peakProminence,
+    findPeaksWindowWidth,
+    peakResults,
+    apdValues,
+    prominenceFactor,
+  ]);
+
+  useEffect(() => {
     if (!selectedWell || !baselineData || peakResults.length === 0) {
       setFilteredMedianSignal([]);
       setApdValues([]);
@@ -281,6 +362,7 @@ export const AnalysisProvider = ({ children }) => {
         peak,
         prominenceFactor,
         setProminenceFactor,
+        currentWellAnalysis,
       }}
     >
       {children}

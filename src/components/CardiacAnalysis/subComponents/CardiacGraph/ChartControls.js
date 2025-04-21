@@ -90,6 +90,7 @@ const ChartControls = ({
                 Reset Zoom
               </Typography>
             </Button>
+            <button>Generate Report</button>
           </div>
         </>
       ) : (

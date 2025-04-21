@@ -50,7 +50,7 @@ export const calculateAverageSignal = (
     filteredPeakData.push(pointData);
   }
 
-  console.log(filteredPeakData);
+  // console.log(filteredPeakData);
   // Calculate the average y values
   const averagedSignal = filteredPeakData.map((point) => {
     const sumY = point.y.reduce((acc, val) => acc + val, 0);
@@ -299,7 +299,7 @@ export const calculateMedianSignal = (
     filteredPeakData.push(pointData);
   }
 
-  console.log(filteredPeakData);
+  // console.log(filteredPeakData);
 
   // Calculate the median y values
   let medianSignal = filteredPeakData.map((point) => {
@@ -328,6 +328,6 @@ export const calculateMedianSignal = (
 
   // Interpolate additional points between the calculated points
   // medianSignal = interpolateSignal(medianSignal, interpolationFactor);
-  console.log(medianSignal);
+  // console.log(medianSignal);
   return medianSignal;
 };

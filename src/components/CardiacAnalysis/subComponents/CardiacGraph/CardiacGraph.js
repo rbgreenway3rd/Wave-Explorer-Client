@@ -125,7 +125,7 @@ export const CardiacGraph = forwardRef(
       },
     }));
 
-    console.log("chartData.datasets:", chartData?.datasets);
+    // console.log("chartData.datasets:", chartData?.datasets);
     return (
       <>
         {selectedWell && chartData ? (

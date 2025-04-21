@@ -60,7 +60,7 @@ export const MedianSignalGraph = () => {
       peakResults,
       findPeaksWindowWidth
     );
-    console.log(averageSignal);
+    // console.log(averageSignal);
     medianSignal = calculateMedianSignal(
       baselineData,
       peakResults,
@@ -101,9 +101,9 @@ export const MedianSignalGraph = () => {
   //         [10, 20, 30, 40, 50, 60, 70, 80, 90]
   //       )
   //     : [];
-  console.log("APD Values:", apdValues);
-  console.log("Baseline:", baseline);
-  console.log("Peak:", peak);
+  // console.log("APD Values:", apdValues);
+  // console.log("Baseline:", baseline);
+  // console.log("Peak:", peak);
   // Extract APD points for scatter plot
   const apdScatterPoints = Object.values(apdValues).flatMap((apd) => {
     if (apd.start && apd.end) {
@@ -111,7 +111,7 @@ export const MedianSignalGraph = () => {
     }
     return [];
   });
-  console.log("apd scatter: ", apdScatterPoints);
+  // console.log("apd scatter: ", apdScatterPoints);
 
   // Construct the "APD Segments" dataset
   // Construct the "APD Segments" datasets
