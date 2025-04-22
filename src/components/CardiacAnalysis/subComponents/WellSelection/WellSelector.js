@@ -1,11 +1,17 @@
-// import React, { useEffect, useRef, useState } from "react";
-// import { useContext } from "react";
-// import { DataContext } from "../../../../providers/DataProvider";
-// import { AnalysisContext } from "../../AnalysisProvider";
-// import { Line } from "react-chartjs-2";
-// // import { getChartOptions } from "../CardiacGraph/ChartOptions";
-// import DotWaveLoader from "../../../../assets/animations/DotWaveLoader";
-// import "../../styles/WellSelector.css";
+import React, { useEffect, useRef, useState } from "react";
+import { useContext } from "react";
+import { DataContext } from "../../../../providers/DataProvider";
+import { AnalysisContext } from "../../AnalysisProvider";
+import { Line } from "react-chartjs-2";
+import DotWaveLoader from "../../../../assets/animations/DotWaveLoader";
+import Tooltip from "@mui/material/Tooltip";
+import "../../styles/WellSelector.css";
+import { findBaseline } from "../../utilities/FindBaseline";
+import { calculateMedianSignal } from "../../utilities/CalculateMedianSignal";
+import { applyMedianFilter } from "../../utilities/MedianFilter";
+import { calculatePeakProminence } from "../../utilities/CalculatePeakProminence";
+import { calculateWindowWidth } from "../../utilities/CalculateWindowWidth";
+import { findPeaks } from "../../utilities/PeakFinder";
 
 // export const WellSelector = () => {
 //   const { project, wellArrays, rowLabels, extractedIndicatorTimes } =
@@ -13,15 +19,10 @@
 //   const { selectedWell, setSelectedWell, handleSelectWell } =
 //     useContext(AnalysisContext);
 //   const [isRenderingComplete, setIsRenderingComplete] = useState(false);
+//   const [showMedianGrid, setShowMedianGrid] = useState(false);
 
 //   // Extracted plate and experiment data from the project
 //   const plate = project?.plate[0] || [];
-//   // const xTimes = extractedIndicatorTimes;
-//   // Generating labels for columns and rows
-//   const columnLabels = Array.from(
-//     { length: plate[0]?.numberOfColumns || 0 },
-//     (_, i) => i + 1
-//   );
 
 //   // State for grid and cell dimensions, accounting for button areas
 //   const [availableWidth, setAvailableWidth] = useState(window.innerWidth / 2.3);
@@ -43,26 +44,8 @@
 //     }
 //   }, [wellArrays]);
 
-//   // Update available dimensions on window resize
-//   const handleResize = () => {
-//     setAvailableWidth(window.innerWidth / 2.3);
-//     setAvailableHeight(window.innerHeight / 2.3);
-//   };
-
-//   useEffect(() => {
-//     window.addEventListener("resize", handleResize);
-//     return () => window.removeEventListener("resize", handleResize);
-//   }, []);
-
 //   const getChartData = (well) => ({
 //     datasets: [
-//       // {
-//       //   label: "Raw Data",
-//       //   data: well.indicators[0].rawData,
-//       //   borderColor: "rgba(75, 192, 192, 1)",
-//       //   borderWidth: 1,
-//       //   fill: false,
-//       // },
 //       {
 //         label: "Filtered Data",
 //         data: well.indicators[0].filteredData,
@@ -73,15 +56,50 @@
 //     ],
 //   });
 
+//   const getFilteredMedianData = (well) => {
+//     // Step 1: Run filteredData through findBaseline
+//     let baselineData = findBaseline(well.indicators[0].filteredData);
+
+//     // Step 2: Calculate peak prominence
+//     let prominence = calculatePeakProminence(baselineData);
+
+//     // Step 3: Calculate window width
+//     let windowWidth = calculateWindowWidth(baselineData, prominence);
+
+//     // Step 4: Find peaks
+//     let peakResults = findPeaks(baselineData, prominence, windowWidth);
+
+//     // Step 5: Calculate the median signal
+//     let medianSignal = calculateMedianSignal(
+//       baselineData,
+//       peakResults,
+//       windowWidth
+//     );
+
+//     // Step 6: Apply the median filter
+//     let filteredMedianSignal = applyMedianFilter(medianSignal, 5); // Example windowSize, adjust as needed
+
+//     return {
+//       datasets: [
+//         {
+//           label: "Processed Data",
+//           data: filteredMedianSignal,
+//           borderColor: "rgb(255, 99, 132)",
+//           borderWidth: 1,
+//           fill: false,
+//         },
+//       ],
+//     };
+//   };
+
 //   const getChartOptions = () => ({
 //     normalized: true,
-//     maintainAspectRatio: true,
+//     maintainAspectRatio: false,
 //     responsive: true,
-//     // devicePixelRatio: 6, // Match screen pixel density
 //     devicePixelRatio: window.devicePixelRatio || 1, // Match screen pixel density
 
 //     spanGaps: false,
-//     events: ["onHover"],
+//     events: ["mousemove", "mouseout", "click", "touchstart", "touchmove"],
 //     animation: {
 //       duration: 0,
 //     },
@@ -137,89 +155,86 @@
 //     },
 //   });
 
-//   console.log(plate.numberOfRows, plate.numberOfColumns);
-//   console.log(plate);
-
-//   useEffect(() => {
-//     const canvases = document.querySelectorAll(".well-canvas");
-//     canvases.forEach((canvas) => {
-//       const context = canvas.getContext("2d");
-//       const scale = window.devicePixelRatio || 2;
-//       canvas.width = cellWidth * scale;
-//       canvas.height = cellHeight * scale;
-//       context.scale(scale, scale);
-//     });
-//   }, [isRenderingComplete, cellWidth, cellHeight]);
-
 //   return (
-//     // <div className="well-selector-container">
 //     <>
-//       {isRenderingComplete ? (
-//         <div
-//           className="well-grid"
-//           style={{
-//             display: "grid",
-//             // gap: 10,
-//             gridTemplateColumns: `repeat(${plate.numberOfColumns}, ${
-//               cellWidth / 2
-//             }px)`,
-//             gridTemplateRows: `repeat(${plate.numberOfRows}, ${
-//               cellHeight / 2
-//             }px)`,
-//             width: (cellWidth / 2) * plate.numberOfColumns,
-//             height: (cellHeight / 2) * plate.numberOfRows,
-//           }}
-//         >
-//           {wellArrays.map((well, index) => (
-//             <Line
-//               type="line"
-//               className="well-canvas"
-//               data={getChartData(well)}
-//               options={getChartOptions()}
-//               id={index}
+//       <div style={{ display: "flex" }}>
+//         <button style={{ width: "100%" }} onClick={setShowMedianGrid(false)}>
+//           Original
+//         </button>
+//         <button style={{ width: "100%" }} onClick={setShowMedianGrid(true)}>
+//           Median
+//         </button>
+//       </div>
+//       <div
+//         className="well-grid"
+//         style={{
+//           display: "grid",
+//           gap: 1,
+//           gridTemplateColumns: `repeat(${plate.numberOfColumns}, ${(
+//             cellWidth / 2
+//           ).toFixed(0)}fr)`,
+//           gridTemplateRows: `repeat(${plate.numberOfRows}, ${(
+//             cellHeight / 2
+//           ).toFixed(0)}fr)`,
+//         }}
+//       >
+//         {wellArrays.map((well, index) => (
+//           <Tooltip
+//             key={index}
+//             title={`${well.key}`} // Tooltip content
+//             arrow
+//             PopperProps={{
+//               modifiers: [
+//                 {
+//                   name: "offset",
+//                   options: {
+//                     offset: [0, 5], // Adjust the offset [horizontal, vertical]
+//                   },
+//                 },
+//               ],
+//             }}
+//           >
+//             <div
 //               style={{
-//                 maxWidth: "100%",
-//                 maxHeight: "100%",
-//                 width: cellWidth / 2,
-//                 height: cellHeight / 2,
+//                 width: "100%",
+//                 height: "100%",
+//                 maxHeight: cellHeight / 1.5,
+//                 maxWidth: cellWidth / 1.5,
 //               }}
-//               onClick={() => handleSelectWell(well)}
-//               // objectFit="contain"
-//             />
-//           ))}
-//         </div>
-//       ) : (
-//         <DotWaveLoader className="dotwave-loader" />
-//       )}
+//             >
+//               <Line
+//                 type="line"
+//                 className={`well-canvas ${
+//                   selectedWell && selectedWell.id === well.id ? "selected" : ""
+//                 }`}
+//                 data={
+//                   showMedianGrid
+//                     ? getFilteredMedianData(well)
+//                     : getChartData(well)
+//                 }
+//                 options={getChartOptions()}
+//                 onClick={() => handleSelectWell(well)}
+//               />
+//             </div>
+//           </Tooltip>
+//         ))}
+//       </div>
 //     </>
 //   );
 // };
 
 // export default WellSelector;
-import React, { useEffect, useRef, useState } from "react";
-import { useContext } from "react";
-import { DataContext } from "../../../../providers/DataProvider";
-import { AnalysisContext } from "../../AnalysisProvider";
-import { Line } from "react-chartjs-2";
-import DotWaveLoader from "../../../../assets/animations/DotWaveLoader";
-import Tooltip from "@mui/material/Tooltip";
-import "../../styles/WellSelector.css";
-
 export const WellSelector = () => {
   const { project, wellArrays, rowLabels, extractedIndicatorTimes } =
     useContext(DataContext);
   const { selectedWell, setSelectedWell, handleSelectWell } =
     useContext(AnalysisContext);
   const [isRenderingComplete, setIsRenderingComplete] = useState(false);
+  const [showMedianGrid, setShowMedianGrid] = useState(false);
+  const [filteredMedianData, setFilteredMedianData] = useState({}); // Cache for precomputed data
 
   // Extracted plate and experiment data from the project
   const plate = project?.plate[0] || [];
-  // const xTimes = extractedIndicatorTimes;
-  // Generating labels for columns and rows
-  const columnLabels = Array.from(
-    { length: plate[0]?.numberOfColumns || 0 },
-    (_, i) => i + 1
-  );
 
   // State for grid and cell dimensions, accounting for button areas
   const [availableWidth, setAvailableWidth] = useState(window.innerWidth / 2.3);
@@ -241,16 +256,26 @@ export const WellSelector = () => {
     }
   }, [wellArrays]);
 
-  // Update available dimensions on window resize
-  const handleResize = () => {
-    setAvailableWidth(window.innerWidth / 2.3);
-    setAvailableHeight(window.innerHeight / 2.3);
-  };
-
-  // useEffect(() => {
-  //   window.addEventListener("resize", handleResize);
-  //   return () => window.removeEventListener("resize", handleResize);
-  // }, []);
+  // Precompute filtered median data when showMedianGrid is toggled to true
+  useEffect(() => {
+    if (showMedianGrid) {
+      const computedData = {};
+      wellArrays.forEach((well) => {
+        const baselineData = findBaseline(well.indicators[0].filteredData);
+        const prominence = calculatePeakProminence(baselineData);
+        const windowWidth = calculateWindowWidth(baselineData, prominence);
+        const peakResults = findPeaks(baselineData, prominence, windowWidth);
+        const medianSignal = calculateMedianSignal(
+          baselineData,
+          peakResults,
+          windowWidth
+        );
+        const filteredMedianSignal = applyMedianFilter(medianSignal, 5); // Example windowSize
+        computedData[well.id] = filteredMedianSignal;
+      });
+      setFilteredMedianData(computedData);
+    }
+  }, [showMedianGrid, wellArrays]);
 
   const getChartData = (well) => ({
     datasets: [
@@ -258,6 +283,18 @@ export const WellSelector = () => {
         label: "Filtered Data",
         data: well.indicators[0].filteredData,
         borderColor: "rgb(153, 102, 255)",
+        borderWidth: 1,
+        fill: false,
+      },
+    ],
+  });
+
+  const getFilteredMedianData = (well) => ({
+    datasets: [
+      {
+        label: "Processed Data",
+        data: filteredMedianData[well.id] || [],
+        borderColor: "rgb(255, 217, 1)",
         borderWidth: 1,
         fill: false,
       },
@@ -327,92 +364,79 @@ export const WellSelector = () => {
     },
   });
 
-  // useEffect(() => {
-  //   if (isRenderingComplete) {
-  //     const canvases = document.querySelectorAll(".well-canvas");
-  //     canvases.forEach((canvas) => {
-  //       const context = canvas.getContext("2d");
-  //       const scale = window.devicePixelRatio || 2;
-  //       canvas.width = cellWidth * scale;
-  //       canvas.height = cellHeight * scale;
-  //       context.scale(scale, scale);
-  //     });
-  //   }
-  // }, [isRenderingComplete, cellWidth, cellHeight]);
-
   return (
-    // <>
-    //   {isRenderingComplete ? (
-    <div
-      className="well-grid"
-      style={{
-        display: "grid",
-        gap: 1,
-        gridTemplateColumns: `repeat(${plate.numberOfColumns}, ${(
-          cellWidth / 2
-        ).toFixed(0)}fr)`,
-        gridTemplateRows: `repeat(${plate.numberOfRows}, ${(
-          cellHeight / 2
-        ).toFixed(0)}fr)`,
-      }}
-    >
-      {wellArrays.map((well, index) => (
-        // <Line
-        //   type="line"
-        //   className={`well-canvas ${
-        //     selectedWell && selectedWell.id === well.id ? "selected" : ""
-        //   }`}
-        //   data={getChartData(well)}
-        //   options={getChartOptions()}
-        //   id={index}
-        //   style={{
-        //     width: "100%",
-        //     height: "100%",
-        //     maxHeight: cellHeight / 1.5,
-        //     maxWidth: cellWidth / 1.5,
-        //   }}
-        //   onClick={() => handleSelectWell(well)}
-        // />
-        <Tooltip
-          key={index}
-          title={` ${well.key}`} // Tooltip content
-          arrow
-          PopperProps={{
-            modifiers: [
-              {
-                name: "offset",
-                options: {
-                  offset: [0, 3], // Adjust the offset [horizontal, vertical]
-                },
-              },
-            ],
-          }}
+    <>
+      <div style={{ display: "flex" }}>
+        <button
+          style={{ width: "100%" }}
+          onClick={() => setShowMedianGrid(false)}
         >
-          <div
-            style={{
-              width: "100%",
-              height: "100%",
-              maxHeight: cellHeight / 1.5,
-              maxWidth: cellWidth / 1.5,
+          Original
+        </button>
+        <button
+          style={{ width: "100%" }}
+          onClick={() => setShowMedianGrid(true)}
+        >
+          Median
+        </button>
+      </div>
+      <div
+        className="well-grid"
+        style={{
+          display: "grid",
+          gap: 1,
+          gridTemplateColumns: `repeat(${plate.numberOfColumns}, ${(
+            cellWidth / 2
+          ).toFixed(0)}fr)`,
+          gridTemplateRows: `repeat(${plate.numberOfRows}, ${(
+            cellHeight / 2
+          ).toFixed(0)}fr)`,
+        }}
+      >
+        {wellArrays.map((well, index) => (
+          <Tooltip
+            key={index}
+            title={`${well.key}`} // Tooltip content
+            arrow
+            PopperProps={{
+              modifiers: [
+                {
+                  name: "offset",
+                  options: {
+                    offset: [0, 5], // Adjust the offset [horizontal, vertical]
+                  },
+                },
+              ],
             }}
           >
-            <Line
-              type="line"
-              className={`well-canvas ${
-                selectedWell && selectedWell.id === well.id ? "selected" : ""
-              }`}
-              data={getChartData(well)}
-              options={getChartOptions()}
-              onClick={() => handleSelectWell(well)}
-            />
-          </div>
-        </Tooltip>
-      ))}
-    </div>
-    //   ) : (
-    //     <DotWaveLoader className="dotwave-loader" />
-    //   )}
-    // </>
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                maxHeight: cellHeight / 1.5,
+                maxWidth: cellWidth / 1.5,
+              }}
+            >
+              <Line
+                type="line"
+                className={`well-canvas ${
+                  showMedianGrid ? "median-grid" : ""
+                } ${
+                  selectedWell && selectedWell.id === well.id ? "selected" : ""
+                }`}
+                data={
+                  showMedianGrid
+                    ? getFilteredMedianData(well)
+                    : getChartData(well)
+                }
+                options={getChartOptions()}
+                onClick={() => handleSelectWell(well)}
+              />
+            </div>
+          </Tooltip>
+        ))}
+      </div>
+    </>
   );
 };
 

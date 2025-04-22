@@ -50,7 +50,7 @@ export const AnalysisProvider = ({ children }) => {
   const [showBaselineData, setShowBaselineData] = useState(true);
   const [filteredMedianSignal, setFilteredMedianSignal] = useState([]);
   const [prominenceFactor, setProminenceFactor] = useState(0.5);
-  const [currentWellAnalysis, setCurrentWellAnalysis] = useState(null); // New state for WellAnalysis
+  const [currentWellAnalysis, setCurrentWellAnalysis] = useState(null);
 
   const [baseline, setBaseline] = useState(null);
   const [peak, setPeak] = useState(null);

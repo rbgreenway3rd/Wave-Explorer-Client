@@ -65,29 +65,29 @@ export const calculateWindowWidth = (
 
   for (let ww = 10; ww < data.length; ww += 2) {
     let num = 10;
-    console.log("1");
+    // console.log("1");
     const peaks = findPeaks(data, prominence, ww);
     const numPeaks = peaks.length;
     foundPeaks.push(numPeaks);
     if (foundPeaks.length > num) {
       foundPeaks.shift();
-      console.log("2");
+      // console.log("2");
     }
     if (foundPeaks.length === num) {
-      console.log("3");
+      // console.log("3");
 
       const average = foundPeaks.reduce((sum, value) => sum + value, 0) / num;
       const allEqualToAverage = foundPeaks.every((value) => value === average);
 
       if (allEqualToAverage) {
-        console.log("4");
+        // console.log("4");
         optimalWindowWidth = ww;
         break;
       }
     }
   }
 
-  console.log(optimalWindowWidth);
+  // console.log(optimalWindowWidth);
 
   // Update the state with the final optimalWindowWidth
   // if (setFindPeaksWindowWidth) {

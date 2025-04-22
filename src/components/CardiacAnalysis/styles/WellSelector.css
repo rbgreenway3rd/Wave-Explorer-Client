@@ -23,12 +23,24 @@
 
 }
 
+/* Default styles for selected and hovered wells */
 .well-canvas:hover {
-    border: 0.1em solid red
+    border: 0.1em solid red;
 }
 
 .well-canvas.selected {
-    border: 0.1em solid yellow;
+    border: 0.15em solid yellow;
+}
+
+/* Styles when showMedianGrid is true */
+.well-canvas.median-grid:hover {
+    border: 0.1em solid red;
+    /* Keep hover red */
+}
+
+.well-canvas.median-grid.selected {
+    border: 0.15em solid rgb(93, 37, 205);
+    /* Purple border when selected */
 }
 
 .dotwave-loader {

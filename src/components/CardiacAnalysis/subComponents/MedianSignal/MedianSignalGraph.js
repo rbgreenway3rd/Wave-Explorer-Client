@@ -242,6 +242,30 @@ export const MedianSignalGraph = () => {
                   //   type: "line",
                   // },
                   {
+                    label: "baseline",
+                    data: [baseline],
+                    borderColor: "rgb(255, 255, 255)",
+                    backgroundColor: "rgb(10, 50, 251)",
+                    pointRadius: 4,
+                    type: "scatter",
+                  },
+                  {
+                    label: "APD Points",
+                    data: apdScatterPoints,
+                    borderColor: "rgb(255, 255, 255)",
+                    backgroundColor: "rgb(190, 0, 0)",
+                    pointRadius: 3,
+                    type: "scatter",
+                  },
+                  {
+                    label: "peak",
+                    data: [peak],
+                    borderColor: "rgb(255, 255, 255)",
+                    backgroundColor: "rgb(10, 50, 251)",
+                    pointRadius: 4,
+                    type: "scatter",
+                  },
+                  {
                     label: "Filtered Median Signal",
                     data: filteredMedianSignal,
                     borderColor: "rgb(255, 217, 1)",
@@ -250,14 +274,6 @@ export const MedianSignalGraph = () => {
                     borderWidth: 1,
                     fill: false,
                     type: "line",
-                  },
-                  {
-                    label: "APD Points",
-                    data: apdScatterPoints,
-                    borderColor: "rgb(255, 255, 255)",
-                    backgroundColor: "rgb(42, 251, 10)",
-                    pointRadius: 3,
-                    type: "scatter",
                   },
                   // {
                   //   label: "APD Segments",
@@ -270,22 +286,6 @@ export const MedianSignalGraph = () => {
                   //   pointRadius: 0, // Hide points
                   // },
 
-                  {
-                    label: "baseline",
-                    data: [baseline],
-                    borderColor: "rgb(255, 255, 255)",
-                    backgroundColor: "rgb(10, 50, 251)",
-                    pointRadius: 4,
-                    type: "scatter",
-                  },
-                  {
-                    label: "peak",
-                    data: [peak],
-                    borderColor: "rgb(255, 255, 255)",
-                    backgroundColor: "rgb(10, 50, 251)",
-                    pointRadius: 4,
-                    type: "scatter",
-                  },
                   ...apdSegmentDatasets,
                 ],
               }
