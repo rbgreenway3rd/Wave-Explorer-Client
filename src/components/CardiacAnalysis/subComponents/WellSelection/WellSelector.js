@@ -368,13 +368,23 @@ export const WellSelector = () => {
     <>
       <div style={{ display: "flex" }}>
         <button
-          style={{ width: "100%" }}
+          className="grid-mode-button"
+          style={{
+            width: "100%",
+            backgroundColor: showMedianGrid ? "gray" : "white",
+            textDecoration: showMedianGrid ? "none" : "underline",
+          }}
           onClick={() => setShowMedianGrid(false)}
         >
           Original
         </button>
         <button
-          style={{ width: "100%" }}
+          className="grid-mode-button"
+          style={{
+            width: "100%",
+            backgroundColor: showMedianGrid ? "white" : "gray",
+            textDecoration: showMedianGrid ? "underline" : "none",
+          }}
           onClick={() => setShowMedianGrid(true)}
         >
           Median

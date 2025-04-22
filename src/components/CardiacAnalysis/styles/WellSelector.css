@@ -14,6 +14,12 @@
 
 .well-canvas-container {}
 
+.grid-mode-button:hover {
+    background-color: rgb(100, 100, 100);
+    border: 0.1em solid rgb(100, 100, 100);
+    /* color: white; */
+}
+
 .well-canvas {
     background-color: black;
     /* border: 0.05em solid grey; */
