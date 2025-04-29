@@ -47,7 +47,7 @@ export const MedianSignalGraph = () => {
 
   const averageSignalGraphRef = useRef(null);
 
-  const [showAPDSegments, setShowAPDSegments] = useState(false);
+  const [showAPDSegments, setShowAPDSegments] = useState(true);
 
   let indicatorTimes = Object.values(extractedIndicatorTimes);
 
@@ -130,6 +130,22 @@ export const MedianSignalGraph = () => {
       pointRadius: 0, // Hide points
       showLine: showAPDSegments,
     }));
+
+  // Construct the vertical line dataset
+  const apdEndPoints = Object.values(apdValues)
+    .filter((apd) => apd.end) // Ensure the end point exists
+    .map((apd) => apd.end);
+
+  const verticalLineDataset = {
+    label: "Rise Midpoint",
+    data: apdEndPoints.sort((a, b) => a.y - b.y), // Sort by y-value to ensure a continuous vertical line
+    borderColor: "rgb(190, 0, 0)", // Green color for the vertical line
+    borderWidth: 1.5,
+    fill: false,
+    type: "line",
+    pointRadius: 0, // Hide points
+    showLine: showAPDSegments, // Always show the line
+  };
 
   useEffect(() => {
     if (
@@ -242,7 +258,7 @@ export const MedianSignalGraph = () => {
                   //   type: "line",
                   // },
                   {
-                    label: "baseline",
+                    label: "Baseline & Peak",
                     data: [baseline],
                     borderColor: "rgb(255, 255, 255)",
                     backgroundColor: "rgb(10, 50, 251)",
@@ -251,11 +267,12 @@ export const MedianSignalGraph = () => {
                   },
                   {
                     label: "APD Points",
-                    data: apdScatterPoints,
+                    data: showAPDSegments ? apdScatterPoints : [],
                     borderColor: "rgb(255, 255, 255)",
                     backgroundColor: "rgb(190, 0, 0)",
                     pointRadius: 3,
                     type: "scatter",
+                    // showLine: showAPDSegments,
                   },
                   {
                     label: "peak",
@@ -266,7 +283,7 @@ export const MedianSignalGraph = () => {
                     type: "scatter",
                   },
                   {
-                    label: "Filtered Median Signal",
+                    label: "Median Signal",
                     data: filteredMedianSignal,
                     borderColor: "rgb(255, 217, 1)",
                     backgroundColor: "rgb(255, 217, 1)",
@@ -287,6 +304,7 @@ export const MedianSignalGraph = () => {
                   // },
 
                   ...apdSegmentDatasets,
+                  verticalLineDataset,
                 ],
               }
             }
@@ -313,9 +331,15 @@ export const MedianSignalGraph = () => {
                   display: true,
                   labels: {
                     color: "white",
+                    font: { size: 10.5, weight: "lighter" },
                     filter: (legendItem, chartData) => {
                       // Exclude datasets with the label "vertical" from the legend
-                      return legendItem.text !== "APD Segment";
+                      const excludedLabels = [
+                        "Rise Midpoint",
+                        "peak",
+                        "APD Segment",
+                      ];
+                      return !excludedLabels.includes(legendItem.text);
                     },
                   },
                 },
@@ -373,6 +397,7 @@ export const MedianSignalGraph = () => {
                       const excludedLabels = [
                         "Filtered Median Signal",
                         "Median Signal",
+                        "Rise Midpoint",
                       ];
                       if (excludedLabels.includes(context.dataset.label)) {
                         return null; // Exclude this dataset from the tooltip
@@ -431,6 +456,7 @@ export const MedianSignalGraph = () => {
                   ticks: {
                     display: true,
                     color: "white",
+                    font: { size: 10 },
                   },
                   title: {
                     display: true,
@@ -445,6 +471,7 @@ export const MedianSignalGraph = () => {
                   ticks: {
                     display: true,
                     color: "white",
+                    font: { size: 10 },
                   },
                   grid: {
                     display: false,

@@ -306,6 +306,7 @@ export const AnalysisProvider = ({ children }) => {
         calculatedPeak,
         [10, 20, 30, 40, 50, 60, 70, 80, 90]
       );
+      console.log(apdResults);
       setApdValues(apdResults);
     }
   }, [selectedWell, baselineData, peakResults, findPeaksWindowWidth]);

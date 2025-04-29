@@ -5,6 +5,9 @@ import "../../styles/AnalysisResults.css";
 const AnalysisResults = () => {
   const { peakResults, selectedWell, currentWellAnalysis } =
     useContext(AnalysisContext);
+  const { apdValues } = useContext(AnalysisContext);
+
+  const { apdResults, midpoint } = apdValues || {};
 
   useEffect(() => {
     if (!selectedWell) {

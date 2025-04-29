@@ -31,7 +31,7 @@ export const calculateAverageSignal = (
     if (xIndex >= 0 && xIndex < baselineData.length) {
       pointData.x = baselineData[xIndex].x; // Assign the x value
     } else {
-      console.warn(`Index out of bounds for x value: ${xIndex}`);
+      // console.warn(`Index out of bounds for x value: ${xIndex}`);
       continue;
     }
 
@@ -59,6 +59,7 @@ export const calculateAverageSignal = (
       y: sumY / point.y.length,
     };
   });
+
   return averagedSignal;
 };
 
