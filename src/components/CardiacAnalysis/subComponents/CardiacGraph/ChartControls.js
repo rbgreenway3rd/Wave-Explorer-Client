@@ -1,9 +1,11 @@
 import React, { useContext, useCallback, useEffect } from "react";
 import "../../styles/ChartControls.css";
 import { AnalysisContext } from "../../AnalysisProvider";
+import { DataContext } from "../../../../providers/DataProvider";
 import { Button, Typography, IconButton } from "@mui/material";
 import FitScreenTwoToneIcon from "@mui/icons-material/FitScreenTwoTone";
 import debounce from "lodash/debounce";
+import { generateCardiacReport } from "../../CardiacReport";
 
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
@@ -17,6 +19,7 @@ const ChartControls = ({
 }) => {
   const {
     selectedWell,
+    setSelectedWell,
     showVerticalLines,
     setShowVerticalLines,
     showDataPoints,
@@ -33,7 +36,12 @@ const ChartControls = ({
     peakProminence, // From context
     prominenceFactor,
     setProminenceFactor,
+    calculateMedianSignal,
+    calculateAPDValues,
+    findBaselineAndPeak,
   } = useContext(AnalysisContext);
+  const { wellArrays } = useContext(DataContext);
+  console.log("wellArrays", wellArrays);
 
   // useEffect to detect changes in findPeaksWindowWidth
   useEffect(() => {
@@ -47,6 +55,16 @@ const ChartControls = ({
 
   const decrementProminenceFactor = () => {
     setProminenceFactor((prev) => Math.max(prev - 0.05, 0)); // Floor at 0
+  };
+
+  const handleGenerateReport = () => {
+    generateCardiacReport({
+      allWells: wellArrays,
+      calculateMedianSignal,
+      calculateAPDValues,
+      findBaselineAndPeak,
+      setSelectedWell,
+    });
   };
 
   return (
@@ -90,7 +108,7 @@ const ChartControls = ({
                 Reset Zoom
               </Typography>
             </Button>
-            <button>Generate Report</button>
+            <button onClick={handleGenerateReport}>Generate Report</button>
           </div>
         </>
       ) : (

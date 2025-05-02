@@ -370,7 +370,7 @@ export const WellSelector = () => {
         <button
           className="grid-mode-button"
           style={{
-            width: "100%",
+            width: showMedianGrid ? "50%" : "100%",
             backgroundColor: showMedianGrid ? "gray" : "white",
             textDecoration: showMedianGrid ? "none" : "underline",
           }}
@@ -381,7 +381,7 @@ export const WellSelector = () => {
         <button
           className="grid-mode-button"
           style={{
-            width: "100%",
+            width: showMedianGrid ? "100%" : "50%",
             backgroundColor: showMedianGrid ? "white" : "gray",
             textDecoration: showMedianGrid ? "underline" : "none",
           }}

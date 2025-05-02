@@ -71,40 +71,6 @@ export const MedianSignalGraph = () => {
   const medianSignalTimes =
     medianSignal != null ? medianSignal.map((point) => point.x) : [];
 
-  // let filteredMedianSignal = medianSignal
-  //   ? applyMedianFilter(medianSignal, 3)
-  //   : [];
-
-  //   let medianPeaksFound = filteredMedianSignal
-  //     ? findPeaksMedian(
-  //         filteredMedianSignal,
-  //         peakProminence,
-  //         findPeaksWindowWidth
-  //       )
-  //     : [];
-  //   let peaksFound = filteredMedianSignal
-  //     ? findPeaks(filteredMedianSignal, peakProminence, findPeaksWindowWidth)
-  //     : [];
-
-  //   let peakToGraph = medianPeaksFound[0];
-  //   console.log(peakToGraph.peakCoords);
-
-  // const { baseline, peak } = filteredMedianSignal
-  //   ? findBaselineAndPeak(filteredMedianSignal)
-  //   : [];
-  // const apdValues =
-  //   baseline && peak
-  //     ? calculateAPDValues(
-  //         filteredMedianSignal,
-  //         baseline,
-  //         peak,
-  //         [10, 20, 30, 40, 50, 60, 70, 80, 90]
-  //       )
-  //     : [];
-  // console.log("APD Values:", apdValues);
-  // console.log("Baseline:", baseline);
-  // console.log("Peak:", peak);
-  // Extract APD points for scatter plot
   const apdScatterPoints = Object.values(apdValues).flatMap((apd) => {
     if (apd.start && apd.end) {
       return [apd.start, apd.end]; // Include both start and end points

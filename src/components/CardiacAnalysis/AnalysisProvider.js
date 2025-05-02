@@ -44,7 +44,7 @@ export const AnalysisProvider = ({ children }) => {
   const [leftBaseEntries, setLeftBaseEntries] = useState([]);
   const [rightBaseEntries, setRightBaseEntries] = useState([]);
   const [peakEntries, setPeakEntries] = useState([]);
-  const [ApdData, setApdData] = useState([]);
+  // const [ApdData, setApdData] = useState([]);
   const [baselineData, setBaselineData] = useState([]);
   const [showSelectedData, setShowSelectedData] = useState(true);
   const [showBaselineData, setShowBaselineData] = useState(true);
@@ -350,8 +350,8 @@ export const AnalysisProvider = ({ children }) => {
         rightBaseEntries,
         peakEntries,
 
-        ApdData,
-        setApdData,
+        // ApdData,
+        // setApdData,
         baselineData,
         showBaselineData,
         setShowBaselineData,
