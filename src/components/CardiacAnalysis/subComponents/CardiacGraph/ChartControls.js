@@ -5,7 +5,10 @@ import { DataContext } from "../../../../providers/DataProvider";
 import { Button, Typography, IconButton } from "@mui/material";
 import FitScreenTwoToneIcon from "@mui/icons-material/FitScreenTwoTone";
 import debounce from "lodash/debounce";
-import { generateCardiacReport } from "../../CardiacReport";
+import {
+  generateCardiacReport,
+  generateCardiacReportCSV,
+} from "../../CardiacReport";
 
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
@@ -58,12 +61,12 @@ const ChartControls = ({
   };
 
   const handleGenerateReport = () => {
-    generateCardiacReport({
+    generateCardiacReportCSV({
       allWells: wellArrays,
-      calculateMedianSignal,
-      calculateAPDValues,
-      findBaselineAndPeak,
-      setSelectedWell,
+      // calculateMedianSignal,
+      // calculateAPDValues,
+      // findBaselineAndPeak,
+      // setSelectedWell,
     });
   };
 
