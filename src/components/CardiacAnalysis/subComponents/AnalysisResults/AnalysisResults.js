@@ -97,18 +97,6 @@ const AnalysisResults = () => {
     }
   });
 
-  let averageTimeBetweenPeaks = (peakResults) => {
-    let timeBetweenPeaks = [];
-    for (let i = 1; i < peakResults.length; i++) {
-      timeBetweenPeaks.push(
-        peakResults[i].peakCoords.x - peakResults[i - 1].peakCoords.x
-      );
-    }
-    return (
-      timeBetweenPeaks.reduce((a, b) => a + b, 0) / timeBetweenPeaks.length
-    );
-  };
-
   const renderAPDValues = (apdValues) => {
     if (!apdValues || Object.keys(apdValues).length === 0) {
       return <p>No APD values available.</p>;
@@ -137,20 +125,30 @@ const AnalysisResults = () => {
   return (
     <div className="analysis-results-container">
       {currentWellAnalysis ? (
-        <section>
-          <h3>Well Analysis Results</h3>
-          <p>Well: {currentWellAnalysis.wellKey}</p>
-          <p>Number of Peaks: {currentWellAnalysis.numberOfPeaks}</p>
-          <p>
-            Average Time Between Peaks:{" "}
-            {currentWellAnalysis.avgPTPTime.toFixed(2)} ms
-          </p>
-          <p>Window Width: {currentWellAnalysis.windowWidth}</p>
-          <p>Peak Prominence: {currentWellAnalysis.peakProminence}</p>
-          <p>Prominence Factor: {currentWellAnalysis.prominenceFactor}</p>
-          <p>Amplitude: {amplitude}</p>
-          <p>APD Values:</p>
-          {renderAPDValues(currentWellAnalysis.APDValues)}
+        <section className="analysis-results">
+          <h3 className="analysis-header">Well Analysis Results</h3>
+          <div className="analysis-details">
+            <div className="analysis-info">
+              <p>
+                <strong>Well:</strong> {currentWellAnalysis.wellKey}
+              </p>
+              <div>Number of Peaks: {currentWellAnalysis.numberOfPeaks}</div>
+              <div>
+                Average Time Between Peaks:{" "}
+                {currentWellAnalysis.avgPTPTime.toFixed(2)} ms
+              </div>
+              <div>Window Width: {currentWellAnalysis.windowWidth}</div>
+              <div>Peak Prominence: {currentWellAnalysis.peakProminence}</div>
+              <div>
+                Prominence Factor: {currentWellAnalysis.prominenceFactor}
+              </div>
+              <div>Amplitude: {amplitude}</div>
+            </div>
+            <div className="analysis-apd">
+              <p>APD Values:</p>
+              {renderAPDValues(currentWellAnalysis.APDValues)}
+            </div>
+          </div>
         </section>
       ) : (
         <p>No well analysis available.</p>

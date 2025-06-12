@@ -89,8 +89,8 @@ export const FilterControls = ({
   const [windowWidth, setWindowWidth] = useState(0);
   const [useMedian, setUseMedian] = useState(false); // New state
   // state for control subtraction filter params
-  const [controlWellArray, setControlWellArray] = useState([]);
-  const [applyWellArray, setApplyWellArray] = useState([]);
+  // const [controlWellArray, setControlWellArray] = useState([]);
+  // const [applyWellArray, setApplyWellArray] = useState([]);
   // state for outlier removal filter params
   const [halfWindow, setHalfWindow] = useState(2);
   const [threshold, setThreshold] = useState(3);
@@ -129,42 +129,30 @@ export const FilterControls = ({
     p: 2,
   };
 
-  const handleEditStaticRatioParams = (start, end, setParams) => {
+  // Update all handleEdit*Params to always set the filter instance as currentFilter
+  const handleEditStaticRatioParams = (start, end, setParams, filter) => {
     setStartValue(start);
     setEndValue(end);
-    setCurrentFilter({ setParams });
+    setCurrentFilter(filter);
     setEditModalType("staticRatio");
     setOpenDialog(true);
   };
 
-  // const handleEditSmoothingFilterParams = (windowWidth, setParams) => {
-  //   setWindowWidth(windowWidth);
-  //   setCurrentFilter({ setParams });
-  //   setEditModalType("smoothingFilter");
-  //   setOpenDialog(true);
-
-  //   // console.log(currentFilter);
-  // };
   const handleEditSmoothingFilterParams = (
     windowWidth,
     useMedian,
-    setParams
+    setParams,
+    filter
   ) => {
     setWindowWidth(windowWidth);
-    setUseMedian(useMedian); // Add this line
-    setCurrentFilter({ setParams });
+    setUseMedian(useMedian);
+    setCurrentFilter(filter);
     setEditModalType("smoothingFilter");
     setOpenDialog(true);
   };
 
-  const handleEditControlSubtractionFilterParams = (
-    controlWellArray,
-    applyWellArray,
-    setParams
-  ) => {
-    setControlWellArray(controlWellArray);
-    setApplyWellArray(applyWellArray);
-    setCurrentFilter({ setParams });
+  const handleEditControlSubtractionFilterParams = (filter) => {
+    setCurrentFilter(filter);
     setEditModalType("controlSubtractionFilter");
     setOpenDialog(true);
   };
@@ -172,21 +160,23 @@ export const FilterControls = ({
   const handleEditOutlierRemovalFilterParams = (
     halfWindow,
     threshold,
-    setParams
+    setParams,
+    filter
   ) => {
     setHalfWindow(halfWindow);
     setThreshold(threshold);
-    setCurrentFilter({ setParams });
+    setCurrentFilter(filter);
     setEditModalType("outlierRemovalFilter");
     setOpenDialog(true);
   };
 
   const handleEditFlatFieldCorrectionFilterParams = (
     correctionMatrix,
-    setParams
+    setParams,
+    filter
   ) => {
     setCorrectionMatrix(correctionMatrix);
-    setCurrentFilter({ setParams });
+    setCurrentFilter(filter);
     setEditModalType("flatFieldCorrectionFilter");
     setOpenDialog(true);
   };
@@ -194,23 +184,58 @@ export const FilterControls = ({
   const handleEditDynamicRatioFilterParams = (
     numerator,
     denominator,
-    setParams
+    setParams,
+    filter
   ) => {
     setNumerator(numerator);
     setDenominator(denominator);
-    setCurrentFilter({ setParams });
+    setCurrentFilter(filter);
     setEditModalType("dynamicRatioFilter");
     setOpenDialog(true);
   };
 
-  const handleSaveParams = () => {
+  const handleSaveParams = (param1, param2) => {
     // Save logic depending on the filter type
     if (editModalType === "staticRatio") {
       currentFilter.setParams(startValue, endValue);
     } else if (editModalType === "smoothingFilter") {
       currentFilter.setParams(windowWidth, useMedian);
     } else if (editModalType === "controlSubtractionFilter") {
-      currentFilter.setParams(controlWellArray, applyWellArray);
+      // param1: controlWellArray, param2: applyWellArray
+      // Instead of mutating the instance, replace it immutably in selectedFilters
+      // OLD ---
+      // currentFilter.setParams(param1, param2);
+      // ---
+      // NEW ---
+      setSelectedFilters((prevFilters) =>
+        prevFilters.map((f) => {
+          if (f.id === currentFilter.id) {
+            // Create a new instance with updated arrays, preserving other properties
+            const updated = Object.create(Object.getPrototypeOf(f));
+            Object.assign(updated, f, {
+              controlWellArray: [...param1],
+              applyWellArray: [...param2],
+            });
+            return updated;
+          }
+          return f;
+        })
+      );
+      // Also update the instance for enabledFilters if needed
+      setEnabledFilters((prevFilters) =>
+        prevFilters.map((f) => {
+          if (f.id === currentFilter.id) {
+            const updated = Object.create(Object.getPrototypeOf(f));
+            Object.assign(updated, f, {
+              controlWellArray: [...param1],
+              applyWellArray: [...param2],
+            });
+            return updated;
+          }
+          return f;
+        })
+      );
+      // ---
     } else if (editModalType === "outlierRemovalFilter") {
       currentFilter.setParams(halfWindow, threshold);
     } else if (editModalType === "flatFieldCorrectionFilter") {
@@ -907,13 +932,13 @@ export const FilterControls = ({
         <ControlSubtractionModal
           open={openDialog}
           onClose={() => setOpenDialog(false)}
-          controlWellArray={controlWellArray}
-          setControlWellArray={setControlWellArray}
-          applyWellArray={applyWellArray}
-          setApplyWellArray={setApplyWellArray}
+          initialControlWellArray={currentFilter?.controlWellArray || []}
+          initialApplyWellArray={currentFilter?.applyWellArray || []}
           number_of_rows={rowLabels.length}
           number_of_columns={columnLabels.length}
-          onSave={handleSaveParams}
+          onSave={(controlArray, applyArray) =>
+            handleSaveParams(controlArray, applyArray)
+          }
           largeCanvasWidth={largeCanvasWidth}
           largeCanvasHeight={largeCanvasHeight}
           smallCanvasWidth={smallCanvasWidth}

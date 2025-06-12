@@ -17,6 +17,7 @@ export const GenerateCSV = (
   includeSavedMetrics,
   savedMetrics
 ) => {
+  console.log(project.plate[0].experiments[0]);
   // Header section
   const header = ["<HEADER>"];
   project.plate.forEach((plate) => {
@@ -28,9 +29,16 @@ export const GenerateCSV = (
       header.push(`AssayPlateBarcode,${plate.assayPlateBarcode}`);
       header.push(`AddPlateBarcode,${plate.addPlateBarcode}`);
       experiment.wells[0].indicators.forEach((_, indicatorIndex) => {
-        header.push(
-          `Indicator,${experiment.indicatorConfigurations[indicatorIndex]}`
-        );
+        const config = experiment.indicatorConfigurations[indicatorIndex];
+        if (config) {
+          header.push(`IndicatorName,${config.name}`);
+          header.push(`Excitation,${config.Excitation}`);
+          header.push(`Emission,${config.Emission}`);
+          header.push(`Exposure,${config.Exposure}`);
+          header.push(`Gain,${config.Gain}`);
+        } else {
+          header.push(`Indicator,Unknown`);
+        }
       });
       header.push(`Binning,${experiment.binning}`);
       header.push(`NumRows,${experiment.numberOfRows}`);

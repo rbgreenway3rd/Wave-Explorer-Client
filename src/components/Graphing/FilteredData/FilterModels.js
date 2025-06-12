@@ -206,11 +206,11 @@ export class ControlSubtraction_Filter {
   constructor(num, onEdit, number_of_columns, number_of_rows) {
     this.id = "controlSubtraction_" + JSON.stringify(num);
     this.name = "Control Subtraction";
-
     this.isEnabled = true;
-    this.controlWellArray = []; // list of {row, col} for control wells
-    this.applyWellArray = []; // list of {row, col} for apply wells
-    this.number_of_columns = number_of_columns; // Total columns in the grid layout (e.g., 24 for a 24x16 grid)
+    // Ensure each instance gets its own arrays, not shared references
+    this.controlWellArray = [];
+    this.applyWellArray = [];
+    this.number_of_columns = number_of_columns;
     this.number_of_rows = number_of_rows;
     this.onEdit = onEdit; // Callback to open the modal
     this.average_curve = [];
@@ -222,12 +222,8 @@ export class ControlSubtraction_Filter {
 
   editParams() {
     if (this.onEdit) {
-      // Opens a dialog to set controlWellArray and applyWellArray
-      this.onEdit(
-        this.controlWellArray,
-        this.applyWellArray,
-        this.setParams.bind(this)
-      );
+      // Always pass the filter instance itself
+      this.onEdit(this);
     }
   }
 

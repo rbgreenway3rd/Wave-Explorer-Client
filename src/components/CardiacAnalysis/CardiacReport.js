@@ -7,89 +7,6 @@ import { applyMedianFilter } from "./utilities/MedianFilter";
 import { findBaselineAndPeak } from "./utilities/CalculateAPD";
 import { calculateAPDValues } from "./utilities/CalculateAPD";
 
-// export const generateCardiacReport = (wellsArray) => {
-//   // Access the actual array of wells
-//   const wells = wellsArray.allWells;
-
-//   if (!Array.isArray(wells)) {
-//     console.error(
-//       "Invalid wellsArray structure. Expected an array in 'allWells'."
-//     );
-//     return;
-//   }
-
-//   const apdPercentages = [10, 20, 30, 40, 50, 60, 70, 80, 90];
-//   const allResults = [];
-
-//   wells.forEach((well) => {
-//     try {
-//       // Step 1: Find baseline data
-//       const baselineData = findBaseline(well.indicators[0].filteredData);
-
-//       // Step 2: Calculate peak prominence
-//       const peakProminence = calculatePeakProminence(baselineData, 0.5);
-
-//       // Step 3: Calculate window width
-//       const windowWidth = calculateWindowWidth(baselineData, peakProminence, 3);
-
-//       // Step 4: Find peaks
-//       const peaks = findPeaks(baselineData, peakProminence, windowWidth);
-
-//       // Step 5: Calculate median signal
-//       const medianSignal = calculateMedianSignal(
-//         baselineData,
-//         peaks,
-//         windowWidth
-//       );
-
-//       // Step 6: Apply median filter
-//       const filteredMedianSignal = applyMedianFilter(medianSignal, 3);
-
-//       // Step 7: Find baseline and peak
-//       const { baseline, peak } = findBaselineAndPeak(filteredMedianSignal);
-
-//       // Step 8: Calculate APD values
-//       const apdResults = calculateAPDValues(
-//         filteredMedianSignal,
-//         baseline,
-//         peak,
-//         apdPercentages
-//       );
-
-//       // Step 9: Calculate amplitude
-//       const amplitude =
-//         peak && baseline ? (peak.y - baseline.y).toFixed(2) : "Not available";
-
-//       // Step 10: Use avgPTPTime from the well object
-//       const averageTimeBetweenPeaks = well.avgPTPTime?.toFixed(2) || "N/A";
-
-//       // Store results for this well
-//       allResults.push({
-//         wellKey: well.key,
-//         baselineData,
-//         peakProminence,
-//         windowWidth,
-//         numberOfPeaks: peaks.length,
-//         averageTimeBetweenPeaks, // Include avgPTPTime here
-//         peaks,
-//         medianSignal,
-//         filteredMedianSignal,
-//         amplitude,
-//         baseline,
-//         peak,
-//         apdResults,
-//       });
-//     } catch (error) {
-//       console.error(`Error processing well ${well.key}:`, error);
-//     }
-//   });
-
-//   // Log the final results for all wells
-//   console.log("Final Results for All Wells:", allResults);
-
-//   // Return results if needed for further processing
-//   return allResults;
-// };
 export const generateCardiacReport = (wellsArray) => {
   // Access the actual array of wells
   const wells = wellsArray.allWells;
@@ -194,10 +111,10 @@ export const generateCardiacReportCSV = (wellsArray) => {
   }
 
   const headers = [
-    "wellKey",
+    "Well",
     "numberOfPeaks",
-    "amplitude",
-    "averageTimeBetweenPeaks",
+    "Amplitude",
+    "avg PTP Time",
     "APD10",
     "APD20",
     "APD30",
