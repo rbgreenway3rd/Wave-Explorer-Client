@@ -2,6 +2,9 @@ import React, { useContext, useState, useEffect } from "react";
 import BookmarkAddTwoToneIcon from "@mui/icons-material/BookmarkAddTwoTone";
 import DisabledByDefaultTwoToneIcon from "@mui/icons-material/DisabledByDefaultTwoTone";
 import DeleteForeverTwoToneIcon from "@mui/icons-material/DeleteForeverTwoTone";
+import EditIcon from "@mui/icons-material/Edit";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import { DataContext } from "../../../providers/DataProvider";
 import {
   Typography,
@@ -14,6 +17,9 @@ import {
   FormControlLabel,
   FormLabel,
 } from "@mui/material";
+import Modal from "@mui/material/Modal";
+import TextField from "@mui/material/TextField";
+import Slider from "@mui/material/Slider";
 import "./MetricsControls.css";
 
 export const MetricsControls = ({
@@ -29,12 +35,16 @@ export const MetricsControls = ({
     extractedIndicators,
     annotations,
     setAnnotations,
+    extractedIndicatorTimes,
   } = useContext(DataContext);
   const [selectedMetricType, setSelectedMetricType] = useState("Max");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [activeMetricId, setActiveMetricId] = useState(null); // Track active metric
   const [isAnimating, setIsAnimating] = useState(false);
   const [activeMetricAnnotations, setActiveMetricAnnotations] = useState(null);
+  const [spinBoxValue, setSpinBoxValue] = useState(0); // Spin box state
+  const [spinBoxStart, setSpinBoxStart] = useState(0); // Start value
+  const [spinBoxEnd, setSpinBoxEnd] = useState(0); // End value
 
   const handleMetricChange = (e) => {
     const newMetric = e.target.value;
@@ -110,6 +120,59 @@ export const MetricsControls = ({
     }
   }, [annotations, activeMetricAnnotations]); // Trigger when annotations change
 
+  // Helper to get the correct indicator times array
+  const getCurrentIndicatorTimes = () => {
+    if (Array.isArray(extractedIndicatorTimes)) {
+      return extractedIndicatorTimes;
+    } else if (
+      extractedIndicatorTimes &&
+      typeof extractedIndicatorTimes === "object" &&
+      metricIndicator !== undefined &&
+      extractedIndicators &&
+      extractedIndicators[metricIndicator]
+    ) {
+      const indicatorName = extractedIndicators[metricIndicator].indicatorName;
+      if (indicatorName && extractedIndicatorTimes[indicatorName]) {
+        return extractedIndicatorTimes[indicatorName];
+      }
+    }
+    return [];
+  };
+
+  const currentIndicatorTimes = getCurrentIndicatorTimes();
+  const sliderMin = currentIndicatorTimes[0] ?? 0;
+  const sliderMax =
+    currentIndicatorTimes[currentIndicatorTimes.length - 1] ?? 100;
+
+  // Sync spin boxes with annotation state, showing time values instead of index
+  useEffect(() => {
+    if (
+      annotations &&
+      annotations[0] &&
+      Array.isArray(currentIndicatorTimes) &&
+      currentIndicatorTimes.length > 0
+    ) {
+      // If xMin/xMax are valid indices, map to time value
+      if (typeof annotations[0].xMin === "number") {
+        const idx = annotations[0].xMin;
+        setSpinBoxStart(currentIndicatorTimes[idx] ?? 0);
+      }
+      if (typeof annotations[0].xMax === "number") {
+        const idx = annotations[0].xMax;
+        setSpinBoxEnd(currentIndicatorTimes[idx] ?? 0);
+      }
+    }
+  }, [annotations, currentIndicatorTimes]);
+
+  const sliderMarks = currentIndicatorTimes.map((time, index) => ({
+    value: index,
+    label: time.toFixed(2), // Show time value on the label
+  }));
+
+  console.log("annt", annotations);
+  console.log(currentIndicatorTimes);
+  console.log(extractedIndicatorTimes);
+  console.log("slidermin/max", sliderMin, sliderMax);
   return (
     <div className="metrics__controls-container">
       <Button
@@ -170,7 +233,12 @@ export const MetricsControls = ({
 
       <section className="saved-metrics-list-container">
         <FormLabel>
-          <Typography htmlFor="saved-metrics">Saved Metrics:</Typography>
+          <Typography
+            htmlFor="saved-metrics"
+            sx={{ fontSize: "0.75em", fontWeight: "bold" }}
+          >
+            Saved Metrics:
+          </Typography>
         </FormLabel>
         <div className="saved-metrics-list">
           {savedMetrics.length > 0 ? (
@@ -200,6 +268,7 @@ export const MetricsControls = ({
                     ? "Max-Min"
                     : metric.metricType}
                 </Typography>
+
                 <IconButton
                   size="small"
                   onClick={(e) => {
@@ -232,6 +301,616 @@ export const MetricsControls = ({
           )}
         </div>
       </section>
+
+      {/* Spin box for annotation start */}
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <TextField
+          className="metrics-controls__spinbox"
+          label="Range Start"
+          type="number"
+          variant="outlined"
+          size="small"
+          value={
+            annotations &&
+            annotations[0] &&
+            typeof annotations[0].xMin === "number" &&
+            Array.isArray(currentIndicatorTimes)
+              ? currentIndicatorTimes[annotations[0].xMin] ?? ""
+              : ""
+          }
+          onChange={(e) => {
+            const val = Number(e.target.value);
+            if (
+              Array.isArray(currentIndicatorTimes) &&
+              currentIndicatorTimes.length > 0 &&
+              annotations &&
+              annotations[0] &&
+              typeof annotations[0].xMin === "number"
+            ) {
+              const idx = annotations[0].xMin;
+              const currentVal = currentIndicatorTimes[idx];
+              // Find the index that exactly matches the entered value
+              let newIdx = currentIndicatorTimes.findIndex((t) => t === val);
+              if (newIdx !== -1) {
+                setAnnotationRangeStart(newIdx);
+                setAnnotations((prev) => {
+                  const ann =
+                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
+                  ann.xMin = newIdx;
+                  ann.xMax = typeof ann.xMax === "number" ? ann.xMax : newIdx;
+                  ann.yMin = ann.yMin ?? "Min";
+                  ann.yMax = ann.yMax ?? "Max";
+                  ann.backgroundColor =
+                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
+                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
+                  ann.borderWidth = ann.borderWidth ?? 2;
+                  return [ann];
+                });
+                return;
+              }
+              // If not found, check if the value is just above or below the current value (step arrow)
+              if (val > currentVal && idx < currentIndicatorTimes.length - 1) {
+                setAnnotationRangeStart(idx + 1);
+                setAnnotations((prev) => {
+                  const ann =
+                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
+                  ann.xMin = idx + 1;
+                  ann.xMax = typeof ann.xMax === "number" ? ann.xMax : idx + 1;
+                  ann.yMin = ann.yMin ?? "Min";
+                  ann.yMax = ann.yMax ?? "Max";
+                  ann.backgroundColor =
+                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
+                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
+                  ann.borderWidth = ann.borderWidth ?? 2;
+                  return [ann];
+                });
+                return;
+              }
+              if (val < currentVal && idx > 0) {
+                setAnnotationRangeStart(idx - 1);
+                setAnnotations((prev) => {
+                  const ann =
+                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
+                  ann.xMin = idx - 1;
+                  ann.xMax = typeof ann.xMax === "number" ? ann.xMax : idx - 1;
+                  ann.yMin = ann.yMin ?? "Min";
+                  ann.yMax = ann.yMax ?? "Max";
+                  ann.backgroundColor =
+                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
+                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
+                  ann.borderWidth = ann.borderWidth ?? 2;
+                  return [ann];
+                });
+                return;
+              }
+              // Otherwise, snap to closest
+              let closestIdx = 0;
+              let minDiff = Math.abs(currentIndicatorTimes[0] - val);
+              for (let i = 1; i < currentIndicatorTimes.length; i++) {
+                const diff = Math.abs(currentIndicatorTimes[i] - val);
+                if (diff < minDiff) {
+                  minDiff = diff;
+                  closestIdx = i;
+                }
+              }
+              setAnnotationRangeStart(closestIdx);
+              setAnnotations((prev) => {
+                const ann = prev && prev[0] ? { ...prev[0] } : { type: "box" };
+                ann.xMin = closestIdx;
+                ann.xMax = typeof ann.xMax === "number" ? ann.xMax : closestIdx;
+                ann.yMin = ann.yMin ?? "Min";
+                ann.yMax = ann.yMax ?? "Max";
+                ann.backgroundColor =
+                  ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
+                ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
+                ann.borderWidth = ann.borderWidth ?? 2;
+                return [ann];
+              });
+            }
+          }}
+          onKeyDown={(e) => {
+            if (
+              !Array.isArray(currentIndicatorTimes) ||
+              currentIndicatorTimes.length === 0
+            )
+              return;
+            let idx = 0;
+            if (
+              annotations &&
+              annotations[0] &&
+              typeof annotations[0].xMin === "number"
+            ) {
+              idx = annotations[0].xMin;
+            }
+            if (e.key === "ArrowUp") {
+              if (idx < currentIndicatorTimes.length - 1) {
+                setAnnotationRangeStart(idx + 1);
+                setAnnotations((prev) => {
+                  const ann =
+                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
+                  ann.xMin = idx + 1;
+                  ann.xMax = typeof ann.xMax === "number" ? ann.xMax : idx + 1;
+                  ann.yMin = ann.yMin ?? "Min";
+                  ann.yMax = ann.yMax ?? "Max";
+                  ann.backgroundColor =
+                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
+                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
+                  ann.borderWidth = ann.borderWidth ?? 2;
+                  return [ann];
+                });
+              }
+              e.preventDefault();
+            } else if (e.key === "ArrowDown") {
+              if (idx > 0) {
+                setAnnotationRangeStart(idx - 1);
+                setAnnotations((prev) => {
+                  const ann =
+                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
+                  ann.xMin = idx - 1;
+                  ann.xMax = typeof ann.xMax === "number" ? ann.xMax : idx - 1;
+                  ann.yMin = ann.yMin ?? "Min";
+                  ann.yMax = ann.yMax ?? "Max";
+                  ann.backgroundColor =
+                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
+                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
+                  ann.borderWidth = ann.borderWidth ?? 2;
+                  return [ann];
+                });
+              }
+              e.preventDefault();
+            }
+          }}
+          onWheel={(e) => {
+            if (
+              !Array.isArray(currentIndicatorTimes) ||
+              currentIndicatorTimes.length === 0
+            )
+              return;
+            let idx = 0;
+            if (
+              annotations &&
+              annotations[0] &&
+              typeof annotations[0].xMin === "number"
+            ) {
+              idx = annotations[0].xMin;
+            }
+            if (e.deltaY < 0) {
+              // Scroll up (next value)
+              if (idx < currentIndicatorTimes.length - 1) {
+                setAnnotationRangeStart(idx + 1);
+                setAnnotations((prev) => {
+                  const ann =
+                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
+                  ann.xMin = idx + 1;
+                  ann.xMax = typeof ann.xMax === "number" ? ann.xMax : idx + 1;
+                  ann.yMin = ann.yMin ?? "Min";
+                  ann.yMax = ann.yMax ?? "Max";
+                  ann.backgroundColor =
+                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
+                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
+                  ann.borderWidth = ann.borderWidth ?? 2;
+                  return [ann];
+                });
+              }
+            } else if (e.deltaY > 0) {
+              // Scroll down (previous value)
+              if (idx > 0) {
+                setAnnotationRangeStart(idx - 1);
+                setAnnotations((prev) => {
+                  const ann =
+                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
+                  ann.xMin = idx - 1;
+                  ann.xMax = typeof ann.xMax === "number" ? ann.xMax : idx - 1;
+                  ann.yMin = ann.yMin ?? "Min";
+                  ann.yMax = ann.yMax ?? "Max";
+                  ann.backgroundColor =
+                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
+                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
+                  ann.borderWidth = ann.borderWidth ?? 2;
+                  return [ann];
+                });
+              }
+            }
+            e.preventDefault();
+          }}
+          InputProps={{
+            sx: {
+              "& input": {
+                paddingLeft: 1,
+                paddingTop: 0.5,
+                paddingBottom: 0.2,
+              },
+            },
+            min: sliderMin,
+            max: sliderMax,
+            step: 0.001,
+          }}
+          style={{ width: 120 }}
+        />
+        {/* Custom step-by-10 arrows */}
+        <div
+          style={{ display: "flex", flexDirection: "column", marginLeft: 4 }}
+        >
+          <IconButton
+            size="small"
+            aria-label="Step up by 10"
+            onClick={() => {
+              if (
+                Array.isArray(currentIndicatorTimes) &&
+                currentIndicatorTimes.length > 0 &&
+                annotations &&
+                annotations[0] &&
+                typeof annotations[0].xMin === "number"
+              ) {
+                let idx = annotations[0].xMin;
+                let newIdx = Math.min(
+                  idx + 10,
+                  currentIndicatorTimes.length - 1
+                );
+                if (newIdx !== idx) {
+                  setAnnotationRangeStart(newIdx);
+                  setAnnotations((prev) => {
+                    const ann =
+                      prev && prev[0] ? { ...prev[0] } : { type: "box" };
+                    ann.xMin = newIdx;
+                    ann.xMax = typeof ann.xMax === "number" ? ann.xMax : newIdx;
+                    ann.yMin = ann.yMin ?? "Min";
+                    ann.yMax = ann.yMax ?? "Max";
+                    ann.backgroundColor =
+                      ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
+                    ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
+                    ann.borderWidth = ann.borderWidth ?? 2;
+                    return [ann];
+                  });
+                }
+              }
+            }}
+            style={{ padding: 2 }}
+          >
+            <KeyboardArrowUpIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            size="small"
+            aria-label="Step down by 10"
+            onClick={() => {
+              if (
+                Array.isArray(currentIndicatorTimes) &&
+                currentIndicatorTimes.length > 0 &&
+                annotations &&
+                annotations[0] &&
+                typeof annotations[0].xMin === "number"
+              ) {
+                let idx = annotations[0].xMin;
+                let newIdx = Math.max(idx - 10, 0);
+                if (newIdx !== idx) {
+                  setAnnotationRangeStart(newIdx);
+                  setAnnotations((prev) => {
+                    const ann =
+                      prev && prev[0] ? { ...prev[0] } : { type: "box" };
+                    ann.xMin = newIdx;
+                    ann.xMax = typeof ann.xMax === "number" ? ann.xMax : newIdx;
+                    ann.yMin = ann.yMin ?? "Min";
+                    ann.yMax = ann.yMax ?? "Max";
+                    ann.backgroundColor =
+                      ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
+                    ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
+                    ann.borderWidth = ann.borderWidth ?? 2;
+                    return [ann];
+                  });
+                }
+              }
+            }}
+            style={{ padding: 2 }}
+          >
+            <KeyboardArrowDownIcon fontSize="small" />
+          </IconButton>
+        </div>
+      </div>
+      {/* Spin box for annotation end */}
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <TextField
+          className="metrics-controls__spinbox"
+          label="Range End"
+          type="number"
+          variant="outlined"
+          size="small"
+          value={
+            annotations &&
+            annotations[0] &&
+            typeof annotations[0].xMax === "number" &&
+            Array.isArray(currentIndicatorTimes)
+              ? currentIndicatorTimes[annotations[0].xMax] ?? ""
+              : ""
+          }
+          onChange={(e) => {
+            const val = Number(e.target.value);
+            if (
+              Array.isArray(currentIndicatorTimes) &&
+              currentIndicatorTimes.length > 0 &&
+              annotations &&
+              annotations[0] &&
+              typeof annotations[0].xMax === "number"
+            ) {
+              const idx = annotations[0].xMax;
+              const currentVal = currentIndicatorTimes[idx];
+              // Find the index that exactly matches the entered value
+              let newIdx = currentIndicatorTimes.findIndex((t) => t === val);
+              if (newIdx !== -1) {
+                setAnnotationRangeEnd(newIdx);
+                setAnnotations((prev) => {
+                  const ann =
+                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
+                  ann.xMax = newIdx;
+                  ann.xMin = typeof ann.xMin === "number" ? ann.xMin : newIdx;
+                  ann.yMin = ann.yMin ?? "Min";
+                  ann.yMax = ann.yMax ?? "Max";
+                  ann.backgroundColor =
+                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
+                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
+                  ann.borderWidth = ann.borderWidth ?? 2;
+                  return [ann];
+                });
+                return;
+              }
+              // If not found, check if the value is just above or below the current value (step arrow)
+              if (val > currentVal && idx < currentIndicatorTimes.length - 1) {
+                setAnnotationRangeEnd(idx + 1);
+                setAnnotations((prev) => {
+                  const ann =
+                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
+                  ann.xMax = idx + 1;
+                  ann.xMin = typeof ann.xMin === "number" ? ann.xMin : idx + 1;
+                  ann.yMin = ann.yMin ?? "Min";
+                  ann.yMax = ann.yMax ?? "Max";
+                  ann.backgroundColor =
+                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
+                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
+                  ann.borderWidth = ann.borderWidth ?? 2;
+                  return [ann];
+                });
+                return;
+              }
+              if (val < currentVal && idx > 0) {
+                setAnnotationRangeEnd(idx - 1);
+                setAnnotations((prev) => {
+                  const ann =
+                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
+                  ann.xMax = idx - 1;
+                  ann.xMin = typeof ann.xMin === "number" ? ann.xMin : idx - 1;
+                  ann.yMin = ann.yMin ?? "Min";
+                  ann.yMax = ann.yMax ?? "Max";
+                  ann.backgroundColor =
+                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
+                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
+                  ann.borderWidth = ann.borderWidth ?? 2;
+                  return [ann];
+                });
+                return;
+              }
+              // Otherwise, snap to closest
+              let closestIdx = 0;
+              let minDiff = Math.abs(currentIndicatorTimes[0] - val);
+              for (let i = 1; i < currentIndicatorTimes.length; i++) {
+                const diff = Math.abs(currentIndicatorTimes[i] - val);
+                if (diff < minDiff) {
+                  minDiff = diff;
+                  closestIdx = i;
+                }
+              }
+              setAnnotationRangeEnd(closestIdx);
+              setAnnotations((prev) => {
+                const ann = prev && prev[0] ? { ...prev[0] } : { type: "box" };
+                ann.xMax = closestIdx;
+                ann.xMin = typeof ann.xMin === "number" ? ann.xMin : closestIdx;
+                ann.yMin = ann.yMin ?? "Min";
+                ann.yMax = ann.yMax ?? "Max";
+                ann.backgroundColor =
+                  ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
+                ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
+                ann.borderWidth = ann.borderWidth ?? 2;
+                return [ann];
+              });
+            }
+          }}
+          onKeyDown={(e) => {
+            if (
+              !Array.isArray(currentIndicatorTimes) ||
+              currentIndicatorTimes.length === 0
+            )
+              return;
+            let idx = 0;
+            if (
+              annotations &&
+              annotations[0] &&
+              typeof annotations[0].xMax === "number"
+            ) {
+              idx = annotations[0].xMax;
+            }
+            if (e.key === "ArrowUp") {
+              if (idx < currentIndicatorTimes.length - 1) {
+                setAnnotationRangeEnd(idx + 1);
+                setAnnotations((prev) => {
+                  const ann =
+                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
+                  ann.xMax = idx + 1;
+                  ann.xMin = typeof ann.xMin === "number" ? ann.xMin : idx + 1;
+                  ann.yMin = ann.yMin ?? "Min";
+                  ann.yMax = ann.yMax ?? "Max";
+                  ann.backgroundColor =
+                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
+                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
+                  ann.borderWidth = ann.borderWidth ?? 2;
+                  return [ann];
+                });
+              }
+              e.preventDefault();
+            } else if (e.key === "ArrowDown") {
+              if (idx > 0) {
+                setAnnotationRangeEnd(idx - 1);
+                setAnnotations((prev) => {
+                  const ann =
+                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
+                  ann.xMax = idx - 1;
+                  ann.xMin = typeof ann.xMin === "number" ? ann.xMin : idx - 1;
+                  ann.yMin = ann.yMin ?? "Min";
+                  ann.yMax = ann.yMax ?? "Max";
+                  ann.backgroundColor =
+                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
+                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
+                  ann.borderWidth = ann.borderWidth ?? 2;
+                  return [ann];
+                });
+              }
+              e.preventDefault();
+            }
+          }}
+          onWheel={(e) => {
+            if (
+              !Array.isArray(currentIndicatorTimes) ||
+              currentIndicatorTimes.length === 0
+            )
+              return;
+            let idx = 0;
+            if (
+              annotations &&
+              annotations[0] &&
+              typeof annotations[0].xMax === "number"
+            ) {
+              idx = annotations[0].xMax;
+            }
+            if (e.deltaY < 0) {
+              // Scroll up (next value)
+              if (idx < currentIndicatorTimes.length - 1) {
+                setAnnotationRangeEnd(idx + 1);
+                setAnnotations((prev) => {
+                  const ann =
+                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
+                  ann.xMax = idx + 1;
+                  ann.xMin = typeof ann.xMin === "number" ? ann.xMin : idx + 1;
+                  ann.yMin = ann.yMin ?? "Min";
+                  ann.yMax = ann.yMax ?? "Max";
+                  ann.backgroundColor =
+                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
+                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
+                  ann.borderWidth = ann.borderWidth ?? 2;
+                  return [ann];
+                });
+              }
+            } else if (e.deltaY > 0) {
+              // Scroll down (previous value)
+              if (idx > 0) {
+                setAnnotationRangeEnd(idx - 1);
+                setAnnotations((prev) => {
+                  const ann =
+                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
+                  ann.xMax = idx - 1;
+                  ann.xMin = typeof ann.xMin === "number" ? ann.xMin : idx - 1;
+                  ann.yMin = ann.yMin ?? "Min";
+                  ann.yMax = ann.yMax ?? "Max";
+                  ann.backgroundColor =
+                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
+                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
+                  ann.borderWidth = ann.borderWidth ?? 2;
+                  return [ann];
+                });
+              }
+            }
+            e.preventDefault();
+          }}
+          InputProps={{
+            sx: {
+              "& input": {
+                paddingLeft: 1,
+                paddingTop: 0.5,
+                paddingBottom: 0.2,
+              },
+            },
+            min: sliderMin,
+            max: sliderMax,
+            step: 0.001,
+          }}
+          style={{ width: 120, padding: 0 }}
+        />
+        {/* Custom step-by-10 arrows */}
+        <div
+          style={{ display: "flex", flexDirection: "column", marginLeft: 4 }}
+        >
+          <IconButton
+            size="small"
+            aria-label="Step up by 10"
+            onClick={() => {
+              if (
+                Array.isArray(currentIndicatorTimes) &&
+                currentIndicatorTimes.length > 0 &&
+                annotations &&
+                annotations[0] &&
+                typeof annotations[0].xMax === "number"
+              ) {
+                let idx = annotations[0].xMax;
+                let newIdx = Math.min(
+                  idx + 10,
+                  currentIndicatorTimes.length - 1
+                );
+                if (newIdx !== idx) {
+                  setAnnotationRangeEnd(newIdx);
+                  setAnnotations((prev) => {
+                    const ann =
+                      prev && prev[0] ? { ...prev[0] } : { type: "box" };
+                    ann.xMax = newIdx;
+                    ann.xMin = typeof ann.xMin === "number" ? ann.xMin : newIdx;
+                    ann.yMin = ann.yMin ?? "Min";
+                    ann.yMax = ann.yMax ?? "Max";
+                    ann.backgroundColor =
+                      ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
+                    ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
+                    ann.borderWidth = ann.borderWidth ?? 2;
+                    return [ann];
+                  });
+                }
+              }
+            }}
+            style={{ padding: 2 }}
+          >
+            <KeyboardArrowUpIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            size="small"
+            aria-label="Step down by 10"
+            onClick={() => {
+              if (
+                Array.isArray(currentIndicatorTimes) &&
+                currentIndicatorTimes.length > 0 &&
+                annotations &&
+                annotations[0] &&
+                typeof annotations[0].xMax === "number"
+              ) {
+                let idx = annotations[0].xMax;
+                let newIdx = Math.max(idx - 10, 0);
+                if (newIdx !== idx) {
+                  setAnnotationRangeEnd(newIdx);
+                  setAnnotations((prev) => {
+                    const ann =
+                      prev && prev[0] ? { ...prev[0] } : { type: "box" };
+                    ann.xMax = newIdx;
+                    ann.xMin = typeof ann.xMin === "number" ? ann.xMin : newIdx;
+                    ann.yMin = ann.yMin ?? "Min";
+                    ann.yMax = ann.yMax ?? "Max";
+                    ann.backgroundColor =
+                      ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
+                    ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
+                    ann.borderWidth = ann.borderWidth ?? 2;
+                    return [ann];
+                  });
+                }
+              }
+            }}
+            style={{ padding: 2 }}
+          >
+            <KeyboardArrowDownIcon fontSize="small" />
+          </IconButton>
+        </div>
+      </div>
+
       <Button
         className={`metrics-controls__reset-annotations ${
           isAnimating ? "animate-line" : ""
