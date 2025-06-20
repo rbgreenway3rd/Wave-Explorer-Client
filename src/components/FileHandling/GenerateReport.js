@@ -193,24 +193,36 @@ export const GenerateCSV = (
             const metricValues = experiment.wells.map((well) => {
               let heatmapData =
                 well.indicators[indicatorIndex]?.filteredData || [];
-              const maxYValue =
-                heatmapData.length > 0 ? d3.max(heatmapData, (d) => d.y) : 0;
-              const minYValue =
-                heatmapData.length > 0 ? d3.min(heatmapData, (d) => d.y) : 0;
-              // Only include filteredData within the annotationRange if it's set
-              if (annotationRange[0] !== null && annotationRange[1] !== null) {
+              // Only include filteredData within the annotationRange if it's set and valid
+              const isValidRange =
+                Array.isArray(annotationRange) &&
+                annotationRange.length === 2 &&
+                typeof annotationRange[0] === "number" &&
+                typeof annotationRange[1] === "number" &&
+                annotationRange[0] !== null &&
+                annotationRange[1] !== null &&
+                annotationRange[0] >= 0 &&
+                annotationRange[1] >= 0 &&
+                annotationRange[0] < heatmapData.length &&
+                annotationRange[1] < heatmapData.length;
+              if (isValidRange) {
                 heatmapData = heatmapData.filter(
                   (_, i) => i >= annotationRange[0] && i <= annotationRange[1]
                 );
               }
+              // Calculate all metrics on the filtered data (matches Heatmap.js logic)
+              const maxYValue =
+                heatmapData.length > 0 ? d3.max(heatmapData, (d) => d.y) : 0;
+              const minYValue =
+                heatmapData.length > 0 ? d3.min(heatmapData, (d) => d.y) : 0;
               if (metric.metricType === "Slope") {
-                return Number(calculateSlope(heatmapData).toFixed(2));
+                return calculateSlope(heatmapData).toFixed(5);
               } else if (metric.metricType === "Range") {
-                return Number(calculateRange(heatmapData).toFixed(2));
+                return calculateRange(heatmapData).toFixed(5);
               } else if (metric.metricType === "Max") {
-                return Number(maxYValue.toFixed(2));
+                return maxYValue.toFixed(5);
               } else if (metric.metricType === "Min") {
-                return Number(minYValue.toFixed(2));
+                return minYValue.toFixed(5);
               } else {
                 return ""; // Handler for unsupported metric types
               }

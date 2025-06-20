@@ -46,6 +46,10 @@ export const MetricsControls = ({
   const [spinBoxStart, setSpinBoxStart] = useState(0); // Start value
   const [spinBoxEnd, setSpinBoxEnd] = useState(0); // End value
 
+  // Local state for manual input
+  const [rangeStartInput, setRangeStartInput] = useState("");
+  const [rangeEndInput, setRangeEndInput] = useState("");
+
   const handleMetricChange = (e) => {
     const newMetric = e.target.value;
     setSelectedMetricType(newMetric);
@@ -310,28 +314,66 @@ export const MetricsControls = ({
           type="number"
           variant="outlined"
           size="small"
-          value={
-            annotations &&
-            annotations[0] &&
-            typeof annotations[0].xMin === "number" &&
-            Array.isArray(currentIndicatorTimes)
-              ? currentIndicatorTimes[annotations[0].xMin] ?? ""
-              : ""
-          }
-          onChange={(e) => {
-            const val = Number(e.target.value);
+          value={rangeStartInput}
+          onChange={(e) => setRangeStartInput(e.target.value)}
+          onBlur={() => {
+            const val = Number(rangeStartInput);
             if (
               Array.isArray(currentIndicatorTimes) &&
               currentIndicatorTimes.length > 0 &&
-              annotations &&
-              annotations[0] &&
-              typeof annotations[0].xMin === "number"
+              !isNaN(val)
             ) {
-              const idx = annotations[0].xMin;
-              const currentVal = currentIndicatorTimes[idx];
-              // Find the index that exactly matches the entered value
               let newIdx = currentIndicatorTimes.findIndex((t) => t === val);
-              if (newIdx !== -1) {
+              if (newIdx === -1) {
+                // Snap to closest
+                let closestIdx = 0;
+                let minDiff = Math.abs(currentIndicatorTimes[0] - val);
+                for (let i = 1; i < currentIndicatorTimes.length; i++) {
+                  const diff = Math.abs(currentIndicatorTimes[i] - val);
+                  if (diff < minDiff) {
+                    minDiff = diff;
+                    closestIdx = i;
+                  }
+                }
+                newIdx = closestIdx;
+              }
+              setAnnotationRangeStart(newIdx);
+              setAnnotations((prev) => {
+                const ann = prev && prev[0] ? { ...prev[0] } : { type: "box" };
+                ann.xMin = newIdx;
+                ann.xMax = typeof ann.xMax === "number" ? ann.xMax : newIdx;
+                ann.yMin = ann.yMin ?? "Min";
+                ann.yMax = ann.yMax ?? "Max";
+                ann.backgroundColor =
+                  ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
+                ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
+                ann.borderWidth = ann.borderWidth ?? 2;
+                return [ann];
+              });
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              const val = Number(rangeStartInput);
+              if (
+                Array.isArray(currentIndicatorTimes) &&
+                currentIndicatorTimes.length > 0 &&
+                !isNaN(val)
+              ) {
+                let newIdx = currentIndicatorTimes.findIndex((t) => t === val);
+                if (newIdx === -1) {
+                  // Snap to closest
+                  let closestIdx = 0;
+                  let minDiff = Math.abs(currentIndicatorTimes[0] - val);
+                  for (let i = 1; i < currentIndicatorTimes.length; i++) {
+                    const diff = Math.abs(currentIndicatorTimes[i] - val);
+                    if (diff < minDiff) {
+                      minDiff = diff;
+                      closestIdx = i;
+                    }
+                  }
+                  newIdx = closestIdx;
+                }
                 setAnnotationRangeStart(newIdx);
                 setAnnotations((prev) => {
                   const ann =
@@ -346,172 +388,8 @@ export const MetricsControls = ({
                   ann.borderWidth = ann.borderWidth ?? 2;
                   return [ann];
                 });
-                return;
-              }
-              // If not found, check if the value is just above or below the current value (step arrow)
-              if (val > currentVal && idx < currentIndicatorTimes.length - 1) {
-                setAnnotationRangeStart(idx + 1);
-                setAnnotations((prev) => {
-                  const ann =
-                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
-                  ann.xMin = idx + 1;
-                  ann.xMax = typeof ann.xMax === "number" ? ann.xMax : idx + 1;
-                  ann.yMin = ann.yMin ?? "Min";
-                  ann.yMax = ann.yMax ?? "Max";
-                  ann.backgroundColor =
-                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
-                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
-                  ann.borderWidth = ann.borderWidth ?? 2;
-                  return [ann];
-                });
-                return;
-              }
-              if (val < currentVal && idx > 0) {
-                setAnnotationRangeStart(idx - 1);
-                setAnnotations((prev) => {
-                  const ann =
-                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
-                  ann.xMin = idx - 1;
-                  ann.xMax = typeof ann.xMax === "number" ? ann.xMax : idx - 1;
-                  ann.yMin = ann.yMin ?? "Min";
-                  ann.yMax = ann.yMax ?? "Max";
-                  ann.backgroundColor =
-                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
-                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
-                  ann.borderWidth = ann.borderWidth ?? 2;
-                  return [ann];
-                });
-                return;
-              }
-              // Otherwise, snap to closest
-              let closestIdx = 0;
-              let minDiff = Math.abs(currentIndicatorTimes[0] - val);
-              for (let i = 1; i < currentIndicatorTimes.length; i++) {
-                const diff = Math.abs(currentIndicatorTimes[i] - val);
-                if (diff < minDiff) {
-                  minDiff = diff;
-                  closestIdx = i;
-                }
-              }
-              setAnnotationRangeStart(closestIdx);
-              setAnnotations((prev) => {
-                const ann = prev && prev[0] ? { ...prev[0] } : { type: "box" };
-                ann.xMin = closestIdx;
-                ann.xMax = typeof ann.xMax === "number" ? ann.xMax : closestIdx;
-                ann.yMin = ann.yMin ?? "Min";
-                ann.yMax = ann.yMax ?? "Max";
-                ann.backgroundColor =
-                  ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
-                ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
-                ann.borderWidth = ann.borderWidth ?? 2;
-                return [ann];
-              });
-            }
-          }}
-          onKeyDown={(e) => {
-            if (
-              !Array.isArray(currentIndicatorTimes) ||
-              currentIndicatorTimes.length === 0
-            )
-              return;
-            let idx = 0;
-            if (
-              annotations &&
-              annotations[0] &&
-              typeof annotations[0].xMin === "number"
-            ) {
-              idx = annotations[0].xMin;
-            }
-            if (e.key === "ArrowUp") {
-              if (idx < currentIndicatorTimes.length - 1) {
-                setAnnotationRangeStart(idx + 1);
-                setAnnotations((prev) => {
-                  const ann =
-                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
-                  ann.xMin = idx + 1;
-                  ann.xMax = typeof ann.xMax === "number" ? ann.xMax : idx + 1;
-                  ann.yMin = ann.yMin ?? "Min";
-                  ann.yMax = ann.yMax ?? "Max";
-                  ann.backgroundColor =
-                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
-                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
-                  ann.borderWidth = ann.borderWidth ?? 2;
-                  return [ann];
-                });
-              }
-              e.preventDefault();
-            } else if (e.key === "ArrowDown") {
-              if (idx > 0) {
-                setAnnotationRangeStart(idx - 1);
-                setAnnotations((prev) => {
-                  const ann =
-                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
-                  ann.xMin = idx - 1;
-                  ann.xMax = typeof ann.xMax === "number" ? ann.xMax : idx - 1;
-                  ann.yMin = ann.yMin ?? "Min";
-                  ann.yMax = ann.yMax ?? "Max";
-                  ann.backgroundColor =
-                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
-                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
-                  ann.borderWidth = ann.borderWidth ?? 2;
-                  return [ann];
-                });
-              }
-              e.preventDefault();
-            }
-          }}
-          onWheel={(e) => {
-            if (
-              !Array.isArray(currentIndicatorTimes) ||
-              currentIndicatorTimes.length === 0
-            )
-              return;
-            let idx = 0;
-            if (
-              annotations &&
-              annotations[0] &&
-              typeof annotations[0].xMin === "number"
-            ) {
-              idx = annotations[0].xMin;
-            }
-            if (e.deltaY < 0) {
-              // Scroll up (next value)
-              if (idx < currentIndicatorTimes.length - 1) {
-                setAnnotationRangeStart(idx + 1);
-                setAnnotations((prev) => {
-                  const ann =
-                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
-                  ann.xMin = idx + 1;
-                  ann.xMax = typeof ann.xMax === "number" ? ann.xMax : idx + 1;
-                  ann.yMin = ann.yMin ?? "Min";
-                  ann.yMax = ann.yMax ?? "Max";
-                  ann.backgroundColor =
-                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
-                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
-                  ann.borderWidth = ann.borderWidth ?? 2;
-                  return [ann];
-                });
-              }
-            } else if (e.deltaY > 0) {
-              // Scroll down (previous value)
-              if (idx > 0) {
-                setAnnotationRangeStart(idx - 1);
-                setAnnotations((prev) => {
-                  const ann =
-                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
-                  ann.xMin = idx - 1;
-                  ann.xMax = typeof ann.xMax === "number" ? ann.xMax : idx - 1;
-                  ann.yMin = ann.yMin ?? "Min";
-                  ann.yMax = ann.yMax ?? "Max";
-                  ann.backgroundColor =
-                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
-                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
-                  ann.borderWidth = ann.borderWidth ?? 2;
-                  return [ann];
-                });
               }
             }
-            e.preventDefault();
           }}
           InputProps={{
             sx: {
@@ -531,7 +409,9 @@ export const MetricsControls = ({
           style={{ fontSize: "0.55em" }}
         />
         {/* Custom step-by-10 arrows */}
-        <div style={{ display: "flex", flexDirection: "column" }}>
+        <div
+          style={{ display: "flex", flexDirection: "column", width: "auto" }}
+        >
           <IconButton
             size="small"
             aria-label="Step up by 10"
@@ -568,7 +448,8 @@ export const MetricsControls = ({
             }}
             style={{ padding: 2 }}
           >
-            <KeyboardArrowUpIcon fontSize="small" />
+            {/* <KeyboardArrowUpIcon fontSize="small" /> */}
+            <KeyboardArrowUpIcon sx={{ fontSize: "0.8em" }} />
           </IconButton>
           <IconButton
             size="small"
@@ -603,40 +484,79 @@ export const MetricsControls = ({
             }}
             style={{ padding: 2 }}
           >
-            <KeyboardArrowDownIcon fontSize="small" />
+            {/* <KeyboardArrowDownIcon fontSize="small" /> */}
+            <KeyboardArrowDownIcon sx={{ fontSize: "0.8em" }} />
           </IconButton>
         </div>
       </div>
       {/* Spin box for annotation end */}
-      <div style={{ display: "flex", alignItems: "center" }}>
+      <div style={{ display: "flex", alignItems: "center", width: "auto" }}>
         <TextField
           className="metrics-controls__spinbox"
           label="Range End"
           type="number"
           variant="outlined"
           size="small"
-          value={
-            annotations &&
-            annotations[0] &&
-            typeof annotations[0].xMax === "number" &&
-            Array.isArray(currentIndicatorTimes)
-              ? currentIndicatorTimes[annotations[0].xMax] ?? ""
-              : ""
-          }
-          onChange={(e) => {
-            const val = Number(e.target.value);
+          value={rangeEndInput}
+          onChange={(e) => setRangeEndInput(e.target.value)}
+          onBlur={() => {
+            const val = Number(rangeEndInput);
             if (
               Array.isArray(currentIndicatorTimes) &&
               currentIndicatorTimes.length > 0 &&
-              annotations &&
-              annotations[0] &&
-              typeof annotations[0].xMax === "number"
+              !isNaN(val)
             ) {
-              const idx = annotations[0].xMax;
-              const currentVal = currentIndicatorTimes[idx];
-              // Find the index that exactly matches the entered value
               let newIdx = currentIndicatorTimes.findIndex((t) => t === val);
-              if (newIdx !== -1) {
+              if (newIdx === -1) {
+                // Snap to closest
+                let closestIdx = 0;
+                let minDiff = Math.abs(currentIndicatorTimes[0] - val);
+                for (let i = 1; i < currentIndicatorTimes.length; i++) {
+                  const diff = Math.abs(currentIndicatorTimes[i] - val);
+                  if (diff < minDiff) {
+                    minDiff = diff;
+                    closestIdx = i;
+                  }
+                }
+                newIdx = closestIdx;
+              }
+              setAnnotationRangeEnd(newIdx);
+              setAnnotations((prev) => {
+                const ann = prev && prev[0] ? { ...prev[0] } : { type: "box" };
+                ann.xMax = newIdx;
+                ann.xMin = typeof ann.xMin === "number" ? ann.xMin : newIdx;
+                ann.yMin = ann.yMin ?? "Min";
+                ann.yMax = ann.yMax ?? "Max";
+                ann.backgroundColor =
+                  ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
+                ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
+                ann.borderWidth = ann.borderWidth ?? 2;
+                return [ann];
+              });
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              const val = Number(rangeEndInput);
+              if (
+                Array.isArray(currentIndicatorTimes) &&
+                currentIndicatorTimes.length > 0 &&
+                !isNaN(val)
+              ) {
+                let newIdx = currentIndicatorTimes.findIndex((t) => t === val);
+                if (newIdx === -1) {
+                  // Snap to closest
+                  let closestIdx = 0;
+                  let minDiff = Math.abs(currentIndicatorTimes[0] - val);
+                  for (let i = 1; i < currentIndicatorTimes.length; i++) {
+                    const diff = Math.abs(currentIndicatorTimes[i] - val);
+                    if (diff < minDiff) {
+                      minDiff = diff;
+                      closestIdx = i;
+                    }
+                  }
+                  newIdx = closestIdx;
+                }
                 setAnnotationRangeEnd(newIdx);
                 setAnnotations((prev) => {
                   const ann =
@@ -651,179 +571,16 @@ export const MetricsControls = ({
                   ann.borderWidth = ann.borderWidth ?? 2;
                   return [ann];
                 });
-                return;
-              }
-              // If not found, check if the value is just above or below the current value (step arrow)
-              if (val > currentVal && idx < currentIndicatorTimes.length - 1) {
-                setAnnotationRangeEnd(idx + 1);
-                setAnnotations((prev) => {
-                  const ann =
-                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
-                  ann.xMax = idx + 1;
-                  ann.xMin = typeof ann.xMin === "number" ? ann.xMin : idx + 1;
-                  ann.yMin = ann.yMin ?? "Min";
-                  ann.yMax = ann.yMax ?? "Max";
-                  ann.backgroundColor =
-                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
-                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
-                  ann.borderWidth = ann.borderWidth ?? 2;
-                  return [ann];
-                });
-                return;
-              }
-              if (val < currentVal && idx > 0) {
-                setAnnotationRangeEnd(idx - 1);
-                setAnnotations((prev) => {
-                  const ann =
-                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
-                  ann.xMax = idx - 1;
-                  ann.xMin = typeof ann.xMin === "number" ? ann.xMin : idx - 1;
-                  ann.yMin = ann.yMin ?? "Min";
-                  ann.yMax = ann.yMax ?? "Max";
-                  ann.backgroundColor =
-                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
-                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
-                  ann.borderWidth = ann.borderWidth ?? 2;
-                  return [ann];
-                });
-                return;
-              }
-              // Otherwise, snap to closest
-              let closestIdx = 0;
-              let minDiff = Math.abs(currentIndicatorTimes[0] - val);
-              for (let i = 1; i < currentIndicatorTimes.length; i++) {
-                const diff = Math.abs(currentIndicatorTimes[i] - val);
-                if (diff < minDiff) {
-                  minDiff = diff;
-                  closestIdx = i;
-                }
-              }
-              setAnnotationRangeEnd(closestIdx);
-              setAnnotations((prev) => {
-                const ann = prev && prev[0] ? { ...prev[0] } : { type: "box" };
-                ann.xMax = closestIdx;
-                ann.xMin = typeof ann.xMin === "number" ? ann.xMin : closestIdx;
-                ann.yMin = ann.yMin ?? "Min";
-                ann.yMax = ann.yMax ?? "Max";
-                ann.backgroundColor =
-                  ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
-                ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
-                ann.borderWidth = ann.borderWidth ?? 2;
-                return [ann];
-              });
-            }
-          }}
-          onKeyDown={(e) => {
-            if (
-              !Array.isArray(currentIndicatorTimes) ||
-              currentIndicatorTimes.length === 0
-            )
-              return;
-            let idx = 0;
-            if (
-              annotations &&
-              annotations[0] &&
-              typeof annotations[0].xMax === "number"
-            ) {
-              idx = annotations[0].xMax;
-            }
-            if (e.key === "ArrowUp") {
-              if (idx < currentIndicatorTimes.length - 1) {
-                setAnnotationRangeEnd(idx + 1);
-                setAnnotations((prev) => {
-                  const ann =
-                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
-                  ann.xMax = idx + 1;
-                  ann.xMin = typeof ann.xMin === "number" ? ann.xMin : idx + 1;
-                  ann.yMin = ann.yMin ?? "Min";
-                  ann.yMax = ann.yMax ?? "Max";
-                  ann.backgroundColor =
-                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
-                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
-                  ann.borderWidth = ann.borderWidth ?? 2;
-                  return [ann];
-                });
-              }
-              e.preventDefault();
-            } else if (e.key === "ArrowDown") {
-              if (idx > 0) {
-                setAnnotationRangeEnd(idx - 1);
-                setAnnotations((prev) => {
-                  const ann =
-                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
-                  ann.xMax = idx - 1;
-                  ann.xMin = typeof ann.xMin === "number" ? ann.xMin : idx - 1;
-                  ann.yMin = ann.yMin ?? "Min";
-                  ann.yMax = ann.yMax ?? "Max";
-                  ann.backgroundColor =
-                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
-                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
-                  ann.borderWidth = ann.borderWidth ?? 2;
-                  return [ann];
-                });
-              }
-              e.preventDefault();
-            }
-          }}
-          onWheel={(e) => {
-            if (
-              !Array.isArray(currentIndicatorTimes) ||
-              currentIndicatorTimes.length === 0
-            )
-              return;
-            let idx = 0;
-            if (
-              annotations &&
-              annotations[0] &&
-              typeof annotations[0].xMax === "number"
-            ) {
-              idx = annotations[0].xMax;
-            }
-            if (e.deltaY < 0) {
-              // Scroll up (next value)
-              if (idx < currentIndicatorTimes.length - 1) {
-                setAnnotationRangeEnd(idx + 1);
-                setAnnotations((prev) => {
-                  const ann =
-                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
-                  ann.xMax = idx + 1;
-                  ann.xMin = typeof ann.xMin === "number" ? ann.xMin : idx + 1;
-                  ann.yMin = ann.yMin ?? "Min";
-                  ann.yMax = ann.yMax ?? "Max";
-                  ann.backgroundColor =
-                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
-                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
-                  ann.borderWidth = ann.borderWidth ?? 2;
-                  return [ann];
-                });
-              }
-            } else if (e.deltaY > 0) {
-              // Scroll down (previous value)
-              if (idx > 0) {
-                setAnnotationRangeEnd(idx - 1);
-                setAnnotations((prev) => {
-                  const ann =
-                    prev && prev[0] ? { ...prev[0] } : { type: "box" };
-                  ann.xMax = idx - 1;
-                  ann.xMin = typeof ann.xMin === "number" ? ann.xMin : idx - 1;
-                  ann.yMin = ann.yMin ?? "Min";
-                  ann.yMax = ann.yMax ?? "Max";
-                  ann.backgroundColor =
-                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
-                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
-                  ann.borderWidth = ann.borderWidth ?? 2;
-                  return [ann];
-                });
               }
             }
-            e.preventDefault();
           }}
           InputProps={{
             sx: {
               "& input": {
-                paddingLeft: 1,
-                paddingTop: 0.5,
-                paddingBottom: 0.2,
+                // paddingLeft: 1,
+                // paddingTop: 0.5,
+                // paddingBottom: 0.2,
+                padding: 0,
               },
             },
             min: sliderMin,
@@ -835,7 +592,7 @@ export const MetricsControls = ({
         />
         {/* Custom step-by-10 arrows */}
         <div
-          style={{ display: "flex", flexDirection: "column", marginLeft: 4 }}
+          style={{ display: "flex", flexDirection: "column", width: "auto" }}
         >
           <IconButton
             size="small"
@@ -873,7 +630,8 @@ export const MetricsControls = ({
             }}
             style={{ padding: 2 }}
           >
-            <KeyboardArrowUpIcon fontSize="small" />
+            {/* <KeyboardArrowUpIcon fontSize="small" /> */}
+            <KeyboardArrowUpIcon sx={{ fontSize: "0.8em" }} />
           </IconButton>
           <IconButton
             size="small"
@@ -908,7 +666,8 @@ export const MetricsControls = ({
             }}
             style={{ padding: 2 }}
           >
-            <KeyboardArrowDownIcon fontSize="small" />
+            {/* <KeyboardArrowDownIcon fontSize="small" /> */}
+            <KeyboardArrowDownIcon sx={{ fontSize: "0.8em" }} />
           </IconButton>
         </div>
       </div>

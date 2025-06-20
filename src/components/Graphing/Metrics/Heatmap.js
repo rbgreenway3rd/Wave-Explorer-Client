@@ -12,7 +12,8 @@ import {
 import "./Heatmap.css";
 
 const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
-  const { wellArrays, annotations } = useContext(DataContext);
+  const { wellArrays, annotations, selectedWellArray } =
+    useContext(DataContext);
 
   const heatmapRef = useRef(null);
   const colorScaleRef = useRef(null); // Canvas for color scale
@@ -36,6 +37,8 @@ const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
     label: "",
     value: "",
   });
+
+  console.log(selectedWellArray);
 
   const numColumns = columnLabels.length;
   const numRows = rowLabels.length;
@@ -369,8 +372,12 @@ const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
         cellHeight
       );
 
-      context.strokeStyle = "black";
-      context.lineWidth = 1;
+      // Outline selected wells in white
+      const isSelected =
+        selectedWellArray &&
+        selectedWellArray.some((sel) => sel.label === well.label);
+      context.strokeStyle = isSelected ? "white" : "black";
+      context.lineWidth = isSelected ? 3 : 1;
       context.strokeRect(
         col * cellWidth,
         row * cellHeight,
