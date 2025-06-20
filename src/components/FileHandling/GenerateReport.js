@@ -78,7 +78,8 @@ export const GenerateCSV = (
           for (let i = 0; i < numTimePoints; i++) {
             // Convert time from microseconds to milliseconds (e.g., 352 to 0.352)
             const timeInMilliseconds =
-              experiment.wells[0].indicators[indicatorIndex].time[i] / 1000;
+              // experiment.wells[0].indicators[indicatorIndex].time[i] / 1000;
+              experiment.wells[0].indicators[indicatorIndex].time[i];
 
             // Start with converted time for the row
             const row = [timeInMilliseconds];
@@ -141,7 +142,8 @@ export const GenerateCSV = (
           for (let i = 0; i < numTimePoints; i++) {
             // Start with converted time for the row (same as before)
             const timeInMilliseconds =
-              experiment.wells[0].indicators[indicatorIndex].time[i] / 1000;
+              // experiment.wells[0].indicators[indicatorIndex].time[i] / 1000;
+              experiment.wells[0].indicators[indicatorIndex].time[i];
 
             // Start with converted time for the row
             const row = [timeInMilliseconds];
@@ -157,6 +159,10 @@ export const GenerateCSV = (
           // Close the <FILTERED_DATA> tag
           indicatorData.push("</FILTERED_DATA>");
         }
+        console.log("Saved Metrics:", savedMetrics);
+        savedMetrics.forEach((metric) => {
+          console.log("Metric:", metric);
+        });
 
         // Saved Metrics section
         if (includeSavedMetrics && savedMetrics.length > 0) {
@@ -170,11 +176,13 @@ export const GenerateCSV = (
             // Convert annotation range indices to corresponding time values in milliseconds
             const timeArray =
               experiment.wells[0].indicators[indicatorIndex].time;
-            const startTime = timeArray[annotationRange[0]] / 1000; // Start time in ms
-            const endTime = timeArray[annotationRange[1]] / 1000; // End time in ms
+            // const startTime = timeArray[annotationRange[0]] / 1000; // Start time in ms
+            // const endTime = timeArray[annotationRange[1]] / 1000; // End time in ms
+            const startTime = timeArray[annotationRange[0]]; // Start time in ms
+            const endTime = timeArray[annotationRange[1]]; // End time in ms
 
             // Update the metricHeader to use time values
-            const metricHeader = `${metric.metricType} (from ${startTime} ms to ${endTime} ms)`;
+            const metricHeader = `${metric.metricType} (Time: from ${startTime} to ${endTime})`;
 
             // Add header for this metric type, including well labels row
             indicatorData.push(`<${metricHeader}>`);
@@ -195,16 +203,14 @@ export const GenerateCSV = (
                   (_, i) => i >= annotationRange[0] && i <= annotationRange[1]
                 );
               }
-              if (metric.metricType === "slope") {
-                return calculateSlope(heatmapData);
-              } else if (metric.metricType === "rangeOfYValues") {
-                return calculateRange(heatmapData);
-              } else if (metric.metricType === "maxYValue") {
-                // return Math.max(heatmapData, (d) => d.y);
-                return maxYValue;
-              } else if (metric.metricType === "minYValue") {
-                // return Math.min(heatmapData, (d) => d.y);
-                return minYValue;
+              if (metric.metricType === "Slope") {
+                return Number(calculateSlope(heatmapData).toFixed(2));
+              } else if (metric.metricType === "Range") {
+                return Number(calculateRange(heatmapData).toFixed(2));
+              } else if (metric.metricType === "Max") {
+                return Number(maxYValue.toFixed(2));
+              } else if (metric.metricType === "Min") {
+                return Number(minYValue.toFixed(2));
               } else {
                 return ""; // Handler for unsupported metric types
               }

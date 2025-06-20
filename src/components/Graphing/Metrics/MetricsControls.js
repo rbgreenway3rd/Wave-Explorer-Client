@@ -516,21 +516,22 @@ export const MetricsControls = ({
           InputProps={{
             sx: {
               "& input": {
-                paddingLeft: 1,
-                paddingTop: 0.5,
-                paddingBottom: 0.2,
+                // paddingLeft: 1,
+                // paddingTop: 0.5,
+                // paddingBottom: 0.2,
+                padding: 0,
+                display: "flex",
+                justifyContent: "center",
               },
             },
             min: sliderMin,
             max: sliderMax,
             step: 0.001,
           }}
-          style={{ width: 120 }}
+          style={{ fontSize: "0.55em" }}
         />
         {/* Custom step-by-10 arrows */}
-        <div
-          style={{ display: "flex", flexDirection: "column", marginLeft: 4 }}
-        >
+        <div style={{ display: "flex", flexDirection: "column" }}>
           <IconButton
             size="small"
             aria-label="Step up by 10"
@@ -829,7 +830,8 @@ export const MetricsControls = ({
             max: sliderMax,
             step: 0.001,
           }}
-          style={{ width: 120, padding: 0 }}
+          // style={{ width: 120, padding: 0 }}
+          style={{ padding: 0, fontSize: "0.5em" }}
         />
         {/* Custom step-by-10 arrows */}
         <div
