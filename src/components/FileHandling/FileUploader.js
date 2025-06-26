@@ -341,7 +341,7 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
         await handleDatFileSelect(file);
       }
     }
-    console.log(project);
+    // console.log(project);
     handleMainMenuClose();
   };
 

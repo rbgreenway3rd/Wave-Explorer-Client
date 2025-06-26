@@ -54,14 +54,12 @@ export const getAllValues = (wellArrays, annotationRange, metricIndicator) => {
 export const getAllSlopes = (wellArrays, annotationRange, metricIndicator) => {
   return wellArrays.flatMap((well) => {
     let heatmapData = well.indicators[metricIndicator]?.filteredData || [];
-    // console.log(heatmapData);
+
     if (annotationRange.start !== null && annotationRange.end !== null) {
       heatmapData = heatmapData.filter(
         (_, i) => i >= annotationRange.start && i <= annotationRange.end
       );
     }
-    // console.log(heatmapData);
-
     return calculateSlope(heatmapData);
   });
 };

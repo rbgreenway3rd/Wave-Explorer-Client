@@ -310,7 +310,7 @@ export const MetricsControls = ({
       <div style={{ display: "flex", alignItems: "center" }}>
         <TextField
           className="metrics-controls__spinbox"
-          label="Range Start"
+          label="Start"
           type="number"
           variant="outlined"
           size="small"
@@ -493,7 +493,7 @@ export const MetricsControls = ({
       <div style={{ display: "flex", alignItems: "center", width: "auto" }}>
         <TextField
           className="metrics-controls__spinbox"
-          label="Range End"
+          label="End"
           type="number"
           variant="outlined"
           size="small"

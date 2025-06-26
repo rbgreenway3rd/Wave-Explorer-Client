@@ -38,7 +38,7 @@ const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
     value: "",
   });
 
-  console.log(selectedWellArray);
+  // console.log(selectedWellArray);
 
   const numColumns = columnLabels.length;
   const numRows = rowLabels.length;
@@ -164,7 +164,7 @@ const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
 
     setMinMin(d3.min(minValues));
     setMaxMin(d3.max(minValues));
-    console.log(d3.min(minValues), d3.max(minValues));
+    // console.log(d3.min(minValues), d3.max(minValues));
   }, [wellArrays, metricIndicator, annotationRange]);
 
   const colorScale = useMemo(() => {
@@ -336,6 +336,7 @@ const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
 
     let newColors = [];
 
+    // First pass: draw all cells and their default borders
     wellArrays.forEach((well, i) => {
       const row = Math.floor(i / numColumns);
       const col = i % numColumns;
@@ -372,12 +373,9 @@ const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
         cellHeight
       );
 
-      // Outline selected wells in white
-      const isSelected =
-        selectedWellArray &&
-        selectedWellArray.some((sel) => sel.label === well.label);
-      context.strokeStyle = isSelected ? "white" : "black";
-      context.lineWidth = isSelected ? 3 : 1;
+      // Draw default border (black, thin)
+      context.strokeStyle = "black";
+      context.lineWidth = 1;
       context.strokeRect(
         col * cellWidth,
         row * cellHeight,
@@ -395,6 +393,25 @@ const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
       context.fillText(well.label || "", textX, textY);
     });
 
+    // Second pass: draw white borders for selected wells on top
+    if (selectedWellArray && selectedWellArray.length > 0) {
+      selectedWellArray.forEach((sel) => {
+        const index = wellArrays.findIndex((well) => well.label === sel.label);
+        if (index !== -1) {
+          const row = Math.floor(index / numColumns);
+          const col = index % numColumns;
+          context.strokeStyle = "white";
+          context.lineWidth = 3;
+          context.strokeRect(
+            col * cellWidth,
+            row * cellHeight,
+            cellWidth,
+            cellHeight
+          );
+        }
+      });
+    }
+
     setCurrentCellColors((prevColors) => {
       if (
         prevColors.length === newColors.length &&
@@ -402,7 +419,6 @@ const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
       ) {
         return prevColors; // No change, prevent update
       }
-      // console.log(newColors);
       return newColors; // Update only if different
     });
   }, [
@@ -413,9 +429,8 @@ const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
     numRows,
     annotationRange,
     metricType,
-    // colorScale,
     metricIndicator,
-    // currentCellColors,
+    selectedWellArray,
   ]);
 
   // Helper function to compare arrays
