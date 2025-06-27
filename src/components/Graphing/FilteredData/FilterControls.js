@@ -31,6 +31,7 @@ import {
   InsightsTwoTone,
 } from "@mui/icons-material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import InsightsIcon from "@mui/icons-material/Insights";
 import { React, useState, useEffect, useContext } from "react";
 import { SmoothingFilterModal } from "./ParameterModals/SmoothingModal";
 import { StaticRatioModal } from "./ParameterModals/StaticRatioModal";
@@ -61,6 +62,7 @@ export const FilterControls = ({
   largeCanvasHeight,
   smallCanvasWidth,
   smallCanvasHeight,
+  handleResetFilteredData,
 }) => {
   const {
     wellArrays,
@@ -558,7 +560,7 @@ export const FilterControls = ({
           color="primary"
           onClick={applyEnabledFilters}
         >
-          <RefreshTwoToneIcon />
+          <InsightsIcon sx={{ paddingLeft: "0.2em" }} />
           Apply Filters
         </Button>
       </Tooltip>
@@ -739,6 +741,22 @@ export const FilterControls = ({
           </Typography>
         )}
       </section>
+      <Tooltip
+        title="Resets Filtered Data to match Raw Data"
+        arrow
+        placement="top"
+        disableInteractive
+      >
+        <Button
+          className="filter-controls__apply-button"
+          variant="contained"
+          color="primary"
+          onClick={handleResetFilteredData}
+        >
+          <RefreshTwoToneIcon />
+          Reset Data
+        </Button>
+      </Tooltip>
 
       {/* Modal for Filter Selection */}
       <Modal

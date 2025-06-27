@@ -174,6 +174,7 @@ export const CombinedComponent = () => {
     setIsApplyingFilters(true); // Move this to the very start
     setIsLoadingFilterResults(true);
     console.log("Applying filters started...");
+    console.log("filters: ", selectedFilters);
     setTimeout(async () => {
       try {
         const updatedWellArrays = wellArrays.map((well) => ({
@@ -218,6 +219,44 @@ export const CombinedComponent = () => {
         setIsLoadingFilterResults(false);
       }
     }, 0);
+  };
+
+  const handleResetFilteredData = () => {
+    if (!wellArrays || !wellArrays.length) return;
+
+    // Deep copy wells and reset filteredData
+    const resetWellArrays = wellArrays.map((well) => ({
+      ...well,
+      indicators: well.indicators.map((indicator) => ({
+        ...indicator,
+        filteredData: indicator.rawData.map((point) => ({ ...point })),
+      })),
+    }));
+
+    // Update project
+    if (typeof setProject === "function" && project) {
+      const updatedProject = {
+        ...project,
+        plate: project.plate.map((plate) => ({
+          ...plate,
+          experiments: plate.experiments.map((experiment) => ({
+            ...experiment,
+            wells: resetWellArrays,
+          })),
+        })),
+      };
+      setProject(updatedProject);
+    }
+
+    // Update selectedWellArray
+    if (typeof setSelectedWellArray === "function" && selectedWellArray) {
+      const updatedSelectedWellArray = selectedWellArray.map(
+        (selectedWell) =>
+          resetWellArrays.find((well) => well.id === selectedWell.id) ||
+          selectedWell
+      );
+      setSelectedWellArray(updatedSelectedWellArray);
+    }
   };
 
   const handleToggleVisibility = (indicatorId) => {
@@ -574,6 +613,7 @@ export const CombinedComponent = () => {
                   // setAnnotations={setAnnotations}
                   setAnnotationRangeStart={setAnnotationRangeStart}
                   setAnnotationRangeEnd={setAnnotationRangeEnd}
+                  handleResetFilteredData={handleResetFilteredData}
                 />
               </div>
             </section>

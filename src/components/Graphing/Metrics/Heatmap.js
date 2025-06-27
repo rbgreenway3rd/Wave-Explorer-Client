@@ -521,7 +521,7 @@ const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
           <div>
             <strong>{tooltip.label}</strong>
           </div>
-          <div>{tooltip.value.toFixed(5)}</div>
+          <div>{tooltip.value.toFixed(2)}</div>
         </div>
       )}
     </>
