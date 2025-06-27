@@ -239,7 +239,31 @@ export const FilterControls = ({
     } else if (editModalType === "outlierRemovalFilter") {
       currentFilter.setParams(halfWindow, threshold);
     } else if (editModalType === "flatFieldCorrectionFilter") {
-      currentFilter.setParams(correctionMatrix);
+      // param1 is the correctionMatrix from the modal
+      setSelectedFilters((prevFilters) =>
+        prevFilters.map((f) => {
+          if (f.id === currentFilter.id) {
+            const updated = Object.create(Object.getPrototypeOf(f));
+            Object.assign(updated, f, {
+              correctionMatrix: Array.isArray(param1) ? [...param1] : [],
+            });
+            return updated;
+          }
+          return f;
+        })
+      );
+      setEnabledFilters((prevFilters) =>
+        prevFilters.map((f) => {
+          if (f.id === currentFilter.id) {
+            const updated = Object.create(Object.getPrototypeOf(f));
+            Object.assign(updated, f, {
+              correctionMatrix: Array.isArray(param1) ? [...param1] : [],
+            });
+            return updated;
+          }
+          return f;
+        })
+      );
     } else if (editModalType === "dynamicRatioFilter") {
       currentFilter.setParams(numerator, denominator);
     }
@@ -250,32 +274,6 @@ export const FilterControls = ({
     console.log("Updated selectedFilters: ", selectedFilters);
   }, [selectedFilters]);
 
-  // const handleCheckboxChange = (filter) => {
-  //   // Toggle the isEnabled value directly on the instance
-  //   filter.setEnabled(!filter.isEnabled);
-
-  //   // Update selectedFilters immutably
-  //   const updatedSelectedFilters = selectedFilters.map((f) =>
-  //     f.id === filter.id ? filter : f
-  //   );
-
-  //   setSelectedFilters(updatedSelectedFilters);
-
-  //   // Update enabledFilters based on isEnabled
-  //   if (filter.isEnabled) {
-  //     setEnabledFilters((prevEnabledFilters) => [
-  //       ...prevEnabledFilters,
-  //       filter,
-  //     ]);
-  //   } else {
-  //     setEnabledFilters((prevEnabledFilters) =>
-  //       prevEnabledFilters.filter((f) => f.id !== filter.id)
-  //     );
-  //   }
-
-  //   console.log(filter);
-  //   // console.log("enabledFilters: ", enabledFilters);
-  // };
   const handleCheckboxChange = (filter) => {
     // Check if the filter is "Flat Field Correction" and if the correctionMatrix is empty
     if (

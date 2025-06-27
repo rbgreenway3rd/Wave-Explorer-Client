@@ -17,7 +17,7 @@ export class StaticRatio_Filter {
   editParams() {
     console.log("edit params clicked");
     if (this.onEdit) {
-      this.onEdit(this.start, this.end, this.setParams.bind(this)); // Open the modal and pass the setter callback
+      this.onEdit(this.start, this.end, this.setParams.bind(this), this); // Pass 'this' as filter
     }
   }
 
@@ -142,7 +142,12 @@ export class Smoothing_Filter {
 
   editParams() {
     if (this.onEdit) {
-      this.onEdit(this.windowWidth, this.useMedian, this.setParams.bind(this)); // Pass the setter callback
+      this.onEdit(
+        this.windowWidth,
+        this.useMedian,
+        this.setParams.bind(this),
+        this
+      ); // Pass 'this' as filter
     }
     console.log("Window width updated to:" + this.windowWidth);
   }
@@ -402,7 +407,12 @@ export class OutlierRemoval_Filter {
 
   editParams() {
     if (this.onEdit) {
-      this.onEdit(this.halfWindow, this.threshold, this.setParams.bind(this)); // Open the modal and pass the setter callback
+      this.onEdit(
+        this.halfWindow,
+        this.threshold,
+        this.setParams.bind(this),
+        this
+      ); // Pass 'this' as filter
     }
   }
 
@@ -501,7 +511,7 @@ export class FlatFieldCorrection_Filter {
 
   editParams() {
     if (this.onEdit) {
-      this.onEdit(this.correctionMatrix, this.setParams.bind(this)); // Open the modal and pass the setter callback
+      this.onEdit(this.correctionMatrix, this.setParams.bind(this), this); // Pass 'this' as filter
     }
   }
 
@@ -546,7 +556,12 @@ export class DynamicRatio_Filter {
 
   editParams() {
     if (this.onEdit) {
-      this.onEdit(this.numerator, this.denominator, this.setParams.bind(this));
+      this.onEdit(
+        this.numerator,
+        this.denominator,
+        this.setParams.bind(this),
+        this
+      ); // Pass 'this' as filter
     }
   }
 

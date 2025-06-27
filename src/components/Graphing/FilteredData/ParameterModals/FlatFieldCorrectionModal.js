@@ -46,11 +46,10 @@ export const FlatFieldCorrectionModal = ({
   useEffect(() => {
     // Trigger onSave and onClose only if matrix is set and upload completed
     if (isUploaded && correctionMatrix && correctionMatrix.length > 0) {
-      onSave();
-      onClose();
+      onSave(correctionMatrix); // Pass the matrix to parent
       setIsUploaded(false); // Reset flag for next upload
     }
-  }, [isUploaded, correctionMatrix, onSave, onClose]);
+  }, [isUploaded, correctionMatrix, onSave]);
 
   return (
     <Dialog open={open} onClose={onClose}>
