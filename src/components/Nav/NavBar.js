@@ -20,11 +20,17 @@ import {
 } from "@mui/icons-material";
 import HelpTwoToneIcon from "@mui/icons-material/HelpTwoTone";
 import { handleScreenshot } from "../../utilities/Handlers";
+import { supabase } from "../../supabaseClient";
 
 export const NavBar = ({ combinedComponentRef }) => {
   const { project } = useContext(DataContext);
   const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
   const [file, setFile] = useState(null); // State to store the uploaded file
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    window.location.reload();
+  };
 
   return (
     <header className="navbar-container">
@@ -93,6 +99,11 @@ export const NavBar = ({ combinedComponentRef }) => {
           className="wave-explorer-icon"
         />{" "}
         <h1 className="logo">aveExplorer</h1>
+        <Tooltip title="Sign Out" arrow>
+          <IconButton onClick={handleSignOut} color="error">
+            <span style={{ fontWeight: 600 }}>Sign Out</span>
+          </IconButton>
+        </Tooltip>
       </section>
     </header>
   );

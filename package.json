@@ -1,5 +1,5 @@
 {
-  "homepage": "https://rbgreenway3rd.github.io/Wave-Explorer-Client",
+  "homepage": ".",
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
@@ -12,6 +12,7 @@
     "@mui/material": "^6.1.6",
     "@mui/styles": "^6.4.6",
     "@mui/system": "^6.1.6",
+    "@supabase/supabase-js": "^2.51.0",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
