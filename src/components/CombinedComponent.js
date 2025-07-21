@@ -27,16 +27,17 @@ import annotationPlugin from "chartjs-plugin-annotation";
 import zoomPlugin from "chartjs-plugin-zoom";
 import { ControlSubtraction_Filter } from "./Graphing/FilteredData/FilterModels.js";
 import html2canvas from "html2canvas";
-import { IconButton, Tooltip, Typography } from "@mui/material";
+import { IconButton, Tooltip, Typography, Button } from "@mui/material";
 import { AddAPhotoTwoTone } from "@mui/icons-material";
 import AddAPhotoTwoToneIcon from "@mui/icons-material/AddAPhotoTwoTone";
 import { motion } from "framer-motion";
+import { PERMISSIONS } from "../permissions";
 
 // Register Chart.js components and plugins
 Chart.register(...registerables, annotationPlugin, zoomPlugin);
 
 // Main component that integrates various functionalities
-export const CombinedComponent = ({ profile }) => {
+export const CombinedComponent = ({ profile, setProfile }) => {
   const {
     project,
     setProject,
@@ -369,7 +370,11 @@ export const CombinedComponent = ({ profile }) => {
   // Render the component
   return (
     <div className="combined-component">
-      <NavBar combinedComponentRef={combinedComponentRef} profile={profile} />
+      <NavBar
+        combinedComponentRef={combinedComponentRef}
+        profile={profile}
+        setProfile={setProfile}
+      />
       <div
         className="combined-component__main-container"
         ref={combinedComponentRef}
@@ -380,7 +385,6 @@ export const CombinedComponent = ({ profile }) => {
               cursor: isApplyingFilters ? "wait" : "default",
             }}
           >
-            {" "}
             <section className="combined-component__wave-container">
               <header className="combined-component__minigraph-header">
                 <Typography

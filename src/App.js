@@ -8,6 +8,7 @@ import { ThemeProvider } from "@mui/material/styles";
 import { theme } from "./providers/StyleProvider";
 import Login from "./components/Auth/Login";
 import { supabase } from "./supabaseClient";
+import { PERMISSIONS } from "./permissions";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -45,7 +46,7 @@ function App() {
     if (user) {
       supabase
         .from("profiles")
-        .select("role, username, email")
+        .select("permissions, username, email, must_change_password, id")
         .eq("id", user.id)
         .single()
         .then(({ data }) => setProfile(data));
@@ -72,8 +73,7 @@ function App() {
       <DataProvider>
         {/* <NavBar /> */}
         <ThemeProvider theme={theme}>
-          {/* <NavBar /> */}
-          <CombinedComponent profile={profile} />
+          <CombinedComponent profile={profile} setProfile={setProfile} />
         </ThemeProvider>
       </DataProvider>
       {/* </FilterProvider> */}

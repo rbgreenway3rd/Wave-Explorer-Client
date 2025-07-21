@@ -21,8 +21,9 @@ import {
 import HelpTwoToneIcon from "@mui/icons-material/HelpTwoTone";
 import { handleScreenshot } from "../../utilities/Handlers";
 import { supabase } from "../../supabaseClient";
+import ProfileMenu from "./ProfileMenu";
 
-export const NavBar = ({ combinedComponentRef, profile }) => {
+export const NavBar = ({ combinedComponentRef, profile, setProfile }) => {
   const { project } = useContext(DataContext);
   const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
   const [file, setFile] = useState(null); // State to store the uploaded file
@@ -99,11 +100,7 @@ export const NavBar = ({ combinedComponentRef, profile }) => {
           className="wave-explorer-icon"
         />{" "}
         <h1 className="logo">aveExplorer</h1>
-        <Tooltip title="Sign Out" arrow>
-          <IconButton onClick={handleSignOut} color="error">
-            <span style={{ fontWeight: 600 }}>Sign Out</span>
-          </IconButton>
-        </Tooltip>
+        <ProfileMenu profile={profile} setProfile={setProfile} />
       </section>
     </header>
   );

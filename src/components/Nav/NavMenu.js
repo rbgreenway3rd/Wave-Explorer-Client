@@ -20,6 +20,7 @@ import { Tooltip } from "@mui/material";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import CardiacAnalysisModal from "../CardiacAnalysis/CardiacAnalysisModal";
 import { AnalysisProvider } from "../CardiacAnalysis/AnalysisProvider";
+import { PERMISSIONS } from "../../permissions";
 
 export const NavMenu = ({ profile }) => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -58,9 +59,10 @@ export const NavMenu = ({ profile }) => {
   const [cardiacModalOpen, setCardiacModalOpen] = useState(false);
 
   // PERMISSIONS
-  // Only allow opening CardiacAnalysisModal for admin or premium
+  // Only allow opening CardiacAnalysisModal for users with CARDIAC or ADMIN permission
   const canOpenCardiac =
-    profile?.role === "admin" || profile?.role === "premium";
+    (profile?.permissions & PERMISSIONS.CARDIAC) === PERMISSIONS.CARDIAC ||
+    (profile?.permissions & PERMISSIONS.ADMIN) === PERMISSIONS.ADMIN;
 
   const handleOpenCardiacModal = () => {
     setCardiacModalOpen(true);
@@ -224,8 +226,6 @@ export const NavMenu = ({ profile }) => {
             border: "solid rgb(140, 140, 140) 1px",
             borderRadius: 0,
             backgroundImage:
-              // "radial-gradient(rgb(240,240,240),rgb(220,220,220), rgb(200,200,200), rgb(180,180,180), rgb(160,160,160), rgb(140,140,140), rgb(120,120,120),rgb(100,100,100))",
-              // "radial-gradient(rgb(240,240,240),rgb(220,220,220), rgb(200,200,210), rgb(180,180,190), rgb(160,160,170), rgb(140,140,150), rgb(120,120,130),rgb(100,100,110))",
               "radial-gradient(rgb(240,240,240),rgb(230,230,230), rgb(220,220,230), rgb(210,210,220), rgb(200,200,210), rgb(180,180,190), rgb(160,160,170),rgb(140,140,150))",
           }}
         >
@@ -259,7 +259,6 @@ export const NavMenu = ({ profile }) => {
         </MenuItem>
         <MenuItem
           className="cardiacAnalysisButton"
-          // onClick={handleOpenCardiacModal}
           onClick={canOpenCardiac ? handleOpenCardiacModal : undefined}
           disabled={!canOpenCardiac}
         >
