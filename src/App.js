@@ -11,6 +11,7 @@ import { supabase } from "./supabaseClient";
 
 function App() {
   const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const location = window.location;
 
@@ -40,6 +41,17 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (user) {
+      supabase
+        .from("profiles")
+        .select("role, username, email")
+        .eq("id", user.id)
+        .single()
+        .then(({ data }) => setProfile(data));
+    }
+  }, [user]);
+
   if (loading) return null; // or a loading spinner
 
   if (!user) {
@@ -61,7 +73,7 @@ function App() {
         {/* <NavBar /> */}
         <ThemeProvider theme={theme}>
           {/* <NavBar /> */}
-          <CombinedComponent />
+          <CombinedComponent profile={profile} />
         </ThemeProvider>
       </DataProvider>
       {/* </FilterProvider> */}

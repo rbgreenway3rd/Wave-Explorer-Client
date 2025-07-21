@@ -36,7 +36,7 @@ import { motion } from "framer-motion";
 Chart.register(...registerables, annotationPlugin, zoomPlugin);
 
 // Main component that integrates various functionalities
-export const CombinedComponent = () => {
+export const CombinedComponent = ({ profile }) => {
   const {
     project,
     setProject,
@@ -369,7 +369,7 @@ export const CombinedComponent = () => {
   // Render the component
   return (
     <div className="combined-component">
-      <NavBar combinedComponentRef={combinedComponentRef} />
+      <NavBar combinedComponentRef={combinedComponentRef} profile={profile} />
       <div
         className="combined-component__main-container"
         ref={combinedComponentRef}

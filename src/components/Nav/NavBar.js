@@ -22,7 +22,7 @@ import HelpTwoToneIcon from "@mui/icons-material/HelpTwoTone";
 import { handleScreenshot } from "../../utilities/Handlers";
 import { supabase } from "../../supabaseClient";
 
-export const NavBar = ({ combinedComponentRef }) => {
+export const NavBar = ({ combinedComponentRef, profile }) => {
   const { project } = useContext(DataContext);
   const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
   const [file, setFile] = useState(null); // State to store the uploaded file
@@ -57,7 +57,7 @@ export const NavBar = ({ combinedComponentRef }) => {
         />
         {project ? (
           <>
-            <NavMenu />
+            <NavMenu profile={profile} />
           </>
         ) : (
           ""

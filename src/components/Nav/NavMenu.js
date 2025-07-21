@@ -21,7 +21,7 @@ import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import CardiacAnalysisModal from "../CardiacAnalysis/CardiacAnalysisModal";
 import { AnalysisProvider } from "../CardiacAnalysis/AnalysisProvider";
 
-export const NavMenu = () => {
+export const NavMenu = ({ profile }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const {
@@ -56,6 +56,11 @@ export const NavMenu = () => {
   const [correctionMatrix, setCorrectionMatrix] = useState([]);
   // state controlling Cardiac Analysis modal
   const [cardiacModalOpen, setCardiacModalOpen] = useState(false);
+
+  // PERMISSIONS
+  // Only allow opening CardiacAnalysisModal for admin or premium
+  const canOpenCardiac =
+    profile?.role === "admin" || profile?.role === "premium";
 
   const handleOpenCardiacModal = () => {
     setCardiacModalOpen(true);
@@ -254,7 +259,9 @@ export const NavMenu = () => {
         </MenuItem>
         <MenuItem
           className="cardiacAnalysisButton"
-          onClick={handleOpenCardiacModal}
+          // onClick={handleOpenCardiacModal}
+          onClick={canOpenCardiac ? handleOpenCardiacModal : undefined}
+          disabled={!canOpenCardiac}
         >
           <FavoriteBorderIcon />
           Cardiac Analysis
