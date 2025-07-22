@@ -1,18 +1,18 @@
 {
   "files": {
-    "main.css": "/Wave-Explorer-Client/static/css/main.ef448dab.css",
-    "main.js": "/Wave-Explorer-Client/static/js/main.160db1d5.js",
-    "static/js/787.9e9f4ffd.chunk.js": "/Wave-Explorer-Client/static/js/787.9e9f4ffd.chunk.js",
-    "static/media/WaveGuideIcon.ico": "/Wave-Explorer-Client/static/media/WaveGuideIcon.cd737634105590d4fd8c.ico",
-    "static/media/WaveFrontLogo.webp": "/Wave-Explorer-Client/static/media/WaveFrontLogo.e0cd0878e902aa8ab513.webp",
-    "static/media/WaveGuideLogo.webp": "/Wave-Explorer-Client/static/media/WaveGuideLogo.0fba101da78db2310933.webp",
-    "index.html": "/Wave-Explorer-Client/index.html",
-    "main.ef448dab.css.map": "/Wave-Explorer-Client/static/css/main.ef448dab.css.map",
-    "main.160db1d5.js.map": "/Wave-Explorer-Client/static/js/main.160db1d5.js.map",
-    "787.9e9f4ffd.chunk.js.map": "/Wave-Explorer-Client/static/js/787.9e9f4ffd.chunk.js.map"
+    "main.css": "./static/css/main.ef448dab.css",
+    "main.js": "./static/js/main.7483a884.js",
+    "static/js/787.9e9f4ffd.chunk.js": "./static/js/787.9e9f4ffd.chunk.js",
+    "static/media/WaveGuideIcon.ico": "./static/media/WaveGuideIcon.cd737634105590d4fd8c.ico",
+    "static/media/WaveFrontLogo.webp": "./static/media/WaveFrontLogo.e0cd0878e902aa8ab513.webp",
+    "static/media/WaveGuideLogo.webp": "./static/media/WaveGuideLogo.0fba101da78db2310933.webp",
+    "index.html": "./index.html",
+    "main.ef448dab.css.map": "./static/css/main.ef448dab.css.map",
+    "main.7483a884.js.map": "./static/js/main.7483a884.js.map",
+    "787.9e9f4ffd.chunk.js.map": "./static/js/787.9e9f4ffd.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.ef448dab.css",
-    "static/js/main.160db1d5.js"
+    "static/js/main.7483a884.js"
   ]
 }
