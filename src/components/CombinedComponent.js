@@ -309,38 +309,50 @@ export const CombinedComponent = ({ profile, setProfile }) => {
   ];
 
   // Preparing graph data for raw and filtered graphs, using color differentiation for each indicator
-  console.log(extractedIndicatorTimes);
+  // console.log(extractedIndicatorTimes);
   let indicatorTimes = Object.values(extractedIndicatorTimes);
 
-  // Prepare data for raw graph
-  const rawGraphData = {
-    labels: indicatorTimes[0], // Adjust based on your indicator-specific times
-    datasets: selectedWellArray.flatMap((well, wellIndex) =>
-      well.indicators.map((indicator, indIndex) => ({
-        label: `${well.label} - Indicator ${indIndex + 1}`, // Label for each indicator
-        data: indicator.rawData,
-        fill: false,
-        borderColor: indicatorColors[indIndex % indicatorColors.length], // Cycle colors
-        tension: 0.1,
-        hidden: !indicator.isDisplayed,
-      }))
-    ),
-  };
+  // Helper to get a stable key for selectedWellArray (array of well IDs)
+  const selectedWellIds = useMemo(
+    () => selectedWellArray.map((well) => well.id).join(","),
+    [selectedWellArray]
+  );
 
-  // Prepare data for filtered graph
-  const filteredGraphData = {
-    labels: indicatorTimes[0], // Adjust based on your indicator-specific times
-    datasets: selectedWellArray.flatMap((well, wellIndex) =>
-      well.indicators.map((indicator, indIndex) => ({
-        label: `${well.label} - Indicator ${indIndex + 1}`, // Label for each indicator
-        data: indicator.filteredData,
-        fill: false,
-        borderColor: indicatorColors[indIndex % indicatorColors.length], // Cycle colors
-        tension: 0.1,
-        hidden: !indicator.isDisplayed,
-      }))
-    ),
-  };
+  // Memoize rawGraphData to prevent unnecessary re-renders
+  const rawGraphData = useMemo(
+    () => ({
+      labels: indicatorTimes[0], // Adjust based on your indicator-specific times
+      datasets: selectedWellArray.flatMap((well, wellIndex) =>
+        well.indicators.map((indicator, indIndex) => ({
+          label: `${well.label} - Indicator ${indIndex + 1}`,
+          data: indicator.rawData,
+          fill: false,
+          borderColor: indicatorColors[indIndex % indicatorColors.length],
+          tension: 0.1,
+          hidden: !indicator.isDisplayed,
+        }))
+      ),
+    }),
+    [indicatorTimes, selectedWellIds]
+  );
+
+  // Memoize filteredGraphData to prevent unnecessary re-renders
+  const filteredGraphData = useMemo(
+    () => ({
+      labels: indicatorTimes[0],
+      datasets: selectedWellArray.flatMap((well, wellIndex) =>
+        well.indicators.map((indicator, indIndex) => ({
+          label: `${well.label} - Indicator ${indIndex + 1}`,
+          data: indicator.filteredData,
+          fill: false,
+          borderColor: indicatorColors[indIndex % indicatorColors.length],
+          tension: 0.1,
+          hidden: !indicator.isDisplayed,
+        }))
+      ),
+    }),
+    [indicatorTimes, selectedWellIds]
+  );
 
   // Configuration objects for graph options
   const largeGraphConfig = LargeGraphOptions(

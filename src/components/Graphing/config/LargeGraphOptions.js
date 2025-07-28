@@ -16,53 +16,49 @@ export const LargeGraphOptions = (
   // const { wellArrays, extractedIndicatorTimes } = useContext(DataContext);
   let indicatorTimes = Object.values(extractedIndicatorTimes);
 
-  const allYValues = wellArrays
-    .flatMap(
-      (well) =>
-        well.indicators
-          .filter((indicator) => indicator.isDisplayed) // Only include displayed indicators
-          .flatMap((indicator) => indicator.rawData ?? []) // Access rawData for each displayed indicator
-    )
-    .map((point) => point.y); // Extract the y values from each point
+  // Efficient min/max calculation for y-values
+  let minYValue = Infinity;
+  let maxYValue = -Infinity;
+  for (const well of wellArrays) {
+    for (const indicator of well.indicators) {
+      if (!indicator.isDisplayed) continue;
+      const data = indicator.rawData ?? [];
+      for (const point of data) {
+        if (point.y < minYValue) minYValue = point.y;
+        if (point.y > maxYValue) maxYValue = point.y;
+      }
+    }
+  }
+  if (!isFinite(minYValue)) minYValue = 0;
+  if (!isFinite(maxYValue)) maxYValue = 100;
 
-  // Calculate min and max y-values from all wells' displayed indicators' data
-  const minYValue =
-    allYValues.length > 0
-      ? allYValues.reduce((min, val) => (val < min ? val : min), Infinity)
-      : 0;
-
-  const maxYValue =
-    allYValues.length > 0
-      ? allYValues.reduce((max, val) => (val > max ? val : max), -Infinity)
-      : 100;
-
-  const minXValue =
-    indicatorTimes[0]?.length > 0
-      ? indicatorTimes[0].reduce(
-          (min, val) => (val < min ? val : min),
-          Infinity
-        )
-      : 0;
-  const maxXValue =
-    indicatorTimes[0]?.length > 0
-      ? indicatorTimes[0].reduce(
-          (max, val) => (val > max ? val : max),
-          -Infinity
-        )
-      : 100;
+  // Efficient min/max calculation for x-values
+  let minXValue = Infinity;
+  let maxXValue = -Infinity;
+  for (const arr of indicatorTimes) {
+    for (const t of arr) {
+      if (t < minXValue) minXValue = t;
+      if (t > maxXValue) maxXValue = t;
+    }
+  }
+  if (!isFinite(minXValue)) minXValue = 0;
+  if (!isFinite(maxXValue)) maxXValue = 100;
 
   return {
     normalized: true,
     animation: {
       duration: 0,
     },
+    parsing: false,
     plugins: {
       legend: false,
       decimation: {
-        enabled: false,
+        enabled: true,
         algorithm: "lttb",
-        samples: 50,
-        threshold: 100,
+        // samples: decimationSamples,
+        // threshold: decimationThreshold,
+        samples: 250,
+        threshold: 300,
       },
       tooltip: {
         enabled: false,
@@ -99,31 +95,20 @@ export const LargeGraphOptions = (
       },
     },
     maintainAspectRatio: true,
-    // responsive: true,
     responsive: true,
-
     scales: {
       x: {
-        display: false, // Completely hides the x axis
-        ticks: {
-          display: false, // Hides x-axis labels
-        },
-        grid: {
-          display: false, // Hides x-axis grid lines
-        },
-        // min: minXValue,
-        // max: maxXValue,
+        type: "linear",
+        display: false,
+        ticks: { display: false },
+        grid: { display: false },
         min: Math.min(extractedIndicatorTimes[0]),
         max: Math.max(extractedIndicatorTimes[0]),
       },
       y: {
-        display: false, // Completely hides the y axis
-        ticks: {
-          display: false, // Hides y-axis labels
-        },
-        grid: {
-          display: false, // Hides y-axis grid lines
-        },
+        display: false,
+        ticks: { display: false },
+        grid: { display: false },
         suggestedMin: minYValue,
         suggestedMax: maxYValue,
       },
@@ -131,6 +116,9 @@ export const LargeGraphOptions = (
     elements: {
       point: {
         radius: 0,
+      },
+      line: {
+        borderWidth: 1.75, // <-- Set this to your desired thickness (e.g., 2, 3, etc.)
       },
     },
   };

@@ -96,30 +96,21 @@ export const GenerateCSV = (
           indicatorData.push("</RAW_DATA>");
         }
         if (includeFilteredData) {
-          // Add <FILTERED_DATA> tag
-          indicatorData.push("<FILTERED_DATA>");
-
-          // Add <FILTERS_USED> tag
+          // Add <FILTERS_USED> tag and filter rows after filtered data
           indicatorData.push("<FILTERS_USED>");
-
-          // Add each enabled filter in a new row with parameters
           enabledFilters.forEach((filter) => {
             let filterRow = [filter.id]; // Start with filter ID
-
-            // Check filter type and add parameters accordingly
             if (filter.name === "Static Ratio") {
               filterRow.push(`start: ${filter.start}, end: ${filter.end}`);
             } else if (filter.name === "Smoothing") {
               filterRow.push(`windowWidth: ${filter.windowWidth}`);
             } else if (filter.name === "Control Subtraction") {
-              // Format controlWellArray and applyWellArray
               const controlWellArrayFormatted = filter.controlWellArray
                 .map((well) => `row: ${well.row}, col: ${well.col}`)
                 .join(", ");
               const applyWellArrayFormatted = filter.applyWellArray
                 .map((well) => `row: ${well.row}, col: ${well.col}`)
                 .join(", ");
-
               filterRow.push(
                 `controlWellArray:, ${controlWellArrayFormatted}, applyWellArray:, ${applyWellArrayFormatted}`
               );
@@ -130,35 +121,30 @@ export const GenerateCSV = (
                 `halfWindow: ${filter.halfWindow}, threshold: ${filter.threshold}`
               );
             }
-
-            indicatorData.push(filterRow.join(", ")); // Add the filter row
+            indicatorData.push(filterRow.join(", "));
           });
-
-          // Close the <FILTERS_USED> tag
           indicatorData.push("</FILTERS_USED>");
-          // Construct rows for each time point for filteredData
-          const numTimePoints =
-            experiment.wells[0].indicators[indicatorIndex].time.length;
-          for (let i = 0; i < numTimePoints; i++) {
-            // Start with converted time for the row (same as before)
-            const timeInMilliseconds =
-              // experiment.wells[0].indicators[indicatorIndex].time[i] / 1000;
-              experiment.wells[0].indicators[indicatorIndex].time[i];
-
-            // Start with converted time for the row
-            const row = [timeInMilliseconds];
-
-            // Add the filteredData value for each well at the current time index
-            experiment.wells.forEach((well) => {
-              row.push(well.indicators[indicatorIndex].filteredData[i].y);
-            });
-
-            indicatorData.push(row.join(","));
-          }
-
-          // Close the <FILTERED_DATA> tag
-          indicatorData.push("</FILTERED_DATA>");
         }
+        // Add <FILTERED_DATA> tag
+        indicatorData.push("<FILTERED_DATA>");
+
+        // Construct rows for each time point for filteredData
+        const numTimePoints =
+          experiment.wells[0].indicators[indicatorIndex].time.length;
+        for (let i = 0; i < numTimePoints; i++) {
+          // Start with converted time for the row (same as before)
+          const timeInMilliseconds =
+            experiment.wells[0].indicators[indicatorIndex].time[i];
+          const row = [timeInMilliseconds];
+          experiment.wells.forEach((well) => {
+            row.push(well.indicators[indicatorIndex].filteredData[i].y);
+          });
+          indicatorData.push(row.join(","));
+        }
+
+        // Close the <FILTERED_DATA> tag
+        indicatorData.push("</FILTERED_DATA>");
+
         console.log("Saved Metrics:", savedMetrics);
         savedMetrics.forEach((metric) => {
           console.log("Metric:", metric);

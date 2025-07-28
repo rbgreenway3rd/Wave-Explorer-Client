@@ -28,7 +28,7 @@ export const MiniGraphControls = ({
     extractedIndicators,
     handleClearSelectedWells,
   } = useContext(DataContext);
-  console.log(extractedIndicators);
+  // console.log(extractedIndicators);
 
   const [isAnimating, setIsAnimating] = useState(false);
 

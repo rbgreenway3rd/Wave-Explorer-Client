@@ -11,61 +11,71 @@ import { supabase } from "./supabaseClient";
 import { PERMISSIONS } from "./permissions";
 
 function App() {
-  const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const location = window.location;
+  // TEMPORARY: Bypass login system
+  // Comment out authentication logic below for development/demo
+  // const [user, setUser] = useState(null);
+  // const [profile, setProfile] = useState(null);
+  // const [loading, setLoading] = useState(true);
+  // const location = window.location;
 
-  useEffect(() => {
-    // Handle email confirmation link
-    const params = new URLSearchParams(location.search);
-    const access_token = params.get("access_token");
-    const refresh_token = params.get("refresh_token");
-    if (access_token && refresh_token) {
-      supabase.auth.setSession({ access_token, refresh_token }).then(() => {
-        window.location.replace("/"); // Clean up URL
-      });
-    }
-    // Check initial auth state
-    const session = supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-    // Listen for auth changes
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null);
-      }
-    );
-    return () => {
-      listener?.subscription.unsubscribe();
-    };
-  }, []);
+  // useEffect(() => {
+  //   // Handle email confirmation link
+  //   const params = new URLSearchParams(location.search);
+  //   const access_token = params.get("access_token");
+  //   const refresh_token = params.get("refresh_token");
+  //   if (access_token && refresh_token) {
+  //     supabase.auth.setSession({ access_token, refresh_token }).then(() => {
+  //       window.location.replace("/"); // Clean up URL
+  //     });
+  //   }
+  //   // Check initial auth state
+  //   const session = supabase.auth.getSession().then(({ data: { session } }) => {
+  //     setUser(session?.user ?? null);
+  //     setLoading(false);
+  //   });
+  //   // Listen for auth changes
+  //   const { data: listener } = supabase.auth.onAuthStateChange(
+  //     (_event, session) => {
+  //       setUser(session?.user ?? null);
+  //     }
+  //   );
+  //   return () => {
+  //     listener?.subscription.unsubscribe();
+  //   };
+  // }, []);
 
-  useEffect(() => {
-    if (user) {
-      supabase
-        .from("profiles")
-        .select("permissions, username, email, must_change_password, id")
-        .eq("id", user.id)
-        .single()
-        .then(({ data }) => setProfile(data));
-    }
-  }, [user]);
+  // useEffect(() => {
+  //   if (user) {
+  //     supabase
+  //       .from("profiles")
+  //       .select("permissions, username, email, must_change_password, id")
+  //       .eq("id", user.id)
+  //       .single()
+  //       .then(({ data }) => setProfile(data));
+  //   }
+  // }, [user]);
 
-  if (loading) return null; // or a loading spinner
+  // if (loading) return null; // or a loading spinner
+  // if (!user) {
+  //   return (
+  //     <Login
+  //       onLogin={() => {
+  //         supabase.auth
+  //           .getSession()
+  //           .then(({ data: { session } }) => setUser(session?.user ?? null));
+  //       }}
+  //     />
+  //   );
+  // }
 
-  if (!user) {
-    return (
-      <Login
-        onLogin={() => {
-          supabase.auth
-            .getSession()
-            .then(({ data: { session } }) => setUser(session?.user ?? null));
-        }}
-      />
-    );
-  }
+  // Provide a mock profile for development/demo
+  const mockProfile = {
+    username: "devuser",
+    email: "devuser@example.com",
+    permissions: 0xffffffff, // all permissions
+    must_change_password: false,
+    id: "devuser-id",
+  };
 
   return (
     <>
@@ -73,7 +83,7 @@ function App() {
       <DataProvider>
         {/* <NavBar /> */}
         <ThemeProvider theme={theme}>
-          <CombinedComponent profile={profile} setProfile={setProfile} />
+          <CombinedComponent profile={mockProfile} setProfile={() => {}} />
         </ThemeProvider>
       </DataProvider>
       {/* </FilterProvider> */}

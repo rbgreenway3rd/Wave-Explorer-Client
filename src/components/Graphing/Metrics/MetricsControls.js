@@ -173,10 +173,10 @@ export const MetricsControls = ({
     label: time.toFixed(2), // Show time value on the label
   }));
 
-  console.log("annt", annotations);
-  console.log(currentIndicatorTimes);
-  console.log(extractedIndicatorTimes);
-  console.log("slidermin/max", sliderMin, sliderMax);
+  // console.log("annt", annotations);
+  // console.log(currentIndicatorTimes);
+  // console.log(extractedIndicatorTimes);
+  // console.log("slidermin/max", sliderMin, sliderMax);
   return (
     <div className="metrics__controls-container">
       <Button

@@ -54,12 +54,32 @@ export const DataProvider = ({ children }) => {
   // state handling annotations
   const [annotations, setAnnotations] = useState([]);
 
+  // new state for max points
+  const [maxPoints, setMaxPoints] = useState(0);
+
   useEffect(() => {
     // Compute wellArrays whenever the project changes
     const plate = project?.plate || [];
     const experiment = plate[0]?.experiments[0] || {};
     const updatedWellArrays = experiment.wells || [];
     setWellArrays(updatedWellArrays); // Update wellArrays based on current project
+
+    // Calculate maxPoints for all displayed indicators (raw and filtered)
+    let maxCount = 0;
+    updatedWellArrays.forEach((well) => {
+      well.indicators?.forEach((indicator) => {
+        if (indicator.isDisplayed) {
+          const rawLen = Array.isArray(indicator.rawData)
+            ? indicator.rawData.length
+            : 0;
+          const filteredLen = Array.isArray(indicator.filteredData)
+            ? indicator.filteredData.length
+            : 0;
+          maxCount = Math.max(maxCount, rawLen, filteredLen);
+        }
+      });
+    });
+    setMaxPoints(maxCount);
   }, [project]);
 
   // Function to set wellArrays from outside
@@ -332,7 +352,7 @@ export const DataProvider = ({ children }) => {
       indicators.push({ id: i, indicatorName, startIndex, endIndex });
     }
 
-    console.log("indicators: ", indicators);
+    // console.log("indicators: ", indicators);
     return indicators;
   };
 
@@ -347,7 +367,7 @@ export const DataProvider = ({ children }) => {
       );
     });
 
-    console.log("Extracted Lines by Indicator:", extractedLinesByIndicator);
+    // console.log("Extracted Lines by Indicator:", extractedLinesByIndicator);
     return extractedLinesByIndicator;
   };
 
@@ -389,79 +409,50 @@ export const DataProvider = ({ children }) => {
       analysisData[indicator] = dataPoints;
     }
 
-    console.log("Extracted Indicator Times:", indicatorTimes);
+    // console.log("Extracted Indicator Times:", indicatorTimes);
     console.log("Analysis Data by Indicator:", analysisData);
 
     // Set or return the values as needed
     setExtractedIndicatorTimes(indicatorTimes);
     setAnalysisData(analysisData);
-    console.log(indicatorTimes, analysisData);
+    // console.log(indicatorTimes, analysisData);
     return { indicatorTimes, analysisData };
   };
 
-  // Function to handle the entire asynchronous extraction process and update state
-  async function extractAllData(content) {
-    let extractedRows = await extractNumberOfRows(content);
-    let rowLabels = await generateRowLabels(extractedRows);
-    let extractedColumns = await extractNumberOfColumns(content);
-    let extractedProjectTitle = await extractProjectTitle(content);
-    let extractedProjectDate = await extractProjectDate(content);
-    let extractedProjectTime = await extractProjectTime(content);
-    let extractedProjectInstrument = await extractInstrument(content);
-    let extractedProjectProtocol = await extractProjectProtocol(content);
-    let extractedAssayPlateBarcode = await extractAssayPlateBarcode(content);
-    let extractedAddPlateBarcode = await extractAddPlateBarcode(content);
-    let extractedBinning = await extractBinning(content);
-    let extractedIndicatorConfigurations = await extractIndicatorConfigurations(
-      content
-    );
-    let extractedOperator = await extractOperator(content);
+  // Import the worker (Vite/CRA: use new URL)
+  const extractWorker = new Worker(
+    new URL("../workers/extractWorker.js", import.meta.url)
+  );
 
-    let extractedIndicators = await getIndicators(content);
-    setExtractedIndicators(extractedIndicators);
-    let extractedLines = await extractLines(content, extractedIndicators);
-
-    setExtractedProjectTitle(extractedProjectTitle);
-    setExtractedProjectDate(extractedProjectDate);
-    setExtractedProjectTime(extractedProjectTime);
-    setExtractedProjectInstrument(extractedProjectInstrument);
-    setExtractedProjectProtocol(extractedProjectProtocol);
-    setExtractedAssayPlateBarcode(extractedAssayPlateBarcode);
-    setExtractedAddPlateBarcode(extractedAddPlateBarcode);
-    setExtractedBinning(extractedBinning);
-    setExtractedIndicatorConfigurations(extractedIndicatorConfigurations);
-    setExtractedOperator(extractedOperator);
-    setExtractedRows(extractedRows);
-    setExtractedColumns(extractedColumns);
-    setExtractedLines(extractedLines);
-    setRowLabels(rowLabels);
-
-    let { extractedIndicatorTimes, analysisData } = await extractIndicatorTimes(
-      extractedLines,
-      extractedRows,
-      extractedColumns
-    );
-
-    return {
-      extractedIndicators,
-
-      extractedLines,
-      extractedRows,
-      rowLabels,
-      extractedColumns,
-      extractedProjectTitle,
-      extractedProjectDate,
-      extractedProjectTime,
-      extractedProjectInstrument,
-      extractedProjectProtocol,
-      extractedAssayPlateBarcode,
-      extractedAddPlateBarcode,
-      extractedBinning,
-      extractedIndicatorConfigurations,
-      extractedOperator,
-      extractedIndicatorTimes,
-      analysisData,
-    };
+  // Function to handle the entire asynchronous extraction process and update state using a Web Worker
+  function extractAllData(content) {
+    return new Promise((resolve) => {
+      extractWorker.onmessage = (e) => {
+        const result = e.data;
+        // Update all state with the result from the worker
+        setExtractedIndicators(result.extractedIndicators);
+        setExtractedLines(result.extractedLines);
+        setExtractedRows(result.extractedRows);
+        setRowLabels(result.rowLabels);
+        setExtractedColumns(result.extractedColumns);
+        setExtractedProjectTitle(result.extractedProjectTitle);
+        setExtractedProjectDate(result.extractedProjectDate);
+        setExtractedProjectTime(result.extractedProjectTime);
+        setExtractedProjectInstrument(result.extractedProjectInstrument);
+        setExtractedProjectProtocol(result.extractedProjectProtocol);
+        setExtractedAssayPlateBarcode(result.extractedAssayPlateBarcode);
+        setExtractedAddPlateBarcode(result.extractedAddPlateBarcode);
+        setExtractedBinning(result.extractedBinning);
+        setExtractedIndicatorConfigurations(
+          result.extractedIndicatorConfigurations
+        );
+        setExtractedOperator(result.extractedOperator);
+        setExtractedIndicatorTimes(result.extractedIndicatorTimes);
+        setAnalysisData(result.analysisData);
+        resolve(result);
+      };
+      extractWorker.postMessage({ content });
+    });
   }
 
   return (
@@ -499,22 +490,24 @@ export const DataProvider = ({ children }) => {
         showFiltered,
         setShowFiltered,
         selectedWellArray,
-        setSelectedWellArray,
+        setSelectedWellArray, // <-- Expose this for batch selection
+        handleSelectWell,
+        handleDeselectWell,
+        handleClearSelectedWells,
         selectedFilters,
         setSelectedFilters,
         enabledFilters,
         setEnabledFilters,
         uploadedFilters,
         setUploadedFilters,
-        handleSelectWell,
-        handleDeselectWell,
-        handleClearSelectedWells,
         savedMetrics,
         setSavedMetrics,
         annotations,
         setAnnotations,
         overlayRawAndFiltered,
         setOverlayRawAndFiltered,
+        maxPoints, // <-- provide maxPoints in context
+        setMaxPoints,
       }}
     >
       {children}

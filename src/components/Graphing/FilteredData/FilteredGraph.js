@@ -76,20 +76,38 @@ export const FilteredGraph = ({
     };
   }, []);
 
-  // Recalculate min/max y-values dynamically whenever filteredGraphData changes
-  const calculateYMinMax = (data) => {
-    const allYValues = data.datasets.flatMap((dataset) =>
-      dataset.data.map((point) => point.y)
-    );
-    const minYValue = Math.min(...allYValues, 0); // Ensure it doesn't go below 0
-    const maxYValue = Math.max(...allYValues, 100); // Ensure it doesn't go above 100
-    return { minYValue, maxYValue };
-  };
+  // // Recalculate min/max y-values dynamically whenever filteredGraphData changes
+  // const calculateYMinMax = (data) => {
+  //   try {
+  //     if (!data || !Array.isArray(data.datasets)) {
+  //       console.error("filteredGraphData.datasets is not an array", data);
+  //       return { minYValue: 0, maxYValue: 100 };
+  //     }
+  //     const allYValues = data.datasets.flatMap((dataset) =>
+  //       Array.isArray(dataset.data) ? dataset.data.map((point) => point.y) : []
+  //     );
+  //     if (!allYValues.length) return { minYValue: 0, maxYValue: 100 };
+  //     // Prevent stack overflow for huge arrays
+  //     if (allYValues.length > 1e6) {
+  //       console.error(
+  //         "filteredGraphData has too many points",
+  //         allYValues.length
+  //       );
+  //       return { minYValue: 0, maxYValue: 100 };
+  //     }
+  //     const minYValue = Math.min(...allYValues, 0); // Ensure it doesn't go below 0
+  //     const maxYValue = Math.max(...allYValues, 100); // Ensure it doesn't go above 100
+  //     return { minYValue, maxYValue };
+  //   } catch (e) {
+  //     console.error("Error in calculateYMinMax", e, data);
+  //     return { minYValue: 0, maxYValue: 100 };
+  //   }
+  // };
 
-  const { minYValue, maxYValue } = useMemo(
-    () => calculateYMinMax(filteredGraphData),
-    [filteredGraphData]
-  );
+  // const { minYValue, maxYValue } = useMemo(
+  //   () => calculateYMinMax(filteredGraphData),
+  //   [filteredGraphData]
+  // );
 
   // Update chart when annotations change
   useEffect(() => {

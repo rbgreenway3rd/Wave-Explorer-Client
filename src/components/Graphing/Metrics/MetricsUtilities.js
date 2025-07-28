@@ -1,3 +1,88 @@
+// // MetricsUtilities.js
+
+// // Setup metricsWorker
+// const metricsWorker = new Worker(
+//   new URL("../../../workers/metricsWorker.js", import.meta.url)
+// );
+
+// // Helper to call the worker and return a Promise
+// function callMetricsWorker(type, args) {
+//   return new Promise((resolve) => {
+//     metricsWorker.onmessage = (e) => resolve(e.data);
+//     metricsWorker.postMessage({ type, args });
+//   });
+// }
+
+// // Exported async wrappers for each function
+// export async function getAllValuesWorker(
+//   wellArrays,
+//   annotationRange,
+//   metricIndicator
+// ) {
+//   return await callMetricsWorker("getAllValues", [
+//     wellArrays,
+//     annotationRange,
+//     metricIndicator,
+//   ]);
+// }
+// export async function getAllSlopesWorker(
+//   wellArrays,
+//   annotationRange,
+//   metricIndicator
+// ) {
+//   return await callMetricsWorker("getAllSlopes", [
+//     wellArrays,
+//     annotationRange,
+//     metricIndicator,
+//   ]);
+// }
+// export async function getAllRangesWorker(
+//   wellArrays,
+//   annotationRange,
+//   metricIndicator
+// ) {
+//   return await callMetricsWorker("getAllRanges", [
+//     wellArrays,
+//     annotationRange,
+//     metricIndicator,
+//   ]);
+// }
+// export async function calculateSlopeWorker(heatmapData) {
+//   return await callMetricsWorker("calculateSlope", [heatmapData]);
+// }
+// export async function calculateRangeWorker(heatmapData) {
+//   return await callMetricsWorker("calculateRange", [heatmapData]);
+// }
+// export async function linearRegressionWorker(data) {
+//   return await callMetricsWorker("linearRegression", [data]);
+// }
+
+// // REMOVE: import * as d3 from "d3";
+
+// // REMOVE: all synchronous exports below, keep only the async worker-based API
+
+// // Optionally, you can keep the original synchronous functions for small data or testing
+// // (Removed for production: use worker-based functions for all heavy calculations)
+
+// // export const getAllValues = (wellArrays, annotationRange, metricIndicator) => {
+// //   return wellArrays.flatMap((well) => {
+// //     const filteredData = well.indicators[metricIndicator]?.filteredData || [];
+// //     if (annotationRange.start !== null && annotationRange.end !== null) {
+// //       return filteredData
+// //         .filter(
+// //           (_, i) => i >= annotationRange.start && i <= annotationRange.end
+// //         )
+// //         .map((d) => d.y);
+// //     } else {
+// //       return filteredData.map((d) => d.y);
+// //     }
+// //   });
+// // };
+
+// // Example: ensure all usages of worker-based metrics functions are awaited inside async functions
+// // If you see 'await calculateSlopeWorker(...)', the parent function must be async
+// // (No changes needed in this file, but update all call sites in your app to use 'await' and mark their parent functions as async)
+
 // MetricsUtilities.js
 import * as d3 from "d3";
 

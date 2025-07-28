@@ -7,6 +7,7 @@ import React, {
   useEffect,
 } from "react";
 import { DataContext } from "../../../providers/DataProvider";
+import useDecimateWorker from "../../../utilities/useDecimateWorker";
 import { MiniGraphOptions } from "../config/MiniGraphOptions";
 import "../../../styles/MiniGraphGrid.css";
 import "chartjs-adapter-date-fns"; // date-fns adapter for Chart.js necessary for decimation
@@ -39,12 +40,19 @@ export const MiniGraphGrid = ({
     wellArrays,
     showFiltered,
     selectedWellArray,
+    setSelectedWellArray, // <-- Now available from context
     handleSelectWell,
     handleDeselectWell,
     handleClearSelectedWells,
+    maxPoints, // <-- Get maxPoints from context
     // rowLabels,
     // columnLabels,
   } = useContext(DataContext);
+
+  const { decimate } = useDecimateWorker();
+  // const [decimatedWellArrays, setDecimatedWellArrays] = useState([]);
+
+  const decimationSamples = 100;
 
   // // State to track if rendering is complete
   const [isRenderingComplete, setIsRenderingComplete] = useState(false);
@@ -81,12 +89,11 @@ export const MiniGraphGrid = ({
     setAvailableHeight(window.innerHeight / 2.3);
   };
 
+  // Effect to listen to window resize events
   useEffect(() => {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-
-  // Effect to listen to window resize events
 
   useEffect(() => {
     if (wellArrays.length > 0) {
@@ -99,6 +106,35 @@ export const MiniGraphGrid = ({
     }
   }, [wellArrays]);
 
+  // decimation useEffect
+  // useEffect(() => {
+  //   async function decimateAllWells() {
+  //     const decimated = await Promise.all(
+  //       wellArrays.map(async (well) => ({
+  //         ...well,
+  //         indicators: await Promise.all(
+  //           well.indicators.map(async (indicator) => {
+  //             const dataToDecimate = showFiltered
+  //               ? indicator.filteredData
+  //               : indicator.rawData;
+  //             const decimatedData = await decimate(
+  //               dataToDecimate,
+  //               decimationSamples
+  //             ); // Adjust sample count as needed
+  //             return {
+  //               ...indicator,
+  //               decimatedData,
+  //             };
+  //           })
+  //         ),
+  //       }))
+  //     );
+  //     setDecimatedWellArrays(decimated);
+  //   }
+  //   if (wellArrays.length > 0) decimateAllWells();
+  // }, [wellArrays, showFiltered, decimate]);
+
+  // console.log(decimatedWellArrays);
   // Refs used for the drag-to-select box
   const gridRef = useRef(null); // Ref to the grid container
   const selectableItems = useRef([]); // Store selectable items for drag selection
@@ -124,7 +160,7 @@ export const MiniGraphGrid = ({
 
   // Handle selection change to track selected wells during drag
   const handleSelectionChange = (box) => {
-    console.log("handle selection change");
+    // console.log("handle selection change");
     // Adjust box coordinates for scrolling
     const scrollAwareBox = {
       ...box,
@@ -146,33 +182,52 @@ export const MiniGraphGrid = ({
   };
 
   // Handle selection end to finalize selected wells
+  // const handleSelectionEnd = () => {
+  //   const wellsToSelect = []; // Array to keep track of wells to select
+  //   const wellsToDeselect = []; // Array to keep track of wells to deselect
+  //
+  //   // Loop through selected indexes to finalize selections
+  //   selectedIndexes.current.forEach((index) => {
+  //     const well = wellArrays[index]; // Get the well using the index
+  //     if (well) {
+  //       if (!selectedWellArray.includes(well)) {
+  //         wellsToSelect.push(well); // Mark well to select if not already selected
+  //       } else {
+  //         wellsToDeselect.push(well); // Mark well to deselect if already selected
+  //       }
+  //     }
+  //   });
+  //
+  //   // Update selectedWellArray based on the wellsToSelect and wellsToDeselect
+  //   wellsToSelect.forEach((well) => handleSelectWell(well)); // Select the wells
+  //   wellsToDeselect.forEach((well) => handleDeselectWell(well.id)); // Deselect the wells
+  //
+  //   // Clear the selectedIndexes ref for future selections
+  //   selectedIndexes.current = [];
+  // };
   const handleSelectionEnd = () => {
-    const wellsToSelect = []; // Array to keep track of wells to select
-    const wellsToDeselect = []; // Array to keep track of wells to deselect
-
-    // Loop through selected indexes to finalize selections
-    selectedIndexes.current.forEach((index) => {
-      const well = wellArrays[index]; // Get the well using the index
-      if (well) {
-        if (!selectedWellArray.includes(well)) {
-          wellsToSelect.push(well); // Mark well to select if not already selected
-        } else {
-          wellsToDeselect.push(well); // Mark well to deselect if already selected
-        }
+    // Get the wells in the drag area
+    const dragSelectedWells = wellArrays.filter((well, idx) =>
+      selectedIndexes.current.includes(idx)
+    );
+    // Create a Set of currently selected well IDs for fast lookup
+    const selectedIds = new Set(selectedWellArray.map((w) => w.id));
+    // Toggle selection: if in drag area and already selected, remove; if not, add
+    let newSelection = [...selectedWellArray];
+    dragSelectedWells.forEach((well) => {
+      if (selectedIds.has(well.id)) {
+        newSelection = newSelection.filter((w) => w.id !== well.id); // Deselect
+      } else {
+        newSelection.push(well); // Select
       }
     });
-
-    // Update selectedWellArray based on the wellsToSelect and wellsToDeselect
-    wellsToSelect.forEach((well) => handleSelectWell(well)); // Select the wells
-    wellsToDeselect.forEach((well) => handleDeselectWell(well.id)); // Deselect the wells
-
-    // Clear the selectedIndexes ref for future selections
+    setSelectedWellArray(newSelection);
     selectedIndexes.current = [];
   };
 
   // NEW
   useEffect(() => {
-    console.log("Selectable items:", selectableItems.current);
+    // console.log("Selectable items:", selectableItems.current);
   }, [selectableItems]);
 
   const updateSelectableItems = () => {
@@ -210,7 +265,7 @@ export const MiniGraphGrid = ({
 
   // Capture the bounding boxes of wells
   useEffect(() => {
-    console.log("update", selectableItems);
+    // console.log("update", selectableItems);
     updateSelectableItems(); // Initial update of selectable items
     window.addEventListener("resize", updateSelectableItems); // Re-capture on window resize
 
@@ -253,14 +308,17 @@ export const MiniGraphGrid = ({
       extractedIndicatorTimes,
       wellArrays,
       yValues,
-      showFiltered
+      showFiltered,
+      // decimatedWellArrays,
+      maxPoints // <-- pass from context
     );
   }, [
-    analysisData,
-    extractedIndicatorTimes,
+    // analysisData,
+    // extractedIndicatorTimes,
     wellArrays,
-    yValues,
+    // yValues,
     showFiltered,
+    maxPoints,
   ]);
 
   const indicatorColors = [
@@ -273,6 +331,17 @@ export const MiniGraphGrid = ({
     // Add more colors as needed
   ];
 
+  // Helper: in-thread decimation (downsample)
+  function downsample(data, samples = 50) {
+    if (!Array.isArray(data) || data.length <= samples) return data;
+    const step = data.length / samples;
+    const result = [];
+    for (let i = 0; i < samples; i++) {
+      result.push(data[Math.floor(i * step)]);
+    }
+    return result;
+  }
+
   return (
     <div className="container">
       {isRenderingComplete ? (
@@ -282,11 +351,9 @@ export const MiniGraphGrid = ({
             display: "grid",
             gridTemplateColumns: `${buttonWidth} 10fr`,
             gridTemplateRows: `${buttonHeight} 10fr`,
-            // width: parentWidth,
-            // height: parentHeight,
-            maxWidth: `calc(${parentWidth})`, // Adjust for parent's border (0.5em * 2)
-            maxHeight: `calc(${parentHeight})`, // Adjust for parent's border (0.5em * 2)
-            boxSizing: "border-box", // Ensures the padding and border are included in the container's size
+            maxWidth: `calc(${parentWidth})`,
+            maxHeight: `calc(${parentHeight})`,
+            boxSizing: "border-box",
           }}
         >
           {/* "All" button (Top-left cell) */}
@@ -433,6 +500,8 @@ export const MiniGraphGrid = ({
               gap: 0,
             }}
           >
+            {/* {wellArrays?.length > 0 &&
+              wellArrays.map((well) => ( */}
             {wellArrays?.length > 0 &&
               wellArrays.map((well) => (
                 <Line
@@ -453,8 +522,14 @@ export const MiniGraphGrid = ({
                           height: "100%",
                           maxWidth: cellWidth,
                           maxHeight: cellHeight,
+                          // width: cellWidth,
+                          // height: cellHeight,
+                          // width: `${cellWidth}px`,
+                          // height: `${cellHeight}px`,
                         } // styling for selected wells
                       : {
+                          // border: "solid 1px grey",
+
                           zIndex: 10,
                           // width: "95%",
                           // height: "95%",
@@ -462,13 +537,16 @@ export const MiniGraphGrid = ({
                           height: "100%",
                           maxWidth: cellWidth,
                           maxHeight: cellHeight,
+                          // width: cellWidth,
+                          // height: cellHeight,
+                          // width: `${cellWidth}px`,
+                          // height: `${cellHeight}px`,
                         } // styling for un-selected wells
                   }
-                  // key={well.id}
                   key={well.id}
                   data={{
                     datasets: well.indicators
-                      // .filter((indicator) => indicator.isDisplayed)
+                      .filter((indicator) => indicator.isDisplayed)
                       .map((indicator, indIndex) => ({
                         label: `${well.label} - Indicator ${indIndex + 1}`, // Label for each indicator
                         data: showFiltered
@@ -477,12 +555,10 @@ export const MiniGraphGrid = ({
                         fill: false,
                         borderColor:
                           indicatorColors[indIndex % indicatorColors.length], // Cycle colors
-                        tension: 0.1,
+                        tension: 1,
                         hidden: !indicator.isDisplayed,
                       })),
                   }}
-                  // width={smallCanvasWidth}
-                  // height={smallCanvasHeight}
                   options={minigraphOptions}
                   onClick={() => handleWellClick(well.id)}
                 />
@@ -618,7 +694,7 @@ export default memo(MiniGraphGrid);
 //   // const handleSelectionEnd = () => {
 //   //   const wellsToSelect = []; // Array to keep track of wells to select
 //   //   const wellsToDeselect = []; // Array to keep track of wells to deselect
-
+//
 //   //   // Loop through selected indexes to finalize selections
 //   //   selectedIndexes.current.forEach((index) => {
 //   //     const well = wellArrays[index]; // Get the well using the index
@@ -630,11 +706,11 @@ export default memo(MiniGraphGrid);
 //   //       }
 //   //     }
 //   //   });
-
+//
 //   //   // Update selectedWellArray based on the wellsToSelect and wellsToDeselect
 //   //   wellsToSelect.forEach((well) => handleSelectWell(well)); // Select the wells
 //   //   wellsToDeselect.forEach((well) => handleDeselectWell(well.id)); // Deselect the wells
-
+//
 //   //   // Clear the selectedIndexes ref for future selections
 //   //   selectedIndexes.current = [];
 //   // };
