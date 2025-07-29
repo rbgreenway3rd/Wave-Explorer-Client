@@ -12,6 +12,8 @@ import {
   FormControl,
 } from "@mui/material";
 import FitScreenTwoToneIcon from "@mui/icons-material/FitScreenTwoTone";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import "../../../styles/LargeGraphControls.css";
 
 Chart.register(zoomPlugin);
@@ -24,6 +26,8 @@ export const LargeGraphControls = ({
   panState,
   changePanMode,
   togglePanState,
+  showLargeGraph,
+  setShowLargeGraph,
 }) => {
   const { overlayRawAndFiltered, setOverlayRawAndFiltered } =
     useContext(DataContext);
@@ -141,7 +145,7 @@ export const LargeGraphControls = ({
           </section>
         </div>
       </section>
-      {/* Overlay Checkbox */}
+      {/* Reset Zoom Button */}
       <Button
         className="reset-zoom-button"
         variant="outlined"
@@ -152,6 +156,19 @@ export const LargeGraphControls = ({
           Reset Zoom
         </Typography>
       </Button>
+      {/* Toggle LargeGraph visibility button */}
+      {/* <Button
+        className="toggle-large-graph-button"
+        variant="contained"
+        color={showLargeGraph ? "secondary" : "primary"}
+        onClick={() => setShowLargeGraph((prev) => !prev)}
+        sx={{ marginTop: "1em" }}
+      >
+        {showLargeGraph ? <VisibilityOffIcon /> : <VisibilityIcon />}
+        <Typography variant="button" sx={{ marginLeft: "0.5em" }}>
+          {showLargeGraph ? "Hide Large Graph" : "Show Large Graph"}
+        </Typography>
+      </Button> */}
     </div>
   );
 };

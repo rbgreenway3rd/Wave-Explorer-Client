@@ -105,6 +105,9 @@ export const CombinedComponent = ({ profile, setProfile }) => {
   // State for MiniGraph management
   const [isFiltered, setIsFiltered] = useState(false); // Default is raw data (false)
 
+  // State to control LargeGraph visibility
+  const [showLargeGraph, setShowLargeGraph] = useState(true);
+
   // State variables to store range of y-values inside filteredGraph's annotation box
   // const [annotations, setAnnotations] = useState([]);
   const [annotationRangeStart, setAnnotationRangeStart] = useState(null);
@@ -498,23 +501,25 @@ export const CombinedComponent = ({ profile, setProfile }) => {
                   </IconButton>
                 </Tooltip>
               </header>
-              <div
-                className="combined-component__large-graph"
-                ref={largeGraphComponentRef}
-              >
-                <LargeGraph
-                  ref={largeGraphRef}
-                  zoomState={zoomState}
-                  zoomMode={zoomMode}
-                  panState={panState}
-                  panMode={panMode}
-                  rawGraphData={rawGraphData}
-                  filteredGraphData={filteredGraphData}
-                  analysisData={analysisData}
-                  extractedIndicatorTimes={extractedIndicatorTimes}
-                  largeGraphConfig={largeGraphConfig}
-                />
-              </div>
+              {showLargeGraph && (
+                <div
+                  className="combined-component__large-graph"
+                  ref={largeGraphComponentRef}
+                >
+                  <LargeGraph
+                    ref={largeGraphRef}
+                    zoomState={zoomState}
+                    zoomMode={zoomMode}
+                    panState={panState}
+                    panMode={panMode}
+                    rawGraphData={rawGraphData}
+                    filteredGraphData={filteredGraphData}
+                    analysisData={analysisData}
+                    extractedIndicatorTimes={extractedIndicatorTimes}
+                    largeGraphConfig={largeGraphConfig}
+                  />
+                </div>
+              )}
               <div className="combined-component__large-graph-controls">
                 <LargeGraphControls
                   resetZoom={resetZoom}
@@ -524,6 +529,8 @@ export const CombinedComponent = ({ profile, setProfile }) => {
                   panState={panState}
                   togglePanState={togglePanState}
                   changePanMode={changePanMode}
+                  showLargeGraph={showLargeGraph}
+                  setShowLargeGraph={setShowLargeGraph}
                 />
               </div>
             </section>
@@ -598,7 +605,9 @@ export const CombinedComponent = ({ profile, setProfile }) => {
                 </Tooltip>
               </header>
               <div
-                className="combined-component__filtered-graph"
+                className={`combined-component__filtered-graph${
+                  !showLargeGraph ? " expanded" : ""
+                }`}
                 ref={filteredGraphComponentRef}
               >
                 <FilteredGraph
@@ -614,6 +623,7 @@ export const CombinedComponent = ({ profile, setProfile }) => {
                   setAnnotationRangeStart={setAnnotationRangeStart}
                   setAnnotationRangeEnd={setAnnotationRangeEnd}
                   filteredGraphConfig={filteredGraphConfig}
+                  expanded={!showLargeGraph}
                 />
               </div>
               <div className="combined-component__filter-controls">

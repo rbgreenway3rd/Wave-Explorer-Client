@@ -1,12 +1,4 @@
-import React, {
-  useEffect,
-  useState,
-  useRef,
-  useCallback,
-  useMemo,
-  useContext,
-  forwardRef,
-} from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -18,8 +10,6 @@ import {
 } from "chart.js";
 import annotationPlugin from "chartjs-plugin-annotation";
 import "../../../styles/FilteredGraph.css";
-import { FilteredGraphOptions } from "../config/FilteredGraphOptions";
-import { updateChart } from "../config/FilteredGraphOptions";
 import { DataContext } from "../../../providers/DataProvider";
 
 ChartJS.register(
@@ -38,9 +28,10 @@ export const FilteredGraph = ({
   annotationRangeEnd,
   setAnnotationRangeEnd,
   filteredGraphConfig,
+  expanded = false, // new prop
 }) => {
-  const { wellArrays, extractedIndicatorTimes, annotations, setAnnotations } =
-    useContext(DataContext);
+  const { extractedIndicatorTimes, annotations, setAnnotations } =
+    React.useContext(DataContext);
   const chartRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const [annotationStartPos, setAnnotationStartPos] = useState({
@@ -52,29 +43,28 @@ export const FilteredGraph = ({
     window.innerWidth / 2.3
   );
   const [largeCanvasHeight, setLargeCanvasHeight] = useState(
-    window.innerHeight / 2.3
+    expanded ? window.innerHeight * 0.7 : window.innerHeight / 2.3
   );
 
-  const [smallCanvasWidth, setSmallCanvasWidth] = useState(
-    window.innerWidth / 64.4
-  );
-  const [smallCanvasHeight, setSmallCanvasHeight] = useState(
-    window.innerHeight / 46
-  );
-
-  const handleResize = () => {
+  const handleResize = React.useCallback(() => {
     setLargeCanvasWidth(window.innerWidth / 2.3);
-    setLargeCanvasHeight(window.innerHeight / 2.3);
-    setSmallCanvasWidth(window.innerWidth / 64.4);
-    setSmallCanvasHeight(window.innerHeight / 46);
-  };
+    setLargeCanvasHeight(
+      expanded ? window.innerHeight * 0.7 : window.innerHeight / 2.3
+    );
+  }, [expanded]);
 
   useEffect(() => {
     window.addEventListener("resize", handleResize);
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, []);
+  }, [handleResize]);
+
+  useEffect(() => {
+    setLargeCanvasHeight(
+      expanded ? window.innerHeight * 0.7 : window.innerHeight / 2.3
+    );
+  }, [expanded]);
 
   // Update chart when annotations change
   useEffect(() => {
@@ -231,7 +221,7 @@ export const FilteredGraph = ({
     <Line
       key={JSON.stringify(filteredGraphData)}
       ref={chartRef}
-      className="filtered-graph-canvas"
+      className={`filtered-graph-canvas${expanded ? " expanded" : ""}`}
       data={filteredGraphData}
       options={filteredGraphConfig}
       width={largeCanvasWidth}

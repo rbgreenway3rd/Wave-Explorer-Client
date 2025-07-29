@@ -83,13 +83,22 @@ body {
 .combined-component__minigraph-controls {
     grid-column: 2;
     grid-row: 2;
-    /* border-right: 0.5em solid gray; */
-    /* padding-right: 0.5em; */
-    /* height: 100%; */
-    /* width: 90%; */
     box-sizing: border-box;
-    /* Include padding and border in button width */
-    /* background-color: rgb(120, 120, 120) */
+    /* position: relative;
+    z-index: 1;
+    background:
+    linear-gradient(rgb(120, 120, 120), rgb(120, 120, 120)) padding-box,
+    radial-gradient(farthest-corner at 50% 50%, #eee 0%, #bbb 70%, #222 100%) border-box;
+    background-clip: padding-box, border-box;
+    background-origin: padding-box, border-box; */
+    /* Optionally add a box-shadow for depth */
+    /* box-shadow: 0 2px 8px rgba(0,0,0,0.08); */
+    /* margin-right: 0.25em; */
+    /* margin-left: 0.25em; */
+    /* border: 5px solid transparent; */
+
+    margin-left: 0.25em;
+    margin-right: 0.25em;
 }
 
 .combined-component__large-graph-header {

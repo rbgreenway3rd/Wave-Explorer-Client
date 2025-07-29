@@ -274,6 +274,45 @@ const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
       context.fillText(well.label || "", textX, textY);
     });
 
+    // Draw gradient inset borders for selected wells on top (always, after cells drawn)
+    if (selectedWellArray && selectedWellArray.length > 0) {
+      selectedWellArray.forEach((sel) => {
+        const index = wellArrays.findIndex((well) => well.label === sel.label);
+        if (index !== -1) {
+          const row = Math.floor(index / numColumns);
+          const col = index % numColumns;
+          context.save();
+          // context.strokeStyle = "white";
+          // context.lineWidth = 2.5;
+          // // Inset border: draw a smaller rectangle inside the cell
+          // const inset = 4; // px inset from each edge
+          // context.strokeRect(
+          //   col * cellWidth + inset,
+          //   row * cellHeight + inset,
+          //   cellWidth - 2 * inset,
+          //   cellHeight - 2 * inset
+          // );
+          // Gradient border implementation:
+          const inset = 4;
+          const x = col * cellWidth + inset;
+          const y = row * cellHeight + inset;
+          const w = cellWidth - 2 * inset;
+          const h = cellHeight - 2 * inset;
+          // Create a diagonal linear gradient for the border
+          const grad = context.createLinearGradient(x, y, x + w, y + h);
+          grad.addColorStop(0, "darkgray");
+          grad.addColorStop(0.25, "black");
+          grad.addColorStop(0.5, "gray");
+          grad.addColorStop(0.75, "black");
+          grad.addColorStop(1, "darkgray");
+          context.strokeStyle = grad;
+          context.lineWidth = 2.5;
+          context.strokeRect(x, y, w, h);
+          context.restore();
+        }
+      });
+    }
+
     setCurrentCellColors((prevColors) => {
       if (
         prevColors.length === newColors.length &&
@@ -293,60 +332,7 @@ const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
     metricType,
     metricIndicator,
     colorScale,
-  ]);
-
-  // Separate effect: draw white outlines for selected wells (depends on selectedWellArray)
-  useEffect(() => {
-    if (!heatmapRef.current) return;
-    const canvas = heatmapRef.current;
-    const context = canvas.getContext("2d");
-    if (!context) return;
-    const cellWidth = largeCanvasWidth / numColumns;
-    const cellHeight = largeCanvasHeight / numRows;
-
-    // First, redraw default borders (black, thin) for all cells
-    wellArrays.forEach((well, i) => {
-      const row = Math.floor(i / numColumns);
-      const col = i % numColumns;
-      context.save();
-      context.strokeStyle = "black";
-      context.lineWidth = 1;
-      context.strokeRect(
-        col * cellWidth,
-        row * cellHeight,
-        cellWidth,
-        cellHeight
-      );
-      context.restore();
-    });
-
-    // Then, draw white borders for selected wells on top
-    if (selectedWellArray && selectedWellArray.length > 0) {
-      selectedWellArray.forEach((sel) => {
-        const index = wellArrays.findIndex((well) => well.label === sel.label);
-        if (index !== -1) {
-          const row = Math.floor(index / numColumns);
-          const col = index % numColumns;
-          context.save();
-          context.strokeStyle = "white";
-          context.lineWidth = 3;
-          context.strokeRect(
-            col * cellWidth,
-            row * cellHeight,
-            cellWidth,
-            cellHeight
-          );
-          context.restore();
-        }
-      });
-    }
-  }, [
-    selectedWellArray,
-    wellArrays,
-    numColumns,
-    largeCanvasWidth,
-    largeCanvasHeight,
-    numRows,
+    selectedWellArray, // add as dependency
   ]);
 
   // Mouse move handler for tooltip
