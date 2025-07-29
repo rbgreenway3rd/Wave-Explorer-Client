@@ -128,6 +128,13 @@ export const GenerateCSV = (
         // Add <FILTERED_DATA> tag
         indicatorData.push("<FILTERED_DATA>");
 
+        // Add wellHeaders row: "Time" followed by well labels (same as <RAW_DATA>)
+        const filteredWellHeaders = [
+          "Time",
+          ...experiment.wells.map((well) => well.label),
+        ];
+        indicatorData.push(filteredWellHeaders.join(","));
+
         // Construct rows for each time point for filteredData
         const numTimePoints =
           experiment.wells[0].indicators[indicatorIndex].time.length;
