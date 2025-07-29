@@ -76,39 +76,6 @@ export const FilteredGraph = ({
     };
   }, []);
 
-  // // Recalculate min/max y-values dynamically whenever filteredGraphData changes
-  // const calculateYMinMax = (data) => {
-  //   try {
-  //     if (!data || !Array.isArray(data.datasets)) {
-  //       console.error("filteredGraphData.datasets is not an array", data);
-  //       return { minYValue: 0, maxYValue: 100 };
-  //     }
-  //     const allYValues = data.datasets.flatMap((dataset) =>
-  //       Array.isArray(dataset.data) ? dataset.data.map((point) => point.y) : []
-  //     );
-  //     if (!allYValues.length) return { minYValue: 0, maxYValue: 100 };
-  //     // Prevent stack overflow for huge arrays
-  //     if (allYValues.length > 1e6) {
-  //       console.error(
-  //         "filteredGraphData has too many points",
-  //         allYValues.length
-  //       );
-  //       return { minYValue: 0, maxYValue: 100 };
-  //     }
-  //     const minYValue = Math.min(...allYValues, 0); // Ensure it doesn't go below 0
-  //     const maxYValue = Math.max(...allYValues, 100); // Ensure it doesn't go above 100
-  //     return { minYValue, maxYValue };
-  //   } catch (e) {
-  //     console.error("Error in calculateYMinMax", e, data);
-  //     return { minYValue: 0, maxYValue: 100 };
-  //   }
-  // };
-
-  // const { minYValue, maxYValue } = useMemo(
-  //   () => calculateYMinMax(filteredGraphData),
-  //   [filteredGraphData]
-  // );
-
   // Update chart when annotations change
   useEffect(() => {
     const chart = chartRef.current;
@@ -125,27 +92,27 @@ export const FilteredGraph = ({
     const x = event.clientX - rect.left;
     let annotationRangeStartIndex = chart.scales.x.getValueForPixel(x);
 
-    if (annotationRangeStartIndex === null) {
-      annotationRangeStartIndex = 0; // Set to 0 if null
+    // Always ensure annotationRangeStartIndex is a valid number
+    if (
+      typeof annotationRangeStartIndex !== "number" ||
+      isNaN(annotationRangeStartIndex)
+    ) {
+      annotationRangeStartIndex = 0;
     }
 
     setAnnotationStartPos({ x: x, y: 0 });
     setIsDragging(true);
 
-    if (
-      annotationRangeStartIndex < 0 ||
-      annotationRangeStartIndex > extractedIndicatorTimes.length
-    ) {
+    // Clamp to valid range
+    if (annotationRangeStartIndex < 0) {
       setAnnotationRangeStart(0);
-    } else if (annotationRangeStartIndex < 0) {
-      setAnnotationRangeStart(0);
+    } else if (annotationRangeStartIndex > extractedIndicatorTimes.length) {
+      setAnnotationRangeStart(extractedIndicatorTimes.length);
     } else {
-      // setAnnotationRangeStart(annotationRangeStartIndex);
       setAnnotationRangeStart(
         chart.scales.x.getValueForPixel(Math.min(annotationStartPos.x, x))
       );
     }
-    console.log(annotationRangeStartIndex);
   };
 
   // Handle mouse move to dynamically update the annotation
@@ -190,42 +157,74 @@ export const FilteredGraph = ({
     const x = event.clientX - rect.left;
     let annotationRangeEndIndex = chart.scales.x.getValueForPixel(x);
 
-    if (annotationRangeEnd === null) {
-      annotationRangeEndIndex = chart.scales.x.max; // Set to max value if null
-    } else if (
-      annotationRangeEndIndex > extractedIndicatorTimes.length ||
-      annotationRangeEndIndex < 0
+    // Always ensure annotationRangeEndIndex is a valid number
+    if (
+      typeof annotationRangeEndIndex !== "number" ||
+      isNaN(annotationRangeEndIndex)
     ) {
-      setAnnotationRangeEnd(extractedIndicatorTimes.length);
-    } else {
-      // setAnnotationRangeStart(chart.scales.x.getValueForPixel(Math.min(annotationStartPos.x, x)));
-      setAnnotationRangeEnd(
-        chart.scales.x.getValueForPixel(Math.max(annotationStartPos.x, x))
+      annotationRangeEndIndex = chart.scales.x.max;
+    }
+
+    // Always create annotation with valid numbers
+    let xMin = chart.scales.x.getValueForPixel(
+      Math.min(annotationStartPos.x, x)
+    );
+    let xMax = chart.scales.x.getValueForPixel(
+      Math.max(annotationStartPos.x, x)
+    );
+    const yMin = chart.scales.y.min;
+    const yMax = chart.scales.y.max;
+
+    // Snap xMin and xMax to nearest available x values in the data
+    // Use extractedIndicatorTimes for robust x values
+    let xs = [];
+    if (
+      extractedIndicatorTimes &&
+      Object.values(extractedIndicatorTimes).length > 0
+    ) {
+      xs = Object.values(extractedIndicatorTimes)[0];
+    }
+
+    if (xs.length > 0) {
+      // Snap xMin
+      xMin = xs.reduce(
+        (prev, curr) =>
+          Math.abs(curr - xMin) < Math.abs(prev - xMin) ? curr : prev,
+        xs[0]
       );
+      // Snap xMax
+      xMax = xs.reduce(
+        (prev, curr) =>
+          Math.abs(curr - xMax) < Math.abs(prev - xMax) ? curr : prev,
+        xs[0]
+      );
+    }
+
+    // Ensure xMin <= xMax
+    const snappedStart = Math.min(xMin, xMax);
+    const snappedEnd = Math.max(xMin, xMax);
+
+    // Set annotation range in parent state (if provided)
+    if (typeof setAnnotationRangeStart === "function") {
+      setAnnotationRangeStart(snappedStart);
+    }
+    if (typeof setAnnotationRangeEnd === "function") {
+      setAnnotationRangeEnd(snappedEnd);
     }
 
     const newAnnotation = {
       type: "box",
-      xMin: chart.scales.x.getValueForPixel(Math.min(annotationStartPos.x, x)),
-      xMax: chart.scales.x.getValueForPixel(Math.max(annotationStartPos.x, x)),
-      yMin: chart.scales.y.min,
-      yMax: chart.scales.y.max,
+      xMin: snappedStart,
+      xMax: snappedEnd,
+      yMin,
+      yMax,
       backgroundColor: "rgba(0, 255, 0, 0.2)",
       borderColor: "rgba(0, 255, 0, 1)",
       borderWidth: 2,
     };
 
-    setAnnotations([newAnnotation]);
-
-    console.log(
-      "Final annotation range:",
-      annotationRangeStart,
-      chart.scales.x.getValueForPixel(Math.min(annotationStartPos.x, x)),
-      annotationRangeEnd,
-      chart.scales.x.getValueForPixel(Math.max(annotationStartPos.x, x))
-    );
-    console.log("newAnnotation: ", newAnnotation);
-    console.log("annotations: ", annotations);
+    // Always create a new array/object for setAnnotations to ensure reactivity
+    setAnnotations([{ ...newAnnotation }]);
   };
 
   return (

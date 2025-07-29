@@ -747,7 +747,7 @@ export const FilterControls = ({
           onClick={handleResetFilteredData}
         >
           <RefreshTwoToneIcon />
-          Reset Data
+          Undo Filters
         </Button>
       </Tooltip>
 

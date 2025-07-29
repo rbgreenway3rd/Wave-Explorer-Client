@@ -337,18 +337,24 @@ export const MetricsControls = ({
                 }
                 newIdx = closestIdx;
               }
-              setAnnotationRangeStart(newIdx);
+              const snappedValue = currentIndicatorTimes[newIdx];
+              setAnnotationRangeStart(snappedValue);
               setAnnotations((prev) => {
                 const ann = prev && prev[0] ? { ...prev[0] } : { type: "box" };
-                ann.xMin = newIdx;
-                ann.xMax = typeof ann.xMax === "number" ? ann.xMax : newIdx;
-                ann.yMin = ann.yMin ?? "Min";
-                ann.yMax = ann.yMax ?? "Max";
-                ann.backgroundColor =
-                  ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
-                ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
-                ann.borderWidth = ann.borderWidth ?? 2;
-                return [ann];
+                return [
+                  {
+                    ...ann,
+                    xMin: snappedValue,
+                    xMax:
+                      typeof ann.xMax === "number" ? ann.xMax : snappedValue,
+                    yMin: ann.yMin ?? "Min",
+                    yMax: ann.yMax ?? "Max",
+                    backgroundColor:
+                      ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)",
+                    borderColor: ann.borderColor ?? "rgba(0, 255, 0, 1)",
+                    borderWidth: ann.borderWidth ?? 2,
+                  },
+                ];
               });
             }
           }}
@@ -374,19 +380,25 @@ export const MetricsControls = ({
                   }
                   newIdx = closestIdx;
                 }
-                setAnnotationRangeStart(newIdx);
+                const snappedValue = currentIndicatorTimes[newIdx];
+                setAnnotationRangeStart(snappedValue);
                 setAnnotations((prev) => {
                   const ann =
                     prev && prev[0] ? { ...prev[0] } : { type: "box" };
-                  ann.xMin = newIdx;
-                  ann.xMax = typeof ann.xMax === "number" ? ann.xMax : newIdx;
-                  ann.yMin = ann.yMin ?? "Min";
-                  ann.yMax = ann.yMax ?? "Max";
-                  ann.backgroundColor =
-                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
-                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
-                  ann.borderWidth = ann.borderWidth ?? 2;
-                  return [ann];
+                  return [
+                    {
+                      ...ann,
+                      xMin: snappedValue,
+                      xMax:
+                        typeof ann.xMax === "number" ? ann.xMax : snappedValue,
+                      yMin: ann.yMin ?? "Min",
+                      yMax: ann.yMax ?? "Max",
+                      backgroundColor:
+                        ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)",
+                      borderColor: ann.borderColor ?? "rgba(0, 255, 0, 1)",
+                      borderWidth: ann.borderWidth ?? 2,
+                    },
+                  ];
                 });
               }
             }
@@ -520,18 +532,24 @@ export const MetricsControls = ({
                 }
                 newIdx = closestIdx;
               }
-              setAnnotationRangeEnd(newIdx);
+              const snappedValue = currentIndicatorTimes[newIdx];
+              setAnnotationRangeEnd(snappedValue);
               setAnnotations((prev) => {
                 const ann = prev && prev[0] ? { ...prev[0] } : { type: "box" };
-                ann.xMax = newIdx;
-                ann.xMin = typeof ann.xMin === "number" ? ann.xMin : newIdx;
-                ann.yMin = ann.yMin ?? "Min";
-                ann.yMax = ann.yMax ?? "Max";
-                ann.backgroundColor =
-                  ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
-                ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
-                ann.borderWidth = ann.borderWidth ?? 2;
-                return [ann];
+                return [
+                  {
+                    ...ann,
+                    xMax: snappedValue,
+                    xMin:
+                      typeof ann.xMin === "number" ? ann.xMin : snappedValue,
+                    yMin: ann.yMin ?? "Min",
+                    yMax: ann.yMax ?? "Max",
+                    backgroundColor:
+                      ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)",
+                    borderColor: ann.borderColor ?? "rgba(0, 255, 0, 1)",
+                    borderWidth: ann.borderWidth ?? 2,
+                  },
+                ];
               });
             }
           }}
@@ -557,19 +575,25 @@ export const MetricsControls = ({
                   }
                   newIdx = closestIdx;
                 }
-                setAnnotationRangeEnd(newIdx);
+                const snappedValue = currentIndicatorTimes[newIdx];
+                setAnnotationRangeEnd(snappedValue);
                 setAnnotations((prev) => {
                   const ann =
                     prev && prev[0] ? { ...prev[0] } : { type: "box" };
-                  ann.xMax = newIdx;
-                  ann.xMin = typeof ann.xMin === "number" ? ann.xMin : newIdx;
-                  ann.yMin = ann.yMin ?? "Min";
-                  ann.yMax = ann.yMax ?? "Max";
-                  ann.backgroundColor =
-                    ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)";
-                  ann.borderColor = ann.borderColor ?? "rgba(0, 255, 0, 1)";
-                  ann.borderWidth = ann.borderWidth ?? 2;
-                  return [ann];
+                  return [
+                    {
+                      ...ann,
+                      xMax: snappedValue,
+                      xMin:
+                        typeof ann.xMin === "number" ? ann.xMin : snappedValue,
+                      yMin: ann.yMin ?? "Min",
+                      yMax: ann.yMax ?? "Max",
+                      backgroundColor:
+                        ann.backgroundColor ?? "rgba(0, 255, 0, 0.2)",
+                      borderColor: ann.borderColor ?? "rgba(0, 255, 0, 1)",
+                      borderWidth: ann.borderWidth ?? 2,
+                    },
+                  ];
                 });
               }
             }

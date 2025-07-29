@@ -16,7 +16,7 @@ export const FilteredGraphOptions = (
   for (const well of wellArrays) {
     for (const indicator of well.indicators) {
       if (!indicator.isDisplayed) continue;
-      const data = indicator.rawData ?? [];
+      const data = indicator.filteredData ?? [];
       for (const point of data) {
         if (point.y < minYValue) minYValue = point.y;
         if (point.y > maxYValue) maxYValue = point.y;
@@ -85,8 +85,8 @@ export const FilteredGraphOptions = (
         grid: {
           display: false,
         },
-        suggestedMin: minYValue,
-        suggestedMax: maxYValue,
+        min: minYValue,
+        max: maxYValue,
         // min: minValue,
         // max: maxValue,
       },
