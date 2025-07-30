@@ -124,33 +124,33 @@ export const GenerateCSV = (
             indicatorData.push(filterRow.join(", "));
           });
           indicatorData.push("</FILTERS_USED>");
+          // Add <FILTERED_DATA> tag
+          indicatorData.push("<FILTERED_DATA>");
+
+          // Add wellHeaders row: "Time" followed by well labels (same as <RAW_DATA>)
+          const filteredWellHeaders = [
+            "Time",
+            ...experiment.wells.map((well) => well.label),
+          ];
+          indicatorData.push(filteredWellHeaders.join(","));
+
+          // Construct rows for each time point for filteredData
+          const numTimePoints =
+            experiment.wells[0].indicators[indicatorIndex].time.length;
+          for (let i = 0; i < numTimePoints; i++) {
+            // Start with converted time for the row (same as before)
+            const timeInMilliseconds =
+              experiment.wells[0].indicators[indicatorIndex].time[i];
+            const row = [timeInMilliseconds];
+            experiment.wells.forEach((well) => {
+              row.push(well.indicators[indicatorIndex].filteredData[i].y);
+            });
+            indicatorData.push(row.join(","));
+          }
+
+          // Close the <FILTERED_DATA> tag
+          indicatorData.push("</FILTERED_DATA>");
         }
-        // Add <FILTERED_DATA> tag
-        indicatorData.push("<FILTERED_DATA>");
-
-        // Add wellHeaders row: "Time" followed by well labels (same as <RAW_DATA>)
-        const filteredWellHeaders = [
-          "Time",
-          ...experiment.wells.map((well) => well.label),
-        ];
-        indicatorData.push(filteredWellHeaders.join(","));
-
-        // Construct rows for each time point for filteredData
-        const numTimePoints =
-          experiment.wells[0].indicators[indicatorIndex].time.length;
-        for (let i = 0; i < numTimePoints; i++) {
-          // Start with converted time for the row (same as before)
-          const timeInMilliseconds =
-            experiment.wells[0].indicators[indicatorIndex].time[i];
-          const row = [timeInMilliseconds];
-          experiment.wells.forEach((well) => {
-            row.push(well.indicators[indicatorIndex].filteredData[i].y);
-          });
-          indicatorData.push(row.join(","));
-        }
-
-        // Close the <FILTERED_DATA> tag
-        indicatorData.push("</FILTERED_DATA>");
 
         console.log("Saved Metrics:", savedMetrics);
         savedMetrics.forEach((metric) => {
