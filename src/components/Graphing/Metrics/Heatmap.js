@@ -282,9 +282,9 @@ const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
           const row = Math.floor(index / numColumns);
           const col = index % numColumns;
           context.save();
-          // context.strokeStyle = "white";
-          // context.lineWidth = 2.5;
-          // // Inset border: draw a smaller rectangle inside the cell
+          context.strokeStyle = "white";
+          context.lineWidth = 2.5;
+          // Inset border: draw a smaller rectangle inside the cell
           // const inset = 4; // px inset from each edge
           // context.strokeRect(
           //   col * cellWidth + inset,
@@ -302,7 +302,6 @@ const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
           const grad = context.createLinearGradient(x, y, x + w, y + h);
           grad.addColorStop(0, "darkgray");
           grad.addColorStop(0.25, "black");
-          grad.addColorStop(0.5, "gray");
           grad.addColorStop(0.75, "black");
           grad.addColorStop(1, "darkgray");
           context.strokeStyle = grad;

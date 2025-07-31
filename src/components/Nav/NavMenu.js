@@ -20,6 +20,7 @@ import { Tooltip } from "@mui/material";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import CardiacAnalysisModal from "../CardiacAnalysis/CardiacAnalysisModal";
 import { AnalysisProvider } from "../CardiacAnalysis/AnalysisProvider";
+
 import { PERMISSIONS } from "../../permissions";
 
 export const NavMenu = ({ profile }) => {

@@ -478,71 +478,66 @@ export const FilterControls = ({
     setSelectedValue(event.target.value);
   };
 
+  // REHYDRATE UPLOADED FILTERS
   useEffect(() => {
-    // const handleLoadSavedFilters = (data) => {
     let newFilters = [];
-    // data.filters.map((filter) => {
+
     uploadedFilters.map((filter) => {
+      let newFilter;
       if (filter.name === "Static Ratio") {
-        const newStaticRatioFilter = new StaticRatio_Filter(
+        newFilter = new StaticRatio_Filter(
           selectedFilters.length,
           handleEditStaticRatioParams
         );
-        newStaticRatioFilter.setParams(filter.start, filter.end);
-        newFilters.push(newStaticRatioFilter);
+        newFilter.setParams(filter.start, filter.end);
       } else if (filter.name === "Smoothing") {
-        const newSmoothingFilter = new Smoothing_Filter(
+        newFilter = new Smoothing_Filter(
           selectedFilters.length,
           handleEditSmoothingFilterParams
         );
-        newSmoothingFilter.setParams(filter.windowWidth);
-        newFilters.push(newSmoothingFilter);
+        newFilter.setParams(filter.windowWidth);
       } else if (filter.name === "Control Subtraction") {
-        const newControlSubtractionFilter = new ControlSubtraction_Filter(
+        newFilter = new ControlSubtraction_Filter(
           selectedFilters.length,
           handleEditControlSubtractionFilterParams,
           filter.number_of_columns,
           filter.number_of_rows
         );
-        newControlSubtractionFilter.setParams(
-          filter.controlWellArray,
-          filter.applyWellArray
-        );
-        newFilters.push(newControlSubtractionFilter);
+        newFilter.setParams(filter.controlWellArray, filter.applyWellArray);
       } else if (filter.name === "Derivative") {
-        const newDerivativeFilter = new Derivative_Filter(
-          selectedFilters.length
-        );
-        newFilters.push(newDerivativeFilter);
+        newFilter = new Derivative_Filter(selectedFilters.length);
       } else if (filter.name === "Outlier Removal") {
-        const newOutlierRemovalFilter = new OutlierRemoval_Filter(
+        newFilter = new OutlierRemoval_Filter(
           selectedFilters.length,
           handleEditOutlierRemovalFilterParams
         );
-        newOutlierRemovalFilter.setParams(filter.halfWindow, filter.threshold);
-        newFilters.push(newOutlierRemovalFilter);
+        newFilter.setParams(filter.halfWindow, filter.threshold);
       } else if (filter.name === "Flat Field Correction") {
-        const newFlatFieldCorrectionFilter = new FlatFieldCorrection_Filter(
+        newFilter = new FlatFieldCorrection_Filter(
           selectedFilters.length,
           handleEditFlatFieldCorrectionFilterParams
         );
-        newFlatFieldCorrectionFilter.setParams(filter.correctionMatrix);
-        newFilters.push(newFlatFieldCorrectionFilter);
+        newFilter.setParams(filter.correctionMatrix);
       } else if (filter.name === "Dynamic Ratio") {
-        const newDynamicRatioFilter = new DynamicRatio_Filter(
+        newFilter = new DynamicRatio_Filter(
           selectedFilters.length,
           handleEditDynamicRatioFilterParams
         );
-        newDynamicRatioFilter.setParams(filter.numerator, filter.denominator);
-        newFilters.push(newDynamicRatioFilter);
+        newFilter.setParams(filter.numerator, filter.denominator);
+      }
+      // Set isEnabled if present in uploaded filter
+      if (newFilter && filter.isEnabled) {
+        newFilter.setEnabled(true);
+      }
+      if (newFilter) {
+        newFilters.push(newFilter);
       }
       return newFilters;
     });
-    // setUploadedFilters(newFilters);
+
     setSelectedFilters(newFilters);
-    // setSavedMetrics(data.metrics);
-    // alert("Filters and metrics loaded successfully!");
-    // };
+    // Update enabledFilters to match enabled filters after rehydration
+    setEnabledFilters(newFilters.filter((f) => f.isEnabled));
   }, [uploadedFilters]);
 
   return (

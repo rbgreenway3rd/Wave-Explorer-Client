@@ -623,7 +623,6 @@ export const CombinedComponent = ({ profile, setProfile }) => {
                   setAnnotationRangeStart={setAnnotationRangeStart}
                   setAnnotationRangeEnd={setAnnotationRangeEnd}
                   filteredGraphConfig={filteredGraphConfig}
-                  expanded={!showLargeGraph}
                 />
               </div>
               <div className="combined-component__filter-controls">
