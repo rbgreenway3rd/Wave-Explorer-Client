@@ -1,0 +1,60 @@
+.batch-processing-dialog {
+    min-width: 10em;
+}
+
+/* Button styling */
+.batch-processing-add-btn {
+    padding: 8px 16px;
+    background-color: #1976d2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+    margin-bottom: 16px;
+}
+
+/* Scrollable list container */
+.batch-processing-list-container {
+    max-height: 8em;
+    overflow-y: auto;
+    border: 1px solid rgb(0, 0, 0);
+    border-radius: 0.25em;
+    padding: 0.5em;
+    background: rgb(210, 210, 210);
+}
+
+/* Remove bullets from ul */
+.batch-processing-list {
+    padding: 0;
+    margin: 0;
+    list-style-type: none;
+}
+
+/* List item styling */
+.batch-processing-list-item {
+    font-size: 0.8rem;
+    margin-top: 0.25em;
+    margin-right: 0.5em;
+    border-bottom: 1px solid rgb(128, 128, 128);
+}
+
+/* Custom scrollbar styling */
+.batch-processing-list-container::-webkit-scrollbar {
+    width: 0.5em;
+    background: #e0e0e0;
+}
+
+.batch-processing-list-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.batch-processing-list-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.batch-processing-list-container {
+    scrollbar-width: thin;
+    scrollbar-color: #888 #e0e0e0;
+}

@@ -100,11 +100,7 @@ export const NavBar = ({ combinedComponentRef, profile, setProfile }) => {
           className="wave-explorer-icon"
         />{" "}
         <h1 className="logo">aveExplorer</h1>
-        {/* <ProfileMenu
-          profile={profile}
-          setProfile={setProfile}
-          
-        /> */}
+        <ProfileMenu profile={profile} setProfile={setProfile} />
       </section>
     </header>
   );

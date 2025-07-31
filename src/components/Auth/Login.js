@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { supabase } from "../../supabaseClient";
+import { auth, db } from "../../firebaseClient";
 import {
   Button,
   TextField,
@@ -11,6 +11,8 @@ import {
   DialogContent,
   DialogActions,
 } from "@mui/material";
+import { collection, query, where, getDocs, addDoc } from "firebase/firestore";
+import { signInWithEmailAndPassword } from "firebase/auth";
 
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState("");
@@ -24,14 +26,17 @@ export default function Login({ onLogin }) {
 
   // Helper to get email by username
   const getEmailByUsername = async (username) => {
-    const cleanUsername = username.trim();
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("email")
-      .ilike("username", cleanUsername)
-      .single();
-    if (error) throw new Error("Username not found");
-    return data.email;
+    const q = query(
+      collection(db, "profiles"),
+      where("username", "==", username.trim())
+    );
+    const snapshot = await getDocs(q);
+    console.log(
+      "Profiles query result:",
+      snapshot.docs.map((doc) => doc.data())
+    );
+    if (snapshot.empty) throw new Error("Username not found");
+    return snapshot.docs[0].data().email;
   };
 
   const handleLogin = async (e) => {
@@ -40,13 +45,12 @@ export default function Login({ onLogin }) {
     setLoading(true);
     try {
       const emailFromDb = await getEmailByUsername(username);
-      const { error: loginError, user } =
-        await supabase.auth.signInWithPassword({
-          email: emailFromDb,
-          password,
-        });
-      if (loginError) setError(loginError.message);
-      else if (onLogin) onLogin(user);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        emailFromDb,
+        password
+      );
+      if (onLogin) onLogin(userCredential.user);
     } catch (err) {
       setError(err.message);
     }
@@ -61,16 +65,17 @@ export default function Login({ onLogin }) {
       setRequestStatus("Email and username are required.");
       return;
     }
-    // Store request in a table (e.g., user_requests)
-    const { error } = await supabase
-      .from("user_requests")
-      .insert([{ email: requestEmail, username: requestUsername }]);
-    if (error)
-      setRequestStatus("Failed to submit request. Please try again later.");
-    else
+    try {
+      await addDoc(collection(db, "user_requests"), {
+        email: requestEmail,
+        username: requestUsername,
+      });
       setRequestStatus(
         "Request submitted! You will be contacted by an administrator."
       );
+    } catch (error) {
+      setRequestStatus("Failed to submit request. Please try again later.");
+    }
   };
 
   return (

@@ -5,6 +5,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import FileDownloadTwoToneIcon from "@mui/icons-material/FileDownloadTwoTone";
 import SaveIcon from "@mui/icons-material/Save";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
+import DynamicFeedIcon from "@mui/icons-material/DynamicFeed";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Dialog from "@mui/material/Dialog";
@@ -20,12 +21,14 @@ import { Tooltip } from "@mui/material";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import CardiacAnalysisModal from "../CardiacAnalysis/CardiacAnalysisModal";
 import { AnalysisProvider } from "../CardiacAnalysis/AnalysisProvider";
+import BatchProcessing from "../FileHandling/BatchProcessing";
 
 import { PERMISSIONS } from "../../permissions";
 
 export const NavMenu = ({ profile }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   const {
     project,
     selectedFilters,
@@ -71,6 +74,14 @@ export const NavMenu = ({ profile }) => {
   };
   const handleCloseCardiacModal = () => {
     setCardiacModalOpen(false);
+  };
+
+  const handleOpenBatchDialog = () => {
+    setBatchDialogOpen(true);
+    handleClose();
+  };
+  const handleCloseBatchDialog = () => {
+    setBatchDialogOpen(false);
   };
 
   const handleEditStaticRatioParams = (start, end, setParams) => {
@@ -259,6 +270,13 @@ export const NavMenu = ({ profile }) => {
           />
         </MenuItem>
         <MenuItem
+          className="batchProcessingButton"
+          onClick={handleOpenBatchDialog}
+        >
+          <DynamicFeedIcon />
+          Batch Processing
+        </MenuItem>
+        <MenuItem
           className="cardiacAnalysisButton"
           onClick={canOpenCardiac ? handleOpenCardiacModal : undefined}
           disabled={!canOpenCardiac}
@@ -315,6 +333,10 @@ export const NavMenu = ({ profile }) => {
           onClose={handleCloseCardiacModal}
         />
       </AnalysisProvider>
+      <BatchProcessing
+        open={batchDialogOpen}
+        onClose={handleCloseBatchDialog}
+      />
     </>
   );
 };
