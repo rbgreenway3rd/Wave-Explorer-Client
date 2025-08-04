@@ -6,8 +6,14 @@ import {
   getAllSlopes,
   getAllRanges,
 } from "../Graphing/Metrics/MetricsUtilities";
-
 import * as d3 from "d3";
+import {
+  Smoothing_Filter,
+  StaticRatio_Filter,
+  ControlSubtraction_Filter,
+  Derivative_Filter,
+  OutlierRemoval_Filter,
+} from "../Graphing/FilteredData/FilterModels";
 
 export const GenerateCSV = (
   project,
@@ -17,7 +23,66 @@ export const GenerateCSV = (
   includeSavedMetrics,
   savedMetrics
 ) => {
-  console.log(project.plate[0].experiments[0]);
+  // Apply filters to each indicator in each well before generating CSV
+  project.plate.forEach((plate) => {
+    plate.experiments.forEach((experiment) => {
+      // Deep copy filteredData for all indicators in all wells
+      experiment.wells.forEach((well) => {
+        well.indicators.forEach((indicator) => {
+          indicator.filteredData = indicator.rawData.map((d) => ({ ...d }));
+        });
+      });
+      // Apply each enabled filter ONCE to the entire wells array
+      enabledFilters.forEach((filter) => {
+        let filterInstance;
+        switch (filter.name) {
+          case "Smoothing":
+            filterInstance = new Smoothing_Filter(filter.windowWidth);
+            break;
+          case "Static Ratio":
+            filterInstance = new StaticRatio_Filter();
+            filterInstance.start = filter.start;
+            filterInstance.end = filter.end;
+            break;
+          case "Control Subtraction":
+            filterInstance = new ControlSubtraction_Filter(
+              0,
+              null,
+              experiment.numberOfColumns,
+              experiment.numberOfRows
+            );
+            filterInstance.controlWellArray = filter.controlWellArray;
+            filterInstance.applyWellArray = filter.applyWellArray;
+            filterInstance.calculate_average_curve(experiment.wells);
+            break;
+          case "Derivative":
+            filterInstance = new Derivative_Filter();
+            break;
+          case "Outlier Removal":
+            filterInstance = new OutlierRemoval_Filter();
+            filterInstance.halfWindow = filter.halfWindow;
+            filterInstance.threshold = filter.threshold;
+            break;
+          default:
+            filterInstance = null;
+        }
+        if (filterInstance && typeof filterInstance.execute === "function") {
+          filterInstance.execute(experiment.wells);
+        }
+      });
+      // Debug logging for first well/indicator
+      if (
+        experiment.wells.length > 0 &&
+        experiment.wells[0].indicators.length > 0
+      ) {
+        console.log(
+          `First well, first indicator filteredData after filters:`,
+          experiment.wells[0].indicators[0].filteredData.slice(0, 10)
+        );
+      }
+    });
+  });
+
   // Header section
   const header = ["<HEADER>"];
   project.plate.forEach((plate) => {

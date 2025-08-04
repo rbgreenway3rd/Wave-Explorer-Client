@@ -31,10 +31,10 @@ export default function Login({ onLogin }) {
       where("username", "==", username.trim())
     );
     const snapshot = await getDocs(q);
-    console.log(
-      "Profiles query result:",
-      snapshot.docs.map((doc) => doc.data())
-    );
+    // console.log(
+    //   "Profiles query result:",
+    //   snapshot.docs.map((doc) => doc.data())
+    // );
     if (snapshot.empty) throw new Error("Username not found");
     return snapshot.docs[0].data().email;
   };

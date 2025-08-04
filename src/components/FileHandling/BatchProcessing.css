@@ -1,10 +1,32 @@
 .batch-processing-dialog {
-    min-width: 10em;
+    /* min-width: 50vw; */
+}
+
+.file-upload-section {
+    /* border: solid 1px rgb(0, 0, 0); */
+    display: flex;
+    flex-direction: column;
+
+    background: rgb(210, 210, 210);
+    width: 100%;
+    height: 100%;
+
+}
+
+.upload-config-container {
+    display: flex;
+    flex-direction: column;
+    height: 70%;
+    width: 100%;
+    /* outline: solid 1px rgb(0, 0, 0); */
+    max-height: 50vh;
+    /* Ensure children do not overflow this container */
+    overflow: hidden;
 }
 
 /* Button styling */
 .batch-processing-add-btn {
-    padding: 8px 16px;
+    /* padding: 8px 16px;
     background-color: #1976d2;
     color: white;
     border: none;
@@ -12,23 +34,40 @@
     cursor: pointer;
     font-size: 1em;
     margin-bottom: 16px;
+    width: 25% */
+    /* width: 100%; */
+    align-self: center;
+    margin: 0.25em
 }
+
+.batch-processing-preference-radios {}
 
 /* Scrollable list container */
 .batch-processing-list-container {
-    max-height: 8em;
-    overflow-y: auto;
-    border: 1px solid rgb(0, 0, 0);
-    border-radius: 0.25em;
-    padding: 0.5em;
-    background: rgb(210, 210, 210);
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    /* Prevent from exceeding parent height */
+    max-height: 100%;
+    overflow: hidden;
 }
 
-/* Remove bullets from ul */
+
+
 .batch-processing-list {
-    padding: 0;
-    margin: 0;
+    flex: 1;
+    width: 95%;
+    max-height: 100%;
+    overflow-y: auto;
+    padding: 0.25em;
+
+    margin-top: 0.25em;
+    margin-bottom: 0.25em;
     list-style-type: none;
+    border: solid 1px #888;
+    border-radius: 0.25em;
+    background: rgb(220, 220, 220);
+    align-self: center;
 }
 
 /* List item styling */
@@ -40,21 +79,40 @@
 }
 
 /* Custom scrollbar styling */
-.batch-processing-list-container::-webkit-scrollbar {
+.batch-processing-list::-webkit-scrollbar {
     width: 0.5em;
     background: #e0e0e0;
+
 }
 
-.batch-processing-list-container::-webkit-scrollbar-thumb {
+.batch-processing-list::-webkit-scrollbar-thumb {
     background: #888;
     border-radius: 4px;
 }
 
-.batch-processing-list-container::-webkit-scrollbar-thumb:hover {
+.batch-processing-list::-webkit-scrollbar-thumb:hover {
     background: #555;
 }
 
-.batch-processing-list-container {
+.batch-processing-list {
     scrollbar-width: thin;
     scrollbar-color: #888 #e0e0e0;
+}
+
+.batch-processing-metrics-and-filters-container {
+    display: flex;
+    flex-direction: row;
+
+}
+
+.metrics-and-filters-container {
+    display: flex;
+    justify-content: space-evenly;
+    flex-direction: row;
+
+}
+
+.dialog-actions-container {
+    display: flex;
+    flex-direction: row;
 }

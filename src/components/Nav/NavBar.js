@@ -22,11 +22,31 @@ import HelpTwoToneIcon from "@mui/icons-material/HelpTwoTone";
 import { handleScreenshot } from "../../utilities/Handlers";
 import { supabase } from "../../supabaseClient";
 import ProfileMenu from "./ProfileMenu";
+import CardiacAnalysisModal from "../CardiacAnalysis/CardiacAnalysisModal";
+import { AnalysisProvider } from "../CardiacAnalysis/AnalysisProvider";
+import { PERMISSIONS } from "../../permissions";
+import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
+import DynamicFeedIcon from "@mui/icons-material/DynamicFeed";
+import BatchProcessing from "../FileHandling/BatchProcessing";
 
 export const NavBar = ({ combinedComponentRef, profile, setProfile }) => {
   const { project } = useContext(DataContext);
   const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
   const [file, setFile] = useState(null); // State to store the uploaded file
+
+  // Cardiac Analysis modal state and feature gating
+  const [cardiacModalOpen, setCardiacModalOpen] = useState(false);
+  const canOpenCardiac =
+    (profile?.permissions & PERMISSIONS.CARDIAC) === PERMISSIONS.CARDIAC ||
+    (profile?.permissions & PERMISSIONS.ADMIN) === PERMISSIONS.ADMIN;
+
+  const handleOpenCardiacModal = () => setCardiacModalOpen(true);
+  const handleCloseCardiacModal = () => setCardiacModalOpen(false);
+
+  // Batch Processing dialog state and handlers
+  const [batchDialogOpen, setBatchDialogOpen] = useState(false);
+  const handleOpenBatchDialog = () => setBatchDialogOpen(true);
+  const handleCloseBatchDialog = () => setBatchDialogOpen(false);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -48,7 +68,6 @@ export const NavBar = ({ combinedComponentRef, profile, setProfile }) => {
               sx={{
                 marginRight: "0.25em",
               }}
-              // style={{ fill: "rgb(0,32,96)" }}
             />
           </IconButton>
         </Tooltip>
@@ -56,13 +75,54 @@ export const NavBar = ({ combinedComponentRef, profile, setProfile }) => {
           setWellArraysUpdated={setWellArraysUpdated}
           setFile={setFile}
         />
+        {/* Batch Processing IconButton */}
+        <Tooltip title="Batch Processing" arrow>
+          <span style={{ marginLeft: "0.25em" }}>
+            <IconButton
+              className="batchProcessingButton"
+              onClick={handleOpenBatchDialog}
+              color={batchDialogOpen ? "primary" : "default"}
+            >
+              <DynamicFeedIcon />
+            </IconButton>
+          </span>
+        </Tooltip>
         {project ? (
           <>
-            <NavMenu profile={profile} />
+            <NavMenu
+              profile={profile}
+              onOpenCardiac={
+                canOpenCardiac ? handleOpenCardiacModal : undefined
+              }
+            />
           </>
         ) : (
           ""
         )}
+        {/* Cardiac Analysis IconButton */}
+        {project ? (
+          <>
+            <Tooltip title="Cardiac Analysis" arrow>
+              <span style={{ marginLeft: "0.25em" }}>
+                <IconButton
+                  className="cardiacAnalysisButton"
+                  onClick={canOpenCardiac ? handleOpenCardiacModal : undefined}
+                  disabled={!canOpenCardiac}
+                  color={cardiacModalOpen ? "primary" : "default"}
+                >
+                  <FavoriteBorderIcon />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </>
+        ) : (
+          ""
+        )}
+        {/* Batch Processing Dialog */}
+        <BatchProcessing
+          open={batchDialogOpen}
+          onClose={handleCloseBatchDialog}
+        />
       </section>
       <section className="navbar-middle">
         {/* Display the file name */}
@@ -72,6 +132,7 @@ export const NavBar = ({ combinedComponentRef, profile, setProfile }) => {
             style={{
               display: "flex",
               flexDirection: "row",
+              alignItems: "center",
             }}
           >
             <Typography style={{ marginRight: "1em" }}>
@@ -88,6 +149,7 @@ export const NavBar = ({ combinedComponentRef, profile, setProfile }) => {
                 <AddAPhotoTwoTone />
               </IconButton>
             </Tooltip>
+            {/* Cardiac Analysis IconButton */}
           </div>
         ) : (
           ""
@@ -102,6 +164,14 @@ export const NavBar = ({ combinedComponentRef, profile, setProfile }) => {
         <h1 className="logo">aveExplorer</h1>
         <ProfileMenu profile={profile} setProfile={setProfile} />
       </section>
+      {/* Cardiac Analysis Modal now in NavBar */}
+      <AnalysisProvider>
+        <CardiacAnalysisModal
+          open={cardiacModalOpen}
+          onClose={handleCloseCardiacModal}
+          project={project}
+        />
+      </AnalysisProvider>
     </header>
   );
 };

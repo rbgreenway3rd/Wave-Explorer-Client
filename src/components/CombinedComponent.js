@@ -192,10 +192,25 @@ export const CombinedComponent = ({ profile, setProfile }) => {
         }));
 
         for (let f = 0; f < enabledFilters.length; f++) {
+          console.log(`Executing filter:`, enabledFilters[f]);
+          // Log filteredData before
+          console.log(
+            `Before filter ${f}:`,
+            JSON.stringify(
+              updatedWellArrays[0].indicators[0].filteredData.slice(0, 10)
+            )
+          );
           if (enabledFilters[f] instanceof ControlSubtraction_Filter) {
             enabledFilters[f].calculate_average_curve(updatedWellArrays);
           }
           await enabledFilters[f].execute(updatedWellArrays);
+          // Log filteredData after
+          console.log(
+            `After filter ${f}:`,
+            JSON.stringify(
+              updatedWellArrays[0].indicators[0].filteredData.slice(0, 10)
+            )
+          );
         }
 
         const updatedProject = {

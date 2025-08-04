@@ -61,15 +61,15 @@
 //         <div className="modal-content">
 //           <div className="modal-header">
 //             <div className="modal-header-item-container">
-//               <h3 className="modal-header-item">Project: {project.title}</h3>
+//               <h3 className="modal-header-item">Project: {project?.title || "No Project"}</h3>
 //               <h5 className="modal-header-item">
-//                 Instrument: {project.instrument}
+//                 Instrument: {project?.instrument || "N/A"}
 //               </h5>
 //               <h5 className="modal-header-item">
-//                 Protocol: {project.protocol}
+//                 Protocol: {project?.protocol || "N/A"}
 //               </h5>
 //               <h5 className="modal-header-item">
-//                 Plate Barcode: {project.plate[0].assayPlateBarcode}
+//                 Plate Barcode: {project?.plate?.[0]?.assayPlateBarcode || "N/A"}
 //               </h5>
 //               {selectedWell ? (
 //                 <h2
@@ -209,15 +209,17 @@ const CardiacAnalysisModal = ({ open, onClose }) => {
         <div className="modal-content">
           <div className="modal-header">
             <div className="modal-header-item-container">
-              <h3 className="modal-header-item">Project: {project.title}</h3>
+              <h3 className="modal-header-item">
+                Project: {project?.title || "No Project"}
+              </h3>
               <h5 className="modal-header-item">
-                Instrument: {project.instrument}
+                Instrument: {project?.instrument || "N/A"}
               </h5>
               <h5 className="modal-header-item">
-                Protocol: {project.protocol}
+                Protocol: {project?.protocol || "N/A"}
               </h5>
               <h5 className="modal-header-item">
-                Plate Barcode: {project.plate[0].assayPlateBarcode}
+                Plate Barcode: {project?.plate?.[0]?.assayPlateBarcode || "N/A"}
               </h5>
               {selectedWell ? (
                 <>

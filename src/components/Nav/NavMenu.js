@@ -19,13 +19,11 @@ import { DataContext } from "../../providers/DataProvider";
 import { GenerateCSV } from "../FileHandling/GenerateReport";
 import { Tooltip } from "@mui/material";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
-import CardiacAnalysisModal from "../CardiacAnalysis/CardiacAnalysisModal";
-import { AnalysisProvider } from "../CardiacAnalysis/AnalysisProvider";
 import BatchProcessing from "../FileHandling/BatchProcessing";
 
 import { PERMISSIONS } from "../../permissions";
 
-export const NavMenu = ({ profile }) => {
+export const NavMenu = ({ profile, onOpenCardiac }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
@@ -59,22 +57,12 @@ export const NavMenu = ({ profile }) => {
   const [threshold, setThreshold] = useState(3);
   // state for flat field correction filter params
   const [correctionMatrix, setCorrectionMatrix] = useState([]);
-  // state controlling Cardiac Analysis modal
-  const [cardiacModalOpen, setCardiacModalOpen] = useState(false);
 
   // PERMISSIONS
   // Only allow opening CardiacAnalysisModal for users with CARDIAC or ADMIN permission
   const canOpenCardiac =
     (profile?.permissions & PERMISSIONS.CARDIAC) === PERMISSIONS.CARDIAC ||
     (profile?.permissions & PERMISSIONS.ADMIN) === PERMISSIONS.ADMIN;
-
-  const handleOpenCardiacModal = () => {
-    setCardiacModalOpen(true);
-    handleClose();
-  };
-  const handleCloseCardiacModal = () => {
-    setCardiacModalOpen(false);
-  };
 
   const handleOpenBatchDialog = () => {
     setBatchDialogOpen(true);
@@ -269,22 +257,21 @@ export const NavMenu = ({ profile }) => {
             onChange={handleLoadPreferencesFromJSON}
           />
         </MenuItem>
-        <MenuItem
+        {/* <MenuItem
           className="batchProcessingButton"
           onClick={handleOpenBatchDialog}
         >
           <DynamicFeedIcon />
           Batch Processing
-        </MenuItem>
-        <MenuItem
+        </MenuItem> */}
+        {/* <MenuItem
           className="cardiacAnalysisButton"
-          onClick={canOpenCardiac ? handleOpenCardiacModal : undefined}
+          onClick={canOpenCardiac && onOpenCardiac ? onOpenCardiac : undefined}
           disabled={!canOpenCardiac}
         >
           <FavoriteBorderIcon />
           Cardiac Analysis
-        </MenuItem>
-        {/* Other menu items */}
+        </MenuItem> */}
       </Menu>
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
@@ -327,16 +314,10 @@ export const NavMenu = ({ profile }) => {
           </Button>
         </DialogActions>
       </Dialog>
-      <AnalysisProvider>
-        <CardiacAnalysisModal
-          open={cardiacModalOpen}
-          onClose={handleCloseCardiacModal}
-        />
-      </AnalysisProvider>
-      <BatchProcessing
+      {/* <BatchProcessing
         open={batchDialogOpen}
         onClose={handleCloseBatchDialog}
-      />
+      /> */}
     </>
   );
 };
