@@ -123,6 +123,18 @@ export default function Login({ onLogin }) {
             Need an account? Request Access
           </Button>
         </Box>
+        <Box mt={2} display="flex" justifyContent="center">
+          <Button
+            variant="outlined"
+            color="secondary"
+            onClick={() =>
+              onLogin &&
+              onLogin({ uid: "dev-bypass", email: "3rdgreenway@gmail.com" })
+            }
+          >
+            Bypass Login
+          </Button>
+        </Box>
       </form>
       <Dialog
         open={showRequestDialog}

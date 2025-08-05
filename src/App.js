@@ -21,6 +21,19 @@ function App() {
   const handleLogin = async (firebaseUser) => {
     setUser(firebaseUser);
     setLoading(true);
+    // If dev bypass, set dummy profile
+    if (firebaseUser.uid === "dev-bypass") {
+      setProfile({
+        id: "dev-bypass-profile",
+        email: firebaseUser.email,
+        username: "dev",
+        role: "admin",
+        permissions: 255,
+        name: "Developer Bypass",
+      });
+      setLoading(false);
+      return;
+    }
     // Query Firestore for profile by email
     try {
       const q = query(
