@@ -75,18 +75,6 @@ export const NavBar = ({ combinedComponentRef, profile, setProfile }) => {
           setWellArraysUpdated={setWellArraysUpdated}
           setFile={setFile}
         />
-        {/* Batch Processing IconButton */}
-        <Tooltip title="Batch Processing" arrow>
-          <span style={{ marginLeft: "0.25em" }}>
-            <IconButton
-              className="batchProcessingButton"
-              onClick={handleOpenBatchDialog}
-              color={batchDialogOpen ? "primary" : "default"}
-            >
-              <DynamicFeedIcon />
-            </IconButton>
-          </span>
-        </Tooltip>
         {project ? (
           <>
             <NavMenu
@@ -99,6 +87,18 @@ export const NavBar = ({ combinedComponentRef, profile, setProfile }) => {
         ) : (
           ""
         )}
+        {/* Batch Processing IconButton */}
+        <Tooltip title="Batch Processing" arrow>
+          <span style={{ marginLeft: "0.25em" }}>
+            <IconButton
+              className="batchProcessingButton"
+              onClick={handleOpenBatchDialog}
+              color={batchDialogOpen ? "primary" : "default"}
+            >
+              <DynamicFeedIcon />
+            </IconButton>
+          </span>
+        </Tooltip>
         {/* Cardiac Analysis IconButton */}
         {project ? (
           <>
