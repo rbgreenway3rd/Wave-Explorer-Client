@@ -144,8 +144,10 @@ const BatchProcessing = ({ open, onClose }) => {
               const wellFilteredData = [];
               for (let t = 0; t < time.length; t++) {
                 const offset = i * time.length + t;
-                wellRawData.push({ y: rawDataArr[offset] });
-                wellFilteredData.push({ y: rawDataArr[offset] });
+                const x = time[t];
+                const y = rawDataArr[offset];
+                wellRawData.push({ x, y });
+                wellFilteredData.push({ x, y });
               }
               return {
                 time,
@@ -186,45 +188,63 @@ const BatchProcessing = ({ open, onClose }) => {
           uploadedFilters &&
           uploadedFilters.length > 0
         ) {
-          // Rehydrate filter instances from uploadedFilters
           let filterInstances = uploadedFilters
             .map((filterConfig) => {
               const FilterClass = filterModule[filterConfig.className];
-              // Pass all required params for filter construction
               if (!FilterClass) return null;
-              // For ControlSubtraction_Filter, pass number_of_columns/rows if needed
+              let instance;
               if (filterConfig.className === "ControlSubtraction_Filter") {
-                return new FilterClass(
-                  filterConfig.num,
+                instance = new FilterClass(
+                  filterConfig.num || 0,
                   undefined,
-                  result.extractedColumns,
-                  result.extractedRows
+                  filterConfig.number_of_columns || result.extractedColumns,
+                  filterConfig.number_of_rows || result.extractedRows
                 );
+                instance.controlWellArray = filterConfig.controlWellArray || [];
+                instance.applyWellArray = filterConfig.applyWellArray || [];
+                // Always call calculate_average_curve before execute
+                instance.calculate_average_curve(wells);
+              } else if (filterConfig.className === "StaticRatio_Filter") {
+                instance = new FilterClass(filterConfig.num, undefined);
+                instance.start = filterConfig.start;
+                instance.end = filterConfig.end;
+              } else if (filterConfig.className === "Smoothing_Filter") {
+                instance = new FilterClass(filterConfig.num, undefined);
+                instance.windowWidth = filterConfig.windowWidth;
+                instance.useMedian = filterConfig.useMedian;
+              } else if (filterConfig.className === "OutlierRemoval_Filter") {
+                instance = new FilterClass(filterConfig.num, undefined);
+                instance.halfWindow = filterConfig.halfWindow;
+                instance.threshold = filterConfig.threshold;
+              } else if (
+                filterConfig.className === "FlatFieldCorrection_Filter"
+              ) {
+                instance = new FilterClass(filterConfig.num, undefined);
+                instance.correctionMatrix = filterConfig.correctionMatrix || [];
+              } else if (filterConfig.className === "DynamicRatio_Filter") {
+                instance = new FilterClass(filterConfig.num, undefined);
+                instance.numerator = filterConfig.numerator;
+                instance.denominator = filterConfig.denominator;
+              } else if (filterConfig.className === "Derivative_Filter") {
+                instance = new FilterClass(filterConfig.num, undefined);
               }
-              // For other filters, pass num and undefined for onEdit
-              return new FilterClass(filterConfig.num, undefined);
+              return instance;
             })
             .filter(Boolean);
-          // Set filter params from config
-          filterInstances.forEach((instance, idx) => {
-            const config = uploadedFilters[idx];
-            // Set all config params on the instance
-            Object.keys(config).forEach((key) => {
-              if (key !== "className" && key !== "num") {
-                instance[key] = config[key];
-              }
-            });
-          });
-          // Mimic applyEnabledFilters logic
           for (let f = 0; f < filterInstances.length; f++) {
-            if (filterInstances[f].calculate_average_curve) {
-              filterInstances[f].calculate_average_curve(
-                project.plate[0].experiments[0].wells
-              );
+            if (
+              filterInstances[f].calculate_average_curve &&
+              filterInstances[f].controlWellArray
+            ) {
+              // Only call if not already called above
+              if (
+                filterInstances[f].controlWellArray.length &&
+                filterInstances[f].applyWellArray.length
+              ) {
+                // Already called above for ControlSubtraction_Filter
+              }
             }
-            await filterInstances[f].execute(
-              project.plate[0].experiments[0].wells
-            );
+            await filterInstances[f].execute(wells);
           }
         }
         // --- End filter application ---
@@ -341,7 +361,7 @@ const BatchProcessing = ({ open, onClose }) => {
         },
       }}
     >
-      <DialogTitle sx={{ fontWeight: "bold" }}>
+      <DialogTitle sx={{ fontWeight: "bold", padding: "0.5em" }}>
         Batch Report Generation
       </DialogTitle>
       <DialogContent sx={{ height: "50vh", paddingBottom: 0 }}>
