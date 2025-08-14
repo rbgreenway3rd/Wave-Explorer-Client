@@ -13,6 +13,7 @@ import {
 } from "@mui/material";
 import { collection, query, where, getDocs, addDoc } from "firebase/firestore";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import "./Login.css";
 
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState("");
@@ -79,17 +80,16 @@ export default function Login({ onLogin }) {
   };
 
   return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      mt={8}
-      sx={{ backgroundColor: "white" }}
-    >
-      <Typography variant="h5" mb={2}>
-        Sign In
-      </Typography>
-      <form style={{ width: "300px" }}>
+    <Box className="login-container">
+      <form style={{ width: "300px" }} className="login-form">
+        <div className="login-header">
+          <Typography variant="h4" mb={2}>
+            WaveExplorer
+          </Typography>
+          <Typography variant="h5" mb={1}>
+            Sign In
+          </Typography>
+        </div>
         <TextField
           label="Username"
           value={username}
@@ -120,7 +120,9 @@ export default function Login({ onLogin }) {
             onClick={() => setShowRequestDialog(true)}
             disabled={loading}
           >
-            Need an account? Request Access
+            Need an account?
+            <br />
+            Request Access
           </Button>
         </Box>
         <Box mt={2} display="flex" justifyContent="center">
