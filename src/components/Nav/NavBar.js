@@ -24,8 +24,11 @@ import { supabase } from "../../supabaseClient";
 import ProfileMenu from "./ProfileMenu";
 import CardiacAnalysisModal from "../CardiacAnalysis/CardiacAnalysisModal";
 import { AnalysisProvider } from "../CardiacAnalysis/AnalysisProvider";
+import NeuralAnalysisModal from "../NeuralAnalysis/NeuralAnalysisModal";
+import { NeuralProvider } from "../NeuralAnalysis/NeuralProvider";
 import { PERMISSIONS } from "../../permissions";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
+import ElectricBoltTwoToneIcon from "@mui/icons-material/ElectricBoltTwoTone";
 import DynamicFeedIcon from "@mui/icons-material/DynamicFeed";
 import BatchProcessing from "../FileHandling/BatchProcessing";
 
@@ -43,15 +46,19 @@ export const NavBar = ({ combinedComponentRef, profile, setProfile }) => {
   const handleOpenCardiacModal = () => setCardiacModalOpen(true);
   const handleCloseCardiacModal = () => setCardiacModalOpen(false);
 
+  // Neural Analysis modal state and feature gating
+  const [neuralModalOpen, setNeuralModalOpen] = useState(false);
+  const canOpenNeural =
+    (profile?.permissions & PERMISSIONS.NEURAL) === PERMISSIONS.NEURAL ||
+    (profile?.permissions & PERMISSIONS.ADMIN) === PERMISSIONS.ADMIN;
+
+  const handleOpenNeuralModal = () => setNeuralModalOpen(true);
+  const handleCloseNeuralModal = () => setNeuralModalOpen(false);
+
   // Batch Processing dialog state and handlers
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   const handleOpenBatchDialog = () => setBatchDialogOpen(true);
   const handleCloseBatchDialog = () => setBatchDialogOpen(false);
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    window.location.reload();
-  };
 
   return (
     <header className="navbar-container">
@@ -89,11 +96,15 @@ export const NavBar = ({ combinedComponentRef, profile, setProfile }) => {
         )}
         {/* Batch Processing IconButton */}
         <Tooltip title="Batch Processing" arrow>
-          <span style={{ marginLeft: "0.25em" }}>
+          <span style={{ marginLeft: "1em" }}>
             <IconButton
               className="batchProcessingButton"
               onClick={handleOpenBatchDialog}
               color={batchDialogOpen ? "primary" : "default"}
+              sx={{
+                border: "1px solid rgba(150, 150, 150, 1)",
+                borderRadius: 0,
+              }}
             >
               <DynamicFeedIcon />
             </IconButton>
@@ -109,8 +120,33 @@ export const NavBar = ({ combinedComponentRef, profile, setProfile }) => {
                   onClick={canOpenCardiac ? handleOpenCardiacModal : undefined}
                   disabled={!canOpenCardiac}
                   color={cardiacModalOpen ? "primary" : "default"}
+                  sx={{
+                    // background: "rgba(93, 93, 93, 0.2)",
+                    border: "1px solid rgba(150, 150, 150, 1)",
+                    borderRadius: 0,
+                  }}
                 >
                   <FavoriteBorderIcon />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="Neural Analysis" arrow>
+              <span style={{ marginLeft: "0.25em" }}>
+                <IconButton
+                  className="neuralAnalysisButton"
+                  onClick={canOpenNeural ? handleOpenNeuralModal : undefined}
+                  disabled={!canOpenNeural}
+                  color={neuralModalOpen ? "primary" : "default"}
+                  sx={{
+                    border: "1px solid rgba(150, 150, 150, 1)",
+                    borderRadius: 0,
+                  }}
+                >
+                  <ElectricBoltTwoToneIcon
+                    style={{
+                      transform: "rotate(60deg) scaleX(-1)",
+                    }}
+                  />
                 </IconButton>
               </span>
             </Tooltip>
@@ -172,6 +208,12 @@ export const NavBar = ({ combinedComponentRef, profile, setProfile }) => {
           project={project}
         />
       </AnalysisProvider>
+      <NeuralProvider>
+        <NeuralAnalysisModal
+          open={neuralModalOpen}
+          onClose={handleCloseNeuralModal}
+        />
+      </NeuralProvider>
     </header>
   );
 };

@@ -369,7 +369,9 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
   };
 
   return (
-    <div>
+    <div
+    // style={{ marginRight: "1em" }}
+    >
       <Tooltip title="File Options" arrow>
         <Button
           variant="contained"

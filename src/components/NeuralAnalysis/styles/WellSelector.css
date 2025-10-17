@@ -1,0 +1,59 @@
+.well-grid {
+    border: 0.1em solid rgb(100, 100, 100);
+    background-color: grey;
+    padding: 0.2em;
+    /* display: grid; */
+    box-sizing: border-box;
+    justify-content: center;
+    align-content: center;
+    /* width: fit-content; */
+    /* width: auto; */
+    /* height: auto */
+    /* margin-right: 1em; */
+}
+
+.well-canvas-container {}
+
+.grid-mode-button:hover {
+    background-color: rgb(100, 100, 100);
+    border: 0.1em solid rgb(100, 100, 100);
+    /* color: white; */
+}
+
+.well-canvas {
+    background-color: black;
+    /* border: 0.05em solid grey; */
+    justify-self: space-between;
+    align-self: space-around;
+    /* width: fill */
+}
+
+/* Control well styling: matches .well-canvas.selected except border color */
+.well-canvas.control-well {
+    border: 0.15em solid #00bcd4;
+}
+
+/* Default styles for selected and hovered wells */
+.well-canvas:hover {
+    border: 0.1em solid red;
+}
+
+.well-canvas.selected {
+    border: 0.15em solid yellow;
+}
+
+/* Styles when showMedianGrid is true */
+.well-canvas.median-grid:hover {
+    border: 0.1em solid red;
+    /* Keep hover red */
+}
+
+.well-canvas.median-grid.selected {
+    border: 0.15em solid rgb(93, 37, 205);
+    /* Purple border when selected */
+}
+
+.dotwave-loader {
+    width: 50px;
+    height: 50px;
+}

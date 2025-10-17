@@ -1,0 +1,4 @@
+.decimation-controls {
+    display: flex;
+    flex-direction: column;
+}

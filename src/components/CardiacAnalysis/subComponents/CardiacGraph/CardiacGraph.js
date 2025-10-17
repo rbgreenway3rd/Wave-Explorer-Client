@@ -15,7 +15,6 @@ import { getChartOptions } from "./ChartOptions";
 import zoomPlugin from "chartjs-plugin-zoom";
 
 import "../../styles/CardiacGraph.css";
-import ProcessApdData from "../../../FileHandling/Matlab/MatlabClone";
 
 Chart.register(...registerables, Tooltip, zoomPlugin);
 
