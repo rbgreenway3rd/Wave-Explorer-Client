@@ -60,7 +60,7 @@ const NoiseFilterControls = ({
   setSubtractControl,
   filterBaseline,
   setFilterBaseline,
-  baselineCorrection = true,
+  baselineCorrection,
   setBaselineCorrection,
   controlWell,
   smoothingWindow,
