@@ -78,8 +78,7 @@ const NeuralGraph = forwardRef(
       Array.isArray(arr) && arr.length > 0 && typeof arr[0] === "number";
 
     useEffect(() => {
-      console.log("[NeuralGraph] processedSignal:", processedSignal);
-      console.log("[NeuralGraph] peakResults:", peakResults);
+      // Always create a new chartData object when processedSignal changes
       if (
         !processedSignal ||
         !Array.isArray(processedSignal) ||
@@ -90,7 +89,7 @@ const NeuralGraph = forwardRef(
       }
       // Detection is handled in NeuralControls; here we just visualize peakResults from context
       // Always map processedSignal to {x, y} objects for Chart.js (now guaranteed to be {x, y})
-      let chartPoints = processedSignal;
+      const chartPoints = processedSignal.map(pt => ({ x: pt.x, y: pt.y }));
       // Add scatter overlay for detected peaks (NeuralPeak)
       let peakScatter = [];
       if (Array.isArray(peakResults) && peakResults.length > 0) {
@@ -110,49 +109,6 @@ const NeuralGraph = forwardRef(
       }
 
       setChartData({
-        datasets: [
-          ...(baseScatter.length > 0
-            ? [
-                {
-                  type: "scatter",
-                  label: "Spike Bases",
-                  data: baseScatter,
-                  pointBackgroundColor: "#ffffffff",
-                  pointBorderColor: "#fff",
-                  pointRadius: 4,
-                  showLine: false,
-                  borderWidth: 0,
-                },
-              ]
-            : []),
-          {
-            label: noiseSuppressionActive
-              ? "Noise Suppressed Data"
-              : "Neural Data",
-            data: chartPoints,
-            borderColor: noiseSuppressionActive
-              ? "#00bcd4"
-              : "rgb(0, 200, 255)",
-            borderWidth: 1.5,
-            fill: false,
-          },
-          ...(peakScatter.length > 0
-            ? [
-                {
-                  type: "scatter",
-                  label: "Detected Spikes",
-                  data: peakScatter,
-                  pointBackgroundColor: "#ff1744",
-                  pointBorderColor: "#fff",
-                  pointRadius: 5,
-                  showLine: false,
-                  borderWidth: 0,
-                },
-              ]
-            : []),
-        ],
-      });
-      console.log("[NeuralGraph] chartData:", {
         datasets: [
           ...(baseScatter.length > 0
             ? [
@@ -418,12 +374,6 @@ const NeuralGraph = forwardRef(
       <>
         {selectedWell && chartData ? (
           <Line
-            key={JSON.stringify(
-              chartData.datasets.map(
-                (ds) =>
-                  ds.data.length + (ds.data[0]?.x ?? 0) + (ds.data[0]?.y ?? 0)
-              )
-            )}
             className={className}
             data={chartData}
             options={{
