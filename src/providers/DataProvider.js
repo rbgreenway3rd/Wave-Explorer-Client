@@ -30,6 +30,7 @@ export const DataProvider = ({ children }) => {
   const [analysisData, setAnalysisData] = useState([]);
   const [project, setProject] = useState(null);
   const [wellArrays, setWellArrays] = useState([]);
+  const [globalMaxY, setGlobalMaxY] = useState(undefined);
   const [wellArraysUpdated, setWellArraysUpdated] = useState(false);
   const [selectedWellArray, setSelectedWellArray] = useState([]);
   const [overlayRawAndFiltered, setOverlayRawAndFiltered] = useState(false);
@@ -80,6 +81,24 @@ export const DataProvider = ({ children }) => {
       });
     });
     setMaxPoints(maxCount);
+
+    // Calculate globalMaxY across all wells and all indicators
+    let maxY = -Infinity;
+    updatedWellArrays.forEach((well) => {
+      well.indicators?.forEach((indicator) => {
+        // Check both rawData and filteredData for y values
+        [indicator.rawData, indicator.filteredData].forEach((dataArr) => {
+          if (Array.isArray(dataArr)) {
+            dataArr.forEach((pt) => {
+              if (pt && typeof pt.y === "number" && pt.y > maxY) {
+                maxY = pt.y;
+              }
+            });
+          }
+        });
+      });
+    });
+    setGlobalMaxY(maxY === -Infinity ? undefined : maxY);
   }, [project]);
 
   // Function to set wellArrays from outside
@@ -508,6 +527,8 @@ export const DataProvider = ({ children }) => {
         setOverlayRawAndFiltered,
         maxPoints, // <-- provide maxPoints in context
         setMaxPoints,
+        globalMaxY,
+        setGlobalMaxY,
       }}
     >
       {children}

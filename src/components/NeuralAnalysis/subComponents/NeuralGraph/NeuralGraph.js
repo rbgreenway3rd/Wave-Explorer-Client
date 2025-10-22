@@ -52,7 +52,8 @@ const NeuralGraph = forwardRef(
   ) => {
     const { selectedWell, peakResults, burstResults } =
       useContext(NeuralContext);
-    const { extractedIndicatorTimes } = useContext(DataContext);
+    const { extractedIndicatorTimes, wellArrays, globalMaxY } =
+      useContext(DataContext);
     const [chartData, setChartData] = useState(null);
     // ROI selection state
     const [roiStart, setRoiStart] = useState(null);
@@ -89,7 +90,7 @@ const NeuralGraph = forwardRef(
       }
       // Detection is handled in NeuralControls; here we just visualize peakResults from context
       // Always map processedSignal to {x, y} objects for Chart.js (now guaranteed to be {x, y})
-      const chartPoints = processedSignal.map(pt => ({ x: pt.x, y: pt.y }));
+      const chartPoints = processedSignal.map((pt) => ({ x: pt.x, y: pt.y }));
       // Add scatter overlay for detected peaks (NeuralPeak)
       let peakScatter = [];
       if (Array.isArray(peakResults) && peakResults.length > 0) {
@@ -219,10 +220,11 @@ const NeuralGraph = forwardRef(
         y: {
           ticks: { display: false },
           grid: { display: false },
+          max: globalMaxY !== undefined ? globalMaxY : undefined,
         },
       },
     };
-
+    console.log(globalMaxY);
     // Mouse event handlers for ROI selection (only active if defineROI is true)
     const handleMouseDown = (event) => {
       if (!defineROI) return;
