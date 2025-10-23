@@ -196,6 +196,8 @@ const NeuralGraph = forwardRef(
           setRoiList,
           currentRoiIndex,
           setCurrentRoiIndex,
+        },
+        zoom: {
           pan: {
             enabled: enablePanZoom && !defineROI && panState,
             mode: panState ? "x" : undefined,

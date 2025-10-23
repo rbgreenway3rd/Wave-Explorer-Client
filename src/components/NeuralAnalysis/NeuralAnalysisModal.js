@@ -99,14 +99,14 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
       !selectedWell ||
       !selectedWell.indicators ||
       !selectedWell.indicators[0]
-    )
+    ) {
       return {
         processedSignal: [],
         spikeResults: [],
         burstResults: [],
         metrics: {},
       };
-
+    }
     return runNeuralAnalysisPipeline({
       rawSignal: selectedWell.indicators[0].filteredData,
       controlSignal:
