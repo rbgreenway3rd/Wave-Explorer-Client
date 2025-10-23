@@ -18,12 +18,12 @@ import { Chart } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
 import { makeStyles } from "@mui/styles";
 import NoiseFilterControls from "./subComponents/NeuralGraph/NeuralControls";
-import { detectSpikes } from "./utilities/detectSpikes";
+
 import {
-  baselineCorrected,
-  baselineSmoothed,
-  trendFlattening,
-} from "./utilities/neuralSmoothing";
+  runNeuralAnalysisPipeline,
+  suggestProminence,
+  suggestWindow,
+} from "./NeuralPipeline";
 
 Chart.register(zoomPlugin);
 
@@ -93,69 +93,96 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
     }
   };
 
-  // Centralized processedSignal computation (shared by NeuralGraph and NoiseFilterControls)
-  const processedSignal = React.useMemo(() => {
+  // Centralized pipeline computation
+  const pipelineResults = React.useMemo(() => {
     if (
       !selectedWell ||
       !selectedWell.indicators ||
       !selectedWell.indicators[0]
     )
-      return [];
-    let signal = selectedWell.indicators[0].filteredData;
-    if (!Array.isArray(signal) || signal.length === 0) return [];
-    let processed = signal;
-    if (noiseSuppressionActive) {
-      if (trendFlatteningEnabled) {
-        processed = trendFlattening(processed, {
-          adaptiveBaseline: true,
-          windowSize: smoothingWindow * 40 || 200,
-          numMinimums: Math.max(10, Math.floor(smoothingWindow * 10)),
-        });
-      } else if (
-        subtractControl &&
-        controlWell &&
-        controlWell.indicators &&
-        controlWell.indicators[0]
-      ) {
-        // Subtract control well signal
-        const controlSignal = controlWell.indicators[0].filteredData;
-        if (
-          Array.isArray(controlSignal) &&
-          controlSignal.length === processed.length
-        ) {
-          processed = processed.map((pt, i) => ({
-            x: pt.x,
-            y: pt.y - controlSignal[i].y,
-          }));
-        }
-      } else if (filterBaseline) {
-        processed = baselineSmoothed(processed, smoothingWindow);
-      } else if (baselineCorrection) {
-        processed = baselineCorrected(processed, smoothingWindow);
-      }
-    }
-    // Ensure output is always array of {x, y}
-    if (
-      Array.isArray(processed) &&
-      processed.length > 0 &&
-      typeof processed[0] === "number"
-    ) {
-      processed = processed.map((y, i) => ({ x: i, y }));
-    }
-    return processed;
+      return {
+        processedSignal: [],
+        spikeResults: [],
+        burstResults: [],
+        metrics: {},
+      };
+
+    return runNeuralAnalysisPipeline({
+      rawSignal: selectedWell.indicators[0].filteredData,
+      controlSignal:
+        controlWell && controlWell.indicators && controlWell.indicators[0]
+          ? controlWell.indicators[0].filteredData
+          : [],
+      params: {
+        subtractControl,
+        trendFlatteningEnabled,
+        baselineCorrection,
+        filterBaseline,
+        smoothingWindow,
+        spikeProminence,
+        spikeWindow,
+        spikeMinWidth: 5, // TODO: wire from UI if needed
+        spikeMinDistance,
+        spikeMinProminenceRatio: 0.01, // TODO: wire from UI if needed
+        maxInterSpikeInterval: 50, // TODO: wire from UI if needed
+        minSpikesPerBurst: 3, // TODO: wire from UI if needed
+      },
+      analysis: {
+        runSpikeDetection: true,
+        runBurstDetection: showBursts,
+      },
+      noiseSuppressionActive,
+    });
   }, [
     selectedWell,
-    noiseSuppressionActive,
-    trendFlatteningEnabled,
-    subtractControl,
     controlWell,
-    filterBaseline,
+    subtractControl,
+    trendFlatteningEnabled,
     baselineCorrection,
+    filterBaseline,
     smoothingWindow,
+    spikeProminence,
+    spikeWindow,
+    spikeMinDistance,
+    showBursts,
+    noiseSuppressionActive,
   ]);
 
-  // Spike detection is now only run manually via controls; no automatic detection here.
+  // Sync pipeline results to context for NeuralGraph and other consumers
+  useEffect(() => {
+    if (Array.isArray(pipelineResults.spikeResults)) {
+      setPeakResults(pipelineResults.spikeResults);
+    }
+    if (Array.isArray(pipelineResults.burstResults)) {
+      setBurstResults(pipelineResults.burstResults);
+    }
+  }, [
+    pipelineResults.spikeResults,
+    pipelineResults.burstResults,
+    setPeakResults,
+    setBurstResults,
+  ]);
 
+  // Sync pipeline results to context for NeuralGraph and other consumers
+  useEffect(() => {
+    if (Array.isArray(pipelineResults.spikeResults)) {
+      setPeakResults(pipelineResults.spikeResults);
+    }
+    if (Array.isArray(pipelineResults.burstResults)) {
+      setBurstResults(pipelineResults.burstResults);
+    }
+  }, [
+    pipelineResults.spikeResults,
+    pipelineResults.burstResults,
+    setPeakResults,
+    setBurstResults,
+  ]);
+
+  // Debug: log processedSignal to check if it changes with trend flattening
+  console.log(
+    "[NeuralAnalysisModal] processedSignal (first 5):",
+    pipelineResults.processedSignal?.slice(0, 5)
+  );
   return (
     <Dialog
       open={open}
@@ -238,7 +265,7 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
                 useAdjustedBases={useAdjustedBases}
                 findPeaksWindowWidth={findPeaksWindowWidth}
                 peakProminence={peakProminence}
-                processedSignal={processedSignal}
+                processedSignal={pipelineResults.processedSignal}
                 noiseSuppressionActive={noiseSuppressionActive}
                 smoothingWindow={smoothingWindow}
                 subtractControl={subtractControl}
@@ -272,7 +299,7 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
                 setSelectingControl={setSelectingControl}
               />
               <NoiseFilterControls
-                processedSignal={processedSignal}
+                processedSignal={pipelineResults.processedSignal}
                 smoothingWindow={smoothingWindow}
                 setSmoothingWindow={setSmoothingWindow}
                 minWindow={1}
@@ -306,10 +333,11 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
               />
             </section>
             <NeuralResults
-              peakResults={peakResults}
-              burstResults={burstResults}
+              peakResults={pipelineResults.spikeResults}
+              burstResults={pipelineResults.burstResults}
               roiList={roiList}
               selectedWell={selectedWell}
+              metrics={pipelineResults.metrics}
             />
           </div>
         </div>

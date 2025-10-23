@@ -1,20 +1,6 @@
-/**
- * Detrend and flatten a neural signal by removing global linear trend and optionally adaptive baseline.
- * This function first fits a linear regression to the signal and subtracts it, then optionally applies
- * a local minimum-median baseline correction for further flattening.
- * @param {{x: number, y: number}[]} signal - The input signal
- * @param {Object} [options] - Options for detrending and baseline
- * @param {boolean} [options.adaptiveBaseline=true] - Whether to apply adaptive baseline after detrending
- * @param {number} [options.windowSize=200] - Window size for adaptive baseline
- * @param {number} [options.numMinimums=50] - Number of minimums for adaptive baseline
- * @returns {{x: number, y: number}[]} Detrended and flattened signal
- */
+// Combined trend flattening and minimum-median baseline correction
 export function trendFlattening(signal, options = {}) {
   if (!Array.isArray(signal) || signal.length === 0) return [];
-  const adaptiveBaseline = options.adaptiveBaseline !== false;
-  const windowSize = options.windowSize || 200;
-  const numMinimums = options.numMinimums || 50;
-
   // Linear regression (least squares) to fit y = a*x + b
   const n = signal.length;
   let sumX = 0,
@@ -42,10 +28,9 @@ export function trendFlattening(signal, options = {}) {
     y: pt.y - (a * pt.x + b),
   }));
 
-  if (!adaptiveBaseline) {
-    return detrended;
-  }
-  // Apply adaptive baseline correction (minimum-median)
+  // Minimum-median baseline correction
+  const windowSize = options.windowSize || 200;
+  const numMinimums = options.numMinimums || 50;
   const effectiveWindowSize = Math.min(windowSize, Math.floor(n / 2));
   let baseline = [];
   for (let j = 0; j < n; j++) {
@@ -62,8 +47,10 @@ export function trendFlattening(signal, options = {}) {
       minPoints.length > 0 ? minPoints[Math.floor(minPoints.length / 2)] : 0;
     baseline.push(median);
   }
+  // Subtract baseline from detrended
   return detrended.map((val, idx) => ({ x: val.x, y: val.y - baseline[idx] }));
 }
+
 /**
  * Minimum-median baseline estimation and correction (like CardiacAnalysis)
  * @param {{x: number, y: number}[]} signal - The input signal
