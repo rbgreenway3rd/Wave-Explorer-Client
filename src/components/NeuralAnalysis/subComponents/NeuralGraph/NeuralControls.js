@@ -349,7 +349,7 @@ const NoiseFilterControls = ({
       <FormGroup>
         <Box className="spike-detection-controls">
           <div>
-            <button
+            {/* <button
               className="spike-detection-parameter-button"
               onClick={handleSuggestProminence}
             >
@@ -360,7 +360,7 @@ const NoiseFilterControls = ({
               onClick={handleSuggestWindow}
             >
               Suggest Window
-            </button>
+            </button> */}
             <label className="spike-detection-label">
               Prominence:
               <input
@@ -432,7 +432,6 @@ const NoiseFilterControls = ({
                 />
               }
               label="Define ROI"
-              disabled={enablePanZoom}
             />
             <FormControlLabel
               control={
@@ -448,7 +447,6 @@ const NoiseFilterControls = ({
                 />
               }
               label="Enable Pan/Zoom"
-              disabled={defineROI}
             />
           </FormGroup>
         </Box>
