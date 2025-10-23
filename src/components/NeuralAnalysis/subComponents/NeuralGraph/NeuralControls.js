@@ -349,18 +349,7 @@ const NoiseFilterControls = ({
       <FormGroup>
         <Box className="spike-detection-controls">
           <div>
-            <button
-              className="spike-detection-parameter-button"
-              onClick={handleSuggestProminence}
-            >
-              Suggest Prominence
-            </button>
-            <button
-              className="spike-detection-parameter-button"
-              onClick={handleSuggestWindow}
-            >
-              Suggest Window
-            </button>
+            {/* ...existing code for spike detection controls... */}
             <label className="spike-detection-label">
               Prominence:
               <input
@@ -424,15 +413,17 @@ const NoiseFilterControls = ({
                   checked={defineROI}
                   onChange={(_, checked) => {
                     setDefineROI(checked);
-                    setEnablePanZoom(!checked);
-                    setZoomState(!checked);
-                    setPanState(!checked);
+                    if (checked) {
+                      setEnablePanZoom(false);
+                      setZoomState(false);
+                      setPanState(false);
+                    }
                   }}
                   color="primary"
                 />
               }
               label="Define ROI"
-              disabled={enablePanZoom}
+              // Never disabled
             />
             <FormControlLabel
               control={
@@ -440,15 +431,17 @@ const NoiseFilterControls = ({
                   checked={enablePanZoom}
                   onChange={(_, checked) => {
                     setEnablePanZoom(checked);
-                    setDefineROI(!checked);
-                    setZoomState(checked);
-                    setPanState(checked);
+                    if (checked) {
+                      setDefineROI(false);
+                      setZoomState(true);
+                      setPanState(true);
+                    }
                   }}
                   color="primary"
                 />
               }
               label="Enable Pan/Zoom"
-              disabled={defineROI}
+              // Never disabled
             />
           </FormGroup>
         </Box>
