@@ -66,6 +66,10 @@ const NeuralGraph = forwardRef(
     // decimationEnabled is now a prop
     const neuralGraphRef = useRef(null);
 
+    const localMaxY = processedSignal
+      ? Math.max(...processedSignal.map((pt) => pt.y))
+      : globalMaxY;
+
     // Helper: is array of {x, y} objects?
     const isXYArray = (arr) =>
       Array.isArray(arr) &&
@@ -220,11 +224,12 @@ const NeuralGraph = forwardRef(
         y: {
           ticks: { display: false },
           grid: { display: false },
-          max: globalMaxY !== undefined ? globalMaxY : undefined,
+          // max: globalMaxY !== undefined ? globalMaxY : undefined,
+          // max: localMaxY,
         },
       },
     };
-    console.log(globalMaxY);
+    // console.log(globalMaxY);
     // Mouse event handlers for ROI selection (only active if defineROI is true)
     const handleMouseDown = (event) => {
       if (!defineROI) return;

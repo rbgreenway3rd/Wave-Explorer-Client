@@ -162,11 +162,12 @@ export function runNeuralAnalysisPipeline({
   // 2. Smoothing and baseline correction (only if noiseSuppressionActive)
   if (noiseSuppressionActive) {
     if (params.trendFlatteningEnabled) {
+      // Only pass parameters actually used by trendFlattening
       processed = trendFlattening(processed, {
         adaptiveBaseline: params.baselineCorrection,
-        windowSize: params.smoothingWindow || 200,
-        numMinimums: 50,
+        polynomialDegree: 2, // or make this user-configurable if needed
       });
+      console.log("trendFlattening data: ", processed);
     } else if (params.baselineCorrection) {
       processed = baselineCorrected(
         processed,
@@ -191,10 +192,22 @@ export function runNeuralAnalysisPipeline({
   // 4. Burst detection
   let burstResults = [];
   if (analysis.runBurstDetection && spikeResults.length > 0) {
+    // Debug: log spike x-values and inter-spike intervals
+    const spikeXs = spikeResults
+      .map((p) => p.peakCoords?.x ?? p.time ?? null)
+      .filter((x) => x !== null);
+    console.log("[Pipeline] Spike x-values:", spikeXs);
+    const isi = spikeXs.slice(1).map((x, i) => x - spikeXs[i]);
+    console.log("[Pipeline] Inter-spike intervals:", isi);
+    console.log("[Pipeline] Burst detection params:", {
+      maxInterSpikeInterval: params.maxInterSpikeInterval,
+      minSpikesPerBurst: params.minSpikesPerBurst,
+    });
     burstResults = detectBursts(spikeResults, {
       maxInterSpikeInterval: params.maxInterSpikeInterval,
       minSpikesPerBurst: params.minSpikesPerBurst,
     });
+    console.log("[Pipeline] Burst results:", burstResults);
   }
 
   // 5. Metrics

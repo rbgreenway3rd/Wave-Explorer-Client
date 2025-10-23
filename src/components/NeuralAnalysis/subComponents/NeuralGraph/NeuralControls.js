@@ -27,7 +27,8 @@ function suggestProminence(signal, factor = 3) {
 // Suggest window width by looking for stable peak count
 function suggestWindow(signal, prominence, num = 5) {
   if (!Array.isArray(signal) || signal.length === 0) return 20;
-  const maxWindow = Math.min(100, Math.floor(signal.length / 10));
+  // const maxWindow = Math.min(100, Math.floor(signal.length / 10));
+  const maxWindow = Math.floor(signal.length / 10);
   const foundPeaks = [];
   let optimalWindowWidth = 0;
   for (let ww = 10; ww <= maxWindow; ww += 5) {
@@ -92,44 +93,6 @@ const NoiseFilterControls = ({
 }) => {
   const [pendingRoiIndex, setPendingRoiIndex] = useState(null);
 
-  // (Removed broken/incomplete useEffect here)
-  useEffect(() => {
-    const updatePeakResults = () => {
-      // Only clear peakResults if processedSignal is empty/null
-      if (
-        processedSignal &&
-        Array.isArray(processedSignal) &&
-        processedSignal.length > 0
-      ) {
-        const options = {
-          prominence: Number(spikeProminence),
-          window: Number(spikeWindow),
-          minWidth: 0,
-          minDistance: Number(spikeMinDistance) || 0,
-          minProminenceRatio: 0,
-          threshold: Number(spikeThreshold) || 0,
-        };
-        const spikes = detectSpikes(processedSignal, options);
-        setPeakResults(spikes);
-      } else {
-        setPeakResults([]);
-      }
-    };
-    updatePeakResults();
-  }, [
-    noiseSuppressionActive,
-    filterBaseline,
-    baselineCorrection,
-    trendFlatteningEnabled,
-    subtractControl,
-    smoothingWindow,
-    processedSignal,
-    spikeProminence,
-    spikeWindow,
-    spikeThreshold,
-    spikeMinDistance,
-    setPeakResults,
-  ]);
   useEffect(() => {
     if (
       !processedSignal ||
@@ -182,6 +145,8 @@ const NoiseFilterControls = ({
     alert(`Suggested window: ${suggested}`);
   };
 
+  // --- Old spike detection handler (commented out for rollback) ---
+  /*
   const handleRunSpikeDetection = () => {
     if (
       !processedSignal ||
@@ -211,7 +176,20 @@ const NoiseFilterControls = ({
     console.log("Detected spikes (NeuralPeak):", spikes);
     alert(`Detected ${spikes.length} spikes. See console for details.`);
   };
+  */
 
+  // --- New spike detection handler: triggers pipeline update via prop/callback ---
+  const handleRunSpikeDetection = () => {
+    // Instead of running detectSpikes directly, trigger a pipeline update by toggling a state or calling a callback
+    // For example, if you have a prop like 'onRequestPipelineUpdate', call it here
+    if (typeof window !== "undefined" && window.dispatchEvent) {
+      window.dispatchEvent(new CustomEvent("triggerPipelineSpikeDetection"));
+    }
+    alert("Spike detection will be updated via the main analysis pipeline.");
+  };
+
+  // --- Old burst detection handler (commented out for rollback) ---
+  /*
   const handleRunBurstDetection = () => {
     if (!Array.isArray(peakResults) || peakResults.length === 0) {
       alert("No spikes detected. Run spike detection first.");
@@ -226,6 +204,35 @@ const NoiseFilterControls = ({
     setShowBursts(true);
     console.log("Detected bursts (NeuralBurst):", bursts);
     alert(`Detected ${bursts.length} bursts. See console for details.`);
+  };
+  */
+
+  // --- Old burst detection handler (commented out for rollback) ---
+  /*
+  const handleRunBurstDetection = React.useCallback(() => {
+    // Defensive: get latest peakResults from state
+    if (!Array.isArray(peakResults) || peakResults.length === 0) {
+      alert("No spikes detected. Run spike detection first.");
+      return;
+    }
+    const options = {
+      maxInterSpikeInterval: 50,
+      minSpikesPerBurst: 3,
+    };
+    const bursts = detectBursts(peakResults, options);
+    setBurstResults(bursts);
+    setShowBursts(true);
+    console.log("Detected bursts (NeuralBurst):", bursts);
+    alert(`Detected ${bursts.length} bursts. See console for details.`);
+  }, [peakResults, setBurstResults, setShowBursts]);
+  */
+
+  // --- New burst detection handler: triggers pipeline update via state ---
+  const handleRunBurstDetection = () => {
+    if (typeof setShowBursts === "function") {
+      setShowBursts(true);
+      alert("Burst detection will be updated via the main analysis pipeline.");
+    }
   };
 
   const handleDefineRoi = (idx) => {
@@ -246,6 +253,10 @@ const NoiseFilterControls = ({
   };
 
   useEffect(() => {
+    const handleRunBurstDetection = () => {
+      setShowBursts(true);
+      alert("Burst detection will be updated via the main analysis pipeline.");
+    };
     setPendingRoiIndex(currentRoiIndex);
   }, [currentRoiIndex]);
 

@@ -148,6 +148,36 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
     noiseSuppressionActive,
   ]);
 
+  // Sync pipeline results to context for NeuralGraph and other consumers
+  useEffect(() => {
+    if (Array.isArray(pipelineResults.spikeResults)) {
+      setPeakResults(pipelineResults.spikeResults);
+    }
+    if (Array.isArray(pipelineResults.burstResults)) {
+      setBurstResults(pipelineResults.burstResults);
+    }
+  }, [
+    pipelineResults.spikeResults,
+    pipelineResults.burstResults,
+    setPeakResults,
+    setBurstResults,
+  ]);
+
+  // Sync pipeline results to context for NeuralGraph and other consumers
+  useEffect(() => {
+    if (Array.isArray(pipelineResults.spikeResults)) {
+      setPeakResults(pipelineResults.spikeResults);
+    }
+    if (Array.isArray(pipelineResults.burstResults)) {
+      setBurstResults(pipelineResults.burstResults);
+    }
+  }, [
+    pipelineResults.spikeResults,
+    pipelineResults.burstResults,
+    setPeakResults,
+    setBurstResults,
+  ]);
+
   // Debug: log processedSignal to check if it changes with trend flattening
   console.log(
     "[NeuralAnalysisModal] processedSignal (first 5):",

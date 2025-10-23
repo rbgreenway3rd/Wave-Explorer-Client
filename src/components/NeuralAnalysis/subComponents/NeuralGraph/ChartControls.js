@@ -1,4 +1,3 @@
-import React from "react";
 import DecimationControls from "./DecimationControls";
 import "../../styles/ChartControls.css";
 import Tooltip from "@mui/material/Tooltip";
@@ -6,6 +5,9 @@ import IconButton from "@mui/material/IconButton";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 import Box from "@mui/material/Box";
+
+import React, { useEffect } from "react";
+// ...existing imports...
 
 const ChartControls = ({
   resetZoom,
@@ -34,6 +36,21 @@ const ChartControls = ({
   selectingControl,
   setSelectingControl,
 }) => {
+  // Set noiseSuppressionActive, trendFlattening, and baselineCorrection ON by default, and subtractControl OFF by default on mount
+  useEffect(() => {
+    if (typeof setNoiseSuppressionActive === "function")
+      setNoiseSuppressionActive(true);
+    if (typeof setTrendFlatteningEnabled === "function")
+      setTrendFlatteningEnabled(true);
+    if (typeof setBaselineCorrection === "function")
+      setBaselineCorrection(true);
+    if (typeof setSubtractControl === "function") setSubtractControl(false);
+  }, [
+    setNoiseSuppressionActive,
+    setTrendFlatteningEnabled,
+    setBaselineCorrection,
+    setSubtractControl,
+  ]);
   return (
     <div className="chart-controls">
       <div className="noise-suppression-container">
@@ -123,7 +140,7 @@ const ChartControls = ({
             }
             label="Subtract Control Well Signature"
           />
-          <FormControlLabel
+          {/* <FormControlLabel
             control={
               <Switch
                 checked={!!filterBaseline}
@@ -136,7 +153,7 @@ const ChartControls = ({
               />
             }
             label="Filter Baseline Noise"
-          />
+          /> */}
 
           <FormControlLabel
             control={
