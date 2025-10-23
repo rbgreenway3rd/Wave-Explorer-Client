@@ -350,7 +350,7 @@ const NoiseFilterControls = ({
         <Box className="spike-detection-controls">
           <div>
             {/* ...existing code for spike detection controls... */}
-            <label className="spike-detection-label">
+            {/* <label className="spike-detection-label">
               Prominence:
               <input
                 type="number"
@@ -370,8 +370,8 @@ const NoiseFilterControls = ({
                 onChange={(e) => setSpikeWindow(e.target.value)}
                 className="spike-detection-input"
               />
-            </label>
-            <label className="spike-detection-label">
+            </label> */}
+            {/* <label className="spike-detection-label">
               Threshold:
               <input
                 type="number"
@@ -390,23 +390,23 @@ const NoiseFilterControls = ({
                 onChange={(e) => setSpikeMinDistance(e.target.value)}
                 className="spike-detection-input"
               />
-            </label>
+            </label> */}
           </div>
-          <Button
-            onClick={handleRunSpikeDetection}
-            className="run-spike-detection-button"
-          >
-            Run Spike Detection
-          </Button>
-          <Button
-            onClick={handleRunBurstDetection}
-            className="run-burst-detection-button"
-          >
-            Run Burst Detection
-          </Button>
         </Box>
+        <Button
+          onClick={handleRunSpikeDetection}
+          // className="run-spike-detection-button"
+        >
+          Run Spike Detection
+        </Button>
+        <Button
+          onClick={handleRunBurstDetection}
+          // className="run-burst-detection-button"
+        >
+          Run Burst Detection
+        </Button>
         <Box className="show-bursts-toggle-row">
-          <FormGroup row>
+          {/* <FormGroup row>
             <FormControlLabel
               control={
                 <Switch
@@ -443,7 +443,7 @@ const NoiseFilterControls = ({
               label="Enable Pan/Zoom"
               // Never disabled
             />
-          </FormGroup>
+          </FormGroup> */}
         </Box>
         {renderRoiButtons()}
       </FormGroup>

@@ -255,6 +255,18 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
               setControlWell={setControlWell}
               selectingControl={selectingControl}
               setSelectingControl={setSelectingControl}
+              defineROI={defineROI}
+              setDefineROI={setDefineROI}
+              enablePanZoom={enablePanZoom}
+              setEnablePanZoom={setEnablePanZoom}
+              zoomState={zoomState}
+              setZoomState={setZoomState}
+              panState={panState}
+              setPanState={setPanState}
+              roiList={roiList}
+              setRoiList={setRoiList}
+              currentRoiIndex={currentRoiIndex}
+              setCurrentRoiIndex={setCurrentRoiIndex}
             />
           </div>
           <div className="modal-body">
@@ -331,6 +343,40 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
                 setTrendFlatteningEnabled={setTrendFlatteningEnabled}
                 selectedWell={selectedWell}
               />
+              {/* <ChartControls
+                className="chart-controls"
+                resetZoom={resetZoom}
+                decimationEnabled={decimationEnabled}
+                setDecimationEnabled={setDecimationEnabled}
+                decimationSamples={decimationSamples}
+                setDecimationSamples={setDecimationSamples}
+                noiseSuppressionActive={noiseSuppressionActive}
+                setNoiseSuppressionActive={setNoiseSuppressionActive}
+                subtractControl={subtractControl}
+                setSubtractControl={setSubtractControl}
+                filterBaseline={filterBaseline}
+                setFilterBaseline={setFilterBaseline}
+                baselineCorrection={baselineCorrection}
+                setBaselineCorrection={setBaselineCorrection}
+                trendFlatteningEnabled={trendFlatteningEnabled}
+                setTrendFlatteningEnabled={setTrendFlatteningEnabled}
+                controlWell={controlWell}
+                setControlWell={setControlWell}
+                selectingControl={selectingControl}
+                setSelectingControl={setSelectingControl}
+                defineROI={defineROI}
+                setDefineROI={setDefineROI}
+                enablePanZoom={enablePanZoom}
+                setEnablePanZoom={setEnablePanZoom}
+                zoomState={zoomState}
+                setZoomState={setZoomState}
+                panState={panState}
+                setPanState={setPanState}
+                roiList={roiList}
+                setRoiList={setRoiList}
+                currentRoiIndex={currentRoiIndex}
+                setCurrentRoiIndex={setCurrentRoiIndex}
+              /> */}
             </section>
             <NeuralResults
               peakResults={pipelineResults.spikeResults}
