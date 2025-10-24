@@ -355,20 +355,6 @@ const ChartControls = ({
             }
             label="Subtract Control Well Signature"
           />
-          {/* <FormControlLabel
-            control={
-              <Switch
-                checked={!!filterBaseline}
-                onChange={(_, checked) => {
-                  if (typeof setFilterBaseline === "function")
-                    setFilterBaseline(checked);
-                  if (checked) setSubtractControl(false);
-                }}
-                color="primary"
-              />
-            }
-            label="Filter Baseline Noise"
-          /> */}
 
           <FormControlLabel
             control={
@@ -416,120 +402,47 @@ const ChartControls = ({
         </div>
       </div>
       {/* --- Spike/Burst Detection Controls UI --- */}
-      <div className="spike-detection-controls">
-        {/* <div>
-          <button
-            className="spike-detection-parameter-button"
-            onClick={handleSuggestProminence}
-          >
-            Suggest Prominence
-          </button>
-          <button
-            className="spike-detection-parameter-button"
-            onClick={handleSuggestWindow}
-          >
-            Suggest Window
-          </button>
-          <label className="spike-detection-label">
-            Prominence:
-            <input
-              type="number"
-              step="0.1"
-              min="0"
-              value={spikeProminence || ""}
-              onChange={(e) =>
-                setSpikeProminence && setSpikeProminence(e.target.value)
-              }
-              className="spike-detection-input"
-            />
-          </label>
-          <label className="spike-detection-label">
-            Window:
-            <input
-              type="number"
-              min="1"
-              value={spikeWindow || ""}
-              onChange={(e) => setSpikeWindow && setSpikeWindow(e.target.value)}
-              className="spike-detection-input"
-            />
-          </label>
-          <label className="spike-detection-label">
-            Threshold:
-            <input
-              type="number"
-              step="0.1"
-              value={spikeThreshold || ""}
-              onChange={(e) =>
-                setSpikeThreshold && setSpikeThreshold(e.target.value)
-              }
-              className="spike-detection-input"
-            />
-          </label>
-          <label className="spike-detection-label">
-            Min Distance:
-            <input
-              type="number"
-              min="1"
-              value={spikeMinDistance || ""}
-              onChange={(e) =>
-                setSpikeMinDistance && setSpikeMinDistance(e.target.value)
-              }
-              className="spike-detection-input"
-            />
-          </label>
-        </div> */}
-        {/* <Button
-          onClick={handleRunSpikeDetection}
-          className="run-spike-detection-button"
-        >
-          Run Spike Detection
-        </Button>
-        <Button
-          onClick={handleRunBurstDetection}
-          className="run-burst-detection-button"
-        >
-          Run Burst Detection
-        </Button> */}
-      </div>
+      <div className="spike-detection-controls"></div>
       {/* --- ROI and Pan/Zoom Toggles --- */}
-      <div className="show-bursts-toggle-row">
-        <FormGroup row>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={!!defineROI}
-                onChange={(_, checked) => {
-                  setDefineROI?.(checked);
-                  if (checked) {
-                    setEnablePanZoom?.(false);
-                    setZoomState?.(false);
-                    setPanState?.(false);
-                  }
-                }}
-                color="primary"
-              />
-            }
-            label="Define ROI"
-          />
-          <FormControlLabel
-            control={
-              <Switch
-                checked={!!zoomState && !!panState}
-                onChange={(_, checked) => {
-                  setEnablePanZoom?.(checked);
-                  setZoomState?.(checked);
-                  setPanState?.(checked);
-                  if (checked) {
-                    setDefineROI?.(false);
-                  }
-                }}
-                color="primary"
-              />
-            }
-            label="Enable Pan/Zoom"
-          />
-        </FormGroup>
-      </div>
+
+      <FormGroup row>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={!!defineROI}
+              onChange={(_, checked) => {
+                setDefineROI?.(checked);
+                if (checked) {
+                  setEnablePanZoom?.(false);
+                  setZoomState?.(false);
+                  setPanState?.(false);
+                }
+              }}
+              color="primary"
+            />
+          }
+          label="Define ROI"
+        />
+        <FormControlLabel
+          control={
+            <Switch
+              checked={!!zoomState && !!panState}
+              onChange={(_, checked) => {
+                setEnablePanZoom?.(checked);
+                setZoomState?.(checked);
+                setPanState?.(checked);
+                if (checked) {
+                  setDefineROI?.(false);
+                }
+              }}
+              color="primary"
+            />
+          }
+          label="Enable Pan/Zoom"
+        />
+      </FormGroup>
+      <button onClick={resetZoom}>Reset Zoom</button>
+
       {/* --- ROI Buttons --- */}
       {renderRoiButtons()}
       <DecimationControls
@@ -538,7 +451,6 @@ const ChartControls = ({
         decimationSamples={decimationSamples}
         setDecimationSamples={setDecimationSamples}
       />
-      <button onClick={resetZoom}>Reset Zoom</button>
       {/* Add more controls as needed */}
     </div>
   );

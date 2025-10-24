@@ -266,29 +266,217 @@ const NeuralResults = ({
     </Box>
   );
 
-  if (Object.keys(roiMetrics).length === 0) {
-    return (
-      <Box sx={{ p: 2 }}>
-        <Typography variant="h6" color="white" gutterBottom>
-          Analysis Results
-        </Typography>
-        <Paper
-          elevation={2}
-          sx={{ p: 2, backgroundColor: "#333", color: "white" }}
-        >
-          <Typography>
-            No ROIs defined. Please define regions of interest to see metrics.
-          </Typography>
-        </Paper>
-      </Box>
-    );
-  }
+  // Calculate overall metrics for all spikes (regardless of ROIs)
+  const overallMetrics = React.useMemo(() => {
+    if (!Array.isArray(peakResults) || peakResults.length === 0) {
+      return null;
+    }
+
+    // Get the time range from the first and last spike
+    const times = peakResults.map((spike) => spike.time);
+    const startTime = Math.min(...times);
+    const endTime = Math.max(...times);
+
+    return {
+      spikeFrequency: calculateSpikeFrequency(peakResults, startTime, endTime),
+      spikeAmplitude: calculateSpikeAmplitude(peakResults, startTime, endTime),
+      spikeWidth: calculateSpikeWidth(peakResults, startTime, endTime),
+      spikeAUC: calculateSpikeAUC(peakResults, startTime, endTime),
+      maxSpikeSignal: calculateMaxSpikeSignal(peakResults, startTime, endTime),
+      burstMetrics: calculateBurstMetrics(burstResults, startTime, endTime),
+    };
+  }, [peakResults, burstResults]);
 
   return (
     <Box sx={{ p: 2, maxHeight: "600px", overflowY: "auto" }}>
       <Typography variant="h6" color="white" gutterBottom>
         Analysis Results - {selectedWell?.key || "Unknown Well"}
       </Typography>
+
+      {/* Overall Spike Detection Summary (All Data) */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h5" color="#ffeb3b" gutterBottom>
+          Overall Spike Detection (All Data)
+        </Typography>
+
+        {!overallMetrics ? (
+          <Paper
+            elevation={2}
+            sx={{ p: 2, backgroundColor: "#333", color: "white" }}
+          >
+            <Typography>No spikes detected</Typography>
+          </Paper>
+        ) : (
+          <Grid container spacing={2}>
+            {/* Spike Frequency */}
+            <Grid item xs={12} md={6}>
+              <MetricCard title="Spike Frequency">
+                <MetricItem
+                  label="Total Spikes"
+                  value={overallMetrics.spikeFrequency.total}
+                />
+                <MetricItem
+                  label="Average Frequency"
+                  value={formatNumber(overallMetrics.spikeFrequency.average)}
+                  unit=" Hz"
+                />
+                <MetricItem
+                  label="Spikes Per Second"
+                  value={formatNumber(
+                    overallMetrics.spikeFrequency.spikesPerSecond
+                  )}
+                  unit=" Hz"
+                />
+              </MetricCard>
+            </Grid>
+
+            {/* Spike Amplitude */}
+            <Grid item xs={12} md={6}>
+              <MetricCard title="Spike Amplitude">
+                <MetricItem
+                  label="Average Amplitude"
+                  value={formatNumber(overallMetrics.spikeAmplitude.average)}
+                />
+                <MetricItem
+                  label="Median Amplitude"
+                  value={formatNumber(overallMetrics.spikeAmplitude.median)}
+                />
+                <MetricItem
+                  label="Min Amplitude"
+                  value={formatNumber(overallMetrics.spikeAmplitude.min)}
+                />
+                <MetricItem
+                  label="Max Amplitude"
+                  value={formatNumber(overallMetrics.spikeAmplitude.max)}
+                />
+              </MetricCard>
+            </Grid>
+
+            {/* Spike Width */}
+            <Grid item xs={12} md={6}>
+              <MetricCard title="Spike Width">
+                <MetricItem
+                  label="Average Width"
+                  value={formatNumber(overallMetrics.spikeWidth.average)}
+                  unit=" samples"
+                />
+                <MetricItem
+                  label="Median Width"
+                  value={formatNumber(overallMetrics.spikeWidth.median)}
+                  unit=" samples"
+                />
+                <MetricItem
+                  label="Min Width"
+                  value={formatNumber(overallMetrics.spikeWidth.min)}
+                  unit=" samples"
+                />
+                <MetricItem
+                  label="Max Width"
+                  value={formatNumber(overallMetrics.spikeWidth.max)}
+                  unit=" samples"
+                />
+              </MetricCard>
+            </Grid>
+
+            {/* Spike AUC */}
+            <Grid item xs={12} md={6}>
+              <MetricCard title="Spike AUC">
+                <MetricItem
+                  label="Average AUC"
+                  value={formatNumber(overallMetrics.spikeAUC.average)}
+                />
+                <MetricItem
+                  label="Median AUC"
+                  value={formatNumber(overallMetrics.spikeAUC.median)}
+                />
+                <MetricItem
+                  label="Min AUC"
+                  value={formatNumber(overallMetrics.spikeAUC.min)}
+                />
+                <MetricItem
+                  label="Max AUC"
+                  value={formatNumber(overallMetrics.spikeAUC.max)}
+                />
+              </MetricCard>
+            </Grid>
+
+            {/* Max Spike Signal */}
+            <Grid item xs={12} md={6}>
+              <MetricCard title="Max Spike Signal">
+                <MetricItem
+                  label="Max Spike Signal"
+                  value={formatNumber(overallMetrics.maxSpikeSignal)}
+                />
+              </MetricCard>
+            </Grid>
+
+            {/* Burst Metrics (if any) */}
+            {overallMetrics.burstMetrics.total > 0 && (
+              <Grid item xs={12}>
+                <MetricCard title="Burst Metrics">
+                  <MetricItem
+                    label="Total Bursts"
+                    value={overallMetrics.burstMetrics.total}
+                  />
+                  <Divider sx={{ my: 2, backgroundColor: "#555" }} />
+                  <Typography
+                    variant="subtitle1"
+                    sx={{ color: "#00bcd4", mb: 1 }}
+                  >
+                    Burst Duration
+                  </Typography>
+                  <MetricItem
+                    label="Average Duration"
+                    value={formatNumber(
+                      overallMetrics.burstMetrics.duration.average
+                    )}
+                    unit=" ms"
+                  />
+                  <MetricItem
+                    label="Median Duration"
+                    value={formatNumber(
+                      overallMetrics.burstMetrics.duration.median
+                    )}
+                    unit=" ms"
+                  />
+
+                  <Divider sx={{ my: 2, backgroundColor: "#555" }} />
+                  <Typography
+                    variant="subtitle1"
+                    sx={{ color: "#00bcd4", mb: 1 }}
+                  >
+                    Inter-Burst Interval
+                  </Typography>
+                  <MetricItem
+                    label="Average IBI"
+                    value={formatNumber(
+                      overallMetrics.burstMetrics.interBurstInterval.average
+                    )}
+                    unit=" ms"
+                  />
+                  <MetricItem
+                    label="Median IBI"
+                    value={formatNumber(
+                      overallMetrics.burstMetrics.interBurstInterval.median
+                    )}
+                    unit=" ms"
+                  />
+                </MetricCard>
+              </Grid>
+            )}
+          </Grid>
+        )}
+      </Box>
+
+      {/* ROI-Specific Metrics (if any ROIs defined) */}
+      {Object.keys(roiMetrics).length > 0 && (
+        <>
+          <Divider sx={{ my: 3, backgroundColor: "#555" }} />
+          <Typography variant="h5" color="#00bcd4" gutterBottom sx={{ mt: 3 }}>
+            ROI-Specific Analysis
+          </Typography>
+        </>
+      )}
 
       {Object.entries(roiMetrics).map(([roiName, metrics]) => (
         <Box key={roiName} sx={{ mb: 3 }}>

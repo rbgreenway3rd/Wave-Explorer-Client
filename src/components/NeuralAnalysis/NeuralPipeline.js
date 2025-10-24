@@ -31,7 +31,11 @@ export function suggestWindow(signal, prominence, num = 5) {
   const baseWindow = Math.max(10, Math.floor(prominence * num * samplingRate));
 
   // Constrain to reasonable bounds
-  const maxWindow = Math.min(100, Math.floor(signal.length / 10));
+  //   const maxWindow = Math.min(500, Math.floor(signal.length / 10));
+  const maxWindow = Math.min(
+    Math.floor(signal.length / 50),
+    Math.floor(signal.length / 10)
+  );
   const minWindow = 10;
 
   const optimalWindowWidth = Math.max(

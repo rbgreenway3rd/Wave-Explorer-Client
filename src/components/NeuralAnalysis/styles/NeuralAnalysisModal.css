@@ -6,3 +6,11 @@
 .chart-controls {
     /* margin-bottom: 1em; */
 }
+
+.modal-body {
+    display: grid;
+    grid-template-columns: 5fr 2fr;
+    grid-template-rows: 1fr;
+    height: 100%;
+    width: 100%;
+}

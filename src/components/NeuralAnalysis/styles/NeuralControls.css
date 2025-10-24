@@ -42,35 +42,3 @@
     margin-bottom: 8px;
     margin-left: 8px;
 }
-
-.show-bursts-toggle-row {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 8px;
-}
-
-
-.grid-mode-button {
-    border: 1px solid #00bcd4;
-    border-radius: 4px;
-    font-weight: 600;
-    cursor: pointer;
-    background: #222;
-    color: #fff;
-}
-
-.grid-mode-button-active {
-    background: #00bcd4;
-    color: #fff;
-}
-
-.spike-detection-parameter-button {
-    background-color: #444;
-    color: #fff;
-    border: 1px solid #00bcd4;
-    border-radius: 4;
-    font-weight: 600;
-    padding: 4px 10px;
-    cursor: pointer;
-    margin-left: 8
-}

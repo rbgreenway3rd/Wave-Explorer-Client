@@ -361,7 +361,7 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
                 selectingControl={selectingControl}
                 setSelectingControl={setSelectingControl}
               />
-              <NoiseFilterControls
+              {/* <NoiseFilterControls
                 processedSignal={pipelineResults.processedSignal}
                 smoothingWindow={smoothingWindow}
                 setSmoothingWindow={setSmoothingWindow}
@@ -393,7 +393,8 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
                 trendFlatteningEnabled={trendFlatteningEnabled}
                 setTrendFlatteningEnabled={setTrendFlatteningEnabled}
                 selectedWell={selectedWell}
-              />
+              /> */}
+
               {/* <ChartControls
                 className="chart-controls"
                 resetZoom={resetZoom}
@@ -429,14 +430,14 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
                 setCurrentRoiIndex={setCurrentRoiIndex}
               /> */}
             </section>
-            <NeuralResults
-              peakResults={pipelineResults.spikeResults}
-              burstResults={pipelineResults.burstResults}
-              roiList={roiList}
-              selectedWell={selectedWell}
-              metrics={pipelineResults.metrics}
-            />
           </div>
+          <NeuralResults
+            peakResults={pipelineResults.spikeResults}
+            burstResults={pipelineResults.burstResults}
+            roiList={roiList}
+            selectedWell={selectedWell}
+            metrics={pipelineResults.metrics}
+          />
         </div>
       </DialogContent>
     </Dialog>
