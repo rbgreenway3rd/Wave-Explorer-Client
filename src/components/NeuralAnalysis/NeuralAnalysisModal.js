@@ -39,6 +39,19 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
   const [spikeWindow, setSpikeWindow] = React.useState(20);
   const [spikeThreshold, setSpikeThreshold] = React.useState(0);
   const [spikeMinDistance, setSpikeMinDistance] = React.useState(0);
+  const [stdMultiplier, setStdMultiplier] = React.useState(1.0); // Cluster separation threshold multiplier
+  // Track if user has manually set spike params
+  const spikeParamsManuallySet = React.useRef(false);
+
+  // Handlers to mark when user changes spike params
+  const handleSpikeProminenceChange = (val) => {
+    spikeParamsManuallySet.current = true;
+    setSpikeProminence(val);
+  };
+  const handleSpikeWindowChange = (val) => {
+    spikeParamsManuallySet.current = true;
+    setSpikeWindow(val);
+  };
   const classes = useStyles();
   const {
     selectedWell,
@@ -59,13 +72,13 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
 
   // Noise suppression state
   const [noiseSuppressionActive, setNoiseSuppressionActive] =
-    React.useState(false);
+    React.useState(true);
   const [smoothingWindow, setSmoothingWindow] = React.useState(5);
-  const [subtractControl, setSubtractControl] = React.useState(true);
+  const [subtractControl, setSubtractControl] = React.useState(false);
   const [filterBaseline, setFilterBaseline] = React.useState(false);
-  const [baselineCorrection, setBaselineCorrection] = React.useState(false);
+  const [baselineCorrection, setBaselineCorrection] = React.useState(true);
   const [trendFlatteningEnabled, setTrendFlatteningEnabled] =
-    React.useState(false);
+    React.useState(true);
   const [controlWell, setControlWell] = React.useState(null);
   // Control well selection mode (lifted from NeuralWellSelector)
   const [selectingControl, setSelectingControl] = React.useState(false);
@@ -107,7 +120,19 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
         metrics: {},
       };
 
-    return runNeuralAnalysisPipeline({
+    // Debug: log the raw signal and control signal (first 5 points)
+    console.log(
+      "[NeuralAnalysisModal] rawSignal (first 5):",
+      selectedWell.indicators[0].filteredData?.slice(0, 5)
+    );
+    if (controlWell && controlWell.indicators && controlWell.indicators[0]) {
+      console.log(
+        "[NeuralAnalysisModal] controlSignal (first 5):",
+        controlWell.indicators[0].filteredData?.slice(0, 5)
+      );
+    }
+
+    const pipeline = runNeuralAnalysisPipeline({
       rawSignal: selectedWell.indicators[0].filteredData,
       controlSignal:
         controlWell && controlWell.indicators && controlWell.indicators[0]
@@ -124,6 +149,7 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
         spikeMinWidth: 5, // TODO: wire from UI if needed
         spikeMinDistance,
         spikeMinProminenceRatio: 0.01, // TODO: wire from UI if needed
+        stdMultiplier, // Pass through the noise threshold multiplier
         maxInterSpikeInterval: 50, // TODO: wire from UI if needed
         minSpikesPerBurst: 3, // TODO: wire from UI if needed
       },
@@ -133,6 +159,12 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
       },
       noiseSuppressionActive,
     });
+    // Debug: log the processedSignal (first 5 points)
+    console.log(
+      "[NeuralAnalysisModal] processedSignal for detectSpikes (first 5):",
+      pipeline.processedSignal?.slice(0, 5)
+    );
+    return pipeline;
   }, [
     selectedWell,
     controlWell,
@@ -144,24 +176,37 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
     spikeProminence,
     spikeWindow,
     spikeMinDistance,
+    stdMultiplier,
     showBursts,
     noiseSuppressionActive,
   ]);
 
-  // Sync pipeline results to context for NeuralGraph and other consumers
   useEffect(() => {
-    if (Array.isArray(pipelineResults.spikeResults)) {
-      setPeakResults(pipelineResults.spikeResults);
+    spikeParamsManuallySet.current = false;
+  }, [selectedWell]);
+
+  // Centralized spike parameter suggestion (only if user hasn't changed them)
+  // This runs BEFORE the pipeline to ensure correct parameters are used
+  useEffect(() => {
+    if (
+      !spikeParamsManuallySet.current &&
+      selectedWell &&
+      selectedWell.indicators &&
+      selectedWell.indicators[0] &&
+      selectedWell.indicators[0].filteredData &&
+      selectedWell.indicators[0].filteredData.length > 0
+    ) {
+      const rawSignal = selectedWell.indicators[0].filteredData;
+      const suggestedProminence = suggestProminence(rawSignal, 0.5);
+      setSpikeProminence(suggestedProminence);
+      const suggestedWindow = suggestWindow(
+        rawSignal,
+        Number(suggestedProminence),
+        5
+      );
+      setSpikeWindow(suggestedWindow);
     }
-    if (Array.isArray(pipelineResults.burstResults)) {
-      setBurstResults(pipelineResults.burstResults);
-    }
-  }, [
-    pipelineResults.spikeResults,
-    pipelineResults.burstResults,
-    setPeakResults,
-    setBurstResults,
-  ]);
+  }, [selectedWell]);
 
   // Sync pipeline results to context for NeuralGraph and other consumers
   useEffect(() => {
@@ -172,17 +217,18 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
       setBurstResults(pipelineResults.burstResults);
     }
   }, [
-    pipelineResults.spikeResults,
-    pipelineResults.burstResults,
-    setPeakResults,
-    setBurstResults,
+    pipelineResults,
+    // pipelineResults.spikeResults,
+    // pipelineResults.burstResults,
+    // setPeakResults,
+    // setBurstResults,
   ]);
 
   // Debug: log processedSignal to check if it changes with trend flattening
-  console.log(
-    "[NeuralAnalysisModal] processedSignal (first 5):",
-    pipelineResults.processedSignal?.slice(0, 5)
-  );
+  // console.log(
+  //   "[NeuralAnalysisModal] processedSignal (first 5):",
+  //   pipelineResults.processedSignal?.slice(0, 5)
+  // );
   return (
     <Dialog
       open={open}
@@ -278,6 +324,11 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
                 findPeaksWindowWidth={findPeaksWindowWidth}
                 peakProminence={peakProminence}
                 processedSignal={pipelineResults.processedSignal}
+                // Debug: log the processedSignal passed to NeuralGraph (first 5 points)
+                {...(console.log(
+                  "[NeuralAnalysisModal] processedSignal to NeuralGraph (first 5):",
+                  pipelineResults.processedSignal?.slice(0, 5)
+                ) || {})}
                 noiseSuppressionActive={noiseSuppressionActive}
                 smoothingWindow={smoothingWindow}
                 subtractControl={subtractControl}
@@ -332,9 +383,9 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
                 setBurstResults={setBurstResults}
                 setShowBursts={setShowBursts}
                 spikeProminence={spikeProminence}
-                setSpikeProminence={setSpikeProminence}
+                setSpikeProminence={handleSpikeProminenceChange}
                 spikeWindow={spikeWindow}
-                setSpikeWindow={setSpikeWindow}
+                setSpikeWindow={handleSpikeWindowChange}
                 spikeThreshold={spikeThreshold}
                 setSpikeThreshold={setSpikeThreshold}
                 spikeMinDistance={spikeMinDistance}

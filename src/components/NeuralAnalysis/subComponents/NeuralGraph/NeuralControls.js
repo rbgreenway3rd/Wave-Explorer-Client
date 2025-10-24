@@ -93,25 +93,7 @@ const NoiseFilterControls = ({
 }) => {
   const [pendingRoiIndex, setPendingRoiIndex] = useState(null);
 
-  useEffect(() => {
-    if (
-      !processedSignal ||
-      !Array.isArray(processedSignal) ||
-      processedSignal.length === 0
-    ) {
-      setSpikeProminence(1);
-      setSpikeWindow(20);
-      return;
-    }
-    const suggestedProminence = suggestProminence(processedSignal, 0.5);
-    setSpikeProminence(suggestedProminence);
-    const suggestedWindow = suggestWindow(
-      processedSignal,
-      Number(suggestedProminence),
-      5
-    );
-    setSpikeWindow(suggestedWindow);
-  }, [processedSignal, selectedWell]);
+  // (Removed: spike parameter suggestion now handled in NeuralAnalysisModal)
 
   const handleSuggestProminence = () => {
     if (

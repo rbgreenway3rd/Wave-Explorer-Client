@@ -65,21 +65,7 @@ const ChartControls = ({
   setCurrentRoiIndex,
   selectedWell,
 }) => {
-  // Set noiseSuppressionActive, trendFlattening, and baselineCorrection ON by default, and subtractControl OFF by default on mount
-  useEffect(() => {
-    if (typeof setNoiseSuppressionActive === "function")
-      setNoiseSuppressionActive(true);
-    if (typeof setTrendFlatteningEnabled === "function")
-      setTrendFlatteningEnabled(true);
-    if (typeof setBaselineCorrection === "function")
-      setBaselineCorrection(true);
-    if (typeof setSubtractControl === "function") setSubtractControl(false);
-  }, [
-    setNoiseSuppressionActive,
-    setTrendFlatteningEnabled,
-    setBaselineCorrection,
-    setSubtractControl,
-  ]);
+  // (Removed: default state setting now handled in NeuralAnalysisModal)
 
   // --- Spike/Burst Detection Controls and Logic ---
   const [pendingRoiIndex, setPendingRoiIndex] = useState(null);
@@ -126,25 +112,7 @@ const ChartControls = ({
     return optimalWindowWidth || 20;
   }
 
-  useEffect(() => {
-    if (
-      !processedSignal ||
-      !Array.isArray(processedSignal) ||
-      processedSignal.length === 0
-    ) {
-      setSpikeProminence && setSpikeProminence(1);
-      setSpikeWindow && setSpikeWindow(20);
-      return;
-    }
-    const suggestedProminence = suggestProminence(processedSignal, 0.5);
-    setSpikeProminence && setSpikeProminence(suggestedProminence);
-    const suggestedWindow = suggestWindow(
-      processedSignal,
-      Number(suggestedProminence),
-      5
-    );
-    setSpikeWindow && setSpikeWindow(suggestedWindow);
-  }, [processedSignal, selectedWell]);
+  // (Removed: spike parameter suggestion now handled in NeuralAnalysisModal)
 
   const handleSuggestProminence = () => {
     if (

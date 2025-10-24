@@ -1,75 +1,3 @@
-// Centralized Neural Analysis Pipeline
-// All core logic for signal processing, spike/burst detection, and metrics
-
-// ==================== NEURAL ANALYSIS PIPELINE PARAMETER FLOW DIAGRAM ====================
-
-// runNeuralAnalysisPipeline({
-//   rawSignal,         // From selectedWell.indicators[0].filteredData (NeuralAnalysisModal)
-//   controlSignal,     // From controlWell.indicators[0].filteredData (NeuralAnalysisModal)
-//   params: {
-//     subtractControl,         // UI toggle (ChartControls/NoiseFilterControls)
-//     trendFlatteningEnabled,  // UI toggle (ChartControls/NoiseFilterControls)
-//     baselineCorrection,      // UI toggle (ChartControls/NoiseFilterControls)
-//     filterBaseline,          // UI toggle (ChartControls/NoiseFilterControls)
-//     smoothingWindow,         // UI input (ChartControls/NoiseFilterControls)
-//     spikeProminence,         // Suggested or user input (NeuralControls, via suggestProminence)
-//     spikeWindow,             // Suggested or user input (NeuralControls, via suggestWindow)
-//     spikeMinWidth,           // User input (NeuralControls)
-//     spikeMinDistance,        // User input (NeuralControls)
-//     spikeMinProminenceRatio, // User input (NeuralControls)
-//     maxInterSpikeInterval,   // User input (NeuralControls)
-//     minSpikesPerBurst,       // User input (NeuralControls)
-//   },
-//   analysis: {
-//     runSpikeDetection, // UI action (NeuralControls)
-//     runBurstDetection, // UI action (NeuralControls)
-//   }
-// })
-
-// Parameter flow:
-// 1. suppressNoise(rawSignal, controlSignal, { subtractControl })
-//    - rawSignal: from selectedWell
-//    - controlSignal: from controlWell
-//    - subtractControl: from UI
-//    => returns processed signal (control subtracted if enabled)
-
-// 2. trendFlattening(processed, { adaptiveBaseline, windowSize, numMinimums })
-//    - processed: output of suppressNoise
-//    - adaptiveBaseline: baselineCorrection (from UI)
-//    - windowSize: smoothingWindow (from UI)
-//    - numMinimums: fixed or from UI
-//    => returns detrended and optionally baseline-corrected signal
-
-// 3. baselineCorrected(processed, windowSize, numMinimums)
-//    - processed: output of suppressNoise
-//    - windowSize: smoothingWindow (from UI)
-//    - numMinimums: fixed or from UI
-//    => returns baseline-corrected signal
-
-// 4. detectSpikes(processed, { prominence, window, minWidth, minDistance, minProminenceRatio })
-//    - processed: output of smoothing/baseline
-//    - prominence: spikeProminence (suggested or user)
-//    - window: spikeWindow (suggested or user)
-//    - minWidth, minDistance, minProminenceRatio: user
-//    => returns spikeResults
-
-// 5. detectBursts(spikeResults, { maxInterSpikeInterval, minSpikesPerBurst })
-//    - spikeResults: output of detectSpikes
-//    - maxInterSpikeInterval: user
-//    - minSpikesPerBurst: user
-//    => returns burstResults
-
-// 6. Metrics functions (calculateSpikeFrequency, etc.)
-//    - Use spikeResults, burstResults, processedSignal
-//    - All metrics calculated from pipeline outputs
-
-// Parameter suggestion functions:
-//   suggestProminence(processedSignal) -- uses processed signal
-//   suggestWindow(processedSignal, prominence) -- uses processed signal and prominence
-
-// All UI controls and user actions feed into params and analysis objects, which are passed to the pipeline.
-// ========================================================================================
-
 import { suppressNoise } from "./utilities/noiseSuppression";
 import {
   trendFlattening,
@@ -90,13 +18,32 @@ export function suggestProminence(signal, factor = 3) {
 
 export function suggestWindow(signal, prominence, num = 5) {
   if (!Array.isArray(signal) || signal.length === 0) return 20;
+
+  // Calculate sampling rate (average time between samples)
+  const samplingRate =
+    signal.length > 1
+      ? (signal[signal.length - 1].x - signal[0].x) / signal.length
+      : 1;
+
+  // Estimate typical peak width from prominence
+  // Larger prominence suggests wider peaks that need larger windows
+  // Scale by num to allow tuning
+  const baseWindow = Math.max(10, Math.floor(prominence * num * samplingRate));
+
+  // Constrain to reasonable bounds
   const maxWindow = Math.min(100, Math.floor(signal.length / 10));
-  let optimalWindowWidth = 0;
-  for (let ww = 10; ww <= maxWindow; ww += 5) {
-    optimalWindowWidth = ww;
-    break;
-  }
-  return optimalWindowWidth || 20;
+  const minWindow = 10;
+
+  const optimalWindowWidth = Math.max(
+    minWindow,
+    Math.min(baseWindow, maxWindow)
+  );
+
+  console.log(
+    `[suggestWindow] prominence: ${prominence}, num: ${num}, calculated: ${optimalWindowWidth}`
+  );
+
+  return optimalWindowWidth;
 }
 
 // --- Metrics Calculation ---
@@ -186,6 +133,7 @@ export function runNeuralAnalysisPipeline({
       minWidth: params.spikeMinWidth,
       minDistance: params.spikeMinDistance,
       minProminenceRatio: params.spikeMinProminenceRatio,
+      stdMultiplier: params.stdMultiplier, // Pass through stdMultiplier parameter
     });
   }
 
