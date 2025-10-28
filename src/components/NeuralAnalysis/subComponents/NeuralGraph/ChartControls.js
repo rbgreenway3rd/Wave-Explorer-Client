@@ -10,7 +10,8 @@ import Box from "@mui/material/Box";
 
 import React, { useEffect, useState } from "react";
 import { detectSpikes } from "../../utilities/detectSpikes";
-import { detectBursts } from "../../utilities/burstDetection";
+import NeuralReportModal from "../../NeuralReportModal";
+import NeuralFullPlateReportModal from "../../NeuralFullPlateReportModal";
 // ...existing imports...
 
 const ChartControls = ({
@@ -64,11 +65,26 @@ const ChartControls = ({
   currentRoiIndex,
   setCurrentRoiIndex,
   selectedWell,
+  // New props for CSV generation
+  project,
+  burstResults,
+  overallMetrics,
+  roiMetrics,
+  spikeMinWidth,
+  maxInterSpikeInterval,
+  minSpikesPerBurst,
+  wellArrays,
 }) => {
   // (Removed: default state setting now handled in NeuralAnalysisModal)
 
   // --- Spike/Burst Detection Controls and Logic ---
   const [pendingRoiIndex, setPendingRoiIndex] = useState(null);
+
+  // State for Neural Report Modal
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+
+  // State for Full-Plate Report Modal
+  const [fullPlateModalOpen, setFullPlateModalOpen] = useState(false);
 
   // Enable Pan/Zoom ON by default, only one control can be on at a time
   useEffect(() => {
@@ -158,6 +174,39 @@ const ChartControls = ({
       setShowBursts(true);
       alert("Burst detection will be updated via the main analysis pipeline.");
     }
+  };
+
+  const handleGenerateReport = () => {
+    // Validate we have the necessary data
+    if (!selectedWell) {
+      alert("No well selected. Please select a well to generate a report.");
+      return;
+    }
+
+    if (!peakResults || peakResults.length === 0) {
+      alert(
+        "No spikes detected. Please run spike detection before generating a report."
+      );
+      return;
+    }
+
+    // Open the report modal
+    setReportModalOpen(true);
+  };
+
+  const handleGenerateFullPlateReport = () => {
+    console.log("[ChartControls] wellArrays:", wellArrays);
+    console.log("[ChartControls] wellArrays type:", typeof wellArrays);
+    console.log("[ChartControls] wellArrays length:", wellArrays?.length);
+
+    // Validate we have well data
+    if (!wellArrays || wellArrays.length === 0) {
+      alert("No well data available. Please load a dataset first.");
+      return;
+    }
+
+    // Open the full-plate report modal
+    setFullPlateModalOpen(true);
   };
 
   const handleDefineRoi = (idx) => {
@@ -265,9 +314,49 @@ const ChartControls = ({
     return <Box sx={{ mt: 2 }}>{buttons}</Box>;
   };
 
+  // Prepare processing parameters for report generation
+  const processingParams = {
+    noiseSuppressionActive,
+    smoothingWindow,
+    subtractControl,
+    controlWell,
+    baselineCorrection,
+    trendFlatteningEnabled,
+    spikeProminence,
+    spikeWindow,
+    spikeMinWidth: spikeMinWidth ?? 5,
+    spikeMinDistance,
+    maxInterSpikeInterval: maxInterSpikeInterval ?? 50,
+    minSpikesPerBurst: minSpikesPerBurst ?? 3,
+  };
+
   // --- UI ---
   return (
     <div className="chart-controls">
+      {/* Neural Report Modal */}
+      <NeuralReportModal
+        open={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
+        project={project}
+        selectedWell={selectedWell}
+        processedSignal={processedSignal}
+        peakResults={peakResults}
+        burstResults={burstResults}
+        overallMetrics={overallMetrics}
+        roiMetrics={roiMetrics}
+        roiList={roiList}
+        processingParams={processingParams}
+      />
+
+      {/* Full-Plate Report Modal */}
+      <NeuralFullPlateReportModal
+        open={fullPlateModalOpen}
+        onClose={() => setFullPlateModalOpen(false)}
+        project={project}
+        wellArrays={wellArrays}
+        processingParams={processingParams}
+      />
+
       <div className="noise-suppression-container">
         <div className="noise-suppression-toggle">
           <Tooltip title="Turn Noise Suppression ON">
@@ -442,6 +531,49 @@ const ChartControls = ({
         />
       </FormGroup>
       <button onClick={resetZoom}>Reset Zoom</button>
+
+      {/* --- Generate Report Buttons --- */}
+      <Box sx={{ mt: 2, mb: 2, display: "flex", gap: 2, flexWrap: "wrap" }}>
+        <Button
+          variant="contained"
+          color="success"
+          onClick={handleGenerateReport}
+          disabled={!selectedWell || !peakResults || peakResults.length === 0}
+          sx={{
+            fontWeight: "bold",
+            backgroundColor: "#4caf50",
+            "&:hover": {
+              backgroundColor: "#45a049",
+            },
+            "&:disabled": {
+              backgroundColor: "#cccccc",
+              color: "#666666",
+            },
+          }}
+        >
+          Generate Neural Report (CSV)
+        </Button>
+
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleGenerateFullPlateReport}
+          disabled={!wellArrays || wellArrays.length === 0}
+          sx={{
+            fontWeight: "bold",
+            backgroundColor: "#2196f3",
+            "&:hover": {
+              backgroundColor: "#1976d2",
+            },
+            "&:disabled": {
+              backgroundColor: "#cccccc",
+              color: "#666666",
+            },
+          }}
+        >
+          Generate Full-Plate Report
+        </Button>
+      </Box>
 
       {/* --- ROI Buttons --- */}
       {renderRoiButtons()}

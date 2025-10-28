@@ -119,7 +119,9 @@ export function runNeuralAnalysisPipeline({
         polynomialDegree: 2, // or make this user-configurable if needed
       });
       console.log("trendFlattening data: ", processed);
-    } else if (params.baselineCorrection) {
+    }
+
+    if (params.baselineCorrection) {
       processed = baselineCorrected(
         processed,
         params.smoothingWindow || 200,
