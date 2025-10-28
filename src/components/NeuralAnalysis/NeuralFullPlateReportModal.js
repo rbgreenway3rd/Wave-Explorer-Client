@@ -14,7 +14,7 @@ import {
   LinearProgress,
   CircularProgress,
 } from "@mui/material";
-import { GenerateFullPlateReport } from "./BatchNeuralReport";
+import { GenerateFullPlateReport } from "./NeuralFullPlateReport";
 
 /**
  * NeuralFullPlateReportModal
