@@ -49,7 +49,6 @@ const ChartControls = ({
   setPeakResults,
   peakResults,
   setBurstResults,
-  setShowBursts,
   defineROI,
   setDefineROI,
   enablePanZoom,
@@ -130,7 +129,7 @@ const ChartControls = ({
 
   // --- UI ---
   return (
-    <div className="chart-controls">
+    <div className="neural-chart-controls">
       {/* Neural Report Modal */}
       <NeuralReportModal
         open={reportModalOpen}
@@ -163,6 +162,7 @@ const ChartControls = ({
           selectingControl={selectingControl}
           setSelectingControl={setSelectingControl}
           selectedWell={selectedWell}
+          disabled={!subtractControl}
         />
       )}
 

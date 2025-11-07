@@ -4,6 +4,7 @@ import "../../styles/NeuralControls.css";
 
 // Import extracted control components
 import ROIControls from "./controls/ROIControls";
+import ShowBurstsToggle from "./controls/ShowBurstsToggle";
 
 /*
  * Utility functions for spike parameter suggestions
@@ -81,6 +82,7 @@ const NoiseFilterControls = ({
   setSpikeMinDistance,
   peakResults,
   setBurstResults,
+  showBursts,
   setShowBursts,
   trendFlatteningEnabled,
   setTrendFlatteningEnabled,
@@ -136,7 +138,14 @@ const NoiseFilterControls = ({
         </Box>
         {/* <Button onClick={handleRunSpikeDetection}>Run Spike Detection</Button>
         <Button onClick={handleRunBurstDetection}>Run Burst Detection</Button> */}
-        <Box className="show-bursts-toggle-row"></Box>
+
+        {/* Show Bursts Toggle */}
+        <Box className="show-bursts-toggle-row">
+          <ShowBurstsToggle
+            showBursts={showBursts}
+            setShowBursts={setShowBursts}
+          />
+        </Box>
 
         {/* ROI Management using extracted component */}
         <ROIControls

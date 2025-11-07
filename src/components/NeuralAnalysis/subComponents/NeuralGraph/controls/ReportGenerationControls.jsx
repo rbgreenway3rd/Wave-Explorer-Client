@@ -51,6 +51,9 @@ const ReportGenerationControls = ({
         border: `2px solid ${controlsTheme.colors.border}`,
         marginBottom: `${controlsTheme.spacing.md}px`,
         marginTop: `${controlsTheme.spacing.md}px`,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
       }}
     >
       {/* Section Header */}
@@ -100,7 +103,7 @@ const ReportGenerationControls = ({
                 },
               }}
             >
-              Generate Neural Report (CSV)
+              Generate Single-Well Report
             </Button>
           </span>
         </Tooltip>
@@ -138,11 +141,11 @@ const ReportGenerationControls = ({
       {/* Info Text */}
       <Box
         sx={{
-          marginTop: `${controlsTheme.spacing.sm}px`,
           padding: `${controlsTheme.spacing.sm}px`,
           backgroundColor: controlsTheme.colors.backgroundLight,
           borderRadius: `${controlsTheme.borderRadius.sm}px`,
           border: `1px solid ${controlsTheme.colors.divider}`,
+          alignItems: "end",
         }}
       >
         <Typography

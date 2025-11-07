@@ -396,6 +396,7 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
                 setCurrentRoiIndex={setCurrentRoiIndex}
                 setPeakResults={setPeakResults}
                 setBurstResults={setBurstResults}
+                showBursts={showBursts}
                 setShowBursts={setShowBursts}
                 spikeProminence={spikeProminence}
                 setSpikeProminence={handleSpikeProminenceChange}

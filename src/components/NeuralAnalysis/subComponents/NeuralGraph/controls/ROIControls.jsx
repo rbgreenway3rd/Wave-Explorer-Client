@@ -31,6 +31,14 @@ const ROIControls = ({
     setPendingRoiIndex(currentRoiIndex);
   }, [currentRoiIndex]);
 
+  // Automatically set currentRoiIndex to 0 when ROI definition is enabled and no ROIs exist
+  useEffect(() => {
+    if (defineROI && roiList.length === 0 && currentRoiIndex === null) {
+      setCurrentRoiIndex && setCurrentRoiIndex(0);
+      setPendingRoiIndex(0);
+    }
+  }, [defineROI, roiList.length, currentRoiIndex, setCurrentRoiIndex]);
+
   // Clear pending ROI index when ROI definition is disabled
   useEffect(() => {
     if (!defineROI) {

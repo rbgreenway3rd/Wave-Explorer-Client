@@ -1,0 +1,19 @@
+/* ShowBurstsToggle.css */
+
+/* Switch transitions */
+.MuiSwitch-root {
+    transition: all 0.2s ease-in-out;
+}
+
+/* Accessibility improvements */
+.MuiSwitch-root:focus-visible {
+    outline: 2px solid #2196f3;
+    outline-offset: 2px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .MuiPaper-root {
+        padding: 10px !important;
+    }
+}

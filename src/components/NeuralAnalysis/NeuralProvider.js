@@ -10,7 +10,7 @@ export const NeuralProvider = ({ children }) => {
   const [peakProminence, setPeakProminence] = useState(1);
   const [peakResults, setPeakResults] = useState([]);
   const [burstResults, setBurstResults] = useState([]);
-  const [showBursts, setShowBursts] = useState(false);
+  const [showBursts, setShowBursts] = useState(true); // Default to true so burst detection runs automatically
 
   return (
     <NeuralContext.Provider

@@ -7,6 +7,14 @@ const NeuralResults = ({
   roiList,
   selectedWell,
 }) => {
+  // Debug: Log what props are being received
+  console.log("=== NeuralResults Props ===");
+  console.log("peakResults:", peakResults);
+  console.log("burstResults:", burstResults);
+  console.log("roiList:", roiList);
+  console.log("selectedWell:", selectedWell);
+  console.log("========================");
+
   // Helper functions for metrics calculation
   const calculateSpikeFrequency = (spikes, startTime, endTime) => {
     const spikesInRange = spikes.filter(
@@ -118,11 +126,30 @@ const NeuralResults = ({
   };
 
   const calculateBurstMetrics = (bursts, startTime, endTime) => {
+    console.log("calculateBurstMetrics called with:", {
+      bursts,
+      startTime,
+      endTime,
+    });
+
+    // Safety check: ensure bursts is an array
+    if (!Array.isArray(bursts) || bursts.length === 0) {
+      console.log("No bursts array or empty array");
+      return {
+        total: 0,
+        duration: { average: 0, median: 0 },
+        interBurstInterval: { average: 0, median: 0 },
+      };
+    }
+
     const burstsInRange = bursts.filter(
       (burst) => burst.startTime >= startTime && burst.endTime <= endTime
     );
 
+    console.log("burstsInRange:", burstsInRange);
+
     if (burstsInRange.length === 0) {
+      console.log("No bursts in range");
       return {
         total: 0,
         duration: { average: 0, median: 0 },
@@ -268,6 +295,12 @@ const NeuralResults = ({
 
   // Calculate overall metrics for all spikes (regardless of ROIs)
   const overallMetrics = React.useMemo(() => {
+    console.log("NeuralResults - overallMetrics calculation:");
+    console.log("  peakResults:", peakResults);
+    console.log("  burstResults:", burstResults);
+    console.log("  peakResults length:", peakResults?.length);
+    console.log("  burstResults length:", burstResults?.length);
+
     if (!Array.isArray(peakResults) || peakResults.length === 0) {
       return null;
     }
@@ -277,13 +310,20 @@ const NeuralResults = ({
     const startTime = Math.min(...times);
     const endTime = Math.max(...times);
 
+    const burstMetrics = calculateBurstMetrics(
+      burstResults,
+      startTime,
+      endTime
+    );
+    console.log("  calculated burstMetrics:", burstMetrics);
+
     return {
       spikeFrequency: calculateSpikeFrequency(peakResults, startTime, endTime),
       spikeAmplitude: calculateSpikeAmplitude(peakResults, startTime, endTime),
       spikeWidth: calculateSpikeWidth(peakResults, startTime, endTime),
       spikeAUC: calculateSpikeAUC(peakResults, startTime, endTime),
       maxSpikeSignal: calculateMaxSpikeSignal(peakResults, startTime, endTime),
-      burstMetrics: calculateBurstMetrics(burstResults, startTime, endTime),
+      burstMetrics: burstMetrics,
     };
   }, [peakResults, burstResults]);
 

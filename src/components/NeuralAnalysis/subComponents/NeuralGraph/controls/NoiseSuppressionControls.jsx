@@ -245,7 +245,7 @@ const NoiseSuppressionControls = ({
           }}
         />
 
-        <FormControlLabel
+        {/* <FormControlLabel
           control={
             <Switch
               checked={!!baselineCorrection}
@@ -284,7 +284,7 @@ const NoiseSuppressionControls = ({
             margin: 0,
             padding: `${controlsTheme.spacing.sm}px ${controlsTheme.spacing.lg}px`,
           }}
-        />
+        /> */}
       </Box>
     </Paper>
   );
