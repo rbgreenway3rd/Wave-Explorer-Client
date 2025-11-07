@@ -27,6 +27,7 @@ const NeuralFullPlateReportModal = ({
   project,
   wellArrays,
   processingParams,
+  roiList = [], // Accept roiList prop, default to empty array
 }) => {
   // State for CSV generation options
   const [options, setOptions] = useState({
@@ -126,7 +127,8 @@ const NeuralFullPlateReportModal = ({
         allWells,
         processingParams,
         options,
-        handleProgress
+        handleProgress,
+        roiList // Pass roiList to the report generator
       );
 
       if (isCancelled) {
@@ -329,7 +331,7 @@ const NeuralFullPlateReportModal = ({
                     checked={options.includeROIAnalysis}
                     onChange={handleOptionChange("includeROIAnalysis")}
                     color="primary"
-                    disabled={true}
+                    disabled={!roiList || roiList.length === 0}
                   />
                 }
                 label={
@@ -337,13 +339,20 @@ const NeuralFullPlateReportModal = ({
                     <Typography
                       variant="body1"
                       fontWeight="medium"
-                      color="text.disabled"
+                      color={
+                        roiList && roiList.length > 0
+                          ? "text.primary"
+                          : "text.disabled"
+                      }
                     >
                       ROI Analysis
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      Not available for full-plate reports (well-specific
-                      feature)
+                      {roiList && roiList.length > 0
+                        ? `Apply ${roiList.length} defined ROI${
+                            roiList.length > 1 ? "s" : ""
+                          } to all wells`
+                        : "No ROIs defined (define ROIs in the graph above)"}
                     </Typography>
                   </Box>
                 }

@@ -227,18 +227,21 @@ export function GenerateFullPlateReport(
   wells,
   processingParams,
   options = {},
-  onProgress = null
+  onProgress = null,
+  roiList = [] // Add roiList parameter
 ) {
   console.log(
     "[GenerateFullPlateReport] Starting full-plate report generation"
   );
   console.log(`[GenerateFullPlateReport] Processing ${wells.length} wells`);
+  console.log(`[GenerateFullPlateReport] ROIs defined: ${roiList.length}`);
 
   const {
     includeSpikeData = true,
     includeOverallMetrics = true,
     includeBurstData = true,
     includeBurstMetrics = true,
+    includeROIAnalysis = false,
   } = options;
 
   const csvLines = [];
@@ -365,11 +368,7 @@ export function GenerateFullPlateReport(
 
       // Calculate optimal parameters for THIS well using RAW signal (before preprocessing)
       const optimalProminence = suggestProminence(rawSignal, 0.5);
-      const optimalWindow = suggestWindow(
-        rawSignal,
-        optimalProminence,
-        5
-      );
+      const optimalWindow = suggestWindow(rawSignal, optimalProminence, 5);
 
       console.log(
         `[GenerateFullPlateReport] Well ${wellKey}: prominence=${optimalProminence}, window=${optimalWindow} (calculated on RAW signal)`
@@ -400,7 +399,7 @@ export function GenerateFullPlateReport(
             `[GenerateFullPlateReport] Well ${wellKey}: Applied trendFlattening`
           );
         }
-        
+
         if (processingParams.baselineCorrection) {
           processedSignal = baselineCorrected(
             processedSignal,
@@ -414,7 +413,7 @@ export function GenerateFullPlateReport(
       }
       console.log(
         `[GenerateFullPlateReport] Well ${wellKey}: Final processed signal length=${processedSignal.length}`
-      );      // WELL PARAMETERS - unique to this well
+      ); // WELL PARAMETERS - unique to this well
       csvLines.push("<WELL_PARAMETERS>");
       csvLines.push(`WellID,${wellKey}`);
       csvLines.push(`OptimalProminence,${optimalProminence}`);
@@ -602,6 +601,359 @@ export function GenerateFullPlateReport(
         );
         csvLines.push("</BURST_METRICS>");
         csvLines.push("");
+      }
+
+      // ========================================
+      // ROI ANALYSIS (Side-by-side format)
+      // ========================================
+      if (includeROIAnalysis && roiList && roiList.length > 0) {
+        try {
+          console.log(
+            `[GenerateFullPlateReport] Well ${wellKey}: Processing ${roiList.length} ROIs`
+          );
+
+          // STEP 1: Build structured sections for each ROI
+          const roiStructuredData = roiList.map((roi, roiIndex) => {
+            const roiName = `ROI_${roiIndex + 1}`;
+            const timeRange = `${roi.xMin}-${roi.xMax}`;
+
+            // Filter spikes and bursts in this ROI
+            const spikesInROI = spikes.filter((spike) => {
+              const time = spike.time ?? spike.peakCoords?.x;
+              return time >= roi.xMin && time <= roi.xMax;
+            });
+
+            const burstsInROI = bursts.filter((burst) => {
+              return burst.endTime >= roi.xMin && burst.startTime <= roi.xMax;
+            });
+
+            console.log(
+              `[GenerateFullPlateReport] Well ${wellKey}, ${roiName}: ${spikesInROI.length} spikes, ${burstsInROI.length} bursts`
+            );
+
+            // Build individual sections
+            const sections = {
+              header: [],
+              spikeData: [],
+              spikeMetrics: [],
+              burstData: [],
+              burstMetrics: [],
+              footer: [],
+            };
+
+            // Header
+            sections.header.push([`<${roiName}, TimeRange: ${timeRange}>`]);
+
+            // Spike Data Section
+            if (spikesInROI.length > 0) {
+              sections.spikeData.push(["<ROI_SPIKE_DATA>"]);
+              sections.spikeData.push([
+                "Spike#",
+                "Time",
+                "PeakY",
+                "LeftBaseX",
+                "LeftBaseY",
+                "RightBaseX",
+                "RightBaseY",
+                "Amplitude",
+                "Width",
+                "AUC",
+              ]);
+
+              spikesInROI.forEach((spike, index) => {
+                const spikeNumber = index + 1;
+                const time = spike.time ?? spike.peakCoords?.x ?? "N/A";
+                const peakY = spike.peakCoords?.y ?? "N/A";
+                const leftBaseX = spike.leftBaseCoords?.x ?? "N/A";
+                const leftBaseY = spike.leftBaseCoords?.y ?? "N/A";
+                const rightBaseX = spike.rightBaseCoords?.x ?? "N/A";
+                const rightBaseY = spike.rightBaseCoords?.y ?? "N/A";
+                const amplitude = spike.amplitude ?? "N/A";
+                const width = spike.width ?? "N/A";
+                const auc = spike.auc ?? "N/A";
+
+                sections.spikeData.push([
+                  spikeNumber,
+                  time,
+                  peakY,
+                  leftBaseX,
+                  leftBaseY,
+                  rightBaseX,
+                  rightBaseY,
+                  amplitude,
+                  width,
+                  auc,
+                ]);
+              });
+
+              sections.spikeData.push(["</ROI_SPIKE_DATA>"]);
+              sections.spikeData.push([""]); // Empty line
+            } else {
+              sections.spikeData.push(["<ROI_SPIKE_DATA>"]);
+              sections.spikeData.push(["No spikes in this ROI"]);
+              sections.spikeData.push(["</ROI_SPIKE_DATA>"]);
+              sections.spikeData.push([""]); // Empty line
+            }
+
+            // Spike Metrics Section
+            if (spikesInROI.length > 0) {
+              const roiSpikeFrequency = calculateSpikeFrequency(
+                spikesInROI,
+                roi.xMin,
+                roi.xMax
+              );
+              const roiSpikeAmplitude = calculateSpikeAmplitude(spikesInROI);
+              const roiSpikeWidth = calculateSpikeWidth(spikesInROI);
+              const roiSpikeAUC = calculateSpikeAUC(spikesInROI);
+
+              sections.spikeMetrics.push(["<ROI_SPIKE_METRICS>"]);
+              sections.spikeMetrics.push(["Metric", "Value", "Unit"]);
+              sections.spikeMetrics.push([
+                "Total Spikes",
+                roiSpikeFrequency?.total ?? 0,
+                "count",
+              ]);
+              sections.spikeMetrics.push([
+                "Spike Frequency",
+                roiSpikeFrequency?.average?.toFixed(4) ?? "0.0000",
+                "Hz",
+              ]);
+              sections.spikeMetrics.push([
+                "Average Amplitude",
+                roiSpikeAmplitude?.average?.toFixed(4) ?? "0.0000",
+                "units",
+              ]);
+              sections.spikeMetrics.push([
+                "Median Amplitude",
+                roiSpikeAmplitude?.median?.toFixed(4) ?? "0.0000",
+                "units",
+              ]);
+              sections.spikeMetrics.push([
+                "Average Width",
+                roiSpikeWidth?.average?.toFixed(4) ?? "0.0000",
+                "samples",
+              ]);
+              sections.spikeMetrics.push([
+                "Median Width",
+                roiSpikeWidth?.median?.toFixed(4) ?? "0.0000",
+                "samples",
+              ]);
+              sections.spikeMetrics.push([
+                "Average AUC",
+                roiSpikeAUC?.average?.toFixed(4) ?? "0.0000",
+                "units",
+              ]);
+              sections.spikeMetrics.push([
+                "Median AUC",
+                roiSpikeAUC?.median?.toFixed(4) ?? "0.0000",
+                "units",
+              ]);
+
+              const maxSpikeSignal = Math.max(
+                ...spikesInROI.map((s) => s.peakCoords?.y ?? 0)
+              );
+              sections.spikeMetrics.push([
+                "Max Spike Signal",
+                maxSpikeSignal.toFixed(4),
+                "units",
+              ]);
+
+              sections.spikeMetrics.push(["</ROI_SPIKE_METRICS>"]);
+              sections.spikeMetrics.push([""]); // Empty line
+            }
+
+            // Burst Data Section
+            if (burstsInROI.length > 0) {
+              sections.burstData.push(["<ROI_BURST_DATA>"]);
+              sections.burstData.push([
+                "Burst#",
+                "StartTime",
+                "EndTime",
+                "Duration",
+                "SpikeCount",
+              ]);
+
+              burstsInROI.forEach((burst, index) => {
+                const burstNumber = index + 1;
+                const startTime = burst.startTime ?? "N/A";
+                const endTime = burst.endTime ?? "N/A";
+                const duration = burst.duration ?? "N/A";
+                const spikeCount =
+                  burst.spikeCount ?? burst.spikes?.length ?? "N/A";
+
+                sections.burstData.push([
+                  burstNumber,
+                  startTime,
+                  endTime,
+                  duration,
+                  spikeCount,
+                ]);
+              });
+
+              sections.burstData.push(["</ROI_BURST_DATA>"]);
+              sections.burstData.push([""]); // Empty line
+            }
+
+            // Burst Metrics Section
+            if (burstsInROI.length > 0) {
+              const roiBurstMetrics = calculateBurstMetrics(burstsInROI);
+
+              sections.burstMetrics.push(["<ROI_BURST_METRICS>"]);
+              sections.burstMetrics.push(["Metric", "Value", "Unit"]);
+              sections.burstMetrics.push([
+                "Total Bursts",
+                roiBurstMetrics?.total ?? 0,
+                "count",
+              ]);
+              sections.burstMetrics.push([
+                "Average Duration",
+                roiBurstMetrics?.duration?.average?.toFixed(4) ?? "0.0000",
+                "ms",
+              ]);
+              sections.burstMetrics.push([
+                "Median Duration",
+                roiBurstMetrics?.duration?.median?.toFixed(4) ?? "0.0000",
+                "ms",
+              ]);
+              sections.burstMetrics.push([
+                "Average Spikes Per Burst",
+                roiBurstMetrics?.spikesPerBurst?.average?.toFixed(4) ??
+                  "0.0000",
+                "count",
+              ]);
+              sections.burstMetrics.push([
+                "Median Spikes Per Burst",
+                roiBurstMetrics?.spikesPerBurst?.median?.toFixed(4) ?? "0.0000",
+                "count",
+              ]);
+
+              if (roiBurstMetrics?.interBurstInterval) {
+                sections.burstMetrics.push([
+                  "Average Inter-Burst Interval",
+                  roiBurstMetrics.interBurstInterval.average?.toFixed(4) ??
+                    "0.0000",
+                  "ms",
+                ]);
+                sections.burstMetrics.push([
+                  "Median Inter-Burst Interval",
+                  roiBurstMetrics.interBurstInterval.median?.toFixed(4) ??
+                    "0.0000",
+                  "ms",
+                ]);
+              }
+
+              sections.burstMetrics.push(["</ROI_BURST_METRICS>"]);
+              sections.burstMetrics.push([""]); // Empty line
+            }
+
+            // Footer
+            sections.footer.push([`</${roiName}>`]);
+
+            return sections;
+          });
+
+          // STEP 2: Find maximum row count for each section across all ROIs
+          const maxSectionLengths = {
+            header: Math.max(
+              ...roiStructuredData.map((roi) => roi.header.length)
+            ),
+            spikeData: Math.max(
+              ...roiStructuredData.map((roi) => roi.spikeData.length)
+            ),
+            spikeMetrics: Math.max(
+              ...roiStructuredData.map((roi) => roi.spikeMetrics.length)
+            ),
+            burstData: Math.max(
+              ...roiStructuredData.map((roi) => roi.burstData.length)
+            ),
+            burstMetrics: Math.max(
+              ...roiStructuredData.map((roi) => roi.burstMetrics.length)
+            ),
+            footer: Math.max(
+              ...roiStructuredData.map((roi) => roi.footer.length)
+            ),
+          };
+
+          console.log(
+            `[GenerateFullPlateReport] Well ${wellKey} - Max section lengths:`,
+            maxSectionLengths
+          );
+
+          // STEP 3: Pad each section to match maximum length
+          roiStructuredData.forEach((roiSections) => {
+            Object.keys(maxSectionLengths).forEach((sectionName) => {
+              const section = roiSections[sectionName];
+              const maxLength = maxSectionLengths[sectionName];
+              while (section.length < maxLength) {
+                section.push([]); // Add empty row
+              }
+            });
+          });
+
+          // STEP 4: Combine all sections into single blocks for each ROI
+          const roiDataBlocks = roiStructuredData.map((roiSections) => {
+            return [
+              ...roiSections.header,
+              ...roiSections.spikeData,
+              ...roiSections.spikeMetrics,
+              ...roiSections.burstData,
+              ...roiSections.burstMetrics,
+              ...roiSections.footer,
+            ];
+          });
+
+          // STEP 5: Output all ROI blocks side-by-side with proper column separation
+          // All blocks should now have the same number of rows (sections are aligned)
+          const maxLines = Math.max(
+            ...roiDataBlocks.map((block) => block.length)
+          );
+
+          // Find the maximum number of columns needed for each ROI block
+          const maxColumnsPerBlock = roiDataBlocks.map((block) =>
+            Math.max(...block.map((row) => row.length))
+          );
+
+          // Pad each row in each block to match its block's max columns
+          roiDataBlocks.forEach((block, blockIndex) => {
+            const maxCols = maxColumnsPerBlock[blockIndex];
+            block.forEach((row) => {
+              while (row.length < maxCols) {
+                row.push(""); // Empty cell
+              }
+            });
+          });
+
+          // Combine all blocks side-by-side with two empty columns between each ROI block
+          for (let lineIndex = 0; lineIndex < maxLines; lineIndex++) {
+            const rowParts = [];
+
+            roiDataBlocks.forEach((block, blockIndex) => {
+              // Add all columns from this ROI block's row
+              const row = block[lineIndex] || [];
+              rowParts.push(...row);
+
+              // Add two empty columns as separator (but not after the last block)
+              if (blockIndex < roiDataBlocks.length - 1) {
+                rowParts.push("");
+                rowParts.push("");
+              }
+            });
+
+            csvLines.push(rowParts.join(","));
+          }
+
+          csvLines.push("");
+        } catch (roiError) {
+          console.error(
+            `[GenerateFullPlateReport] Error processing ROIs for well ${wellKey}:`,
+            roiError
+          );
+          csvLines.push(`<ROI_ERROR>`);
+          csvLines.push(`Error processing ROIs: ${roiError.message}`);
+          csvLines.push(`Stack: ${roiError.stack}`);
+          csvLines.push(`</ROI_ERROR>`);
+          csvLines.push("");
+        }
       }
     } catch (error) {
       console.error(

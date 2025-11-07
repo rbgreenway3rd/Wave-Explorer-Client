@@ -152,6 +152,7 @@ const ChartControls = ({
         project={project}
         wellArrays={wellArrays}
         processingParams={processingParams}
+        roiList={roiList}
       />
 
       {/* Control Well Selector (shown when noise suppression is active) */}
