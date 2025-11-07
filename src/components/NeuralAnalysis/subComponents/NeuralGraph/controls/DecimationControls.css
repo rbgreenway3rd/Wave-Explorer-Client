@@ -1,0 +1,32 @@
+/* DecimationControls.css */
+
+/* Radio button transitions */
+.decimation-radio {
+    transition: all 0.2s ease-in-out;
+}
+
+/* Radio button hover effect when enabled */
+.decimation-radio:not(.Mui-disabled):hover {
+    transform: scale(1.1);
+}
+
+/* Radio button active effect */
+.decimation-radio:active {
+    transform: scale(0.95);
+}
+
+/* Focus indicator for accessibility */
+.decimation-radio:focus-visible {
+    outline: 2px solid #2196f3;
+    outline-offset: 2px;
+    border-radius: 50%;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+
+    /* Stack controls vertically on mobile */
+    .MuiPaper-root {
+        padding: 12px !important;
+    }
+}
