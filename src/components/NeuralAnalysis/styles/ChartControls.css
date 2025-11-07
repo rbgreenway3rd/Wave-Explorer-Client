@@ -1,29 +1,45 @@
-.chart-controls {
-    /* width: 100%; */
-    height: 100%;
-}
+/* ChartControls.css */
+/* Container-level styles for ChartControls component */
 
-.noise-suppression-toggle {
+.neural-chart-controls {
+    /* Main container for all chart control components */
+    /* height: 100%; */
     display: flex;
     flex-direction: row;
-    justify-content: center;
-    border-radius: 4px;
-    margin-bottom: 8px;
-    border: 1px solid #888;
-    /* background-color: black; */
-    /* align-items: center; */
-    /* gap: 8px; */
+    /* justify-content: end; */
+    justify-content: space-evenly;
+    align-items: stretch;
+    align-content: center;
+    border: solid black 1px;
+    box-sizing: border-box;
+    /* justify-content: space-evenly; */
+    width: 100%;
+    gap: 8px;
+    background-color: rgb(178, 178, 178);
+    /* Consistent spacing between control sections */
 }
 
-.noise-suppression-on-button {
-    /* Additional styles can be added if needed */
+/* Vertical divider line */
+.chart-controls-divider {
+    width: 1px;
+    background-color: #555555;
+    align-self: stretch;
 }
 
-.noise-suppression-off-button {
-    /* Additional styles can be added if needed */
-}
+/* Responsive adjustments */
+/* @media (max-width: 768px) {
+    .chart-controls {
+        gap: 12px;
+       
+    }
+} */
 
-.noise-suppression-methods {
-    display: flex;
-    flex-direction: column;
-}
+/* 
+ * Note: Individual control styling (noise suppression, ROI, pan/zoom, etc.) 
+ * is now handled by the respective component CSS files in the controls/ directory:
+ * - NoiseSuppressionControls.css
+ * - ROIControls.css
+ * - PanZoomControls.css
+ * - ReportGenerationControls.css
+ * - DecimationControls.css
+ */

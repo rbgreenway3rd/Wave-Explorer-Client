@@ -1,0 +1,60 @@
+/* ReportGenerationControls.css */
+
+.single-well-report-button,
+.full-plate-report-button {
+    /* Button styles handled by MUI Button sx props */
+    font-family: 'Roboto', 'Helvetica Neue', 'Arial', sans-serif;
+}
+
+.single-well-report-button:hover:not(:disabled),
+.full-plate-report-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+}
+
+.single-well-report-button:active:not(:disabled),
+.full-plate-report-button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+/* Emphasize call-to-action nature of these buttons */
+.single-well-report-button:not(:disabled) {
+    animation: subtleGlow 3s ease-in-out infinite;
+}
+
+.full-plate-report-button:not(:disabled) {
+    animation: subtleGlow 3s ease-in-out infinite 1.5s;
+}
+
+@keyframes subtleGlow {
+    0%, 100% {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    }
+
+    50% {
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+    }
+}
+
+/* Accessibility */
+.single-well-report-button:focus-visible,
+.full-plate-report-button:focus-visible {
+    outline: 2px solid #2196f3;
+    outline-offset: 2px;
+}
+
+/* Disabled state cursor */
+.single-well-report-button:disabled,
+.full-plate-report-button:disabled {
+    cursor: not-allowed !important;
+    pointer-events: all !important;
+}
+
+/* Responsive behavior */
+@media (max-width: 768px) {
+
+    .single-well-report-button,
+    .full-plate-report-button {
+        font-size: 13px;
+        padding: 8px 16px;
+    }
+}

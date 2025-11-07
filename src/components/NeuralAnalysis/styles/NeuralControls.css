@@ -1,44 +1,57 @@
-.spike-detection {
-    border: 1px solid #555;
-}
+/* NeuralControls.css */
+/* Container-level styles for NeuralControls component */
 
-.spike-detection-params-row {
+.neural-controls-container {
+    /* Main container for neural analysis control components */
     display: flex;
+    flex-direction: column;
     gap: 16px;
-    flex-wrap: wrap;
-    margin-bottom: 8px;
-    border: 1px solid #555;
+    /* Consistent spacing between control sections */
+    /* padding: 16px; */
+    padding-top: 8px;
+    width: 100%;
+    /* justify-items: center;
+    justify-content: center; */
+
 }
 
-.spike-detection-label {
-    color: #fff;
-    margin-right: 8px;
+/* Spike detection controls container */
+.spike-detection-controls {
+    /* Placeholder for spike detection parameters */
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
-.spike-detection-input {
-    width: 60px;
-    margin-left: 4px;
+/* Show bursts toggle row */
+.show-bursts-toggle-row {
+    /* Placeholder for burst detection toggle */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
 }
 
-.run-spike-detection-button {
-    background: #00bcd4;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    font-weight: 600;
-    padding: 6px 16px;
-    cursor: pointer;
-    margin-bottom: 8px;
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .neural-controls-container {
+        padding: 12px;
+        gap: 12px;
+        /* Slightly tighter spacing on mobile */
+    }
+
+    .spike-detection-controls {
+        gap: 8px;
+    }
 }
 
-.run-burst-detection-button {
-    background: #ff9800;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    font-weight: 600;
-    padding: 6px 16px;
-    cursor: pointer;
-    margin-bottom: 8px;
-    margin-left: 8px;
-}
+/* 
+ * Note: Individual control styling is now handled by the respective 
+ * component CSS files in the controls/ directory:
+ * - ROIControls.css (shared with ChartControls)
+ * - SpikeDetectionControls.css (when implemented)
+ * 
+ * Legacy styles for spike detection buttons have been removed as they
+ * should be replaced with properly styled MUI Button components using
+ * the controlsTheme design system.
+ */

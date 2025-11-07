@@ -1,0 +1,57 @@
+/* ROIControls.css */
+
+.roi-button {
+    font-family: 'Roboto', 'Helvetica Neue', 'Arial', sans-serif;
+    outline: none;
+}
+
+.roi-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+}
+
+.roi-button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.roi-button-active {
+    animation: roiPulse 2s infinite;
+}
+
+@keyframes roiPulse {
+    0%, 100% {
+        box-shadow: 0 3px 6px rgba(0, 188, 212, 0.3), 0 3px 6px rgba(0, 188, 212, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 6px 12px rgba(0, 188, 212, 0.6), 0 6px 12px rgba(0, 188, 212, 0.6);
+    }
+}
+
+.roi-delete-button {
+    outline: none;
+}
+
+.roi-delete-button:hover {
+    color: #d32f2f;
+    transform: scale(1.2);
+}
+
+.roi-delete-button:active {
+    transform: scale(1);
+}
+
+/* Accessibility */
+.roi-button:focus-visible,
+.roi-delete-button:focus-visible {
+    outline: 2px solid #2196f3;
+    outline-offset: 2px;
+}
+
+/* Responsive behavior */
+@media (max-width: 768px) {
+    .roi-button {
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+}

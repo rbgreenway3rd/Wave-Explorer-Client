@@ -6,6 +6,7 @@ import React, {
   useRef,
   forwardRef,
   useCallback,
+  useMemo,
 } from "react";
 import { suppressNoise } from "../../utilities/noiseSuppression";
 import {
@@ -69,6 +70,21 @@ const NeuralGraph = forwardRef(
     const localMaxY = processedSignal
       ? Math.max(...processedSignal.map((pt) => pt.y))
       : globalMaxY;
+
+    // Color palette for unique ROI colors (memoized to prevent dependency changes)
+    const roiColors = useMemo(
+      () => [
+        { bg: "rgba(0, 255, 0, 0.15)", border: "rgba(0, 255, 0, 0.7)" }, // green
+        { bg: "rgba(0, 0, 255, 0.12)", border: "rgba(0, 0, 255, 0.7)" }, // blue
+        { bg: "rgba(255, 0, 0, 0.12)", border: "rgba(255, 0, 0, 0.7)" }, // red
+        { bg: "rgba(255, 165, 0, 0.13)", border: "rgba(255, 165, 0, 0.7)" }, // orange
+        { bg: "rgba(128, 0, 128, 0.13)", border: "rgba(128, 0, 128, 0.7)" }, // purple
+        { bg: "rgba(0, 206, 209, 0.13)", border: "rgba(0, 206, 209, 0.7)" }, // teal
+        { bg: "rgba(255, 192, 203, 0.13)", border: "rgba(255, 192, 203, 0.7)" }, // pink
+        { bg: "rgba(255, 255, 0, 0.13)", border: "rgba(255, 255, 0, 0.7)" }, // yellow
+      ],
+      []
+    );
 
     // Helper: is array of {x, y} objects?
     const isXYArray = (arr) =>
@@ -253,26 +269,33 @@ const NeuralGraph = forwardRef(
         const x = event.clientX - rect.left;
         setRoiEnd(x);
 
-        // Draw annotation box dynamically
+        // Draw annotation box dynamically with color based on currentRoiIndex
         const xMin = Math.min(roiStart, x);
         const xMax = Math.max(roiStart, x);
         const yMin = chart.scales.y.min;
         const yMax = chart.scales.y.max;
         const xMinVal = chart.scales.x.getValueForPixel(xMin);
         const xMaxVal = chart.scales.x.getValueForPixel(xMax);
+
+        // Use the color for the current ROI being defined
+        const currentColor =
+          currentRoiIndex !== null
+            ? roiColors[currentRoiIndex % roiColors.length]
+            : roiColors[0]; // Fallback to first color
+
         setRoiAnnotation({
           type: "box",
           xMin: xMinVal,
           xMax: xMaxVal,
           yMin,
           yMax,
-          backgroundColor: "rgba(0, 255, 0, 0.2)",
-          borderColor: "rgba(0, 255, 0, 1)",
+          backgroundColor: currentColor.bg,
+          borderColor: currentColor.border,
           borderWidth: 2,
         });
         setAnnotationKey((k) => k + 1); // force re-render
       },
-      [defineROI, isSelectingROI, roiStart]
+      [defineROI, isSelectingROI, roiStart, currentRoiIndex, roiColors]
     );
 
     const handleMouseUp = (event) => {
@@ -287,14 +310,21 @@ const NeuralGraph = forwardRef(
       // Convert to data values
       let xMinVal = chart.scales.x.getValueForPixel(xMin);
       let xMaxVal = chart.scales.x.getValueForPixel(xMax);
+
+      // Use the color for the current ROI being defined
+      const currentColor =
+        currentRoiIndex !== null
+          ? roiColors[currentRoiIndex % roiColors.length]
+          : roiColors[0]; // Fallback to first color
+
       setRoiAnnotation({
         type: "box",
         xMin: xMinVal,
         xMax: xMaxVal,
         yMin: chart.scales.y.min,
         yMax: chart.scales.y.max,
-        backgroundColor: "rgba(0, 255, 0, 0.2)",
-        borderColor: "rgba(0, 255, 0, 1)",
+        backgroundColor: currentColor.bg,
+        borderColor: currentColor.border,
         borderWidth: 2,
       });
       setAnnotationKey((k) => k + 1);
@@ -331,18 +361,6 @@ const NeuralGraph = forwardRef(
     // (chartDataWithAnnotation is unused, so removed)
 
     // Combine all ROI boxes: completed (roiList) and the one being drawn (roiAnnotation)
-    // Color palette for unique ROI colors
-    const roiColors = [
-      { bg: "rgba(0, 255, 0, 0.15)", border: "rgba(0, 255, 0, 0.7)" }, // green
-      { bg: "rgba(0, 0, 255, 0.12)", border: "rgba(0, 0, 255, 0.7)" }, // blue
-      { bg: "rgba(255, 0, 0, 0.12)", border: "rgba(255, 0, 0, 0.7)" }, // red
-      { bg: "rgba(255, 165, 0, 0.13)", border: "rgba(255, 165, 0, 0.7)" }, // orange
-      { bg: "rgba(128, 0, 128, 0.13)", border: "rgba(128, 0, 128, 0.7)" }, // purple
-      { bg: "rgba(0, 206, 209, 0.13)", border: "rgba(0, 206, 209, 0.7)" }, // teal
-      { bg: "rgba(255, 192, 203, 0.13)", border: "rgba(255, 192, 203, 0.7)" }, // pink
-      { bg: "rgba(255, 255, 0, 0.13)", border: "rgba(255, 255, 0, 0.7)" }, // yellow
-    ];
-
     const allRoiAnnotations = {};
     if (Array.isArray(roiList)) {
       roiList.forEach((roi, idx) => {

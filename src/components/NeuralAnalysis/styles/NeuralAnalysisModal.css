@@ -7,6 +7,12 @@
     /* margin-bottom: 1em; */
 }
 
+.modal-header {
+    display: flex;
+    flex-direction: row;
+    /* justify-content: space-evenly */
+}
+
 .modal-body {
     display: grid;
     grid-template-columns: 5fr 2fr;

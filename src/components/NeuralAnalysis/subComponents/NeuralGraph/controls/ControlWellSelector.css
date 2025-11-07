@@ -1,0 +1,82 @@
+/* ControlWellSelector.css */
+
+/* Control well selector button */
+.control-well-button {
+    font-family: 'Roboto', 'Helvetica Neue', 'Arial', sans-serif;
+    outline: none;
+}
+
+.control-well-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+}
+
+.control-well-button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.control-well-button-active {
+    animation: controlWellPulse 2s infinite;
+}
+
+@keyframes controlWellPulse {
+    0%, 100% {
+        box-shadow: 0 3px 6px rgba(0, 188, 212, 0.3), 0 3px 6px rgba(0, 188, 212, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 6px 12px rgba(0, 188, 212, 0.5), 0 6px 12px rgba(0, 188, 212, 0.5);
+    }
+}
+
+/* Accessibility improvements */
+.control-well-button:focus-visible {
+    outline: 2px solid #2196f3;
+    outline-offset: 2px;
+}
+
+/* Disabled state */
+.control-well-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Responsive behavior */
+@media (max-width: 768px) {
+    .control-well-button {
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+
+    .reset-control-well-button {
+        font-size: 11px;
+        padding: 4px 10px;
+    }
+}
+
+/* Reset Control Well Button */
+.reset-control-well-button {
+    font-family: 'Roboto', 'Helvetica Neue', 'Arial', sans-serif;
+    outline: none;
+}
+
+.reset-control-well-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(244, 67, 54, 0.3), 0 3px 6px rgba(244, 67, 54, 0.3);
+    background-color: #f44336;
+    color: #ffffff;
+}
+
+.reset-control-well-button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.reset-control-well-button:focus-visible {
+    outline: 2px solid #f44336;
+    outline-offset: 2px;
+}
+
+.reset-control-well-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
