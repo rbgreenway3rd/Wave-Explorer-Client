@@ -5,6 +5,10 @@ import {
 } from "./utilities/neuralSmoothing";
 import { detectSpikes } from "./utilities/detectSpikes";
 import { detectBursts } from "./utilities/burstDetection";
+import {
+  removeOutliers,
+  readdOutliersAsSpikes,
+} from "./utilities/outlierRemoval";
 
 // --- Parameter Suggestion ---
 export function suggestProminence(signal, factor = 3) {
@@ -105,20 +109,29 @@ export function runNeuralAnalysisPipeline({
   analysis = {},
   noiseSuppressionActive = false,
 }) {
+  console.log("=== PIPELINE START ===");
+  console.log("noiseSuppressionActive:", noiseSuppressionActive);
+  console.log("params.handleOutliers:", params.handleOutliers);
+  console.log("rawSignal length:", rawSignal?.length);
+
   // 1. Noise suppression (control subtraction)
   let processed = suppressNoise(rawSignal, controlSignal, {
     subtractControl: params.subtractControl,
   });
+  console.log("After noise suppression, signal length:", processed.length);
 
-  // 2. Smoothing and baseline correction (only if noiseSuppressionActive)
+  // 2. Apply trend flattening FIRST (before outlier removal)
+  // This ensures outliers are detected on the flattened signal
+  let processedForDetection = processed;
+
   if (noiseSuppressionActive) {
     if (params.trendFlatteningEnabled) {
-      // Only pass parameters actually used by trendFlattening
       processed = trendFlattening(processed, {
-        adaptiveBaseline: params.baselineCorrection,
-        polynomialDegree: 2, // or make this user-configurable if needed
+        windowSize: 200,
+        numMinimums: 50,
       });
-      console.log("trendFlattening data: ", processed);
+      processedForDetection = processed;
+      console.log("[Pipeline] Trend flattening applied BEFORE outlier removal");
     }
 
     if (params.baselineCorrection) {
@@ -127,23 +140,71 @@ export function runNeuralAnalysisPipeline({
         params.smoothingWindow || 200,
         50
       );
+      processedForDetection = processed;
+      console.log(
+        "[Pipeline] Baseline correction applied BEFORE outlier removal"
+      );
     }
   }
 
-  // 3. Spike detection
+  // 3. Outlier removal (if enabled) - now on the flattened signal
+  let outlierSpikes = [];
+
+  console.log("[Pipeline] Checking outlier removal conditions:");
+  console.log("  - noiseSuppressionActive:", noiseSuppressionActive);
+  console.log("  - params.handleOutliers:", params.handleOutliers);
+  console.log(
+    "  - Will remove outliers?",
+    noiseSuppressionActive && params.handleOutliers
+  );
+
+  if (noiseSuppressionActive && params.handleOutliers) {
+    console.log("[Pipeline] *** REMOVING OUTLIERS FROM FLATTENED SIGNAL ***");
+    const outlierResult = removeOutliers(processedForDetection, {
+      percentile: params.outlierPercentile || 95,
+      multiplier: params.outlierMultiplier || 2.0,
+      slopeThreshold: 0.1,
+    });
+    processedForDetection = outlierResult.cleanedSignal;
+    outlierSpikes = outlierResult.outlierSpikes;
+    console.log(
+      "[Pipeline] Outliers removed. Original length: " +
+        processed.length +
+        ", Cleaned length: " +
+        processedForDetection.length
+    );
+    console.log(
+      "[Pipeline] Outlier Y-coordinates are now in flattened coordinate space"
+    );
+
+    // IMPORTANT: Keep the full signal for display, outliers will be marked as special spikes
+    // Don't modify 'processed' - it stays intact for visualization
+  } else {
+    console.log("[Pipeline] Outlier removal SKIPPED");
+  }
+
+  // 4. Spike detection (on cleaned signal without outliers)
   let spikeResults = [];
   if (analysis.runSpikeDetection) {
-    spikeResults = detectSpikes(processed, {
+    spikeResults = detectSpikes(processedForDetection, {
       prominence: params.spikeProminence,
       window: params.spikeWindow,
       minWidth: params.spikeMinWidth,
       minDistance: params.spikeMinDistance,
       minProminenceRatio: params.spikeMinProminenceRatio,
-      stdMultiplier: params.stdMultiplier, // Pass through stdMultiplier parameter
+      stdMultiplier: params.stdMultiplier,
     });
+
+    // 5. Re-add outliers as spikes (if they were removed)
+    if (params.handleOutliers && outlierSpikes.length > 0) {
+      console.log(
+        "[Pipeline] Re-adding " + outlierSpikes.length + " outlier(s) as spikes"
+      );
+      spikeResults = readdOutliersAsSpikes(spikeResults, outlierSpikes);
+    }
   }
 
-  // 4. Burst detection
+  // 6. Burst detection
   let burstResults = [];
   if (analysis.runBurstDetection && spikeResults.length > 0) {
     // Debug: log spike x-values and inter-spike intervals
@@ -164,7 +225,7 @@ export function runNeuralAnalysisPipeline({
     console.log("[Pipeline] Burst results:", burstResults);
   }
 
-  // 5. Metrics
+  // 7. Metrics
   const metrics = {
     spikeFrequency: calculateSpikeFrequency(
       spikeResults,
@@ -177,6 +238,8 @@ export function runNeuralAnalysisPipeline({
     burstMetrics: calculateBurstMetrics(burstResults),
   };
 
+  // Return the processed signal for display
+  // Outliers have been removed from detection but will be marked as spikes
   return {
     processedSignal: processed,
     spikeResults,

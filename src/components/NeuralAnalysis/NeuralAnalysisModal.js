@@ -67,6 +67,10 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
     setBurstResults,
     showBursts,
     setShowBursts,
+    handleOutliers,
+    setHandleOutliers,
+    outlierPercentile,
+    outlierMultiplier,
   } = useContext(NeuralContext);
   const { project, wellArrays } = useContext(DataContext);
 
@@ -144,6 +148,9 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
         baselineCorrection,
         filterBaseline,
         smoothingWindow,
+        handleOutliers,
+        outlierPercentile,
+        outlierMultiplier,
         spikeProminence,
         spikeWindow,
         spikeMinWidth: 5, // TODO: wire from UI if needed
@@ -173,6 +180,9 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
     baselineCorrection,
     filterBaseline,
     smoothingWindow,
+    handleOutliers,
+    outlierPercentile,
+    outlierMultiplier,
     spikeProminence,
     spikeWindow,
     spikeMinDistance,
@@ -216,13 +226,7 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
     if (Array.isArray(pipelineResults.burstResults)) {
       setBurstResults(pipelineResults.burstResults);
     }
-  }, [
-    pipelineResults,
-    // pipelineResults.spikeResults,
-    // pipelineResults.burstResults,
-    // setPeakResults,
-    // setBurstResults,
-  ]);
+  }, [pipelineResults, setPeakResults, setBurstResults]);
 
   // Debug: log processedSignal to check if it changes with trend flattening
   // console.log(
@@ -297,6 +301,8 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
               setBaselineCorrection={setBaselineCorrection}
               trendFlatteningEnabled={trendFlatteningEnabled}
               setTrendFlatteningEnabled={setTrendFlatteningEnabled}
+              handleOutliers={handleOutliers}
+              setHandleOutliers={setHandleOutliers}
               controlWell={controlWell}
               setControlWell={setControlWell}
               selectingControl={selectingControl}

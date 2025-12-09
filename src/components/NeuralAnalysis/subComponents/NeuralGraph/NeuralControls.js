@@ -1,10 +1,12 @@
 import React from "react";
-import { Box, FormGroup, Button } from "@mui/material";
+import { Box, FormGroup } from "@mui/material";
 import "../../styles/NeuralControls.css";
 
 // Import extracted control components
 import ROIControls from "./controls/ROIControls";
 import ShowBurstsToggle from "./controls/ShowBurstsToggle";
+import HandleOutlierControls from "./controls/HandleOutlierControls";
+import { NeuralContext } from "../../NeuralProvider";
 
 /*
  * Utility functions for spike parameter suggestions
@@ -88,8 +90,17 @@ const NoiseFilterControls = ({
   setTrendFlatteningEnabled,
   selectedWell,
 }) => {
+  // Get outlier parameters from context
+  const {
+    handleOutliers,
+    outlierPercentile,
+    setOutlierPercentile,
+    outlierMultiplier,
+    setOutlierMultiplier,
+  } = React.useContext(NeuralContext);
+
   // Spike detection handler: triggers pipeline update
-  const handleRunSpikeDetection = () => {
+  /* const handleRunSpikeDetection = () => {
     if (typeof window !== "undefined" && window.dispatchEvent) {
       window.dispatchEvent(new CustomEvent("triggerPipelineSpikeDetection"));
     }
@@ -97,12 +108,12 @@ const NoiseFilterControls = ({
   };
 
   // Burst detection handler: triggers pipeline update
-  const handleRunBurstDetection = () => {
+  /* const handleRunBurstDetection = () => {
     if (typeof setShowBursts === "function") {
       setShowBursts(true);
       alert("Burst detection will be updated via the main analysis pipeline.");
     }
-  };
+  }; */
 
   /*
    * Note: The following spike parameter suggestion handlers are available
@@ -146,6 +157,15 @@ const NoiseFilterControls = ({
             setShowBursts={setShowBursts}
           />
         </Box>
+
+        {/* Handle Outlier Controls - Only visible when handleOutliers is enabled */}
+        <HandleOutlierControls
+          handleOutliers={handleOutliers}
+          outlierPercentile={outlierPercentile}
+          setOutlierPercentile={setOutlierPercentile}
+          outlierMultiplier={outlierMultiplier}
+          setOutlierMultiplier={setOutlierMultiplier}
+        />
 
         {/* ROI Management using extracted component */}
         <ROIControls

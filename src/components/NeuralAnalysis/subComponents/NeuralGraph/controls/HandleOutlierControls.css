@@ -1,0 +1,28 @@
+/* HandleOutlierControls.css */
+
+.reset-outlier-button {
+    transition: all 0.2s ease-in-out;
+}
+
+.reset-outlier-button:hover {
+    transform: rotate(180deg);
+}
+
+.reset-outlier-button:active {
+    transform: rotate(180deg) scale(0.9);
+}
+
+/* Accessibility */
+.reset-outlier-button:focus-visible {
+    outline: 2px solid #2196f3;
+    outline-offset: 2px;
+    border-radius: 50%;
+}
+
+/* Responsive behavior */
+@media (max-width: 768px) {
+    .MuiPaper-root {
+        min-width: 240px;
+        padding: 12px;
+    }
+}

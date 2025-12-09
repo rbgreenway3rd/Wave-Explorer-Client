@@ -32,6 +32,8 @@ const ChartControls = ({
   setBaselineCorrection,
   trendFlatteningEnabled,
   setTrendFlatteningEnabled,
+  handleOutliers,
+  setHandleOutliers,
   controlWell,
   setControlWell,
   selectingControl,
@@ -119,6 +121,7 @@ const ChartControls = ({
     controlWell,
     baselineCorrection,
     trendFlatteningEnabled,
+    handleOutliers,
     spikeProminence,
     spikeWindow,
     spikeMinWidth: spikeMinWidth ?? 5,
@@ -181,6 +184,8 @@ const ChartControls = ({
         setBaselineCorrection={setBaselineCorrection}
         filterBaseline={filterBaseline}
         setFilterBaseline={setFilterBaseline}
+        handleOutliers={handleOutliers}
+        setHandleOutliers={setHandleOutliers}
       />
 
       <div className="chart-controls-divider" />
