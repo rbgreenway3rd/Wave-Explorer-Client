@@ -238,10 +238,6 @@ export const GenerateNeuralCSV = (
   if (peakResults && peakResults.length > 0) {
     // If no burst results provided, run burst detection
     if (!burstResults || burstResults.length === 0) {
-      console.log(
-        "[GenerateNeuralCSV] No bursts provided, running burst detection for report..."
-      );
-
       // Run burst detection with parameters from processingParams
       const detectedBursts = detectBursts(peakResults, {
         maxInterSpikeInterval: processingParams?.maxInterSpikeInterval || 50,
@@ -249,13 +245,6 @@ export const GenerateNeuralCSV = (
       });
 
       finalBurstResults = detectedBursts;
-      console.log(
-        `[GenerateNeuralCSV] Detected ${detectedBursts.length} bursts`
-      );
-    } else {
-      console.log(
-        `[GenerateNeuralCSV] Using ${burstResults.length} bursts from pipeline`
-      );
     }
 
     // Calculate burst metrics for the full time range
@@ -279,9 +268,6 @@ export const GenerateNeuralCSV = (
     }
   } else {
     // No spikes, so no bursts possible
-    console.log(
-      "[GenerateNeuralCSV] No spikes detected, burst metrics will be empty"
-    );
     burstMetricsForReport = {
       total: 0,
       duration: { average: 0, median: 0 },
@@ -296,10 +282,6 @@ export const GenerateNeuralCSV = (
   let calculatedOverallMetrics = null;
 
   if (peakResults && peakResults.length > 0) {
-    console.log(
-      "[GenerateNeuralCSV] Calculating overall metrics from peakResults..."
-    );
-
     const times = peakResults.map((spike) => spike.time);
     const startTime = Math.min(...times);
     const endTime = Math.max(...times);
@@ -311,14 +293,7 @@ export const GenerateNeuralCSV = (
       spikeAUC: calculateSpikeAUC(peakResults, startTime, endTime),
       maxSpikeSignal: calculateMaxSpikeSignal(peakResults, startTime, endTime),
     };
-
-    console.log("[GenerateNeuralCSV] Calculated metrics:", {
-      totalSpikes: calculatedOverallMetrics.spikeFrequency.total,
-      avgAmplitude: calculatedOverallMetrics.spikeAmplitude.average,
-      avgWidth: calculatedOverallMetrics.spikeWidth.average,
-    });
   } else {
-    console.log("[GenerateNeuralCSV] No spikes, metrics will be empty");
   }
 
   const csvLines = [];

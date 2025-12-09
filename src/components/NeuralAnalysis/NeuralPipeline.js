@@ -47,10 +47,6 @@ export function suggestWindow(signal, prominence, num = 5) {
     Math.min(baseWindow, maxWindow)
   );
 
-  console.log(
-    `[suggestWindow] prominence: ${prominence}, num: ${num}, calculated: ${optimalWindowWidth}`
-  );
-
   return optimalWindowWidth;
 }
 
@@ -109,16 +105,10 @@ export function runNeuralAnalysisPipeline({
   analysis = {},
   noiseSuppressionActive = false,
 }) {
-  console.log("=== PIPELINE START ===");
-  console.log("noiseSuppressionActive:", noiseSuppressionActive);
-  console.log("params.handleOutliers:", params.handleOutliers);
-  console.log("rawSignal length:", rawSignal?.length);
-
   // 1. Noise suppression (control subtraction)
   let processed = suppressNoise(rawSignal, controlSignal, {
     subtractControl: params.subtractControl,
   });
-  console.log("After noise suppression, signal length:", processed.length);
 
   // 2. Apply trend flattening FIRST (before outlier removal)
   // This ensures outliers are detected on the flattened signal
@@ -131,7 +121,6 @@ export function runNeuralAnalysisPipeline({
         numMinimums: 50,
       });
       processedForDetection = processed;
-      console.log("[Pipeline] Trend flattening applied BEFORE outlier removal");
     }
 
     if (params.baselineCorrection) {
@@ -141,25 +130,13 @@ export function runNeuralAnalysisPipeline({
         50
       );
       processedForDetection = processed;
-      console.log(
-        "[Pipeline] Baseline correction applied BEFORE outlier removal"
-      );
     }
   }
 
   // 3. Outlier removal (if enabled) - now on the flattened signal
   let outlierSpikes = [];
 
-  console.log("[Pipeline] Checking outlier removal conditions:");
-  console.log("  - noiseSuppressionActive:", noiseSuppressionActive);
-  console.log("  - params.handleOutliers:", params.handleOutliers);
-  console.log(
-    "  - Will remove outliers?",
-    noiseSuppressionActive && params.handleOutliers
-  );
-
   if (noiseSuppressionActive && params.handleOutliers) {
-    console.log("[Pipeline] *** REMOVING OUTLIERS FROM FLATTENED SIGNAL ***");
     const outlierResult = removeOutliers(processedForDetection, {
       percentile: params.outlierPercentile || 95,
       multiplier: params.outlierMultiplier || 2.0,
@@ -167,20 +144,9 @@ export function runNeuralAnalysisPipeline({
     });
     processedForDetection = outlierResult.cleanedSignal;
     outlierSpikes = outlierResult.outlierSpikes;
-    console.log(
-      "[Pipeline] Outliers removed. Original length: " +
-        processed.length +
-        ", Cleaned length: " +
-        processedForDetection.length
-    );
-    console.log(
-      "[Pipeline] Outlier Y-coordinates are now in flattened coordinate space"
-    );
 
     // IMPORTANT: Keep the full signal for display, outliers will be marked as special spikes
     // Don't modify 'processed' - it stays intact for visualization
-  } else {
-    console.log("[Pipeline] Outlier removal SKIPPED");
   }
 
   // 4. Spike detection (on cleaned signal without outliers)
@@ -197,9 +163,6 @@ export function runNeuralAnalysisPipeline({
 
     // 5. Re-add outliers as spikes (if they were removed)
     if (params.handleOutliers && outlierSpikes.length > 0) {
-      console.log(
-        "[Pipeline] Re-adding " + outlierSpikes.length + " outlier(s) as spikes"
-      );
       spikeResults = readdOutliersAsSpikes(spikeResults, outlierSpikes);
     }
   }
@@ -207,22 +170,10 @@ export function runNeuralAnalysisPipeline({
   // 6. Burst detection
   let burstResults = [];
   if (analysis.runBurstDetection && spikeResults.length > 0) {
-    // Debug: log spike x-values and inter-spike intervals
-    const spikeXs = spikeResults
-      .map((p) => p.peakCoords?.x ?? p.time ?? null)
-      .filter((x) => x !== null);
-    console.log("[Pipeline] Spike x-values:", spikeXs);
-    const isi = spikeXs.slice(1).map((x, i) => x - spikeXs[i]);
-    console.log("[Pipeline] Inter-spike intervals:", isi);
-    console.log("[Pipeline] Burst detection params:", {
-      maxInterSpikeInterval: params.maxInterSpikeInterval,
-      minSpikesPerBurst: params.minSpikesPerBurst,
-    });
     burstResults = detectBursts(spikeResults, {
       maxInterSpikeInterval: params.maxInterSpikeInterval,
       minSpikesPerBurst: params.minSpikesPerBurst,
     });
-    console.log("[Pipeline] Burst results:", burstResults);
   }
 
   // 7. Metrics

@@ -180,7 +180,6 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
       const fileContent = e.target.result;
       const apdData = ProcessApdData(fileContent);
       setApdData(apdData); // Store APD data in context
-      console.log(apdData);
       setFileType("excel");
       setDataExtracted(true); // Set state to trigger data distribution
     };
@@ -193,7 +192,6 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
     reader.onload = async (e) => {
       const fileContent = e.target.result;
       const extractedData = await handleTxtFileUpload(fileContent);
-      console.log(extractedData);
 
       setRowLabels(extractedData.rowLabels);
       setAnalysisData(extractedData.analysisData);

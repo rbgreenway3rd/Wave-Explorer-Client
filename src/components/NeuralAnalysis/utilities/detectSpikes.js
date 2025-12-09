@@ -190,20 +190,8 @@ function findTrueSpikes(
   robustStd = 0, // New param (robust noise estimate)
   stdMultiplier = 1.5 // New: tunable multiplier
 ) {
-  console.log("[findTrueSpikes] Function entry");
-  console.log("  - Input peaks count:", peaks.length);
-  console.log("  - minWidth:", minWidth);
-  console.log("  - minDistance:", minDistance);
-  console.log("  - minProminenceRatio:", minProminenceRatio);
-  console.log("  - robustStd:", robustStd.toFixed(2));
-  console.log("  - stdMultiplier:", stdMultiplier);
-
   if (!Array.isArray(peaks) || peaks.length < 2) {
-    console.log(
-      "[findTrueSpikes] Less than 2 peaks, applying width filter only"
-    );
     const filtered = peaks.filter((p) => p.width >= minWidth);
-    console.log("  - Returning", filtered.length, "peaks after width filter");
     return filtered;
   }
 
@@ -212,74 +200,16 @@ function findTrueSpikes(
     Math.min(p.prominences.leftProminence, p.prominences.rightProminence)
   );
 
-  console.log("[findTrueSpikes] Extracted prominences:");
-  console.log("  - Count:", prominences.length);
-  console.log(
-    "  - First 10 values:",
-    prominences.slice(0, 10).map((p) => p.toFixed(2))
-  );
-  console.log("  - Min prominence:", Math.min(...prominences).toFixed(2));
-  console.log("  - Max prominence:", Math.max(...prominences).toFixed(2));
-  console.log(
-    "  - Mean prominence:",
-    (prominences.reduce((a, b) => a + b, 0) / prominences.length).toFixed(2)
-  );
-
   // Cluster prominences into 2 groups
-  console.log("[findTrueSpikes] Running k-means clustering (k=2)...");
   let { centroids, assignments } = kMeans(prominences, 2);
-
-  console.log(
-    "  - Centroids:",
-    centroids.map((c) => c.toFixed(2))
-  );
-  console.log(
-    "  - Cluster 0 count:",
-    assignments.filter((a) => a === 0).length
-  );
-  console.log(
-    "  - Cluster 1 count:",
-    assignments.filter((a) => a === 1).length
-  );
 
   // Identify the cluster with higher average prominence
   let topCluster = centroids[0] > centroids[1] ? 0 : 1;
-  let lowerCluster = topCluster === 0 ? 1 : 0;
   let higherCentroid = Math.max(...centroids);
   let lowerCentroid = Math.min(...centroids);
   let clusterSeparation = higherCentroid - lowerCentroid;
 
-  // Debug: Show sample peaks from each cluster
-  const cluster0Peaks = prominences.filter((_, idx) => assignments[idx] === 0);
-  const cluster1Peaks = prominences.filter((_, idx) => assignments[idx] === 1);
-  console.log(
-    "  - Cluster 0 prominence range:",
-    cluster0Peaks.length > 0
-      ? `${Math.min(...cluster0Peaks).toFixed(2)} - ${Math.max(
-          ...cluster0Peaks
-        ).toFixed(2)}`
-      : "N/A"
-  );
-  console.log(
-    "  - Cluster 1 prominence range:",
-    cluster1Peaks.length > 0
-      ? `${Math.min(...cluster1Peaks).toFixed(2)} - ${Math.max(
-          ...cluster1Peaks
-        ).toFixed(2)}`
-      : "N/A"
-  );
   let noiseThreshold = stdMultiplier * robustStd;
-
-  console.log("[findTrueSpikes] Cluster analysis:");
-  console.log("  - Top cluster (signal):", topCluster);
-  console.log("  - Lower cluster (noise):", lowerCluster);
-  console.log("  - Higher centroid value:", higherCentroid.toFixed(2));
-  console.log("  - Lower centroid value:", lowerCentroid.toFixed(2));
-  console.log("  - Cluster separation:", clusterSeparation.toFixed(2));
-  console.log(
-    "  - Noise threshold (stdMultiplier × robustStd):",
-    noiseThreshold.toFixed(2)
-  );
 
   // NEW APPROACH: Use k-means clustering for separation, optionally apply threshold
   // Only discard all peaks if BOTH clusters are below noise threshold (very noisy signal)
@@ -287,29 +217,8 @@ function findTrueSpikes(
     higherCentroid < noiseThreshold &&
     clusterSeparation < noiseThreshold * 0.5
   ) {
-    console.log(
-      "[findTrueSpikes] ⚠️ DISCARDING ALL PEAKS - both clusters too close to noise floor"
-    );
-    console.log(
-      "  - Higher centroid:",
-      higherCentroid.toFixed(2),
-      "< threshold:",
-      noiseThreshold.toFixed(2)
-    );
-    console.log(
-      "  - Cluster separation:",
-      clusterSeparation.toFixed(2),
-      "< 50% of threshold:",
-      (noiseThreshold * 0.5).toFixed(2)
-    );
     return [];
   }
-
-  console.log(
-    "[findTrueSpikes] ✓ Clusters are sufficiently separated, using k-means filtering..."
-  );
-  console.log("  - Keeping peaks from cluster:", topCluster);
-  console.log("  - Discarding peaks from cluster:", lowerCluster);
 
   // Filter peaks: keep ONLY those in the top cluster (signal) with sufficient width
   // This explicitly removes ALL peaks in the lower cluster (noise)
@@ -319,45 +228,18 @@ function findTrueSpikes(
     return inTopCluster && hasMinWidth;
   });
 
-  console.log("[findTrueSpikes] After cluster + width filtering:");
-  console.log("  - Peaks in top cluster (signal):", filteredPeaks.length);
-  console.log(
-    "  - Removed from lower cluster (noise):",
-    peaks.filter((p, idx) => assignments[idx] === lowerCluster).length
-  );
-  console.log(
-    "  - Removed for insufficient width:",
-    peaks.filter(
-      (p, idx) => assignments[idx] === topCluster && p.width < minWidth
-    ).length
-  );
-  console.log(
-    "  - Total removed:",
-    peaks.length - filteredPeaks.length,
-    "peaks"
-  );
-
   // Apply prominence ratio filter for symmetry
   if (minProminenceRatio > 0) {
-    const beforeRatioFilter = filteredPeaks.length;
     filteredPeaks = filteredPeaks.filter((p) => {
       const left = p.prominences.leftProminence;
       const right = p.prominences.rightProminence;
       const ratio = Math.min(left, right) / Math.max(left, right);
       return ratio >= minProminenceRatio;
     });
-    console.log("[findTrueSpikes] After prominence ratio filter:");
-    console.log("  - Remaining peaks:", filteredPeaks.length);
-    console.log(
-      "  - Removed",
-      beforeRatioFilter - filteredPeaks.length,
-      "asymmetric peaks"
-    );
   }
 
   // Apply distance filter: remove peaks too close to others
   if (minDistance > 0 && filteredPeaks.length > 1) {
-    const beforeDistanceFilter = filteredPeaks.length;
     filteredPeaks.sort((a, b) => a.index - b.index);
     let result = [filteredPeaks[0]];
     for (let i = 1; i < filteredPeaks.length; i++) {
@@ -369,31 +251,13 @@ function findTrueSpikes(
       }
     }
     filteredPeaks = result;
-    console.log("[findTrueSpikes] After distance filter:");
-    console.log("  - Remaining peaks:", filteredPeaks.length);
-    console.log(
-      "  - Removed",
-      beforeDistanceFilter - filteredPeaks.length,
-      "too-close peaks"
-    );
   }
 
-  console.log(
-    "[findTrueSpikes] Function exit - returning",
-    filteredPeaks.length,
-    "final spikes"
-  );
   return filteredPeaks;
 }
 
 export function detectSpikes(data, options = {}) {
-  console.log("=== [detectSpikes] FUNCTION START ===");
-  console.log("[detectSpikes] Input data length:", data?.length);
-  console.log("[detectSpikes] Input data sample (first 3):", data?.slice(0, 3));
-  console.log("[detectSpikes] Options received:", options);
-
   if (!Array.isArray(data) || data.length === 0) {
-    console.log("[detectSpikes] ❌ Empty or invalid data, returning []");
     return [];
   }
   if (
@@ -414,14 +278,6 @@ export function detectSpikes(data, options = {}) {
   const minProminenceRatio = options.minProminenceRatio ?? 10;
   const stdMultiplier = options.stdMultiplier ?? 3; // Used for cluster separation check (not individual peak filtering)
 
-  console.log("[detectSpikes] Step 1: Parameters extracted");
-  console.log("  - prominence:", prominence);
-  console.log("  - wlen (window):", wlen);
-  console.log("  - minWidth:", minWidth);
-  console.log("  - minDistance:", minDistance);
-  console.log("  - minProminenceRatio:", minProminenceRatio);
-  console.log("  - stdMultiplier:", stdMultiplier);
-
   // Calculated global statistics
   const allYValues = data.map((d) => d.y);
   const n = allYValues.length;
@@ -429,36 +285,16 @@ export function detectSpikes(data, options = {}) {
   const globalMax = Math.max(...allYValues);
   const signalRange = globalMax - globalMin;
 
-  console.log("[detectSpikes] Step 2: Global statistics calculated");
-  console.log("  - n (data length):", n);
-  console.log("  - globalMin:", globalMin.toFixed(2));
-  console.log("  - globalMax:", globalMax.toFixed(2));
-  console.log("  - signalRange:", signalRange.toFixed(2));
-
   // New: Compute robust std (MAD) for noise estimate
   const medianY = allYValues.slice().sort((a, b) => a - b)[Math.floor(n / 2)];
   const absDevs = allYValues.map((y) => Math.abs(y - medianY));
   const medianAbsDev = absDevs.slice().sort((a, b) => a - b)[Math.floor(n / 2)];
   const robustStd = medianAbsDev / 0.6745; // Normalize to std equiv
 
-  console.log("[detectSpikes] Step 3: Robust noise estimate (MAD method)");
-  console.log("  - medianY:", medianY.toFixed(2));
-  console.log("  - medianAbsDev:", medianAbsDev.toFixed(2));
-  console.log("  - robustStd (noise estimate):", robustStd.toFixed(2));
-  console.log(
-    "  - Noise threshold (stdMultiplier × robustStd):",
-    (stdMultiplier * robustStd).toFixed(2)
-  );
-
   // Auto-set prominence if 'auto'
   if (prominence === "auto") {
     prominence = 2 * robustStd;
-    console.log(
-      "[detectSpikes] Auto-set prominence to 2×robustStd:",
-      prominence.toFixed(2)
-    );
   }
-  console.log("  - Final prominence threshold:", prominence);
 
   // Baseline threshold calculations (unchanged)
   const sortedY = [...allYValues].sort((a, b) => a - b);
@@ -471,26 +307,9 @@ export function detectSpikes(data, options = {}) {
   );
   const fallbackThreshold = globalMin + signalRange * 0.02;
 
-  console.log("[detectSpikes] Step 4: Baseline thresholds calculated");
-  console.log(
-    "  - baselineThreshold (2nd percentile):",
-    baselineThreshold.toFixed(2)
-  );
-  console.log(
-    "  - alternativeThreshold (min + 5% range):",
-    alternativeThreshold.toFixed(2)
-  );
-  console.log("  - finalBaselineThreshold:", finalBaselineThreshold.toFixed(2));
-  console.log(
-    "  - fallbackThreshold (min + 2% range):",
-    fallbackThreshold.toFixed(2)
-  );
-
   // === MAIN DETECTION LOGIC === (unchanged from previous)
 
   let peakIndices = [];
-
-  console.log("[detectSpikes] Step 5: Finding initial peaks (local maxima)...");
 
   for (let i = 1; i < data.length - 1; i++) {
     if (data[i].y > data[i - 1].y && data[i].y >= data[i + 1].y) {
@@ -512,15 +331,7 @@ export function detectSpikes(data, options = {}) {
     }
   }
 
-  console.log(
-    "[detectSpikes] Step 5 Complete: Found",
-    peakIndices.length,
-    "initial peaks"
-  );
-  console.log("  - Peak indices sample (first 10):", peakIndices.slice(0, 10));
-
   let filteredPeakIndices = [];
-  console.log("[detectSpikes] Step 6: Filtering peaks by prominence...");
   for (let peakIdx of peakIndices) {
     let searchRange = wlen ? Math.floor(wlen / 2) : data.length;
     let { leftBaseIdx, rightBaseIdx } = findBases(
@@ -553,22 +364,7 @@ export function detectSpikes(data, options = {}) {
     }
   }
 
-  console.log(
-    "[detectSpikes] Step 6 Complete: Filtered to",
-    filteredPeakIndices.length,
-    "peaks by prominence"
-  );
-  console.log("  - Prominence threshold was:", prominence);
-  console.log(
-    "  - Filtered peak indices sample (first 10):",
-    filteredPeakIndices.slice(0, 10)
-  );
-
   let finalFilteredPeakIndices = [];
-  console.log(
-    "[detectSpikes] Step 7: Grouping nearby peaks (if window enabled)..."
-  );
-  console.log("  - Window (wlen):", wlen);
   if (wlen && filteredPeakIndices.length > 1) {
     let i = 0;
     while (i < filteredPeakIndices.length) {
@@ -593,18 +389,7 @@ export function detectSpikes(data, options = {}) {
     finalFilteredPeakIndices = filteredPeakIndices;
   }
 
-  console.log(
-    "[detectSpikes] Step 7 Complete: After grouping, have",
-    finalFilteredPeakIndices.length,
-    "peaks"
-  );
-  console.log(
-    "  - Final peak indices sample (first 10):",
-    finalFilteredPeakIndices.slice(0, 10)
-  );
-
   let peaks = [];
-  console.log("[detectSpikes] Step 8: Creating NeuralPeak objects...");
   for (let peakIdx of finalFilteredPeakIndices) {
     let searchRange = wlen ? Math.floor(wlen / 2) : data.length;
     let { leftBaseIdx, rightBaseIdx } = findBases(
@@ -649,27 +434,6 @@ export function detectSpikes(data, options = {}) {
     );
   }
 
-  console.log(
-    "[detectSpikes] Step 8 Complete: Created",
-    peaks.length,
-    "NeuralPeak objects"
-  );
-  if (peaks.length > 0) {
-    console.log("  - Sample peak 0:", {
-      peakIdx: peaks[0].index,
-      peakY: peaks[0].peakCoords.y.toFixed(2),
-      leftProminence: peaks[0].prominences.leftProminence.toFixed(2),
-      rightProminence: peaks[0].prominences.rightProminence.toFixed(2),
-      width: peaks[0].width,
-    });
-  }
-
-  console.log(
-    "[detectSpikes] Step 9: Calling findTrueSpikes() for k-means filtering..."
-  );
-  console.log("  - Passing robustStd:", robustStd.toFixed(2));
-  console.log("  - Passing stdMultiplier:", stdMultiplier);
-
   const finalSpikes = findTrueSpikes(
     peaks,
     minWidth,
@@ -678,20 +442,6 @@ export function detectSpikes(data, options = {}) {
     robustStd,
     stdMultiplier
   );
-
-  console.log("=== [detectSpikes] FUNCTION END ===");
-  console.log(
-    "[detectSpikes] Final result:",
-    finalSpikes.length,
-    "spikes detected"
-  );
-  if (finalSpikes.length > 0) {
-    console.log("  - First spike index:", finalSpikes[0].index);
-    console.log(
-      "  - Last spike index:",
-      finalSpikes[finalSpikes.length - 1].index
-    );
-  }
 
   return finalSpikes;
 }

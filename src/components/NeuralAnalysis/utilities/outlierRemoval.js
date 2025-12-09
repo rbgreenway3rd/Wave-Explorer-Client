@@ -18,14 +18,6 @@
 export function removeOutliers(signal, options = {}) {
   const { percentile = 95, multiplier = 2.0, slopeThreshold = 0.1 } = options;
 
-  console.log("[Outlier Removal] === START ===");
-  console.log("[Outlier Removal] Signal length:", signal?.length);
-  console.log("[Outlier Removal] Options:", {
-    percentile,
-    multiplier,
-    slopeThreshold,
-  });
-
   if (!Array.isArray(signal) || signal.length === 0) {
     console.warn("removeOutliers: Invalid signal input");
     return { cleanedSignal: signal, outlierSpikes: [], removedIndices: [] };
@@ -35,9 +27,6 @@ export function removeOutliers(signal, options = {}) {
   // Use percentile-based approach to identify only extreme outliers
 
   const yValues = signal.map((pt) => pt.y);
-  const maxY = Math.max(...yValues);
-  const minY = Math.min(...yValues);
-  const range = maxY - minY;
 
   // Calculate signal statistics for baseline filtering
   const sortedY = [...yValues].sort((a, b) => a - b);
@@ -45,13 +34,6 @@ export function removeOutliers(signal, options = {}) {
   const deviations = yValues.map((y) => Math.abs(y - median));
   const sortedDeviations = [...deviations].sort((a, b) => a - b);
   const mad = sortedDeviations[Math.floor(sortedDeviations.length / 2)];
-
-  console.log("[Outlier Removal] Signal statistics:");
-  console.log("  - Median Y:", median.toFixed(2));
-  console.log("  - MAD:", mad.toFixed(2));
-  console.log("  - Range:", range.toFixed(2));
-  console.log("  - Min Y:", minY.toFixed(2));
-  console.log("  - Max Y:", maxY.toFixed(2));
 
   // Find all local maxima and calculate their prominence
   // Use smaller window (100 points) for more localized prominence
@@ -88,12 +70,7 @@ export function removeOutliers(signal, options = {}) {
     }
   }
 
-  console.log(
-    "[Outlier Removal] Found " + peaks.length + " significant local maxima"
-  );
-
   if (peaks.length === 0) {
-    console.log("[Outlier Removal] No peaks found");
     return { cleanedSignal: signal, outlierSpikes: [], removedIndices: [] };
   }
 
@@ -118,42 +95,15 @@ export function removeOutliers(signal, options = {}) {
     medianProminence * multiplier
   );
 
-  console.log("[Outlier Removal] Percentile-based outlier detection:");
-  console.log("  - Total significant peaks:", peaks.length);
-  console.log("  - Median prominence:", medianProminence.toFixed(2));
-  console.log(
-    `  - ${percentile}th percentile prominence:`,
-    percentileProminence.toFixed(2)
-  );
-  console.log(
-    "  - Final threshold (max of both):",
-    outlierThreshold.toFixed(2)
-  );
-
   // Find outlier peaks exceeding threshold
   const outlierPeakIndices = [];
   for (const peak of peaks) {
     if (peak.prominence > outlierThreshold) {
       outlierPeakIndices.push(peak.idx);
-      console.log(
-        "  - Found outlier peak at index " +
-          peak.idx +
-          ", y=" +
-          peak.y.toFixed(2) +
-          ", prominence=" +
-          peak.prominence.toFixed(2)
-      );
     }
   }
 
-  console.log(
-    "[Outlier Removal] Found " + outlierPeakIndices.length + " outlier peaks"
-  );
-
   if (outlierPeakIndices.length === 0) {
-    console.log(
-      "[Outlier Removal] No outliers found, returning original signal"
-    );
     return { cleanedSignal: signal, outlierSpikes: [], removedIndices: [] };
   }
 
@@ -204,12 +154,6 @@ export function removeOutliers(signal, options = {}) {
         points: [], // Will be recalculated below
         numPoints: 0, // Will be recalculated below
       };
-      console.log(
-        "[Outlier Removal] Merged overlapping spikes at indices " +
-          currentSpike.startIdx +
-          "-" +
-          currentSpike.endIdx
-      );
     } else {
       // No overlap, save current and move to next
       mergedSpikes.push(currentSpike);
@@ -231,23 +175,9 @@ export function removeOutliers(signal, options = {}) {
     spike.numPoints = spike.points.length;
   }
 
-  console.log(
-    "[Outlier Removal] After merging: " +
-      mergedSpikes.length +
-      " distinct outlier spike(s)"
-  );
-
   // Create cleaned signal by filtering out removed indices
   const cleanedSignal = signal.filter((_, idx) => !allRemovedIndices.has(idx));
   const removedIndices = Array.from(allRemovedIndices).sort((a, b) => a - b);
-
-  console.log(
-    "[Outlier Removal] Removed " +
-      removedIndices.length +
-      " points across " +
-      mergedSpikes.length +
-      " spike(s)"
-  );
 
   return {
     cleanedSignal: cleanedSignal,
@@ -346,18 +276,6 @@ function detectSpikeStructure(signal, peakIdx, baseline, slopeThreshold) {
     });
   }
 
-  console.log(
-    "[Spike Structure] Peak at index " +
-      peakIdx +
-      ", span [" +
-      startIdx +
-      " - " +
-      endIdx +
-      "] (" +
-      (endIdx - startIdx + 1) +
-      " points)"
-  );
-
   return {
     startIdx,
     peakIdx,
@@ -408,12 +326,6 @@ export function readdOutliersAsSpikes(spikes, outlierSpikes) {
       outlierSpike: true,
     };
   });
-
-  console.log(
-    "[Outlier Re-addition] Adding " +
-      outlierSpikeObjects.length +
-      " outlier spike(s) back"
-  );
 
   return [...spikes, ...outlierSpikeObjects];
 }

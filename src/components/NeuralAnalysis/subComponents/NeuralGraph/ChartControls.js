@@ -184,8 +184,6 @@ const ChartControls = ({
         setBaselineCorrection={setBaselineCorrection}
         filterBaseline={filterBaseline}
         setFilterBaseline={setFilterBaseline}
-        handleOutliers={handleOutliers}
-        setHandleOutliers={setHandleOutliers}
       />
 
       <div className="chart-controls-divider" />

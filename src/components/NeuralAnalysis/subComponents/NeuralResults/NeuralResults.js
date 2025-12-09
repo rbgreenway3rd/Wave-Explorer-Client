@@ -7,14 +7,6 @@ const NeuralResults = ({
   roiList,
   selectedWell,
 }) => {
-  // Debug: Log what props are being received
-  console.log("=== NeuralResults Props ===");
-  console.log("peakResults:", peakResults);
-  console.log("burstResults:", burstResults);
-  console.log("roiList:", roiList);
-  console.log("selectedWell:", selectedWell);
-  console.log("========================");
-
   // Helper functions for metrics calculation
   const calculateSpikeFrequency = (spikes, startTime, endTime) => {
     const spikesInRange = spikes.filter(
@@ -126,15 +118,8 @@ const NeuralResults = ({
   };
 
   const calculateBurstMetrics = (bursts, startTime, endTime) => {
-    console.log("calculateBurstMetrics called with:", {
-      bursts,
-      startTime,
-      endTime,
-    });
-
     // Safety check: ensure bursts is an array
     if (!Array.isArray(bursts) || bursts.length === 0) {
-      console.log("No bursts array or empty array");
       return {
         total: 0,
         duration: { average: 0, median: 0 },
@@ -146,10 +131,7 @@ const NeuralResults = ({
       (burst) => burst.startTime >= startTime && burst.endTime <= endTime
     );
 
-    console.log("burstsInRange:", burstsInRange);
-
     if (burstsInRange.length === 0) {
-      console.log("No bursts in range");
       return {
         total: 0,
         duration: { average: 0, median: 0 },
@@ -203,24 +185,15 @@ const NeuralResults = ({
   const roiMetrics = React.useMemo(() => {
     if (!Array.isArray(roiList) || roiList.length === 0) return {};
 
-    console.log("NeuralResults - roiList:", roiList);
-    console.log("NeuralResults - peakResults:", peakResults);
-    console.log("NeuralResults - burstResults:", burstResults);
-
     const metrics = {};
     roiList.forEach((roi, index) => {
       if (roi && roi.xMin !== undefined && roi.xMax !== undefined) {
-        console.log(`ROI ${index + 1}: xMin=${roi.xMin}, xMax=${roi.xMax}`);
-
         const spikesInROI = peakResults.filter(
           (spike) => spike.time >= roi.xMin && spike.time <= roi.xMax
         );
         const burstsInROI = burstResults.filter(
           (burst) => burst.startTime >= roi.xMin && burst.endTime <= roi.xMax
         );
-
-        console.log(`ROI ${index + 1} - spikesInROI:`, spikesInROI);
-        console.log(`ROI ${index + 1} - burstsInROI:`, burstsInROI);
 
         // Check if ROI has any data
         const hasData = spikesInROI.length > 0 || burstsInROI.length > 0;
@@ -295,12 +268,6 @@ const NeuralResults = ({
 
   // Calculate overall metrics for all spikes (regardless of ROIs)
   const overallMetrics = React.useMemo(() => {
-    console.log("NeuralResults - overallMetrics calculation:");
-    console.log("  peakResults:", peakResults);
-    console.log("  burstResults:", burstResults);
-    console.log("  peakResults length:", peakResults?.length);
-    console.log("  burstResults length:", burstResults?.length);
-
     if (!Array.isArray(peakResults) || peakResults.length === 0) {
       return null;
     }
@@ -315,7 +282,6 @@ const NeuralResults = ({
       startTime,
       endTime
     );
-    console.log("  calculated burstMetrics:", burstMetrics);
 
     return {
       spikeFrequency: calculateSpikeFrequency(peakResults, startTime, endTime),

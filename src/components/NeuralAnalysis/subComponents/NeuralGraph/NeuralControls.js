@@ -5,6 +5,7 @@ import "../../styles/NeuralControls.css";
 // Import extracted control components
 import ROIControls from "./controls/ROIControls";
 import ShowBurstsToggle from "./controls/ShowBurstsToggle";
+import HandleOutliersToggle from "./controls/HandleOutliersToggle";
 import HandleOutlierControls from "./controls/HandleOutlierControls";
 import { NeuralContext } from "../../NeuralProvider";
 
@@ -89,10 +90,11 @@ const NoiseFilterControls = ({
   trendFlatteningEnabled,
   setTrendFlatteningEnabled,
   selectedWell,
+  handleOutliers,
+  setHandleOutliers,
 }) => {
   // Get outlier parameters from context
   const {
-    handleOutliers,
     outlierPercentile,
     setOutlierPercentile,
     outlierMultiplier,
@@ -150,8 +152,12 @@ const NoiseFilterControls = ({
         {/* <Button onClick={handleRunSpikeDetection}>Run Spike Detection</Button>
         <Button onClick={handleRunBurstDetection}>Run Burst Detection</Button> */}
 
-        {/* Show Bursts Toggle */}
+        {/* Show Bursts and Handle Outliers Toggles */}
         <Box className="show-bursts-toggle-row">
+          <HandleOutliersToggle
+            handleOutliers={handleOutliers}
+            setHandleOutliers={setHandleOutliers}
+          />
           <ShowBurstsToggle
             showBursts={showBursts}
             setShowBursts={setShowBursts}

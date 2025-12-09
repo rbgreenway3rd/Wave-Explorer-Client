@@ -33,8 +33,6 @@ const NoiseSuppressionControls = ({
   setBaselineCorrection,
   filterBaseline,
   setFilterBaseline,
-  handleOutliers,
-  setHandleOutliers,
 }) => {
   return (
     <Paper
@@ -239,40 +237,6 @@ const NoiseSuppressionControls = ({
               }}
             >
               Subtract Control Well Signature
-            </Typography>
-          }
-          sx={{
-            margin: 0,
-            padding: `${controlsTheme.spacing.sm}px ${controlsTheme.spacing.lg}px`,
-          }}
-        />
-
-        {/* Handle Outliers Toggle */}
-        <FormControlLabel
-          control={
-            <Switch
-              checked={handleOutliers}
-              onChange={(_, checked) => setHandleOutliers(checked)}
-              disabled={!noiseSuppressionActive}
-              sx={{
-                "& .MuiSwitch-switchBase.Mui-checked": {
-                  color: controlsTheme.colors.warning,
-                },
-                "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                  backgroundColor: controlsTheme.colors.warning,
-                },
-              }}
-            />
-          }
-          label={
-            <Typography
-              sx={{
-                color: controlsTheme.colors.text,
-                fontSize: `${controlsTheme.typography.fontSize.sm}px`,
-                fontWeight: controlsTheme.typography.fontWeight.medium,
-              }}
-            >
-              Handle Outliers
             </Typography>
           }
           sx={{

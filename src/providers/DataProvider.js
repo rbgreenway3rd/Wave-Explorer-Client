@@ -428,9 +428,6 @@ export const DataProvider = ({ children }) => {
       analysisData[indicator] = dataPoints;
     }
 
-    // console.log("Extracted Indicator Times:", indicatorTimes);
-    console.log("Analysis Data by Indicator:", analysisData);
-
     // Set or return the values as needed
     setExtractedIndicatorTimes(indicatorTimes);
     setAnalysisData(analysisData);

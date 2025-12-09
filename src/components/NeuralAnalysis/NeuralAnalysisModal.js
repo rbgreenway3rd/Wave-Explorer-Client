@@ -124,18 +124,6 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
         metrics: {},
       };
 
-    // Debug: log the raw signal and control signal (first 5 points)
-    console.log(
-      "[NeuralAnalysisModal] rawSignal (first 5):",
-      selectedWell.indicators[0].filteredData?.slice(0, 5)
-    );
-    if (controlWell && controlWell.indicators && controlWell.indicators[0]) {
-      console.log(
-        "[NeuralAnalysisModal] controlSignal (first 5):",
-        controlWell.indicators[0].filteredData?.slice(0, 5)
-      );
-    }
-
     const pipeline = runNeuralAnalysisPipeline({
       rawSignal: selectedWell.indicators[0].filteredData,
       controlSignal:
@@ -166,11 +154,6 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
       },
       noiseSuppressionActive,
     });
-    // Debug: log the processedSignal (first 5 points)
-    console.log(
-      "[NeuralAnalysisModal] processedSignal for detectSpikes (first 5):",
-      pipeline.processedSignal?.slice(0, 5)
-    );
     return pipeline;
   }, [
     selectedWell,
@@ -415,6 +398,8 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
                 trendFlatteningEnabled={trendFlatteningEnabled}
                 setTrendFlatteningEnabled={setTrendFlatteningEnabled}
                 selectedWell={selectedWell}
+                handleOutliers={handleOutliers}
+                setHandleOutliers={setHandleOutliers}
               />
 
               {/* <ChartControls
