@@ -1,0 +1,26 @@
+/* BurstDetectionControls.css */
+
+.burst-reset-button {
+    font-family: 'Roboto', 'Helvetica Neue', 'Arial', sans-serif;
+}
+
+.burst-reset-button:hover {
+    transform: translateY(-1px);
+}
+
+.burst-reset-button:active {
+    transform: translateY(0);
+}
+
+/* Accessibility */
+.burst-reset-button:focus-visible {
+    outline: 2px solid #2196f3;
+    outline-offset: 2px;
+}
+
+/* Responsive behavior */
+@media (max-width: 768px) {
+    .burst-reset-button {
+        font-size: 12px;
+    }
+}

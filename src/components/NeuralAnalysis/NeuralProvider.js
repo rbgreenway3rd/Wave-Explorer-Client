@@ -17,6 +17,10 @@ export const NeuralProvider = ({ children }) => {
   const [outlierPercentile, setOutlierPercentile] = useState(95); // 95th percentile (top 5%)
   const [outlierMultiplier, setOutlierMultiplier] = useState(2.0); // 2.0× median prominence
 
+  // Burst detection parameters
+  const [maxInterSpikeInterval, setMaxInterSpikeInterval] = useState(50); // 50ms default
+  const [minSpikesPerBurst, setMinSpikesPerBurst] = useState(3); // 3 spikes minimum
+
   return (
     <NeuralContext.Provider
       value={{
@@ -40,6 +44,10 @@ export const NeuralProvider = ({ children }) => {
         setOutlierPercentile,
         outlierMultiplier,
         setOutlierMultiplier,
+        maxInterSpikeInterval,
+        setMaxInterSpikeInterval,
+        minSpikesPerBurst,
+        setMinSpikesPerBurst,
       }}
     >
       {children}

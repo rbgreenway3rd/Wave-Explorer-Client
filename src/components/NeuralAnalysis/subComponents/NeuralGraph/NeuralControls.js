@@ -7,6 +7,7 @@ import ROIControls from "./controls/ROIControls";
 import ShowBurstsToggle from "./controls/ShowBurstsToggle";
 import HandleOutliersToggle from "./controls/HandleOutliersToggle";
 import HandleOutlierControls from "./controls/HandleOutlierControls";
+import BurstDetectionControls from "./controls/BurstDetectionControls";
 import { NeuralContext } from "../../NeuralProvider";
 
 /*
@@ -99,6 +100,10 @@ const NoiseFilterControls = ({
     setOutlierPercentile,
     outlierMultiplier,
     setOutlierMultiplier,
+    maxInterSpikeInterval,
+    setMaxInterSpikeInterval,
+    minSpikesPerBurst,
+    setMinSpikesPerBurst,
   } = React.useContext(NeuralContext);
 
   // Spike detection handler: triggers pipeline update
@@ -152,26 +157,38 @@ const NoiseFilterControls = ({
         {/* <Button onClick={handleRunSpikeDetection}>Run Spike Detection</Button>
         <Button onClick={handleRunBurstDetection}>Run Burst Detection</Button> */}
 
-        {/* Show Bursts and Handle Outliers Toggles */}
-        <Box className="show-bursts-toggle-row">
-          <HandleOutliersToggle
-            handleOutliers={handleOutliers}
-            setHandleOutliers={setHandleOutliers}
-          />
-          <ShowBurstsToggle
-            showBursts={showBursts}
-            setShowBursts={setShowBursts}
-          />
-        </Box>
+        {/* Detection Controls - Side by side layout with toggles above each control */}
+        <Box className="detection-controls-row">
+          {/* Outlier Detection Column */}
+          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+            <HandleOutliersToggle
+              handleOutliers={handleOutliers}
+              setHandleOutliers={setHandleOutliers}
+            />
+            <HandleOutlierControls
+              handleOutliers={handleOutliers}
+              outlierPercentile={outlierPercentile}
+              setOutlierPercentile={setOutlierPercentile}
+              outlierMultiplier={outlierMultiplier}
+              setOutlierMultiplier={setOutlierMultiplier}
+            />
+          </Box>
 
-        {/* Handle Outlier Controls - Only visible when handleOutliers is enabled */}
-        <HandleOutlierControls
-          handleOutliers={handleOutliers}
-          outlierPercentile={outlierPercentile}
-          setOutlierPercentile={setOutlierPercentile}
-          outlierMultiplier={outlierMultiplier}
-          setOutlierMultiplier={setOutlierMultiplier}
-        />
+          {/* Burst Detection Column */}
+          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+            <ShowBurstsToggle
+              showBursts={showBursts}
+              setShowBursts={setShowBursts}
+            />
+            <BurstDetectionControls
+              showBursts={showBursts}
+              maxInterSpikeInterval={maxInterSpikeInterval}
+              setMaxInterSpikeInterval={setMaxInterSpikeInterval}
+              minSpikesPerBurst={minSpikesPerBurst}
+              setMinSpikesPerBurst={setMinSpikesPerBurst}
+            />
+          </Box>
+        </Box>
 
         {/* ROI Management using extracted component */}
         <ROIControls

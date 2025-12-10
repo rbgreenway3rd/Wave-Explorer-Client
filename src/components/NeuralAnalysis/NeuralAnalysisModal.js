@@ -71,6 +71,8 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
     setHandleOutliers,
     outlierPercentile,
     outlierMultiplier,
+    maxInterSpikeInterval,
+    minSpikesPerBurst,
   } = useContext(NeuralContext);
   const { project, wellArrays } = useContext(DataContext);
 
@@ -145,8 +147,8 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
         spikeMinDistance,
         spikeMinProminenceRatio: 0.01, // TODO: wire from UI if needed
         stdMultiplier, // Pass through the noise threshold multiplier
-        maxInterSpikeInterval: 50, // TODO: wire from UI if needed
-        minSpikesPerBurst: 3, // TODO: wire from UI if needed
+        maxInterSpikeInterval,
+        minSpikesPerBurst,
       },
       analysis: {
         runSpikeDetection: true,
@@ -172,6 +174,8 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
     stdMultiplier,
     showBursts,
     noiseSuppressionActive,
+    maxInterSpikeInterval,
+    minSpikesPerBurst,
   ]);
 
   useEffect(() => {

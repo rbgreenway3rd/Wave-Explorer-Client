@@ -32,6 +32,17 @@
     justify-content: center;
 }
 
+/* Detection controls row - side by side layout */
+.detection-controls-row {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    align-items: flex-start;
+    justify-content: center;
+    flex-wrap: nowrap;
+    width: 100%;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .neural-controls-container {
@@ -42,6 +53,11 @@
 
     .spike-detection-controls {
         gap: 8px;
+    }
+
+    .detection-controls-row {
+        flex-direction: column;
+        gap: 12px;
     }
 }
 

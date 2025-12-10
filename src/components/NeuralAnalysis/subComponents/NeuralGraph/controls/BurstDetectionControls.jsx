@@ -1,56 +1,52 @@
 import React from "react";
-import {
-  Paper,
-  Typography,
-  Slider,
-  Box,
-  Tooltip,
-  IconButton,
-} from "@mui/material";
+import { Paper, Box, Slider, Typography, IconButton } from "@mui/material";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import "./BurstDetectionControls.css";
 import { controlsTheme } from "../styles/controlsTheme";
-import "./HandleOutlierControls.css";
 
 /**
- * HandleOutlierControls
- * Component for adjusting outlier detection parameters
+ * BurstDetectionControls
+ * Component for adjusting burst detection parameters
  *
  * Features:
- * - Percentile threshold slider (50-99th percentile)
- * - Median multiplier slider (0.5-5.0×)
+ * - Max inter-spike interval slider (10-500ms)
+ * - Min spikes per burst slider (2-10 spikes)
  * - Reset button to restore defaults
- * - Only visible when handleOutliers is enabled
+ * - Only visible when showBursts is enabled
  * - Professional scientific styling
  * - Real-time parameter updates
  */
-const HandleOutlierControls = ({
-  handleOutliers,
-  outlierPercentile,
-  setOutlierPercentile,
-  outlierMultiplier,
-  setOutlierMultiplier,
+const BurstDetectionControls = ({
+  showBursts,
+  maxInterSpikeInterval,
+  setMaxInterSpikeInterval,
+  minSpikesPerBurst,
+  setMinSpikesPerBurst,
 }) => {
-  const DEFAULT_PERCENTILE = 95;
-  const DEFAULT_MULTIPLIER = 2.0;
+  const DEFAULT_MAX_INTERVAL = 50;
+  const DEFAULT_MIN_SPIKES = 3;
 
   const handleReset = () => {
-    setOutlierPercentile(DEFAULT_PERCENTILE);
-    setOutlierMultiplier(DEFAULT_MULTIPLIER);
+    setMaxInterSpikeInterval(DEFAULT_MAX_INTERVAL);
+    setMinSpikesPerBurst(DEFAULT_MIN_SPIKES);
   };
+
+  // Don't render if burst detection is disabled
+  if (!showBursts) {
+    return null;
+  }
 
   return (
     <Paper
       elevation={3}
       sx={{
         padding: controlsTheme.spacing.sm,
-        backgroundColor: handleOutliers ? controlsTheme.colors.paper : "rgb(180, 180, 180)",
+        backgroundColor: controlsTheme.colors.paper,
         borderRadius: "8px",
-        border: `2px solid ${controlsTheme.colors.warning}`,
+        border: `2px solid ${controlsTheme.colors.primary}`,
         minWidth: "240px",
         maxWidth: "320px",
         flex: 1,
-        opacity: handleOutliers ? 1 : 0.6,
-        transition: "all 0.2s ease-in-out",
       }}
     >
       {/* Header with title and reset button */}
@@ -70,27 +66,24 @@ const HandleOutlierControls = ({
             fontSize: `${controlsTheme.typography.fontSize.md}px`,
           }}
         >
-          Outlier Detection Parameters
+          Burst Detection Parameters
         </Typography>
-        <Tooltip title="Reset to defaults" placement="top">
-          <IconButton
-            onClick={handleReset}
-            disabled={!handleOutliers}
-            size="small"
-            className="reset-outlier-button"
-            sx={{
-              color: controlsTheme.colors.primary,
-              "&:hover": {
-                backgroundColor: "rgba(33, 150, 243, 0.1)",
-              },
-            }}
-          >
-            <RestartAltIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
+        <IconButton
+          onClick={handleReset}
+          size="small"
+          className="reset-burst-button"
+          sx={{
+            color: controlsTheme.colors.primary,
+            "&:hover": {
+              backgroundColor: "rgba(33, 150, 243, 0.1)",
+            },
+          }}
+        >
+          <RestartAltIcon fontSize="small" />
+        </IconButton>
       </Box>
 
-      {/* Percentile Threshold Slider */}
+      {/* Max Inter-Spike Interval Slider */}
       <Box sx={{ marginBottom: controlsTheme.spacing.md }}>
         <Box
           sx={{
@@ -107,34 +100,33 @@ const HandleOutlierControls = ({
               fontSize: `${controlsTheme.typography.fontSize.sm}px`,
             }}
           >
-            Percentile Threshold
+            Max Inter-Spike Interval
           </Typography>
           <Typography
             variant="body2"
             sx={{
-              color: controlsTheme.colors.warning,
+              color: controlsTheme.colors.primary,
               fontWeight: 600,
               fontSize: `${controlsTheme.typography.fontSize.sm}px`,
             }}
           >
-            {outlierPercentile}th
+            {maxInterSpikeInterval} ms
           </Typography>
         </Box>
         <Slider
-          value={outlierPercentile}
-          onChange={(e, value) => setOutlierPercentile(value)}
-          disabled={!handleOutliers}
-          min={50}
-          max={99}
-          step={1}
+          value={maxInterSpikeInterval}
+          onChange={(e, value) => setMaxInterSpikeInterval(value)}
+          min={0}
+          max={250}
+          step={5}
           marks={[
-            { value: 50, label: "50" },
-            { value: 75, label: "75" },
-            { value: 95, label: "95" },
-            { value: 99, label: "99" },
+            { value: 0, label: "0" },
+            { value: 100, label: "100" },
+            { value: 200, label: "200" },
+            { value: 250, label: "250" },
           ]}
           sx={{
-            color: controlsTheme.colors.warning,
+            color: controlsTheme.colors.primary,
             "& .MuiSlider-thumb": {
               width: 16,
               height: 16,
@@ -154,12 +146,11 @@ const HandleOutlierControls = ({
             marginTop: controlsTheme.spacing.xs,
           }}
         >
-          Mark peaks in top {(100 - outlierPercentile).toFixed(0)}% by
-          prominence
+          Maximum time between spikes to be grouped in the same burst (ms)
         </Typography>
       </Box>
 
-      {/* Median Multiplier Slider */}
+      {/* Min Spikes Per Burst Slider */}
       <Box>
         <Box
           sx={{
@@ -176,35 +167,34 @@ const HandleOutlierControls = ({
               fontSize: `${controlsTheme.typography.fontSize.sm}px`,
             }}
           >
-            Median Multiplier
+            Min Spikes Per Burst
           </Typography>
           <Typography
             variant="body2"
             sx={{
-              color: controlsTheme.colors.warning,
+              color: controlsTheme.colors.primary,
               fontWeight: 600,
               fontSize: `${controlsTheme.typography.fontSize.sm}px`,
             }}
           >
-            {outlierMultiplier.toFixed(1)}×
+            {minSpikesPerBurst}
           </Typography>
         </Box>
         <Slider
-          value={outlierMultiplier}
-          onChange={(e, value) => setOutlierMultiplier(value)}
-          disabled={!handleOutliers}
-          min={0.5}
-          max={5.0}
-          step={0.1}
+          value={minSpikesPerBurst}
+          onChange={(e, value) => setMinSpikesPerBurst(value)}
+          min={2}
+          max={10}
+          step={1}
           marks={[
-            { value: 0.5, label: "0.5" },
-            { value: 1.0, label: "1.0" },
-            { value: 2.0, label: "2.0" },
-            { value: 3.0, label: "3.0" },
-            { value: 5.0, label: "5.0" },
+            { value: 2, label: "2" },
+            { value: 4, label: "4" },
+            { value: 6, label: "6" },
+            { value: 8, label: "8" },
+            { value: 10, label: "10" },
           ]}
           sx={{
-            color: controlsTheme.colors.warning,
+            color: controlsTheme.colors.primary,
             "& .MuiSlider-thumb": {
               width: 16,
               height: 16,
@@ -224,11 +214,11 @@ const HandleOutlierControls = ({
             marginTop: controlsTheme.spacing.xs,
           }}
         >
-          Minimum prominence relative to median
+          Minimum number of spikes required to form a burst
         </Typography>
       </Box>
     </Paper>
   );
 };
 
-export default HandleOutlierControls;
+export default BurstDetectionControls;
