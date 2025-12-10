@@ -286,6 +286,8 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
               setTrendFlatteningEnabled={setTrendFlatteningEnabled}
               handleOutliers={handleOutliers}
               setHandleOutliers={setHandleOutliers}
+              outlierPercentile={outlierPercentile}
+              outlierMultiplier={outlierMultiplier}
               controlWell={controlWell}
               setControlWell={setControlWell}
               selectingControl={selectingControl}

@@ -11,6 +11,10 @@ import {
   baselineCorrected,
 } from "./utilities/neuralSmoothing";
 import { suppressNoise } from "./utilities/noiseSuppression";
+import {
+  removeOutliers,
+  readdOutliersAsSpikes,
+} from "./utilities/outlierRemoval";
 
 /**
  * Fast number formatting - replaces toFixed(4) for performance
@@ -351,6 +355,9 @@ export function GenerateFullPlateReport(
       `TrendFlatteningEnabled,${
         processingParams.trendFlatteningEnabled ?? "N/A"
       }`,
+      `HandleOutliers,${processingParams.handleOutliers ?? "N/A"}`,
+      `OutlierPercentile,${processingParams.outlierPercentile ?? "N/A"}`,
+      `OutlierMultiplier,${processingParams.outlierMultiplier ?? "N/A"}`,
       `SpikeMinWidth,${processingParams.spikeMinWidth ?? "N/A"}`,
       `SpikeMinDistance,${processingParams.spikeMinDistance ?? "N/A"}`,
       `MaxInterSpikeInterval,${
@@ -364,8 +371,10 @@ export function GenerateFullPlateReport(
   csvChunks.push(plateParamLines.join("\n"));
 
   // ========================================
-  // PROCESS EACH WELL
+  // FIRST PASS: COLLECT SPIKE DATA FROM ALL WELLS
   // ========================================
+  const allWellsData = []; // Store all wells' processed data
+
   wells.forEach((well, wellIndex) => {
     if (onProgress) {
       onProgress(wellIndex + 1, wells.length);
@@ -446,6 +455,26 @@ export function GenerateFullPlateReport(
         `[GenerateFullPlateReport] Well ${wellKey}: Final processed signal length=${processedSignal.length}`
       );
 
+      // Step 3: Outlier removal (if enabled) - matches NeuralPipeline
+      let processedForDetection = processedSignal;
+      let outlierSpikes = [];
+
+      if (
+        processingParams.noiseSuppressionActive &&
+        processingParams.handleOutliers
+      ) {
+        const outlierResult = removeOutliers(processedForDetection, {
+          percentile: processingParams.outlierPercentile || 95,
+          multiplier: processingParams.outlierMultiplier || 2.0,
+          slopeThreshold: 0.1,
+        });
+        processedForDetection = outlierResult.cleanedSignal;
+        outlierSpikes = outlierResult.outlierSpikes;
+        console.log(
+          `[GenerateFullPlateReport] Well ${wellKey}: Removed ${outlierSpikes.length} outlier spikes`
+        );
+      }
+
       // WELL PARAMETERS - unique to this well
       wellSections.push(
         [
@@ -474,11 +503,19 @@ export function GenerateFullPlateReport(
         spikeDetectionParams
       );
 
-      const spikes = detectSpikes(processedSignal, spikeDetectionParams);
+      let spikes = detectSpikes(processedForDetection, spikeDetectionParams);
 
       console.log(
-        `[GenerateFullPlateReport] Well ${wellKey}: Detected ${spikes.length} spikes`
+        `[GenerateFullPlateReport] Well ${wellKey}: Detected ${spikes.length} spikes (before re-adding outliers)`
       );
+
+      // Re-add outliers as spikes (if they were removed)
+      if (processingParams.handleOutliers && outlierSpikes.length > 0) {
+        spikes = readdOutliersAsSpikes(spikes, outlierSpikes);
+        console.log(
+          `[GenerateFullPlateReport] Well ${wellKey}: Re-added ${outlierSpikes.length} outliers as spikes, total: ${spikes.length}`
+        );
+      }
       console.log(
         `[GenerateFullPlateReport] Well ${wellKey}: spikes array:`,
         spikes
@@ -486,45 +523,6 @@ export function GenerateFullPlateReport(
       console.log(
         `[GenerateFullPlateReport] Well ${wellKey}: includeSpikeData=${includeSpikeData}, includeOverallMetrics=${includeOverallMetrics}`
       );
-
-      // SPIKE DATA
-      if (includeSpikeData) {
-        const spikeDataLines = [];
-        if (spikes.length > 0) {
-          spikeDataLines.push(
-            "<SPIKE_DATA>",
-            "Spike#,Time,PeakY,LeftBaseX,LeftBaseY,RightBaseX,RightBaseY,Amplitude,Width,AUC,LeftProminence,RightProminence"
-          );
-
-          spikes.forEach((spike, index) => {
-            const spikeNumber = index + 1;
-            const time = spike.time ?? spike.peakCoords?.x ?? "N/A";
-            const peakY = spike.peakCoords?.y ?? "N/A";
-            const leftBaseX = spike.leftBaseCoords?.x ?? "N/A";
-            const leftBaseY = spike.leftBaseCoords?.y ?? "N/A";
-            const rightBaseX = spike.rightBaseCoords?.x ?? "N/A";
-            const rightBaseY = spike.rightBaseCoords?.y ?? "N/A";
-            const amplitude = spike.amplitude ?? "N/A";
-            const width = spike.width ?? "N/A";
-            const auc = spike.auc ?? "N/A";
-            const leftProminence = spike.prominences?.leftProminence ?? "N/A";
-            const rightProminence = spike.prominences?.rightProminence ?? "N/A";
-
-            spikeDataLines.push(
-              `${spikeNumber},${time},${peakY},${leftBaseX},${leftBaseY},${rightBaseX},${rightBaseY},${amplitude},${width},${auc},${leftProminence},${rightProminence}`
-            );
-          });
-
-          spikeDataLines.push("</SPIKE_DATA>");
-        } else {
-          spikeDataLines.push(
-            "<SPIKE_DATA>",
-            "No spikes detected",
-            "</SPIKE_DATA>"
-          );
-        }
-        wellSections.push(spikeDataLines.join("\n"));
-      }
 
       // SPIKE METRICS
       if (includeOverallMetrics) {
@@ -633,6 +631,14 @@ export function GenerateFullPlateReport(
         ];
         wellSections.push(burstMetricsLines.join("\n"));
       }
+
+      // Store well data for horizontal spike data section
+      allWellsData.push({
+        wellKey,
+        optimalProminence,
+        optimalWindow,
+        spikes,
+      });
 
       // ========================================
       // ROI ANALYSIS (Side-by-side format)
@@ -1025,6 +1031,91 @@ export function GenerateFullPlateReport(
     wellSections.push(`</WELL_DATA: ${wellKey}>`);
     csvChunks.push(wellSections.join("\n\n"));
   });
+
+  // ========================================
+  // GENERATE HORIZONTAL SPIKE_DATA SECTION
+  // ========================================
+  if (includeSpikeData && allWellsData.length > 0) {
+    const spikeDataLines = ["<SPIKE_DATA>"];
+
+    // Find maximum number of spikes across all wells
+    const maxSpikes = Math.max(...allWellsData.map((w) => w.spikes.length), 0);
+
+    if (maxSpikes > 0) {
+      // Build well blocks - each well gets its own vertical block
+      const wellBlocks = allWellsData.map((wellData) => {
+        const block = [];
+
+        // Well header - put tag in first column, 11 empty columns after (12 total)
+        block.push(`<WELL: ${wellData.wellKey}>,,,,,,,,,,,`);
+
+        // Well parameters section
+        block.push("<WELL_PARAMETERS>,,,,,,,,,,,");
+        block.push("WellID,OptimalProminence,OptimalWindow,,,,,,,,,");
+        block.push(
+          `${wellData.wellKey},${wellData.optimalProminence},${wellData.optimalWindow},,,,,,,,,`
+        );
+        block.push("</WELL_PARAMETERS>,,,,,,,,,,,");
+
+        // Spikes section
+        block.push("<SPIKES>,,,,,,,,,,,");
+        block.push(
+          "Spike#,Time,PeakY,LeftBaseX,LeftBaseY,RightBaseX,RightBaseY,Amplitude,Width,AUC,LeftProminence,RightProminence"
+        );
+
+        // Add spike data rows
+        wellData.spikes.forEach((spike, index) => {
+          const spikeNumber = index + 1;
+          const time = spike.time ?? spike.peakCoords?.x ?? "N/A";
+          const peakY = spike.peakCoords?.y ?? "N/A";
+          const leftBaseX = spike.leftBaseCoords?.x ?? "N/A";
+          const leftBaseY = spike.leftBaseCoords?.y ?? "N/A";
+          const rightBaseX = spike.rightBaseCoords?.x ?? "N/A";
+          const rightBaseY = spike.rightBaseCoords?.y ?? "N/A";
+          const amplitude = spike.amplitude ?? "N/A";
+          const width = spike.width ?? "N/A";
+          const auc = spike.auc ?? "N/A";
+          const leftProminence = spike.prominences?.leftProminence ?? "N/A";
+          const rightProminence = spike.prominences?.rightProminence ?? "N/A";
+
+          block.push(
+            `${spikeNumber},${time},${peakY},${leftBaseX},${leftBaseY},${rightBaseX},${rightBaseY},${amplitude},${width},${auc},${leftProminence},${rightProminence}`
+          );
+        });
+
+        // Pad with empty rows to match maxSpikes
+        for (let i = wellData.spikes.length; i < maxSpikes; i++) {
+          block.push(",,,,,,,,,,,");
+        }
+
+        block.push("</SPIKES>,,,,,,,,,,,");
+        block.push(`</WELL: ${wellData.wellKey}>,,,,,,,,,,,`);
+
+        return block;
+      });
+
+      // Find the maximum number of lines in any block
+      const maxLines = Math.max(...wellBlocks.map((block) => block.length));
+
+      // Pad all blocks to the same height with 12-column empty rows
+      wellBlocks.forEach((block) => {
+        while (block.length < maxLines) {
+          block.push(",,,,,,,,,,,"); // 11 commas = 12 empty columns
+        }
+      });
+
+      // Combine blocks horizontally with comma separator plus one empty column between wells
+      for (let lineIndex = 0; lineIndex < maxLines; lineIndex++) {
+        const rowParts = wellBlocks.map((block) => block[lineIndex]);
+        spikeDataLines.push(rowParts.join(",,")); // Double comma adds empty column separator
+      }
+    } else {
+      spikeDataLines.push("No spikes detected in any well");
+    }
+
+    spikeDataLines.push("</SPIKE_DATA>");
+    csvChunks.splice(1, 0, spikeDataLines.join("\n")); // Insert after PLATE_PARAMETERS
+  }
 
   console.log("[GenerateFullPlateReport] Report generation complete");
   return csvChunks.join("\n\n");
