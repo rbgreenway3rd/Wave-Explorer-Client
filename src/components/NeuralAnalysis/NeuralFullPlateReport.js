@@ -129,15 +129,21 @@ function calculateSpikeAUC(spikes) {
 /**
  * Calculate burst metrics
  */
-function calculateBurstMetrics(bursts) {
+function calculateBurstMetrics(bursts, startTime, endTime) {
   if (bursts.length === 0) {
     return {
       total: 0,
+      frequency: 0,
       duration: { average: 0, median: 0 },
       spikesPerBurst: { average: 0, median: 0 },
       interBurstInterval: { average: 0, median: 0 },
+      auc: { median: 0, total: 0 },
     };
   }
+
+  // Calculate burst frequency (bursts per second)
+  const timeRangeSeconds = (endTime - startTime) / 1000;
+  const frequency = timeRangeSeconds > 0 ? bursts.length / timeRangeSeconds : 0;
 
   // Calculate durations
   const durations = bursts.map((burst) => burst.duration);
@@ -187,14 +193,27 @@ function calculateBurstMetrics(bursts) {
         : sortedIBIs[Math.floor(sortedIBIs.length / 2)];
   }
 
+  // Calculate burst AUC metrics
+  const burstAUCs = bursts.map((burst) => burst.auc || 0);
+  const totalBurstAUC = burstAUCs.reduce((sum, auc) => sum + auc, 0);
+  const sortedAUCs = [...burstAUCs].sort((a, b) => a - b);
+  const medianBurstAUC =
+    sortedAUCs.length % 2 === 0
+      ? (sortedAUCs[sortedAUCs.length / 2 - 1] +
+          sortedAUCs[sortedAUCs.length / 2]) /
+        2
+      : sortedAUCs[Math.floor(sortedAUCs.length / 2)];
+
   return {
     total: bursts.length,
+    frequency: frequency,
     duration: { average: avgDuration, median: medianDuration },
     spikesPerBurst: {
       average: avgSpikesPerBurst,
       median: medianSpikesPerBurst,
     },
     interBurstInterval: { average: avgIBI, median: medianIBI },
+    auc: { median: medianBurstAUC, total: totalBurstAUC },
   };
 }
 
@@ -280,6 +299,9 @@ export function GenerateFullPlateReport(
 
   // Use array of section chunks for efficient concatenation
   const csvChunks = [];
+
+  // Store well data for ROI analysis (processed after all wells)
+  const wellData = {};
 
   // ========================================
   // HEADER SECTION
@@ -585,6 +607,25 @@ export function GenerateFullPlateReport(
         console.log(
           `[GenerateFullPlateReport] Well ${wellKey}: Detected ${bursts.length} bursts`
         );
+
+        // Calculate AUC for each burst (sum of spike AUCs within the burst)
+        bursts.forEach((burst) => {
+          let burstAUC = 0;
+          // Find all spikes that fall within this burst's time range
+          spikes.forEach((spike) => {
+            const spikeTime = spike.time ?? spike.peakCoords?.x;
+            if (spikeTime >= burst.startTime && spikeTime <= burst.endTime) {
+              if (spike.auc) {
+                burstAUC += spike.auc;
+              }
+            }
+          });
+          burst.auc = burstAUC;
+        });
+
+        console.log(
+          `[GenerateFullPlateReport] Well ${wellKey}: Calculated AUC for ${bursts.length} bursts`
+        );
       }
 
       // BURST DATA
@@ -643,380 +684,12 @@ export function GenerateFullPlateReport(
       // ========================================
       // ROI ANALYSIS (Side-by-side format)
       // ========================================
-      if (includeROIAnalysis && roiList && roiList.length > 0) {
-        try {
-          console.log(
-            `[GenerateFullPlateReport] Well ${wellKey}: Processing ${roiList.length} ROIs`
-          );
-
-          // STEP 1: Build structured sections for each ROI
-          const roiStructuredData = roiList.map((roi, roiIndex) => {
-            const roiName = `ROI_${roiIndex + 1}`;
-            const timeRange = `${roi.xMin}-${roi.xMax}`;
-
-            // Filter spikes and bursts in this ROI
-            const spikesInROI = spikes.filter((spike) => {
-              const time = spike.time ?? spike.peakCoords?.x;
-              return time >= roi.xMin && time <= roi.xMax;
-            });
-
-            const burstsInROI = bursts.filter((burst) => {
-              return burst.endTime >= roi.xMin && burst.startTime <= roi.xMax;
-            });
-
-            console.log(
-              `[GenerateFullPlateReport] Well ${wellKey}, ${roiName}: ${spikesInROI.length} spikes, ${burstsInROI.length} bursts`
-            );
-
-            // Build individual sections
-            const sections = {
-              header: [],
-              spikeData: [],
-              spikeMetrics: [],
-              burstData: [],
-              burstMetrics: [],
-              footer: [],
-            };
-
-            // Header
-            sections.header.push([`<${roiName}, TimeRange: ${timeRange}>`]);
-
-            // Spike Data Section
-            if (spikesInROI.length > 0) {
-              sections.spikeData.push(["<ROI_SPIKE_DATA>"]);
-              sections.spikeData.push([
-                "Spike#",
-                "Time",
-                "PeakY",
-                "LeftBaseX",
-                "LeftBaseY",
-                "RightBaseX",
-                "RightBaseY",
-                "Amplitude",
-                "Width",
-                "AUC",
-              ]);
-
-              spikesInROI.forEach((spike, index) => {
-                const spikeNumber = index + 1;
-                const time = spike.time ?? spike.peakCoords?.x ?? "N/A";
-                const peakY = spike.peakCoords?.y ?? "N/A";
-                const leftBaseX = spike.leftBaseCoords?.x ?? "N/A";
-                const leftBaseY = spike.leftBaseCoords?.y ?? "N/A";
-                const rightBaseX = spike.rightBaseCoords?.x ?? "N/A";
-                const rightBaseY = spike.rightBaseCoords?.y ?? "N/A";
-                const amplitude = spike.amplitude ?? "N/A";
-                const width = spike.width ?? "N/A";
-                const auc = spike.auc ?? "N/A";
-
-                sections.spikeData.push([
-                  spikeNumber,
-                  time,
-                  peakY,
-                  leftBaseX,
-                  leftBaseY,
-                  rightBaseX,
-                  rightBaseY,
-                  amplitude,
-                  width,
-                  auc,
-                ]);
-              });
-
-              sections.spikeData.push(["</ROI_SPIKE_DATA>"]);
-              sections.spikeData.push([""]); // Empty line
-            } else {
-              sections.spikeData.push(["<ROI_SPIKE_DATA>"]);
-              sections.spikeData.push(["No spikes in this ROI"]);
-              sections.spikeData.push(["</ROI_SPIKE_DATA>"]);
-              sections.spikeData.push([""]); // Empty line
-            }
-
-            // Spike Metrics Section
-            if (spikesInROI.length > 0) {
-              const roiSpikeFrequency = calculateSpikeFrequency(
-                spikesInROI,
-                roi.xMin,
-                roi.xMax
-              );
-              const roiSpikeAmplitude = calculateSpikeAmplitude(spikesInROI);
-              const roiSpikeWidth = calculateSpikeWidth(spikesInROI);
-              const roiSpikeAUC = calculateSpikeAUC(spikesInROI);
-
-              sections.spikeMetrics.push(["<ROI_SPIKE_METRICS>"]);
-              sections.spikeMetrics.push(["Metric", "Value", "Unit"]);
-              sections.spikeMetrics.push([
-                "Total Spikes",
-                roiSpikeFrequency?.total ?? 0,
-                "count",
-              ]);
-              sections.spikeMetrics.push([
-                "Spike Frequency",
-                roiSpikeFrequency?.average
-                  ? formatMetric(roiSpikeFrequency.average)
-                  : "0.0000",
-                "Hz",
-              ]);
-              sections.spikeMetrics.push([
-                "Average Amplitude",
-                roiSpikeAmplitude?.average
-                  ? formatMetric(roiSpikeAmplitude.average)
-                  : "0.0000",
-                "units",
-              ]);
-              sections.spikeMetrics.push([
-                "Median Amplitude",
-                roiSpikeAmplitude?.median
-                  ? formatMetric(roiSpikeAmplitude.median)
-                  : "0.0000",
-                "units",
-              ]);
-              sections.spikeMetrics.push([
-                "Average Width",
-                roiSpikeWidth?.average
-                  ? formatMetric(roiSpikeWidth.average)
-                  : "0.0000",
-                "samples",
-              ]);
-              sections.spikeMetrics.push([
-                "Median Width",
-                roiSpikeWidth?.median
-                  ? formatMetric(roiSpikeWidth.median)
-                  : "0.0000",
-                "samples",
-              ]);
-              sections.spikeMetrics.push([
-                "Average AUC",
-                roiSpikeAUC?.average
-                  ? formatMetric(roiSpikeAUC.average)
-                  : "0.0000",
-                "units",
-              ]);
-              sections.spikeMetrics.push([
-                "Median AUC",
-                roiSpikeAUC?.median
-                  ? formatMetric(roiSpikeAUC.median)
-                  : "0.0000",
-                "units",
-              ]);
-
-              const maxSpikeSignal = Math.max(
-                ...spikesInROI.map((s) => s.peakCoords?.y ?? 0)
-              );
-              sections.spikeMetrics.push([
-                "Max Spike Signal",
-                formatMetric(maxSpikeSignal),
-                "units",
-              ]);
-
-              sections.spikeMetrics.push(["</ROI_SPIKE_METRICS>"]);
-              sections.spikeMetrics.push([""]); // Empty line
-            }
-
-            // Burst Data Section
-            if (burstsInROI.length > 0) {
-              sections.burstData.push(["<ROI_BURST_DATA>"]);
-              sections.burstData.push([
-                "Burst#",
-                "StartTime",
-                "EndTime",
-                "Duration",
-                "SpikeCount",
-              ]);
-
-              burstsInROI.forEach((burst, index) => {
-                const burstNumber = index + 1;
-                const startTime = burst.startTime ?? "N/A";
-                const endTime = burst.endTime ?? "N/A";
-                const duration = burst.duration ?? "N/A";
-                const spikeCount =
-                  burst.spikeCount ?? burst.spikes?.length ?? "N/A";
-
-                sections.burstData.push([
-                  burstNumber,
-                  startTime,
-                  endTime,
-                  duration,
-                  spikeCount,
-                ]);
-              });
-
-              sections.burstData.push(["</ROI_BURST_DATA>"]);
-              sections.burstData.push([""]); // Empty line
-            }
-
-            // Burst Metrics Section
-            if (burstsInROI.length > 0) {
-              const roiBurstMetrics = calculateBurstMetrics(burstsInROI);
-
-              sections.burstMetrics.push(["<ROI_BURST_METRICS>"]);
-              sections.burstMetrics.push(["Metric", "Value", "Unit"]);
-              sections.burstMetrics.push([
-                "Total Bursts",
-                roiBurstMetrics?.total ?? 0,
-                "count",
-              ]);
-              sections.burstMetrics.push([
-                "Average Duration",
-                roiBurstMetrics?.duration?.average
-                  ? formatMetric(roiBurstMetrics.duration.average)
-                  : "0.0000",
-                "ms",
-              ]);
-              sections.burstMetrics.push([
-                "Median Duration",
-                roiBurstMetrics?.duration?.median
-                  ? formatMetric(roiBurstMetrics.duration.median)
-                  : "0.0000",
-                "ms",
-              ]);
-              sections.burstMetrics.push([
-                "Average Spikes Per Burst",
-                roiBurstMetrics?.spikesPerBurst?.average
-                  ? formatMetric(roiBurstMetrics.spikesPerBurst.average)
-                  : "0.0000",
-                "count",
-              ]);
-              sections.burstMetrics.push([
-                "Median Spikes Per Burst",
-                roiBurstMetrics?.spikesPerBurst?.median
-                  ? formatMetric(roiBurstMetrics.spikesPerBurst.median)
-                  : "0.0000",
-                "count",
-              ]);
-
-              if (roiBurstMetrics?.interBurstInterval) {
-                sections.burstMetrics.push([
-                  "Average Inter-Burst Interval",
-                  roiBurstMetrics.interBurstInterval.average
-                    ? formatMetric(roiBurstMetrics.interBurstInterval.average)
-                    : "0.0000",
-                  "ms",
-                ]);
-                sections.burstMetrics.push([
-                  "Median Inter-Burst Interval",
-                  roiBurstMetrics.interBurstInterval.median
-                    ? formatMetric(roiBurstMetrics.interBurstInterval.median)
-                    : "0.0000",
-                  "ms",
-                ]);
-              }
-
-              sections.burstMetrics.push(["</ROI_BURST_METRICS>"]);
-              sections.burstMetrics.push([""]); // Empty line
-            }
-
-            // Footer
-            sections.footer.push([`</${roiName}>`]);
-
-            return sections;
-          });
-
-          // STEP 2: Find maximum row count for each section across all ROIs
-          const maxSectionLengths = {
-            header: Math.max(
-              ...roiStructuredData.map((roi) => roi.header.length)
-            ),
-            spikeData: Math.max(
-              ...roiStructuredData.map((roi) => roi.spikeData.length)
-            ),
-            spikeMetrics: Math.max(
-              ...roiStructuredData.map((roi) => roi.spikeMetrics.length)
-            ),
-            burstData: Math.max(
-              ...roiStructuredData.map((roi) => roi.burstData.length)
-            ),
-            burstMetrics: Math.max(
-              ...roiStructuredData.map((roi) => roi.burstMetrics.length)
-            ),
-            footer: Math.max(
-              ...roiStructuredData.map((roi) => roi.footer.length)
-            ),
-          };
-
-          console.log(
-            `[GenerateFullPlateReport] Well ${wellKey} - Max section lengths:`,
-            maxSectionLengths
-          );
-
-          // STEP 3: Pad each section to match maximum length
-          roiStructuredData.forEach((roiSections) => {
-            Object.keys(maxSectionLengths).forEach((sectionName) => {
-              const section = roiSections[sectionName];
-              const maxLength = maxSectionLengths[sectionName];
-              while (section.length < maxLength) {
-                section.push([]); // Add empty row
-              }
-            });
-          });
-
-          // STEP 4: Combine all sections into single blocks for each ROI
-          const roiDataBlocks = roiStructuredData.map((roiSections) => {
-            return [
-              ...roiSections.header,
-              ...roiSections.spikeData,
-              ...roiSections.spikeMetrics,
-              ...roiSections.burstData,
-              ...roiSections.burstMetrics,
-              ...roiSections.footer,
-            ];
-          });
-
-          // STEP 5: Output all ROI blocks side-by-side with proper column separation
-          // All blocks should now have the same number of rows (sections are aligned)
-          const maxLines = Math.max(
-            ...roiDataBlocks.map((block) => block.length)
-          );
-
-          // Find the maximum number of columns needed for each ROI block
-          const maxColumnsPerBlock = roiDataBlocks.map((block) =>
-            Math.max(...block.map((row) => row.length))
-          );
-
-          // Pad each row in each block to match its block's max columns
-          roiDataBlocks.forEach((block, blockIndex) => {
-            const maxCols = maxColumnsPerBlock[blockIndex];
-            block.forEach((row) => {
-              while (row.length < maxCols) {
-                row.push(""); // Empty cell
-              }
-            });
-          });
-
-          // Combine all blocks side-by-side with two empty columns between each ROI block
-          const roiSectionLines = [];
-          for (let lineIndex = 0; lineIndex < maxLines; lineIndex++) {
-            const rowParts = [];
-
-            roiDataBlocks.forEach((block, blockIndex) => {
-              // Add all columns from this ROI block's row
-              const row = block[lineIndex] || [];
-              rowParts.push(...row);
-
-              // Add two empty columns as separator (but not after the last block)
-              if (blockIndex < roiDataBlocks.length - 1) {
-                rowParts.push("");
-                rowParts.push("");
-              }
-            });
-
-            roiSectionLines.push(rowParts.join(","));
-          }
-
-          wellSections.push(roiSectionLines.join("\n"));
-        } catch (roiError) {
-          console.error(
-            `[GenerateFullPlateReport] Error processing ROIs for well ${wellKey}:`,
-            roiError
-          );
-          const roiErrorLines = [
-            "<ROI_ERROR>",
-            `Error processing ROIs: ${roiError.message}`,
-            `Stack: ${roiError.stack}`,
-            "</ROI_ERROR>",
-          ];
-          wellSections.push(roiErrorLines.join("\n"));
-        }
+      // Store spike and burst data for ROI analysis (processed later)
+      if (includeROIAnalysis) {
+        wellData[wellKey] = {
+          spikes,
+          bursts,
+        };
       }
     } catch (error) {
       console.error(
@@ -1033,88 +706,304 @@ export function GenerateFullPlateReport(
   });
 
   // ========================================
-  // GENERATE HORIZONTAL SPIKE_DATA SECTION
+  // ROI SUMMARY TABLE - All Wells Combined
   // ========================================
-  if (includeSpikeData && allWellsData.length > 0) {
-    const spikeDataLines = ["<SPIKE_DATA>"];
+  if (includeROIAnalysis) {
+    try {
+      console.log(
+        `[GenerateFullPlateReport] Building ROI summary table for ${wells.length} wells`
+      );
 
-    // Find maximum number of spikes across all wells
-    const maxSpikes = Math.max(...allWellsData.map((w) => w.spikes.length), 0);
+      const roiTableLines = [];
+      roiTableLines.push("<ROI_SUMMARY_TABLE>");
 
-    if (maxSpikes > 0) {
-      // Build well blocks - each well gets its own vertical block
-      const wellBlocks = allWellsData.map((wellData) => {
-        const block = [];
+      // Add analysis settings section at the top (displayed once)
+      roiTableLines.push("");
+      roiTableLines.push("=== ANALYSIS SETTINGS ===");
+      roiTableLines.push("");
 
-        // Well header - put tag in first column, 11 empty columns after (12 total)
-        block.push(`<WELL: ${wellData.wellKey}>,,,,,,,,,,,`);
+      // Spike Detection Settings
+      roiTableLines.push("SPIKE DETECTION SETTINGS:");
+      roiTableLines.push(
+        `Spike Prominence Factor,${
+          processingParams?.spikeProminenceFactor ?? 0.5
+        }`
+      );
+      roiTableLines.push(
+        `Spike Window Calculation,${
+          processingParams?.spikeWindowNum ?? 5
+        } peaks`
+      );
+      roiTableLines.push(
+        `Min Spike Width,${processingParams?.spikeMinWidth ?? 5} samples`
+      );
+      roiTableLines.push(
+        `Min Spike Distance,${processingParams?.spikeMinDistance ?? 0} samples`
+      );
+      roiTableLines.push("");
 
-        // Well parameters section
-        block.push("<WELL_PARAMETERS>,,,,,,,,,,,");
-        block.push("WellID,OptimalProminence,OptimalWindow,,,,,,,,,");
-        block.push(
-          `${wellData.wellKey},${wellData.optimalProminence},${wellData.optimalWindow},,,,,,,,,`
+      // Burst Detection Settings
+      roiTableLines.push("BURST DETECTION SETTINGS:");
+      roiTableLines.push(
+        `Max Inter-Spike Interval,${
+          processingParams?.maxInterSpikeInterval ?? 50
+        } ms`
+      );
+      roiTableLines.push(
+        `Min Spikes Per Burst,${
+          processingParams?.minSpikesPerBurst ?? 3
+        } spikes`
+      );
+      roiTableLines.push("");
+
+      // Noise Suppression Status
+      roiTableLines.push("NOISE SUPPRESSION STATUS:");
+      roiTableLines.push(
+        `Noise Suppression Active,${
+          processingParams?.noiseSuppressionActive ?? false
+        }`
+      );
+      roiTableLines.push(
+        `Trend Flattening Enabled,${
+          processingParams?.trendFlatteningEnabled ?? false
+        }`
+      );
+      roiTableLines.push(
+        `Smoothing Window,${processingParams?.smoothingWindow ?? "N/A"}`
+      );
+      roiTableLines.push("");
+
+      // Outlier Handling Status and Parameters
+      roiTableLines.push("OUTLIER HANDLING:");
+      roiTableLines.push(
+        `Outlier Handling Active,${processingParams?.handleOutliers ?? false}`
+      );
+      if (processingParams?.handleOutliers) {
+        roiTableLines.push(
+          `Outlier Percentile Threshold,${
+            processingParams?.outlierPercentile ?? 95
+          }th percentile`
         );
-        block.push("</WELL_PARAMETERS>,,,,,,,,,,,");
-
-        // Spikes section
-        block.push("<SPIKES>,,,,,,,,,,,");
-        block.push(
-          "Spike#,Time,PeakY,LeftBaseX,LeftBaseY,RightBaseX,RightBaseY,Amplitude,Width,AUC,LeftProminence,RightProminence"
+        roiTableLines.push(
+          `Outlier Multiplier,${
+            processingParams?.outlierMultiplier ?? 2.0
+          }x median`
         );
+      }
+      roiTableLines.push("");
+      roiTableLines.push("=== ROI DATA ===");
+      roiTableLines.push("");
 
-        // Add spike data rows
-        wellData.spikes.forEach((spike, index) => {
-          const spikeNumber = index + 1;
-          const time = spike.time ?? spike.peakCoords?.x ?? "N/A";
-          const peakY = spike.peakCoords?.y ?? "N/A";
-          const leftBaseX = spike.leftBaseCoords?.x ?? "N/A";
-          const leftBaseY = spike.leftBaseCoords?.y ?? "N/A";
-          const rightBaseX = spike.rightBaseCoords?.x ?? "N/A";
-          const rightBaseY = spike.rightBaseCoords?.y ?? "N/A";
-          const amplitude = spike.amplitude ?? "N/A";
-          const width = spike.width ?? "N/A";
-          const auc = spike.auc ?? "N/A";
-          const leftProminence = spike.prominences?.leftProminence ?? "N/A";
-          const rightProminence = spike.prominences?.rightProminence ?? "N/A";
+      // Use roiList if provided, otherwise treat entire trace as "Full Trace"
+      const roisToAnalyze =
+        roiList && roiList.length > 0
+          ? roiList
+          : [{ xMin: 0, xMax: Infinity, name: "Full Trace" }];
 
-          block.push(
-            `${spikeNumber},${time},${peakY},${leftBaseX},${leftBaseY},${rightBaseX},${rightBaseY},${amplitude},${width},${auc},${leftProminence},${rightProminence}`
+      console.log(
+        `[GenerateFullPlateReport] Processing ${roisToAnalyze.length} ROIs`
+      );
+
+      // Metric names (13 metrics per ROI)
+      const metricNames = [
+        "Number of Spikes",
+        "Spike Frequency (Hz)",
+        "Median Spike Amplitude",
+        "Median Spike Width",
+        "Median Spike AUC",
+        "Total Spike AUC",
+        "Number of Bursts",
+        "Burst Frequency (Hz)",
+        "Median Spikes per Burst",
+        "Median Burst Duration (ms)",
+        "Median Interburst Interval (ms)",
+        "Median Burst AUC",
+        "Total Burst AUC",
+      ];
+
+      // Pre-calculate metrics for all wells and ROIs
+      const wellRoiMetrics = {};
+      wells.forEach(({ key: wellKey }) => {
+        const wellInfo = wellData[wellKey];
+        if (!wellInfo) return;
+
+        const { spikes, bursts } = wellInfo;
+        wellRoiMetrics[wellKey] = [];
+
+        roisToAnalyze.forEach((roi) => {
+          const timeRangeMin = roi.xMin;
+          const timeRangeMax =
+            roi.xMax === Infinity
+              ? Math.max(...spikes.map((s) => s.time ?? s.peakCoords?.x ?? 0))
+              : roi.xMax;
+
+          // Filter spikes and bursts in this ROI
+          const spikesInROI = spikes.filter((spike) => {
+            const time = spike.time ?? spike.peakCoords?.x;
+            return time >= timeRangeMin && time <= timeRangeMax;
+          });
+
+          const burstsInROI = bursts.filter((burst) => {
+            return (
+              burst.endTime >= timeRangeMin && burst.startTime <= timeRangeMax
+            );
+          });
+
+          // Calculate spike metrics
+          const spikeFrequency = calculateSpikeFrequency(
+            spikesInROI,
+            timeRangeMin,
+            timeRangeMax
           );
+          const spikeAmplitude = calculateSpikeAmplitude(spikesInROI);
+          const spikeWidth = calculateSpikeWidth(spikesInROI);
+          const spikeAUC = calculateSpikeAUC(spikesInROI);
+
+          // Calculate burst metrics
+          const burstMetrics = calculateBurstMetrics(
+            burstsInROI,
+            timeRangeMin,
+            timeRangeMax
+          );
+
+          // Store 13 metrics for this ROI
+          wellRoiMetrics[wellKey].push([
+            spikesInROI.length, // Number of Spikes
+            spikeFrequency?.average
+              ? formatMetric(spikeFrequency.average)
+              : "0.0000", // Spike Frequency
+            spikeAmplitude?.median
+              ? formatMetric(spikeAmplitude.median)
+              : "0.0000", // Median Spike Amplitude
+            spikeWidth?.median ? formatMetric(spikeWidth.median) : "0.0000", // Median Spike Width
+            spikeAUC?.median ? formatMetric(spikeAUC.median) : "0.0000", // Median Spike AUC
+            spikesInROI.reduce((sum, s) => sum + (s.auc || 0), 0).toFixed(4), // Total Spike AUC
+            burstsInROI.length, // Number of Bursts
+            burstMetrics?.frequency
+              ? formatMetric(burstMetrics.frequency)
+              : "0.0000", // Burst Frequency
+            burstMetrics?.spikesPerBurst?.median
+              ? formatMetric(burstMetrics.spikesPerBurst.median)
+              : "0.0000", // Median Spikes per Burst
+            burstMetrics?.duration?.median
+              ? formatMetric(burstMetrics.duration.median)
+              : "0.0000", // Median Burst Duration
+            burstMetrics?.interBurstInterval?.median
+              ? formatMetric(burstMetrics.interBurstInterval.median)
+              : "0.0000", // Median Interburst Interval
+            burstMetrics?.auc?.median
+              ? formatMetric(burstMetrics.auc.median)
+              : "0.0000", // Median Burst AUC
+            burstsInROI.reduce((sum, b) => sum + (b.auc || 0), 0).toFixed(4), // Total Burst AUC
+          ]);
+        });
+      });
+
+      // Build side-by-side tables, each ROI gets its own table with header and well labels
+      // Row 1: Headers for each ROI table (consolidated into well label column)
+      const row1 = [];
+      roisToAnalyze.forEach((roi, roiIndex) => {
+        const roiName = roi.name || `ROI ${roiIndex + 1}`;
+        const duration =
+          roi.xMax === Infinity
+            ? "Variable"
+            : ((roi.xMax - roi.xMin) / 1000).toFixed(1);
+        const endValue = roi.xMax === Infinity ? "End of trace" : roi.xMax;
+
+        // Consolidated header in well label column
+        row1.push(
+          `${roiName} | Duration: ${duration}s | Start: ${roi.xMin} | End: ${endValue}`
+        );
+        // Fill remaining columns for this ROI's metrics (13 columns)
+        for (let i = 0; i < 13; i++) {
+          row1.push("");
+        }
+        // Add separator column between tables (except after last ROI)
+        if (roiIndex < roisToAnalyze.length - 1) {
+          row1.push(""); // Empty separator column
+        }
+      });
+      roiTableLines.push(row1.join(","));
+
+      // Row 2: Empty row for spacing
+      const row2 = [];
+      roisToAnalyze.forEach((roi, roiIndex) => {
+        row2.push(""); // Empty well label column
+        // Fill remaining columns for this ROI's metrics (13 columns)
+        for (let i = 0; i < 13; i++) {
+          row2.push("");
+        }
+        if (roiIndex < roisToAnalyze.length - 1) {
+          row2.push(""); // Empty separator column
+        }
+      });
+      roiTableLines.push(row2.join(","));
+
+      // Row 3: Empty spacing row
+      const row3 = [];
+      roisToAnalyze.forEach((roi, roiIndex) => {
+        row3.push(""); // Empty well label column
+        // Fill remaining columns for this ROI's metrics (13 columns)
+        for (let i = 0; i < 13; i++) {
+          row3.push("");
+        }
+        if (roiIndex < roisToAnalyze.length - 1) {
+          row3.push(""); // Empty separator column
+        }
+      });
+      roiTableLines.push(row3.join(","));
+
+      // Row 4: Metric names for each ROI table
+      const row4 = [];
+      roisToAnalyze.forEach((roi, roiIndex) => {
+        row4.push(""); // Empty well label column
+        row4.push(...metricNames); // 13 metric names
+        if (roiIndex < roisToAnalyze.length - 1) {
+          row4.push(""); // Empty separator column
+        }
+      });
+      roiTableLines.push(row4.join(","));
+
+      // Rows 5+: Well data for each ROI table
+      wells.forEach(({ key: wellKey }) => {
+        const metrics = wellRoiMetrics[wellKey];
+        if (!metrics) {
+          console.warn(
+            `[GenerateFullPlateReport] No metrics found for well ${wellKey}`
+          );
+          return;
+        }
+
+        const wellRow = [];
+        roisToAnalyze.forEach((roi, roiIndex) => {
+          wellRow.push(wellKey); // Well label for this ROI table
+          wellRow.push(...metrics[roiIndex]); // 13 metrics for this ROI
+          if (roiIndex < roisToAnalyze.length - 1) {
+            wellRow.push(""); // Empty separator column
+          }
         });
 
-        // Pad with empty rows to match maxSpikes
-        for (let i = wellData.spikes.length; i < maxSpikes; i++) {
-          block.push(",,,,,,,,,,,");
-        }
-
-        block.push("</SPIKES>,,,,,,,,,,,");
-        block.push(`</WELL: ${wellData.wellKey}>,,,,,,,,,,,`);
-
-        return block;
+        roiTableLines.push(wellRow.join(","));
       });
 
-      // Find the maximum number of lines in any block
-      const maxLines = Math.max(...wellBlocks.map((block) => block.length));
+      roiTableLines.push("</ROI_SUMMARY_TABLE>");
+      csvChunks.push(roiTableLines.join("\n"));
 
-      // Pad all blocks to the same height with 12-column empty rows
-      wellBlocks.forEach((block) => {
-        while (block.length < maxLines) {
-          block.push(",,,,,,,,,,,"); // 11 commas = 12 empty columns
-        }
-      });
-
-      // Combine blocks horizontally with comma separator plus one empty column between wells
-      for (let lineIndex = 0; lineIndex < maxLines; lineIndex++) {
-        const rowParts = wellBlocks.map((block) => block[lineIndex]);
-        spikeDataLines.push(rowParts.join(",,")); // Double comma adds empty column separator
-      }
-    } else {
-      spikeDataLines.push("No spikes detected in any well");
+      console.log(
+        `[GenerateFullPlateReport] ROI summary table created with ${wells.length} wells and ${roisToAnalyze.length} ROIs`
+      );
+    } catch (roiError) {
+      console.error(
+        `[GenerateFullPlateReport] Error creating ROI summary table:`,
+        roiError
+      );
+      const roiErrorLines = [
+        "<ROI_ERROR>",
+        `Error creating ROI summary table: ${roiError.message}`,
+        "</ROI_ERROR>",
+      ];
+      csvChunks.push(roiErrorLines.join("\n"));
     }
-
-    spikeDataLines.push("</SPIKE_DATA>");
-    csvChunks.splice(1, 0, spikeDataLines.join("\n")); // Insert after PLATE_PARAMETERS
   }
 
   console.log("[GenerateFullPlateReport] Report generation complete");

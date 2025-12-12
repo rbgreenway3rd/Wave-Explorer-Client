@@ -74,7 +74,8 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
     maxInterSpikeInterval,
     minSpikesPerBurst,
   } = useContext(NeuralContext);
-  const { project, wellArrays } = useContext(DataContext);
+  const { project, wellArrays, extractedIndicatorTimes } =
+    useContext(DataContext);
 
   // Noise suppression state
   const [noiseSuppressionActive, setNoiseSuppressionActive] =

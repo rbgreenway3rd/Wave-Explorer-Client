@@ -43,7 +43,9 @@ const HandleOutlierControls = ({
       elevation={3}
       sx={{
         padding: controlsTheme.spacing.sm,
-        backgroundColor: handleOutliers ? controlsTheme.colors.paper : "rgb(180, 180, 180)",
+        backgroundColor: handleOutliers
+          ? controlsTheme.colors.paper
+          : "rgb(180, 180, 180)",
         borderRadius: "8px",
         border: `2px solid ${controlsTheme.colors.warning}`,
         minWidth: "240px",

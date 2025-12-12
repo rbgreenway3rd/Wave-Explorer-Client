@@ -160,7 +160,15 @@ const NoiseFilterControls = ({
         {/* Detection Controls - Side by side layout with toggles above each control */}
         <Box className="detection-controls-row">
           {/* Outlier Detection Column */}
-          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+          <Box
+            sx={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
+              alignItems: "center",
+            }}
+          >
             <HandleOutliersToggle
               handleOutliers={handleOutliers}
               setHandleOutliers={setHandleOutliers}
@@ -175,7 +183,15 @@ const NoiseFilterControls = ({
           </Box>
 
           {/* Burst Detection Column */}
-          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+          <Box
+            sx={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
+              alignItems: "center",
+            }}
+          >
             <ShowBurstsToggle
               showBursts={showBursts}
               setShowBursts={setShowBursts}
@@ -189,16 +205,6 @@ const NoiseFilterControls = ({
             />
           </Box>
         </Box>
-
-        {/* ROI Management using extracted component */}
-        <ROIControls
-          defineROI={defineROI}
-          setDefineROI={setDefineROI}
-          roiList={roiList}
-          setRoiList={setRoiList}
-          currentRoiIndex={currentRoiIndex}
-          setCurrentRoiIndex={setCurrentRoiIndex}
-        />
       </FormGroup>
     </Box>
   );

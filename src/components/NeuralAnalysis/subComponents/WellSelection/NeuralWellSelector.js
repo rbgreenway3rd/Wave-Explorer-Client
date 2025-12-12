@@ -200,6 +200,7 @@ const NeuralWellSelector = ({
                 }`}
                 data={getChartData(well)}
                 options={getChartOptions()}
+                style={{ width: "100%" }}
               />
             </div>
           </Tooltip>

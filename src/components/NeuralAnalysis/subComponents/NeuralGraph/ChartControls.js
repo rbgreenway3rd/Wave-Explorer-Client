@@ -192,28 +192,31 @@ const ChartControls = ({
 
       <div className="chart-controls-divider" />
 
-      {/* Pan/Zoom and ROI Controls */}
-      <PanZoomControls
-        defineROI={defineROI}
-        setDefineROI={setDefineROI}
-        enablePanZoom={enablePanZoom}
-        setEnablePanZoom={setEnablePanZoom}
-        zoomState={zoomState}
-        setZoomState={setZoomState}
-        panState={panState}
-        setPanState={setPanState}
-        resetZoom={resetZoom}
-      />
+      {/* Chart Interaction and ROI Controls - grouped together */}
+      <div style={{ display: "flex", flexDirection: "row", gap: 4 }}>
+        {/* Pan/Zoom Controls */}
+        <PanZoomControls
+          defineROI={defineROI}
+          setDefineROI={setDefineROI}
+          enablePanZoom={enablePanZoom}
+          setEnablePanZoom={setEnablePanZoom}
+          zoomState={zoomState}
+          setZoomState={setZoomState}
+          panState={panState}
+          setPanState={setPanState}
+          resetZoom={resetZoom}
+        />
 
-      {/* ROI Management */}
-      <ROIControls
-        defineROI={defineROI}
-        setDefineROI={setDefineROI}
-        roiList={roiList}
-        setRoiList={setRoiList}
-        currentRoiIndex={currentRoiIndex}
-        setCurrentRoiIndex={setCurrentRoiIndex}
-      />
+        {/* ROI Management */}
+        <ROIControls
+          defineROI={defineROI}
+          setDefineROI={setDefineROI}
+          roiList={roiList}
+          setRoiList={setRoiList}
+          currentRoiIndex={currentRoiIndex}
+          setCurrentRoiIndex={setCurrentRoiIndex}
+        />
+      </div>
 
       <div className="chart-controls-divider" />
 

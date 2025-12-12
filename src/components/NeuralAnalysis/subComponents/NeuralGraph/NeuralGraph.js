@@ -366,12 +366,18 @@ const NeuralGraph = forwardRef(
       roiList.forEach((roi, idx) => {
         if (roi && roi.xMin !== undefined && roi.xMax !== undefined) {
           const color = roiColors[idx % roiColors.length];
+          // Use null coalescing to set yMin/yMax to full range if not specified
+          const yMin =
+            roi.yMin !== null && roi.yMin !== undefined ? roi.yMin : 0;
+          const yMax =
+            roi.yMax !== null && roi.yMax !== undefined ? roi.yMax : localMaxY;
+
           allRoiAnnotations[`roi${idx + 1}`] = {
             type: "box",
             xMin: roi.xMin,
             xMax: roi.xMax,
-            yMin: roi.yMin,
-            yMax: roi.yMax,
+            yMin: yMin,
+            yMax: yMax,
             backgroundColor: color.bg,
             borderColor: color.border,
             borderWidth: 2,
