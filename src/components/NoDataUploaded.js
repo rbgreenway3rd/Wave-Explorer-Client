@@ -1,17 +1,19 @@
 import React from "react";
 import "./NoDataUploaded.css";
-import WaveFrontLogo from "../../src/assets/brand/WaveFrontLogo.webp";
-import Typography from "@mui/material/Typography";
+import WaveFront from "../assets/brand/WaveFront.png";
 
 export const NoDataUploaded = () => {
   return (
     <div className="no-data-uploaded">
       <section className="image-container">
-        <img
-          src={WaveFrontLogo}
-          alt="WaveFront logo"
-          className="wavefront-logo"
-        />
+        <div className="logo-wrapper">
+          <div className="logo-background"></div>
+          <img
+            src={WaveFront}
+            alt="WaveFront logo"
+            className="wavefront-logo"
+          />
+        </div>
       </section>
     </div>
   );
