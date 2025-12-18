@@ -392,9 +392,9 @@ const NeuralGraph = forwardRef(
       localMaxY,
     ]);
 
-    // Mouse event handlers for ROI selection (only active if defineROI is true)
+    // Mouse event handlers for ROI selection (only active if defineROI is true and currentRoiIndex is set)
     const handleMouseDown = (event) => {
-      if (!defineROI) return;
+      if (!defineROI || currentRoiIndex === null) return;
       const chart = neuralGraphRef.current;
       if (!chart) return;
       const rect = chart.canvas.getBoundingClientRect();
@@ -406,7 +406,7 @@ const NeuralGraph = forwardRef(
 
     const handleMouseMove = useCallback(
       (event) => {
-        if (!defineROI || !isSelectingROI) return;
+        if (!defineROI || !isSelectingROI || currentRoiIndex === null) return;
         const chart = neuralGraphRef.current;
         if (!chart) return;
         const rect = chart.canvas.getBoundingClientRect();
@@ -445,6 +445,15 @@ const NeuralGraph = forwardRef(
     const handleMouseUp = (event) => {
       if (!defineROI || !isSelectingROI) return;
       setIsSelectingROI(false);
+      
+      // Only process ROI if currentRoiIndex is set
+      if (currentRoiIndex === null) {
+        // Clear any temporary annotation
+        setRoiAnnotation(null);
+        setAnnotationKey((k) => k + 1);
+        return;
+      }
+      
       const chart = neuralGraphRef.current;
       if (!chart) return;
       const rect = chart.canvas.getBoundingClientRect();
@@ -456,27 +465,10 @@ const NeuralGraph = forwardRef(
       let xMaxVal = chart.scales.x.getValueForPixel(xMax);
 
       // Use the color for the current ROI being defined
-      const currentColor =
-        currentRoiIndex !== null
-          ? roiColors[currentRoiIndex % roiColors.length]
-          : roiColors[0]; // Fallback to first color
+      const currentColor = roiColors[currentRoiIndex % roiColors.length];
 
-      setRoiAnnotation({
-        type: "box",
-        xMin: xMinVal,
-        xMax: xMaxVal,
-        yMin: chart.scales.y.min,
-        yMax: chart.scales.y.max,
-        backgroundColor: currentColor.bg,
-        borderColor: currentColor.border,
-        borderWidth: 2,
-      });
-      setAnnotationKey((k) => k + 1);
-
-      // If in ROI definition mode for a specific index, add ROI to list and clear currentRoiIndex
+      // Add ROI to list and clear currentRoiIndex
       if (
-        defineROI &&
-        currentRoiIndex !== null &&
         typeof setRoiList === "function" &&
         typeof setCurrentRoiIndex === "function"
       ) {
@@ -490,6 +482,9 @@ const NeuralGraph = forwardRef(
         updatedRois[currentRoiIndex] = newRoi;
         setRoiList(updatedRois);
         setCurrentRoiIndex(null);
+        // Clear temporary annotation since it's now in roiList
+        setRoiAnnotation(null);
+        setAnnotationKey((k) => k + 1);
       }
     };
 
