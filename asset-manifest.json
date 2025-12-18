@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "./static/css/main.e4787a9f.css",
-    "main.js": "./static/js/main.cac54fae.js",
+    "main.js": "./static/js/main.39b0ba60.js",
     "static/js/205.1536786e.chunk.js": "./static/js/205.1536786e.chunk.js",
     "static/js/72.8bcafafa.chunk.js": "./static/js/72.8bcafafa.chunk.js",
     "static/js/787.9e9f4ffd.chunk.js": "./static/js/787.9e9f4ffd.chunk.js",
@@ -11,13 +11,13 @@
     "static/media/WaveGuideLogo.webp": "./static/media/WaveGuideLogo.0fba101da78db2310933.webp",
     "index.html": "./index.html",
     "main.e4787a9f.css.map": "./static/css/main.e4787a9f.css.map",
-    "main.cac54fae.js.map": "./static/js/main.cac54fae.js.map",
+    "main.39b0ba60.js.map": "./static/js/main.39b0ba60.js.map",
     "205.1536786e.chunk.js.map": "./static/js/205.1536786e.chunk.js.map",
     "72.8bcafafa.chunk.js.map": "./static/js/72.8bcafafa.chunk.js.map",
     "787.9e9f4ffd.chunk.js.map": "./static/js/787.9e9f4ffd.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.e4787a9f.css",
-    "static/js/main.cac54fae.js"
+    "static/js/main.39b0ba60.js"
   ]
 }
