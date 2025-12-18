@@ -61,7 +61,9 @@ function calculateSpikeAmplitude(spikes) {
  * Calculate spike width metrics
  */
 function calculateSpikeWidth(spikes) {
-  const spikesWithWidth = spikes.filter((spike) => spike.width);
+  const spikesWithWidth = spikes.filter(
+    (spike) => typeof spike.width === "number"
+  );
   if (spikesWithWidth.length === 0) {
     return { average: 0, median: 0, min: 0, max: 0 };
   }
@@ -88,7 +90,7 @@ function calculateSpikeWidth(spikes) {
  * Calculate spike AUC metrics
  */
 function calculateSpikeAUC(spikes) {
-  const spikesWithAUC = spikes.filter((spike) => spike.auc);
+  const spikesWithAUC = spikes.filter((spike) => typeof spike.auc === "number");
   if (spikesWithAUC.length === 0) {
     return { average: 0, median: 0, min: 0, max: 0 };
   }

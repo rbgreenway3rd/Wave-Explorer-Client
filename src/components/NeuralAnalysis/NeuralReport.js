@@ -60,7 +60,10 @@ function calculateSpikeAmplitude(spikes, startTime, endTime) {
  */
 function calculateSpikeWidth(spikes, startTime, endTime) {
   const spikesInRange = spikes.filter(
-    (spike) => spike.time >= startTime && spike.time <= endTime && spike.width
+    (spike) =>
+      spike.time >= startTime &&
+      spike.time <= endTime &&
+      typeof spike.width === "number"
   );
   if (spikesInRange.length === 0) {
     return { average: 0, median: 0, min: 0, max: 0 };
@@ -89,7 +92,10 @@ function calculateSpikeWidth(spikes, startTime, endTime) {
  */
 function calculateSpikeAUC(spikes, startTime, endTime) {
   const spikesInRange = spikes.filter(
-    (spike) => spike.time >= startTime && spike.time <= endTime && spike.auc
+    (spike) =>
+      spike.time >= startTime &&
+      spike.time <= endTime &&
+      typeof spike.auc === "number"
   );
   if (spikesInRange.length === 0) {
     return { average: 0, median: 0, min: 0, max: 0 };

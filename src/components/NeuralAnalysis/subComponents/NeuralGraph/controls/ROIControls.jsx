@@ -552,7 +552,7 @@ const ROIControls = ({
           }}
         >
           <TextField
-            label="Start Time (s)"
+            label="Start Time"
             type="number"
             size="small"
             value={newRoiStart}
@@ -582,37 +582,7 @@ const ROIControls = ({
             }}
           />
           <TextField
-            label="End Time (s)"
-            type="number"
-            size="small"
-            value={newRoiEnd}
-            onChange={(e) => setNewRoiEnd(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && isCreateButtonEnabled()) {
-                handleCreateRoiFromTimes();
-              }
-            }}
-            sx={{
-              width: "140px",
-              "& .MuiInputBase-root": {
-                backgroundColor: controlsTheme.colors.paper,
-                fontSize: `${controlsTheme.typography.fontSize.sm}px`,
-              },
-              "& .MuiInputBase-input": {
-                color: "#ffffff",
-              },
-              "& .MuiInputLabel-root": {
-                fontSize: `${controlsTheme.typography.fontSize.sm}px`,
-                color: "#ffffff",
-              },
-            }}
-            inputProps={{
-              step: 0.1,
-              min: 0,
-            }}
-          />
-          <TextField
-            label="Duration (s)"
+            label="Duration"
             type="number"
             size="small"
             value={newRoiDuration}
@@ -641,6 +611,37 @@ const ROIControls = ({
               min: 0.01,
             }}
           />
+          <TextField
+            label="End Time"
+            type="number"
+            size="small"
+            value={newRoiEnd}
+            onChange={(e) => setNewRoiEnd(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && isCreateButtonEnabled()) {
+                handleCreateRoiFromTimes();
+              }
+            }}
+            sx={{
+              width: "140px",
+              "& .MuiInputBase-root": {
+                backgroundColor: controlsTheme.colors.paper,
+                fontSize: `${controlsTheme.typography.fontSize.sm}px`,
+              },
+              "& .MuiInputBase-input": {
+                color: "#ffffff",
+              },
+              "& .MuiInputLabel-root": {
+                fontSize: `${controlsTheme.typography.fontSize.sm}px`,
+                color: "#ffffff",
+              },
+            }}
+            inputProps={{
+              step: 0.1,
+              min: 0,
+            }}
+          />
+
           <button
             onClick={handleCreateRoiFromTimes}
             disabled={!isCreateButtonEnabled()}

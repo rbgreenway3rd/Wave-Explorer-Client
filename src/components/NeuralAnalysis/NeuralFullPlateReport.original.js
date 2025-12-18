@@ -2,34 +2,52 @@
  * BatchNeuralReport.js
  * Generates CSV reports for full-plate neural analysis
  * Each well gets optimized spike detection parameters
+ * 
+ * NOW USES WEB WORKERS FOR PARALLEL PROCESSING
  */
 
-import { detectSpikes } from "./utilities/detectSpikes";
-import { detectBursts } from "./utilities/burstDetection";
-import {
-  trendFlattening,
-  baselineCorrected,
-} from "./utilities/neuralSmoothing";
-import { suppressNoise } from "./utilities/noiseSuppression";
-import {
-  removeOutliers,
-  readdOutliersAsSpikes,
-} from "./utilities/outlierRemoval";
+import { WorkerPool } from "../../utilities/workerPoolManager";
+
+// ORIGINAL IMPORTS (kept for reference - commented out original implementation below)
+// import { detectSpikes } from "./utilities/detectSpikes";
+// import { detectBursts } from "./utilities/burstDetection";
+// import {
+//   trendFlattening,
+//   baselineCorrected,
+// } from "./utilities/neuralSmoothing";
+// import { suppressNoise } from "./utilities/noiseSuppression";
+// import {
+//   removeOutliers,
+//   readdOutliersAsSpikes,
+// } from "./utilities/outlierRemoval";
+
+// ============================================================================
+// ORIGINAL IMPLEMENTATION - COMMENTED OUT FOR REFERENCE
+// This code has been replaced with web worker implementation below
+// The CSV structure remains EXACTLY the same
+// ============================================================================
+
+/*
+// ORIGINAL HELPER FUNCTIONS (now in worker)
 
 /**
  * Fast number formatting - replaces toFixed(4) for performance
  * ~3x faster than toFixed() for metrics calculation
- */
+ * /
 function formatMetric(num) {
   if (num === 0) return "0.0000";
   if (num == null || isNaN(num)) return "N/A";
   // Use Math.round for faster formatting than toFixed()
   return (Math.round(num * 10000) / 10000).toString();
 }
+*/
+
+/*
+// ORIGINAL METRIC CALCULATION FUNCTIONS (now in worker)
 
 /**
  * Calculate spike frequency metrics
- */
+ * /
 function calculateSpikeFrequency(spikes, startTime, endTime) {
   const spikesInRange = spikes.filter(
     (spike) => spike.time >= startTime && spike.time <= endTime
@@ -47,7 +65,7 @@ function calculateSpikeFrequency(spikes, startTime, endTime) {
 
 /**
  * Calculate spike amplitude metrics
- */
+ * /
 function calculateSpikeAmplitude(spikes) {
   if (spikes.length === 0) {
     return { average: 0, median: 0, min: 0, max: 0 };
@@ -74,7 +92,7 @@ function calculateSpikeAmplitude(spikes) {
 
 /**
  * Calculate spike width metrics
- */
+ * /
 function calculateSpikeWidth(spikes) {
   const spikesWithWidth = spikes.filter(
     (spike) => typeof spike.width === "number"
@@ -103,7 +121,7 @@ function calculateSpikeWidth(spikes) {
 
 /**
  * Calculate spike AUC metrics
- */
+ * /
 function calculateSpikeAUC(spikes) {
   const spikesWithAUC = spikes.filter((spike) => typeof spike.auc === "number");
   if (spikesWithAUC.length === 0) {
@@ -130,7 +148,7 @@ function calculateSpikeAUC(spikes) {
 
 /**
  * Calculate burst metrics
- */
+ * /
 function calculateBurstMetrics(bursts, startTime, endTime) {
   if (bursts.length === 0) {
     return {
@@ -221,7 +239,7 @@ function calculateBurstMetrics(bursts, startTime, endTime) {
 
 /**
  * Suggest prominence based on signal variance (matches NeuralPipeline)
- */
+ * /
 function suggestProminence(signal, factor = 0.5) {
   if (!Array.isArray(signal) || signal.length === 0) return 1;
   const ySignal = signal.map((pt) => pt.y);
@@ -233,7 +251,7 @@ function suggestProminence(signal, factor = 0.5) {
 
 /**
  * Suggest window based on prominence (matches NeuralPipeline algorithm)
- */
+ * /
 function suggestWindow(signal, prominence, num = 5) {
   if (!Array.isArray(signal) || signal.length === 0) return 20;
 
@@ -266,30 +284,38 @@ function suggestWindow(signal, prominence, num = 5) {
 
   return optimalWindowWidth;
 }
+*/
+
+// ============================================================================
+// NEW WEB WORKER IMPLEMENTATION
+// Maintains EXACT same CSV structure as original
+// Processes wells in parallel using web workers for significant speed improvement
+// ============================================================================
 
 /**
- * Generate full-plate neural analysis CSV report
+ * Generate full-plate neural analysis CSV report using web workers
  *
  * @param {Object} project - Project metadata
  * @param {Array} wells - Array of well objects to process
  * @param {Object} processingParams - Processing parameters (noise suppression, baseline, etc.)
  * @param {Object} options - Report options (what sections to include)
  * @param {Function} onProgress - Optional callback for progress updates (wellIndex, totalWells)
- * @returns {string} CSV formatted string
+ * @param {Array} roiList - ROI definitions for ROI analysis
+ * @returns {Promise<string>} CSV formatted string
  */
-export function GenerateFullPlateReport(
+export async function GenerateFullPlateReport(
   project,
   wells,
   processingParams,
   options = {},
   onProgress = null,
-  roiList = [] // Add roiList parameter
+  roiList = []
 ) {
   console.log(
-    "[GenerateFullPlateReport] Starting full-plate report generation"
+    "[GenerateFullPlateReport - Worker Mode] Starting full-plate report generation"
   );
-  console.log(`[GenerateFullPlateReport] Processing ${wells.length} wells`);
-  console.log(`[GenerateFullPlateReport] ROIs defined: ${roiList.length}`);
+  console.log(`[GenerateFullPlateReport - Worker Mode] Processing ${wells.length} wells in parallel`);
+  console.log(`[GenerateFullPlateReport - Worker Mode] ROIs defined: ${roiList.length}`);
 
   const {
     includeSpikeData = true,

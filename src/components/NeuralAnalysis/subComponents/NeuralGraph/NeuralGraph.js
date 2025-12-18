@@ -98,8 +98,8 @@ const NeuralGraph = forwardRef(
     const isNumArray = (arr) =>
       Array.isArray(arr) && arr.length > 0 && typeof arr[0] === "number";
 
+    // Initialize chart data once when well is selected
     useEffect(() => {
-      // Always create a new chartData object when processedSignal changes
       if (
         !processedSignal ||
         !Array.isArray(processedSignal) ||
@@ -108,10 +108,32 @@ const NeuralGraph = forwardRef(
         setChartData(null);
         return;
       }
-      // Detection is handled in NeuralControls; here we just visualize peakResults from context
-      // Always map processedSignal to {x, y} objects for Chart.js (now guaranteed to be {x, y})
+
+      // Only set initial chart data if it doesn't exist
+      if (!chartData) {
+        const chartPoints = processedSignal.map((pt) => ({ x: pt.x, y: pt.y }));
+        setChartData({
+          datasets: [
+            {
+              label: "Neural Data",
+              data: chartPoints,
+              borderColor: "rgb(0, 200, 255)",
+              borderWidth: 1.5,
+              fill: false,
+            },
+          ],
+        });
+      }
+    }, [processedSignal, chartData]);
+
+    // Update chart data imperatively to preserve zoom state
+    useEffect(() => {
+      const chart = neuralGraphRef.current;
+      if (!chart || !processedSignal || processedSignal.length === 0) return;
+
+      // Prepare updated datasets
       const chartPoints = processedSignal.map((pt) => ({ x: pt.x, y: pt.y }));
-      // Add scatter overlay for detected peaks (NeuralPeak)
+
       let peakScatter = [];
       if (Array.isArray(peakResults) && peakResults.length > 0) {
         peakScatter = peakResults.map((pk) => ({
@@ -119,135 +141,257 @@ const NeuralGraph = forwardRef(
           y: pk.peakCoords.y,
         }));
       }
-      // Add scatter overlay for bases of detected peaks
+
       let baseScatter = [];
       if (Array.isArray(peakResults) && peakResults.length > 0) {
-        // Draw both left and right bases for each peak
         baseScatter = peakResults.flatMap((pk) => [
           { x: pk.leftBaseCoords.x, y: pk.leftBaseCoords.y },
           { x: pk.rightBaseCoords.x, y: pk.rightBaseCoords.y },
         ]);
       }
 
-      setChartData({
-        datasets: [
-          ...(baseScatter.length > 0
-            ? [
-                {
-                  type: "scatter",
-                  label: "Spike Bases",
-                  data: baseScatter,
-                  pointBackgroundColor: "#ffffffff",
-                  pointBorderColor: "#fff",
-                  pointRadius: 4,
-                  showLine: false,
-                  borderWidth: 0,
-                },
-              ]
-            : []),
-          {
-            label: noiseSuppressionActive
-              ? "Noise Suppressed Data"
-              : "Neural Data",
-            data: chartPoints,
-            borderColor: noiseSuppressionActive
-              ? "#00bcd4"
-              : "rgb(0, 200, 255)",
-            borderWidth: 1.5,
-            fill: false,
-          },
-          ...(peakScatter.length > 0
-            ? [
-                {
-                  type: "scatter",
-                  label: "Detected Spikes",
-                  data: peakScatter,
-                  pointBackgroundColor: "#ff1744",
-                  pointBorderColor: "#fff",
-                  pointRadius: 5,
-                  showLine: false,
-                  borderWidth: 0,
-                },
-              ]
-            : []),
-        ],
-      });
-    }, [
-      processedSignal,
-      noiseSuppressionActive,
-      findPeaksWindowWidth,
-      peakProminence,
-      peakResults,
-    ]);
+      const newDatasets = [
+        ...(baseScatter.length > 0
+          ? [
+              {
+                type: "scatter",
+                label: "Spike Bases",
+                data: baseScatter,
+                pointBackgroundColor: "#ffffffff",
+                pointBorderColor: "#fff",
+                pointRadius: 4,
+                showLine: false,
+                borderWidth: 0,
+              },
+            ]
+          : []),
+        {
+          label: noiseSuppressionActive
+            ? "Noise Suppressed Data"
+            : "Neural Data",
+          data: chartPoints,
+          borderColor: noiseSuppressionActive ? "#00bcd4" : "rgb(0, 200, 255)",
+          borderWidth: 1.5,
+          fill: false,
+        },
+        ...(peakScatter.length > 0
+          ? [
+              {
+                type: "scatter",
+                label: "Detected Spikes",
+                data: peakScatter,
+                pointBackgroundColor: "#ff1744",
+                pointBorderColor: "#fff",
+                pointRadius: 5,
+                showLine: false,
+                borderWidth: 0,
+              },
+            ]
+          : []),
+      ];
 
-    const chartOptions = {
-      normalized: true,
-      maintainAspectRatio: false,
-      responsive: true,
-      devicePixelRatio: window.devicePixelRatio || 1,
-      spanGaps: false,
-      events: defineROI
+      // Mutate chart data imperatively without triggering re-render
+      chart.data.datasets = newDatasets;
+      chart.update("none"); // Update without animation to preserve zoom
+    }, [processedSignal, noiseSuppressionActive, peakResults]);
+
+    // Memoize chartOptions with NO dependencies to prevent recreation
+    // Initialize with pan/zoom enabled based on initial props
+    const initialPanZoomEnabled = enablePanZoom && !defineROI;
+    const chartOptions = useMemo(
+      () => ({
+        normalized: true,
+        maintainAspectRatio: false,
+        responsive: true,
+        devicePixelRatio: window.devicePixelRatio || 1,
+        spanGaps: false,
+        events: initialPanZoomEnabled
+          ? [
+              "mousedown",
+              "mousemove",
+              "mouseup",
+              "mouseout",
+              "click",
+              "touchstart",
+              "touchmove",
+              "wheel",
+            ]
+          : ["mousemove", "mouseout", "click", "touchstart", "touchmove"],
+        animation: { duration: 0 },
+        parsing: false,
+        plugins: {
+          legend: false,
+          decimation: {
+            enabled: decimationEnabled,
+            algorithm: "lttb",
+            samples: decimationSamples,
+            threshold: 50,
+          },
+          tooltip: {
+            enabled: false,
+          },
+          annotation: {
+            annotations: {},
+          },
+          zoom: {
+            limits: {
+              x: { minRange: 0 },
+            },
+            pan: {
+              enabled: initialPanZoomEnabled && panState,
+              mode: initialPanZoomEnabled && panState ? "x" : false,
+            },
+            zoom: {
+              wheel: { enabled: initialPanZoomEnabled && zoomState },
+              pinch: { enabled: initialPanZoomEnabled && zoomState },
+              mode: initialPanZoomEnabled && zoomState ? "x" : false,
+            },
+          },
+        },
+        elements: {
+          point: { radius: 0 },
+          line: { borderWidth: 1.5 },
+        },
+        layout: {
+          autoPadding: false,
+          padding: { left: -30, bottom: -30 },
+        },
+        scales: {
+          x: {
+            type: "time",
+            ticks: { display: false },
+            grid: { display: false },
+          },
+          y: {
+            ticks: { display: false },
+            grid: { display: false },
+          },
+        },
+        transitions: {
+          zoom: {
+            animation: {
+              duration: 0,
+            },
+          },
+        },
+      }),
+      []
+    ); // Empty array = create once, never recreate
+
+    // Mutate chart options in place when controls change (preserves zoom)
+    useEffect(() => {
+      const chart = neuralGraphRef.current;
+      if (!chart) return;
+
+      // Mutate decimation settings
+      chart.options.plugins.decimation.enabled = decimationEnabled;
+      chart.options.plugins.decimation.samples = decimationSamples;
+
+      // Mutate zoom/pan settings
+      const isPanZoomEnabled = enablePanZoom && !defineROI;
+      chart.options.plugins.zoom.pan.enabled = isPanZoomEnabled && panState;
+      chart.options.plugins.zoom.pan.mode =
+        isPanZoomEnabled && panState ? "x" : false;
+      chart.options.plugins.zoom.zoom.wheel.enabled =
+        isPanZoomEnabled && zoomState;
+      chart.options.plugins.zoom.zoom.pinch.enabled =
+        isPanZoomEnabled && zoomState;
+      chart.options.plugins.zoom.zoom.mode =
+        isPanZoomEnabled && zoomState ? "x" : false;
+
+      // Mutate event handlers based on ROI mode
+      chart.options.events = defineROI
         ? ["mousedown", "mousemove", "mouseup", "mouseout"]
-        : [
+        : isPanZoomEnabled
+        ? [
+            "mousedown",
             "mousemove",
+            "mouseup",
             "mouseout",
             "click",
             "touchstart",
             "touchmove",
-            ...(enablePanZoom && !defineROI ? ["wheel", "mousedown"] : []),
-          ],
-      animation: { duration: 0 },
-      parsing: false,
-      plugins: {
-        legend: false,
-        decimation: {
-          enabled: decimationEnabled,
-          algorithm: "lttb",
-          samples: decimationSamples,
-          threshold: 50,
-        },
-        tooltip: {
-          enabled: false,
-          roiList,
-          setRoiList,
-          currentRoiIndex,
-          setCurrentRoiIndex,
-        },
-        zoom: {
-          pan: {
-            enabled: enablePanZoom && !defineROI && panState,
-            mode: panState ? "x" : undefined,
-          },
-          zoom: {
-            wheel: { enabled: enablePanZoom && !defineROI && zoomState },
-            pinch: { enabled: enablePanZoom && !defineROI && zoomState },
-            mode: "x",
-          },
-        },
-      },
-      elements: {
-        point: { radius: 0 },
-        line: { borderWidth: 1.5 },
-      },
-      layout: {
-        autoPadding: false,
-        padding: { left: -30, bottom: -30 },
-      },
-      scales: {
-        x: {
-          type: "time",
-          ticks: { display: false },
-          grid: { display: false },
-        },
-        y: {
-          ticks: { display: false },
-          grid: { display: false },
-          // max: globalMaxY !== undefined ? globalMaxY : undefined,
-          // max: localMaxY,
-        },
-      },
-    };
-    // console.log(globalMaxY);
+            "wheel",
+          ]
+        : ["mousemove", "mouseout", "click", "touchstart", "touchmove"];
+
+      // Use regular update() to reinitialize zoom plugin event handlers
+      // This is necessary for pan/zoom to work properly when enabled
+      chart.update();
+    }, [
+      defineROI,
+      enablePanZoom,
+      panState,
+      zoomState,
+      decimationEnabled,
+      decimationSamples,
+    ]);
+
+    // Mutate annotation options in place for ROI and burst visualizations
+    useEffect(() => {
+      const chart = neuralGraphRef.current;
+      if (!chart) return;
+
+      // Build annotations object
+      const allRoiAnnotations = {};
+
+      // Add ROI boxes from roiList
+      if (Array.isArray(roiList)) {
+        roiList.forEach((roi, idx) => {
+          if (roi && roi.xMin !== undefined && roi.xMax !== undefined) {
+            const color = roiColors[idx % roiColors.length];
+            const yMin =
+              roi.yMin !== null && roi.yMin !== undefined ? roi.yMin : 0;
+            const yMax =
+              roi.yMax !== null && roi.yMax !== undefined
+                ? roi.yMax
+                : localMaxY;
+
+            allRoiAnnotations[`roi${idx + 1}`] = {
+              type: "box",
+              xMin: roi.xMin,
+              xMax: roi.xMax,
+              yMin: yMin,
+              yMax: yMax,
+              backgroundColor: color.bg,
+              borderColor: color.border,
+              borderWidth: 2,
+            };
+          }
+        });
+      }
+
+      // Add burst annotations if enabled
+      if (showBursts && Array.isArray(burstResults)) {
+        burstResults.forEach((burst, idx) => {
+          allRoiAnnotations[`burst${idx + 1}`] = {
+            type: "box",
+            xMin: burst.startTime,
+            xMax: burst.endTime,
+            backgroundColor: "rgba(255, 247, 0, 0.2)",
+            borderColor: "rgba(246, 255, 0, 0.5)",
+            borderWidth: 1,
+          };
+        });
+      }
+
+      // Add the currently drawn ROI (if any)
+      if (roiAnnotation) {
+        allRoiAnnotations[`roiCurrent`] = roiAnnotation;
+      }
+
+      // Mutate annotations in place
+      chart.options.plugins.annotation.annotations = allRoiAnnotations;
+      chart.update("none");
+    }, [
+      roiList,
+      showBursts,
+      burstResults,
+      roiAnnotation,
+      roiColors,
+      localMaxY,
+    ]);
+
     // Mouse event handlers for ROI selection (only active if defineROI is true)
     const handleMouseDown = (event) => {
       if (!defineROI) return;
@@ -357,65 +501,13 @@ const NeuralGraph = forwardRef(
       },
     }));
 
-    // Add annotation plugin config if ROI is present
-    // (chartDataWithAnnotation is unused, so removed)
-
-    // Combine all ROI boxes: completed (roiList) and the one being drawn (roiAnnotation)
-    const allRoiAnnotations = {};
-    if (Array.isArray(roiList)) {
-      roiList.forEach((roi, idx) => {
-        if (roi && roi.xMin !== undefined && roi.xMax !== undefined) {
-          const color = roiColors[idx % roiColors.length];
-          // Use null coalescing to set yMin/yMax to full range if not specified
-          const yMin =
-            roi.yMin !== null && roi.yMin !== undefined ? roi.yMin : 0;
-          const yMax =
-            roi.yMax !== null && roi.yMax !== undefined ? roi.yMax : localMaxY;
-
-          allRoiAnnotations[`roi${idx + 1}`] = {
-            type: "box",
-            xMin: roi.xMin,
-            xMax: roi.xMax,
-            yMin: yMin,
-            yMax: yMax,
-            backgroundColor: color.bg,
-            borderColor: color.border,
-            borderWidth: 2,
-          };
-        }
-      });
-    }
-    // Add burst annotations if enabled
-    if (showBursts && Array.isArray(burstResults)) {
-      burstResults.forEach((burst, idx) => {
-        allRoiAnnotations[`burst${idx + 1}`] = {
-          type: "box",
-          xMin: burst.startTime,
-          xMax: burst.endTime,
-          backgroundColor: "rgba(255, 247, 0, 0.2)",
-          borderColor: "rgba(246, 255, 0, 0.5)",
-          borderWidth: 1,
-        };
-      });
-    }
-    // Add the currently drawn ROI (if any)
-    if (roiAnnotation) {
-      allRoiAnnotations[`roiCurrent`] = roiAnnotation;
-    }
-
     return (
       <>
         {selectedWell && chartData ? (
           <Line
             className={className}
             data={chartData}
-            options={{
-              ...chartOptions,
-              plugins: {
-                ...chartOptions.plugins,
-                annotation: { annotations: allRoiAnnotations },
-              },
-            }}
+            options={chartOptions}
             ref={neuralGraphRef}
             style={{
               background: "rgb(0, 0, 0)",
