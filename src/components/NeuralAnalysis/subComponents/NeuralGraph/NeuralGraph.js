@@ -258,6 +258,7 @@ const NeuralGraph = forwardRef(
         scales: {
           x: {
             type: "linear",
+            grace: 10,
             min:
               processedSignal && processedSignal.length > 0
                 ? Math.min(...processedSignal.map((pt) => pt.x))
