@@ -10,8 +10,8 @@ export const NeuralProvider = ({ children }) => {
   const [peakProminence, setPeakProminence] = useState(1);
   const [peakResults, setPeakResults] = useState([]);
   const [burstResults, setBurstResults] = useState([]);
-  const [showBursts, setShowBursts] = useState(true); // Default to true so burst detection runs automatically
-  const [handleOutliers, setHandleOutliers] = useState(false); // Default to false
+  const [showBursts, setShowBursts] = useState(false); // Default to false
+  const [handleOutliers, setHandleOutliers] = useState(true); // Default to true so outlier handling runs automatically
 
   // Outlier detection parameters
   const [outlierPercentile, setOutlierPercentile] = useState(95); // 95th percentile (top 5%)

@@ -106,7 +106,7 @@ const HandleOutlierControls = ({
             variant="body2"
             sx={{
               color: controlsTheme.colors.textSecondary,
-              fontSize: `${controlsTheme.typography.fontSize.sm}px`,
+              fontSize: `${controlsTheme.typography.fontSize.md}px`,
             }}
           >
             Percentile Threshold
@@ -116,7 +116,7 @@ const HandleOutlierControls = ({
             sx={{
               color: controlsTheme.colors.warning,
               fontWeight: 600,
-              fontSize: `${controlsTheme.typography.fontSize.sm}px`,
+              fontSize: `${controlsTheme.typography.fontSize.md}px`,
             }}
           >
             {outlierPercentile}th
@@ -175,7 +175,7 @@ const HandleOutlierControls = ({
             variant="body2"
             sx={{
               color: controlsTheme.colors.textSecondary,
-              fontSize: `${controlsTheme.typography.fontSize.sm}px`,
+              fontSize: `${controlsTheme.typography.fontSize.md}px`,
             }}
           >
             Median Multiplier
@@ -185,7 +185,7 @@ const HandleOutlierControls = ({
             sx={{
               color: controlsTheme.colors.warning,
               fontWeight: 600,
-              fontSize: `${controlsTheme.typography.fontSize.sm}px`,
+              fontSize: `${controlsTheme.typography.fontSize.md}px`,
             }}
           >
             {outlierMultiplier.toFixed(1)}×

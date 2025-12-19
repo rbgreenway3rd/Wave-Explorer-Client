@@ -195,7 +195,7 @@ const NeuralGraph = forwardRef(
       chart.update("none"); // Update without animation to preserve zoom
     }, [processedSignal, noiseSuppressionActive, peakResults]);
 
-    // Memoize chartOptions with NO dependencies to prevent recreation
+    // Memoize chartOptions - recalculate when processedSignal changes to update axis ranges
     // Initialize with pan/zoom enabled based on initial props
     const initialPanZoomEnabled = enablePanZoom && !defineROI;
     const chartOptions = useMemo(
@@ -253,18 +253,72 @@ const NeuralGraph = forwardRef(
           line: { borderWidth: 1.5 },
         },
         layout: {
-          autoPadding: false,
-          padding: { left: -30, bottom: -30 },
+          padding: { left: 10, right: 10, top: 10, bottom: 10 },
         },
         scales: {
           x: {
-            type: "time",
-            ticks: { display: false },
+            type: "linear",
+            min:
+              processedSignal && processedSignal.length > 0
+                ? Math.min(...processedSignal.map((pt) => pt.x))
+                : undefined,
+            max:
+              processedSignal && processedSignal.length > 0
+                ? Math.max(...processedSignal.map((pt) => pt.x))
+                : undefined,
+            ticks: {
+              display: true,
+              color: "#666666",
+              font: {
+                size: 11,
+                family: "'Roboto', 'Helvetica Neue', 'Arial', sans-serif",
+              },
+              maxRotation: 0,
+              autoSkipPadding: 10,
+            },
             grid: { display: false },
+            border: { display: true, color: "#333333", width: 1 },
+            title: {
+              display: true,
+              text: "Time (ms)",
+              color: "#333333",
+              font: {
+                size: 14,
+                weight: "bold",
+                family: "'Roboto', 'Helvetica Neue', 'Arial', sans-serif",
+              },
+              padding: { top: 8 },
+            },
           },
           y: {
+            ticks: {
+              display: true,
+              color: "#666666",
+              font: {
+                size: 11,
+                family: "'Roboto', 'Helvetica Neue', 'Arial', sans-serif",
+              },
+              maxTicksLimit: 8,
+            },
+            grid: { display: false },
+            border: { display: true, color: "#333333", width: 1 },
+            title: {
+              display: true,
+              text: "Signal Intensity",
+              color: "#333333",
+              font: {
+                size: 14,
+                weight: "bold",
+                family: "'Roboto', 'Helvetica Neue', 'Arial', sans-serif",
+              },
+              padding: { bottom: 8 },
+            },
+          },
+          yRight: {
+            position: "right",
             ticks: { display: false },
             grid: { display: false },
+            border: { display: true, color: "#333333", width: 1 },
           },
         },
         transitions: {
@@ -275,8 +329,8 @@ const NeuralGraph = forwardRef(
           },
         },
       }),
-      []
-    ); // Empty array = create once, never recreate
+      [processedSignal]
+    ); // Recalculate when processedSignal changes to update axis ranges
 
     // Mutate chart options in place when controls change (preserves zoom)
     useEffect(() => {

@@ -1,5 +1,12 @@
 import React from "react";
-import { Paper, Box, Slider, Typography, IconButton } from "@mui/material";
+import {
+  Paper,
+  Box,
+  Slider,
+  Typography,
+  IconButton,
+  Tooltip,
+} from "@mui/material";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import "./BurstDetectionControls.css";
 import { controlsTheme } from "../styles/controlsTheme";
@@ -31,22 +38,21 @@ const BurstDetectionControls = ({
     setMinSpikesPerBurst(DEFAULT_MIN_SPIKES);
   };
 
-  // Don't render if burst detection is disabled
-  if (!showBursts) {
-    return null;
-  }
-
   return (
     <Paper
       elevation={3}
       sx={{
         padding: controlsTheme.spacing.sm,
-        backgroundColor: controlsTheme.colors.paper,
+        backgroundColor: showBursts
+          ? controlsTheme.colors.paper
+          : "rgb(180, 180, 180)",
         borderRadius: "0.5rem",
         border: `0.125rem solid ${controlsTheme.colors.primary}`,
         minWidth: "15rem",
         maxWidth: "20rem",
         flex: 1,
+        opacity: showBursts ? 1 : 0.6,
+        transition: "all 0.2s ease-in-out",
       }}
     >
       {/* Header with title and reset button */}
@@ -68,19 +74,22 @@ const BurstDetectionControls = ({
         >
           Burst Detection Parameters
         </Typography>
-        <IconButton
-          onClick={handleReset}
-          size="small"
-          className="reset-burst-button"
-          sx={{
-            color: controlsTheme.colors.primary,
-            "&:hover": {
-              backgroundColor: "rgba(33, 150, 243, 0.1)",
-            },
-          }}
-        >
-          <RestartAltIcon fontSize="small" />
-        </IconButton>
+        <Tooltip title="Reset to defaults" placement="top">
+          <IconButton
+            onClick={handleReset}
+            disabled={!showBursts}
+            size="small"
+            className="reset-burst-button"
+            sx={{
+              color: controlsTheme.colors.primary,
+              "&:hover": {
+                backgroundColor: "rgba(33, 150, 243, 0.1)",
+              },
+            }}
+          >
+            <RestartAltIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
       </Box>
 
       {/* Max Inter-Spike Interval Slider */}
@@ -97,7 +106,7 @@ const BurstDetectionControls = ({
             variant="body2"
             sx={{
               color: controlsTheme.colors.textSecondary,
-              fontSize: `${controlsTheme.typography.fontSize.sm}px`,
+              fontSize: `${controlsTheme.typography.fontSize.md}px`,
             }}
           >
             Max Inter-Spike Interval
@@ -107,7 +116,7 @@ const BurstDetectionControls = ({
             sx={{
               color: controlsTheme.colors.primary,
               fontWeight: 600,
-              fontSize: `${controlsTheme.typography.fontSize.sm}px`,
+              fontSize: `${controlsTheme.typography.fontSize.md}px`,
             }}
           >
             {maxInterSpikeInterval} ms
@@ -116,6 +125,7 @@ const BurstDetectionControls = ({
         <Slider
           value={maxInterSpikeInterval}
           onChange={(e, value) => setMaxInterSpikeInterval(value)}
+          disabled={!showBursts}
           min={0}
           max={250}
           step={5}
@@ -166,7 +176,7 @@ const BurstDetectionControls = ({
             variant="body2"
             sx={{
               color: controlsTheme.colors.textSecondary,
-              fontSize: `${controlsTheme.typography.fontSize.sm}px`,
+              fontSize: `${controlsTheme.typography.fontSize.md}px`,
             }}
           >
             Min Spikes Per Burst
@@ -176,7 +186,7 @@ const BurstDetectionControls = ({
             sx={{
               color: controlsTheme.colors.primary,
               fontWeight: 600,
-              fontSize: `${controlsTheme.typography.fontSize.sm}px`,
+              fontSize: `${controlsTheme.typography.fontSize.md}px`,
             }}
           >
             {minSpikesPerBurst}
@@ -185,6 +195,7 @@ const BurstDetectionControls = ({
         <Slider
           value={minSpikesPerBurst}
           onChange={(e, value) => setMinSpikesPerBurst(value)}
+          disabled={!showBursts}
           min={2}
           max={10}
           step={1}
