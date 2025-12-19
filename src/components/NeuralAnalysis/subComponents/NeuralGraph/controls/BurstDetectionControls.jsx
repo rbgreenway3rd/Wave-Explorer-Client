@@ -120,10 +120,12 @@ const BurstDetectionControls = ({
           max={250}
           step={5}
           marks={[
-            { value: 0, label: "0" },
-            { value: 100, label: "100" },
-            { value: 200, label: "200" },
-            { value: 250, label: "250" },
+            { value: 10, label: "10ms" },
+            { value: 50, label: "50ms" },
+            { value: 100, label: "100ms" },
+            { value: 150, label: "150ms" },
+            { value: 200, label: "200ms" },
+            { value: 250, label: "250ms" },
           ]}
           sx={{
             color: controlsTheme.colors.primary,
@@ -137,7 +139,7 @@ const BurstDetectionControls = ({
             },
           }}
         />
-        <Typography
+        {/* <Typography
           variant="caption"
           sx={{
             color: controlsTheme.colors.textSecondary,
@@ -147,7 +149,7 @@ const BurstDetectionControls = ({
           }}
         >
           Maximum time between spikes to be grouped in the same burst (ms)
-        </Typography>
+        </Typography> */}
       </Box>
 
       {/* Min Spikes Per Burst Slider */}
@@ -205,17 +207,17 @@ const BurstDetectionControls = ({
             },
           }}
         />
-        <Typography
+        {/* <Typography
           variant="caption"
           sx={{
             color: controlsTheme.colors.textSecondary,
-            fontSize: `${controlsTheme.typography.fontSize.xs}px`,
+            fontSize: `${controlsTheme.typography.fontSize.sm}px`,
             display: "block",
             marginTop: controlsTheme.spacing.xs,
           }}
         >
           Minimum number of spikes required to form a burst
-        </Typography>
+        </Typography> */}
       </Box>
     </Paper>
   );

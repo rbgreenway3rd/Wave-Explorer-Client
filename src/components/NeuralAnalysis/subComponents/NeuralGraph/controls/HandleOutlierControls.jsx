@@ -147,7 +147,7 @@ const HandleOutlierControls = ({
             },
           }}
         />
-        <Typography
+        {/* <Typography
           variant="caption"
           sx={{
             color: controlsTheme.colors.textSecondary,
@@ -158,7 +158,7 @@ const HandleOutlierControls = ({
         >
           Mark peaks in top {(100 - outlierPercentile).toFixed(0)}% by
           prominence
-        </Typography>
+        </Typography> */}
       </Box>
 
       {/* Median Multiplier Slider */}
@@ -203,6 +203,7 @@ const HandleOutlierControls = ({
             { value: 1.0, label: "1.0" },
             { value: 2.0, label: "2.0" },
             { value: 3.0, label: "3.0" },
+            { value: 4.0, label: "4.0" },
             { value: 5.0, label: "5.0" },
           ]}
           sx={{
@@ -217,7 +218,7 @@ const HandleOutlierControls = ({
             },
           }}
         />
-        <Typography
+        {/* <Typography
           variant="caption"
           sx={{
             color: controlsTheme.colors.textSecondary,
@@ -227,7 +228,7 @@ const HandleOutlierControls = ({
           }}
         >
           Minimum prominence relative to median
-        </Typography>
+        </Typography> */}
       </Box>
     </Paper>
   );
