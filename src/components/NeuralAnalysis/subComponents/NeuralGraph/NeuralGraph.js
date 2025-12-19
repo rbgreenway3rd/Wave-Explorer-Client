@@ -341,11 +341,13 @@ const NeuralGraph = forwardRef(
           if (roi && roi.xMin !== undefined && roi.xMax !== undefined) {
             const color = roiColors[idx % roiColors.length];
             const yMin =
-              roi.yMin !== null && roi.yMin !== undefined ? roi.yMin : 0;
+              roi.yMin !== null && roi.yMin !== undefined
+                ? roi.yMin
+                : chart.scales.y.min;
             const yMax =
               roi.yMax !== null && roi.yMax !== undefined
                 ? roi.yMax
-                : localMaxY;
+                : chart.scales.y.max;
 
             allRoiAnnotations[`roi${idx + 1}`] = {
               type: "box",
