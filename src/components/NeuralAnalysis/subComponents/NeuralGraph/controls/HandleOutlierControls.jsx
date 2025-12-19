@@ -72,7 +72,7 @@ const HandleOutlierControls = ({
             fontSize: `${controlsTheme.typography.fontSize.md}px`,
           }}
         >
-          Outlier Detection Parameters
+          Outlier Handling Parameters
         </Typography>
         <Tooltip title="Reset to defaults" placement="top">
           <IconButton
