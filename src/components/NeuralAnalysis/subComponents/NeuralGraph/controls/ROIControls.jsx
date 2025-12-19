@@ -400,7 +400,7 @@ const ROIControls = ({
                   },
                   "& .MuiInputBase-input": {
                     color: "#ffffff",
-                    paddingLeft: 0,
+                    paddingLeft: "0.5rem",
                     paddingRight: 0,
                   },
                   "& .MuiInputLabel-root": {
@@ -432,7 +432,7 @@ const ROIControls = ({
                   },
                   "& .MuiInputBase-input": {
                     color: "#ffffff",
-                    paddingLeft: 0,
+                    paddingLeft: "0.5rem",
                     paddingRight: 0,
                   },
                   "& .MuiInputLabel-root": {
@@ -462,7 +462,7 @@ const ROIControls = ({
                   },
                   "& .MuiInputBase-input": {
                     color: "#ffffff",
-                    paddingLeft: 0,
+                    paddingLeft: "0.5rem",
                     paddingRight: 0,
                   },
                   "& .MuiInputLabel-root": {
@@ -576,14 +576,13 @@ const ROIControls = ({
               },
               "& .MuiInputBase-input": {
                 color: "#ffffff",
-                paddingLeft: 0,
+                paddingLeft: "0.5rem",
                 paddingRight: 0,
               },
               "& .MuiInputLabel-root": {
                 fontSize: `${controlsTheme.typography.fontSize.sm}px`,
                 color: "#ffffff",
               },
-              paddingLeft: 0.1,
             }}
             inputProps={{
               step: 0.1,
@@ -609,7 +608,7 @@ const ROIControls = ({
               },
               "& .MuiInputBase-input": {
                 color: "#ffffff",
-                paddingLeft: 0,
+                paddingLeft: "0.5rem",
                 paddingRight: 0,
               },
               "& .MuiInputLabel-root": {
@@ -641,7 +640,7 @@ const ROIControls = ({
               },
               "& .MuiInputBase-input": {
                 color: "#ffffff",
-                paddingLeft: 0,
+                paddingLeft: "0.5rem",
                 paddingRight: 0,
               },
               "& .MuiInputLabel-root": {
