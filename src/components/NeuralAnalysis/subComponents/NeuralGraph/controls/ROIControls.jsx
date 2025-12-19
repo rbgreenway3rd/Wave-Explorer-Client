@@ -321,7 +321,7 @@ const ROIControls = ({
                 color: isActive
                   ? controlsTheme.colors.text
                   : controlsTheme.colors.text,
-                border: `2px solid ${
+                border: `0.125rem solid ${
                   isActive
                     ? controlsTheme.colors.secondary
                     : isDefined
@@ -342,7 +342,7 @@ const ROIControls = ({
                 transition: `all ${controlsTheme.transitions.normal} ${controlsTheme.transitions.ease}`,
                 marginRight: isDefined ? controlsTheme.spacing.xs : 0,
                 boxShadow: controlsTheme.shadows.sm,
-                minWidth: "120px",
+                minWidth: "7.5rem",
               }}
             >
               {label}
@@ -393,13 +393,15 @@ const ROIControls = ({
                 onKeyDown={(e) => handleKeyDown(i, "start", e)}
                 disabled={pendingRoiIndex !== null && pendingRoiIndex !== i}
                 sx={{
-                  width: "140px",
+                  width: "7rem",
                   "& .MuiInputBase-root": {
                     backgroundColor: controlsTheme.colors.backgroundLight,
                     fontSize: `${controlsTheme.typography.fontSize.sm}px`,
                   },
                   "& .MuiInputBase-input": {
                     color: "#ffffff",
+                    paddingLeft: 0,
+                    paddingRight: 0,
                   },
                   "& .MuiInputLabel-root": {
                     fontSize: `${controlsTheme.typography.fontSize.sm}px`,
@@ -423,13 +425,15 @@ const ROIControls = ({
                 onKeyDown={(e) => handleKeyDown(i, "end", e)}
                 disabled={pendingRoiIndex !== null && pendingRoiIndex !== i}
                 sx={{
-                  width: "140px",
+                  width: "7rem",
                   "& .MuiInputBase-root": {
                     backgroundColor: controlsTheme.colors.backgroundLight,
                     fontSize: `${controlsTheme.typography.fontSize.sm}px`,
                   },
                   "& .MuiInputBase-input": {
                     color: "#ffffff",
+                    paddingLeft: 0,
+                    paddingRight: 0,
                   },
                   "& .MuiInputLabel-root": {
                     fontSize: `${controlsTheme.typography.fontSize.sm}px`,
@@ -451,13 +455,15 @@ const ROIControls = ({
                 onKeyDown={(e) => handleDurationKeyDown(i, e)}
                 disabled={pendingRoiIndex !== null && pendingRoiIndex !== i}
                 sx={{
-                  width: "140px",
+                  width: "7rem",
                   "& .MuiInputBase-root": {
                     backgroundColor: controlsTheme.colors.backgroundLight,
                     fontSize: `${controlsTheme.typography.fontSize.sm}px`,
                   },
                   "& .MuiInputBase-input": {
                     color: "#ffffff",
+                    paddingLeft: 0,
+                    paddingRight: 0,
                   },
                   "& .MuiInputLabel-root": {
                     fontSize: `${controlsTheme.typography.fontSize.sm}px`,
@@ -486,7 +492,7 @@ const ROIControls = ({
         backgroundColor: controlsTheme.colors.paper,
         padding: `${controlsTheme.spacing.md}px`,
         borderRadius: `${controlsTheme.borderRadius.lg}px`,
-        border: `1px solid ${controlsTheme.colors.border}`,
+        border: `0.0625rem solid ${controlsTheme.colors.border}`,
         marginTop: `${controlsTheme.spacing.md}px`,
         marginBottom: `${controlsTheme.spacing.md}px`,
       }}
@@ -499,7 +505,7 @@ const ROIControls = ({
           fontSize: `${controlsTheme.typography.fontSize.md}px`,
           marginBottom: `${controlsTheme.spacing.xs}px`,
           textTransform: "uppercase",
-          letterSpacing: "0.5px",
+          letterSpacing: "0.03125rem",
         }}
       >
         Regions of Interest
@@ -528,7 +534,7 @@ const ROIControls = ({
           padding: `${controlsTheme.spacing.md}px`,
           backgroundColor: controlsTheme.colors.backgroundLight,
           borderRadius: `${controlsTheme.borderRadius.md}px`,
-          border: `1px solid ${controlsTheme.colors.border}`,
+          border: `0.0625rem solid ${controlsTheme.colors.border}`,
         }}
       >
         <Typography
@@ -563,18 +569,21 @@ const ROIControls = ({
               }
             }}
             sx={{
-              width: "140px",
+              width: "7rem",
               "& .MuiInputBase-root": {
                 backgroundColor: controlsTheme.colors.paper,
                 fontSize: `${controlsTheme.typography.fontSize.sm}px`,
               },
               "& .MuiInputBase-input": {
                 color: "#ffffff",
+                paddingLeft: 0,
+                paddingRight: 0,
               },
               "& .MuiInputLabel-root": {
                 fontSize: `${controlsTheme.typography.fontSize.sm}px`,
                 color: "#ffffff",
               },
+              paddingLeft: 0.1,
             }}
             inputProps={{
               step: 0.1,
@@ -593,13 +602,15 @@ const ROIControls = ({
               }
             }}
             sx={{
-              width: "140px",
+              width: "7rem",
               "& .MuiInputBase-root": {
                 backgroundColor: controlsTheme.colors.paper,
                 fontSize: `${controlsTheme.typography.fontSize.sm}px`,
               },
               "& .MuiInputBase-input": {
                 color: "#ffffff",
+                paddingLeft: 0,
+                paddingRight: 0,
               },
               "& .MuiInputLabel-root": {
                 fontSize: `${controlsTheme.typography.fontSize.sm}px`,
@@ -623,13 +634,15 @@ const ROIControls = ({
               }
             }}
             sx={{
-              width: "140px",
+              width: "7rem",
               "& .MuiInputBase-root": {
                 backgroundColor: controlsTheme.colors.paper,
                 fontSize: `${controlsTheme.typography.fontSize.sm}px`,
               },
               "& .MuiInputBase-input": {
                 color: "#ffffff",
+                paddingLeft: 0,
+                paddingRight: 0,
               },
               "& .MuiInputLabel-root": {
                 fontSize: `${controlsTheme.typography.fontSize.sm}px`,
@@ -651,7 +664,7 @@ const ROIControls = ({
                 ? controlsTheme.colors.success
                 : controlsTheme.colors.backgroundLight,
               color: controlsTheme.colors.text,
-              border: `2px solid ${
+              border: `0.125rem solid ${
                 isCreateButtonEnabled()
                   ? controlsTheme.colors.success
                   : controlsTheme.colors.border
@@ -663,7 +676,7 @@ const ROIControls = ({
               opacity: isCreateButtonEnabled() ? 1 : 0.5,
               transition: `all ${controlsTheme.transitions.normal} ${controlsTheme.transitions.ease}`,
               boxShadow: controlsTheme.shadows.sm,
-              minWidth: "100px",
+              minWidth: "6.25rem",
             }}
           >
             Create ROI

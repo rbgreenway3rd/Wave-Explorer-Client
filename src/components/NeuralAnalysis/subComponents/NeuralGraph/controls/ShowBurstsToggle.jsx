@@ -25,7 +25,7 @@ const ShowBurstsToggle = ({ showBursts, setShowBursts }) => {
         alignItems: "center",
         gap: controlsTheme.spacing.sm,
         // borderRadius: controlsTheme.borderRadius.md,
-        borderRadius: "10px",
+        borderRadius: "0.625rem",
         minWidth: "fit-content",
       }}
     >
@@ -57,7 +57,7 @@ const ShowBurstsToggle = ({ showBursts, setShowBursts }) => {
           />
         }
         label=""
-        sx={{ margin: 0, borderRadius: "10px" }}
+        sx={{ margin: 0, borderRadius: "0.625rem" }}
       />
     </Paper>
   );

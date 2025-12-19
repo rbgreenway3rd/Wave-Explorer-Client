@@ -46,10 +46,10 @@ const HandleOutlierControls = ({
         backgroundColor: handleOutliers
           ? controlsTheme.colors.paper
           : "rgb(180, 180, 180)",
-        borderRadius: "8px",
-        border: `2px solid ${controlsTheme.colors.warning}`,
-        minWidth: "240px",
-        maxWidth: "320px",
+        borderRadius: "0.5rem",
+        border: `0.125rem solid ${controlsTheme.colors.warning}`,
+        minWidth: "15rem",
+        maxWidth: "20rem",
         flex: 1,
         opacity: handleOutliers ? 1 : 0.6,
         transition: "all 0.2s ease-in-out",
@@ -142,7 +142,7 @@ const HandleOutlierControls = ({
               height: 16,
             },
             "& .MuiSlider-markLabel": {
-              fontSize: "11px",
+              fontSize: "0.6875rem",
               color: controlsTheme.colors.textSecondary,
             },
           }}
@@ -212,7 +212,7 @@ const HandleOutlierControls = ({
               height: 16,
             },
             "& .MuiSlider-markLabel": {
-              fontSize: "11px",
+              fontSize: "0.6875rem",
               color: controlsTheme.colors.textSecondary,
             },
           }}

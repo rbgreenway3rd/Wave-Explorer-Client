@@ -43,7 +43,7 @@ const NoiseSuppressionControls = ({
         backgroundColor: controlsTheme.colors.paper,
         padding: `${controlsTheme.spacing.md}px`,
         borderRadius: `${controlsTheme.borderRadius.lg}px`,
-        border: `2px solid ${controlsTheme.colors.border}`,
+        border: `0.125rem solid ${controlsTheme.colors.border}`,
         marginBottom: `${controlsTheme.spacing.md}px`,
         marginTop: `${controlsTheme.spacing.md}px`,
         // marginLeft: `${controlsTheme.spacing.md}px`,
@@ -58,7 +58,7 @@ const NoiseSuppressionControls = ({
           fontSize: `${controlsTheme.typography.fontSize.md}px`,
           marginBottom: `${controlsTheme.spacing.sm}px`,
           textTransform: "uppercase",
-          letterSpacing: "0.5px",
+          letterSpacing: "0.03125rem",
         }}
       >
         Noise Suppression
@@ -77,7 +77,7 @@ const NoiseSuppressionControls = ({
           padding: `${controlsTheme.spacing.xs}px`,
           backgroundColor: controlsTheme.colors.backgroundDark,
           borderRadius: `${controlsTheme.borderRadius.md}px`,
-          border: `1px solid ${controlsTheme.colors.border}`,
+          border: `0.0625rem solid ${controlsTheme.colors.border}`,
         }}
       >
         <Tooltip title="Enable Noise Suppression" arrow>

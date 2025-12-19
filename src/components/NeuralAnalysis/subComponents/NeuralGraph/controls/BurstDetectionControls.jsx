@@ -42,10 +42,10 @@ const BurstDetectionControls = ({
       sx={{
         padding: controlsTheme.spacing.sm,
         backgroundColor: controlsTheme.colors.paper,
-        borderRadius: "8px",
-        border: `2px solid ${controlsTheme.colors.primary}`,
-        minWidth: "240px",
-        maxWidth: "320px",
+        borderRadius: "0.5rem",
+        border: `0.125rem solid ${controlsTheme.colors.primary}`,
+        minWidth: "15rem",
+        maxWidth: "20rem",
         flex: 1,
       }}
     >
@@ -132,7 +132,7 @@ const BurstDetectionControls = ({
               height: 16,
             },
             "& .MuiSlider-markLabel": {
-              fontSize: "11px",
+              fontSize: "0.6875rem",
               color: controlsTheme.colors.textSecondary,
             },
           }}
@@ -200,7 +200,7 @@ const BurstDetectionControls = ({
               height: 16,
             },
             "& .MuiSlider-markLabel": {
-              fontSize: "11px",
+              fontSize: "0.6875rem",
               color: controlsTheme.colors.textSecondary,
             },
           }}

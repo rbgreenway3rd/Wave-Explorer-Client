@@ -447,7 +447,7 @@ const NeuralGraph = forwardRef(
     const handleMouseUp = (event) => {
       if (!defineROI || !isSelectingROI) return;
       setIsSelectingROI(false);
-      
+
       // Only process ROI if currentRoiIndex is set
       if (currentRoiIndex === null) {
         // Clear any temporary annotation
@@ -455,7 +455,7 @@ const NeuralGraph = forwardRef(
         setAnnotationKey((k) => k + 1);
         return;
       }
-      
+
       const chart = neuralGraphRef.current;
       if (!chart) return;
       const rect = chart.canvas.getBoundingClientRect();

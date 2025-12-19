@@ -48,12 +48,11 @@ const ReportGenerationControls = ({
         backgroundColor: controlsTheme.colors.paper,
         padding: `${controlsTheme.spacing.md}px`,
         borderRadius: `${controlsTheme.borderRadius.lg}px`,
-        border: `2px solid ${controlsTheme.colors.border}`,
+        border: `0.125rem solid ${controlsTheme.colors.border}`,
         marginBottom: `${controlsTheme.spacing.md}px`,
         marginTop: `${controlsTheme.spacing.md}px`,
         display: "flex",
         flexDirection: "column",
-        justifyContent: "space-between",
       }}
     >
       {/* Section Header */}
@@ -65,7 +64,7 @@ const ReportGenerationControls = ({
           fontSize: `${controlsTheme.typography.fontSize.md}px`,
           marginBottom: `${controlsTheme.spacing.sm}px`,
           textTransform: "uppercase",
-          letterSpacing: "0.5px",
+          letterSpacing: "0.03125rem",
         }}
       >
         Report Generation
@@ -141,10 +140,11 @@ const ReportGenerationControls = ({
       {/* Info Text */}
       <Box
         sx={{
-          padding: `${controlsTheme.spacing.sm}px`,
+          marginTop: `${controlsTheme.spacing.sm}px`,
+          padding: `${controlsTheme.spacing.md}px`,
           backgroundColor: controlsTheme.colors.backgroundLight,
           borderRadius: `${controlsTheme.borderRadius.sm}px`,
-          border: `1px solid ${controlsTheme.colors.divider}`,
+          border: `0.0625rem solid ${controlsTheme.colors.divider}`,
           alignItems: "end",
         }}
       >
@@ -152,7 +152,7 @@ const ReportGenerationControls = ({
           variant="caption"
           sx={{
             color: controlsTheme.colors.textSecondary,
-            fontSize: `${controlsTheme.typography.fontSize.xs}px`,
+            fontSize: `${controlsTheme.typography.fontSize.sm}px`,
             lineHeight: controlsTheme.typography.lineHeight.relaxed,
           }}
         >
@@ -176,7 +176,7 @@ const ReportGenerationControls = ({
               display: "block",
               marginTop: `${controlsTheme.spacing.xs}px`,
               color: controlsTheme.colors.textSecondary,
-              fontSize: `${controlsTheme.typography.fontSize.xs}px`,
+              fontSize: `${controlsTheme.typography.fontSize.sm}px`,
             }}
           >
             <strong>Plate Data:</strong> {wellArrays.length} wells available for

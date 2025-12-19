@@ -71,7 +71,7 @@ const PanZoomControls = ({
         backgroundColor: controlsTheme.colors.paper,
         padding: `${controlsTheme.spacing.md}px`,
         borderRadius: `${controlsTheme.borderRadius.lg}px`,
-        border: `2px solid ${controlsTheme.colors.border}`,
+        border: `0.125rem solid ${controlsTheme.colors.border}`,
         marginBottom: `${controlsTheme.spacing.md}px`,
         marginTop: `${controlsTheme.spacing.md}px`,
       }}
@@ -85,7 +85,7 @@ const PanZoomControls = ({
           fontSize: `${controlsTheme.typography.fontSize.md}px`,
           marginBottom: `${controlsTheme.spacing.sm}px`,
           textTransform: "uppercase",
-          letterSpacing: "0.5px",
+          letterSpacing: "0.03125rem",
         }}
       >
         Chart Interaction
@@ -195,7 +195,7 @@ const PanZoomControls = ({
           ...buttonStyles.secondary,
           backgroundColor: controlsTheme.colors.backgroundLight,
           color: controlsTheme.colors.text,
-          border: `1px solid ${controlsTheme.colors.border}`,
+          border: `0.0625rem solid ${controlsTheme.colors.border}`,
           "&:hover": {
             backgroundColor: controlsTheme.colors.backgroundDark,
             borderColor: controlsTheme.colors.secondary,
@@ -215,7 +215,7 @@ const PanZoomControls = ({
               ? controlsTheme.colors.secondaryBg
               : controlsTheme.colors.primaryBg,
             borderRadius: `${controlsTheme.borderRadius.sm}px`,
-            border: `1px solid ${
+            border: `0.0625rem solid ${
               defineROI
                 ? controlsTheme.colors.secondary
                 : controlsTheme.colors.primary

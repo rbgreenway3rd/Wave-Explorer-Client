@@ -42,7 +42,7 @@ const DecimationControls = ({
         marginRight: `${theme.spacing.md}px`,
         backgroundColor: theme.colors.background,
         borderRadius: `${theme.borderRadius.lg}px`,
-        border: `2px solid ${theme.colors.border}`,
+        border: `0.125rem solid ${theme.colors.border}`,
         display: "flex",
         flexDirection: "column",
       })}
@@ -156,17 +156,15 @@ const DecimationControls = ({
             // gap: `${theme.spacing.sm}px`,
             // paddingLeft: `${theme.spacing.md}px`,
             padding: `${theme.spacing.md}px`,
-            border: `2px solid ${theme.colors.border}`,
+            border: `0.125rem solid ${theme.colors.border}`,
             backgroundColor: "rgb(180, 180, 180, 0.7)",
           }}
         >
           <FormLabel
             sx={{
-              // color: decimationEnabled
-              //   ? theme.colors.text
-              //   : theme.colors.textDisabled,
+              color: "#000000",
               fontSize: `${theme.typography.fontSize.sm}px`,
-              fontWeight: theme.typography.fontWeight.medium,
+              fontWeight: theme.typography.fontWeight.bold,
               fontFamily: theme.typography.fontFamily,
               marginRight: `${theme.spacing.sm}px`,
             }}
@@ -212,9 +210,11 @@ const DecimationControls = ({
                   "& .MuiFormControlLabel-label": {
                     fontSize: `${theme.typography.fontSize.sm}px`,
                     fontFamily: theme.typography.fontFamily,
-                    color: decimationEnabled
-                      ? "#000000" // Change this color to your desired color
-                      : theme.colors.textDisabled,
+                    fontWeight: theme.typography.fontWeight.bold,
+                    color: "#000000",
+                  },
+                  "& .MuiFormControlLabel-label.Mui-disabled": {
+                    color: "#000000",
                   },
                 }}
               />
@@ -231,7 +231,7 @@ const DecimationControls = ({
             padding: `${theme.spacing.sm}px`,
             backgroundColor: theme.colors.primaryBg,
             borderRadius: `${theme.borderRadius.sm}px`,
-            borderLeft: `3px solid ${theme.colors.primary}`,
+            borderLeft: `0.1875rem solid ${theme.colors.primary}`,
           }}
         >
           <Typography

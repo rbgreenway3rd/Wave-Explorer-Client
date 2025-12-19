@@ -42,7 +42,7 @@ const ControlWellSelector = ({
         marginBottom: `${controlsTheme.spacing.md}px`,
         marginTop: `${controlsTheme.spacing.md}px`,
         marginLeft: `${controlsTheme.spacing.md}px`,
-        border: `2px solid ${controlsTheme.colors.border}`,
+        border: `0.125rem solid ${controlsTheme.colors.border}`,
         opacity: disabled ? 0.5 : 1,
         pointerEvents: disabled ? "none" : "auto",
         display: "flex",
@@ -58,7 +58,7 @@ const ControlWellSelector = ({
           fontSize: `${controlsTheme.typography.fontSize.md}px`,
           marginBottom: `${controlsTheme.spacing.sm}px`,
           textTransform: "uppercase",
-          letterSpacing: "0.5px",
+          letterSpacing: "0.03125rem",
         }}
       >
         Control Well Selection
@@ -87,7 +87,7 @@ const ControlWellSelector = ({
               : controlWell
               ? controlsTheme.colors.successDark
               : controlsTheme.colors.text,
-            border: `2px solid ${
+            border: `0.125rem solid ${
               selectingControl
                 ? controlsTheme.colors.secondary
                 : controlWell
@@ -128,7 +128,7 @@ const ControlWellSelector = ({
               padding: `${controlsTheme.spacing.sm}px ${controlsTheme.spacing.md}px`,
               backgroundColor: controlsTheme.colors.dangerBg,
               color: controlsTheme.colors.danger,
-              border: `2px solid ${controlsTheme.colors.danger}`,
+              border: `0.125rem solid ${controlsTheme.colors.danger}`,
               borderRadius: `${controlsTheme.borderRadius.md}px`,
               fontSize: `${controlsTheme.typography.fontSize.sm}px`,
               fontWeight: controlsTheme.typography.fontWeight.semiBold,
@@ -151,7 +151,7 @@ const ControlWellSelector = ({
             padding: `${controlsTheme.spacing.sm}px ${controlsTheme.spacing.md}px`,
             backgroundColor: controlsTheme.colors.backgroundDark,
             borderRadius: `${controlsTheme.borderRadius.md}px`,
-            border: `1px solid ${controlsTheme.colors.border}`,
+            border: `0.0625rem solid ${controlsTheme.colors.border}`,
             display: "flex",
             flexDirection: "column",
           }}

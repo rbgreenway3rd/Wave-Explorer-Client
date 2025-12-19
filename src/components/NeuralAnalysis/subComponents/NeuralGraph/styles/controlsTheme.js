@@ -226,6 +226,11 @@ export const controlsTheme = {
 export const createSxProps = (overrides = {}) => ({
   fontFamily: controlsTheme.typography.fontFamily,
   transition: `all ${controlsTheme.transitions.normal} ${controlsTheme.transitions.ease}`,
+  // Text rendering optimizations for crisp, clean text
+  WebkitFontSmoothing: "antialiased",
+  MozOsxFontSmoothing: "grayscale",
+  textRendering: "optimizeLegibility",
+  fontFeatureSettings: '"kern" 1',
   ...overrides,
 });
 
@@ -242,6 +247,10 @@ export const buttonStyles = {
     transition: `all ${controlsTheme.transitions.normal} ${controlsTheme.transitions.ease}`,
     textTransform: "none",
     boxShadow: controlsTheme.shadows.sm,
+    // Text rendering optimizations
+    WebkitFontSmoothing: "antialiased",
+    MozOsxFontSmoothing: "grayscale",
+    textRendering: "optimizeLegibility",
     "&:hover": {
       boxShadow: controlsTheme.shadows.md,
     },

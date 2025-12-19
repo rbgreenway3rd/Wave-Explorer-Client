@@ -23,7 +23,7 @@ const HandleOutliersToggle = ({ handleOutliers, setHandleOutliers }) => {
         flexDirection: "row",
         alignItems: "center",
         gap: controlsTheme.spacing.sm,
-        borderRadius: "10px",
+        borderRadius: "0.625rem",
         minWidth: "fit-content",
       }}
     >
@@ -55,7 +55,7 @@ const HandleOutliersToggle = ({ handleOutliers, setHandleOutliers }) => {
           />
         }
         label=""
-        sx={{ margin: 0, borderRadius: "10px" }}
+        sx={{ margin: 0, borderRadius: "0.625rem" }}
       />
     </Paper>
   );

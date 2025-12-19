@@ -165,7 +165,7 @@ const NoiseFilterControls = ({
               flex: 1,
               display: "flex",
               flexDirection: "column",
-              gap: "8px",
+              gap: "0.5rem",
               alignItems: "center",
             }}
           >
@@ -188,7 +188,7 @@ const NoiseFilterControls = ({
               flex: 1,
               display: "flex",
               flexDirection: "column",
-              gap: "8px",
+              gap: "0.5rem",
               alignItems: "center",
             }}
           >
