@@ -32,11 +32,11 @@ const NeuralFullPlateReportModal = ({
   // State for CSV generation options
   const [options, setOptions] = useState({
     includeProcessedSignal: false,
-    includeSpikeData: true,
-    includeOverallMetrics: true,
-    includeBurstData: true,
-    includeBurstMetrics: true,
-    includeROIAnalysis: false, // Default to false for full-plate (ROIs are well-specific)
+    includeSpikeData: false,
+    includeOverallMetrics: false,
+    includeBurstData: false,
+    includeBurstMetrics: false,
+    includeROIAnalysis: true,
   });
 
   // State for processing progress

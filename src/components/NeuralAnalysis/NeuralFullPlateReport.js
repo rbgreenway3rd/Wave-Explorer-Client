@@ -299,6 +299,13 @@ export function GenerateFullPlateReport(
     includeROIAnalysis = false,
   } = options;
 
+  // Check if any non-ROI sections are requested
+  const includeWellSections =
+    includeSpikeData ||
+    includeOverallMetrics ||
+    includeBurstData ||
+    includeBurstMetrics;
+
   // Use array of section chunks for efficient concatenation
   const csvChunks = [];
 
@@ -413,7 +420,10 @@ export function GenerateFullPlateReport(
     const wellKey = well.key || well.id || `Well_${wellIndex + 1}`;
     const wellSections = []; // Array to collect all sections for this well
 
-    wellSections.push(`<WELL_DATA: ${wellKey}>`);
+    // Only add well data header if non-ROI sections are requested
+    if (includeWellSections) {
+      wellSections.push(`<WELL_DATA: ${wellKey}>`);
+    }
 
     try {
       const rawSignal = well.indicators[0].filteredData;
@@ -499,16 +509,18 @@ export function GenerateFullPlateReport(
         );
       }
 
-      // WELL PARAMETERS - unique to this well
-      wellSections.push(
-        [
-          "<WELL_PARAMETERS>",
-          `WellID,${wellKey}`,
-          `OptimalProminence,${optimalProminence}`,
-          `OptimalWindow,${optimalWindow}`,
-          "</WELL_PARAMETERS>",
-        ].join("\n")
-      );
+      // WELL PARAMETERS - unique to this well (only if non-ROI sections requested)
+      if (includeWellSections) {
+        wellSections.push(
+          [
+            "<WELL_PARAMETERS>",
+            `WellID,${wellKey}`,
+            `OptimalProminence,${optimalProminence}`,
+            `OptimalWindow,${optimalWindow}`,
+            "</WELL_PARAMETERS>",
+          ].join("\n")
+        );
+      }
 
       // ========================================
       // SPIKE DETECTION (on processed signal)
@@ -698,13 +710,21 @@ export function GenerateFullPlateReport(
         `[GenerateFullPlateReport] Error processing well ${wellKey}:`,
         error
       );
-      const wellErrorLines = ["<ERROR>", `Error: ${error.message}`, "</ERROR>"];
-      wellSections.push(wellErrorLines.join("\n"));
+      if (includeWellSections) {
+        const wellErrorLines = [
+          "<ERROR>",
+          `Error: ${error.message}`,
+          "</ERROR>",
+        ];
+        wellSections.push(wellErrorLines.join("\n"));
+      }
     }
 
-    // Add well footer and combine all sections for this well
-    wellSections.push(`</WELL_DATA: ${wellKey}>`);
-    csvChunks.push(wellSections.join("\n\n"));
+    // Add well footer and combine all sections for this well (only if non-ROI sections requested)
+    if (includeWellSections && wellSections.length > 0) {
+      wellSections.push(`</WELL_DATA: ${wellKey}>`);
+      csvChunks.push(wellSections.join("\n\n"));
+    }
   });
 
   // ========================================
