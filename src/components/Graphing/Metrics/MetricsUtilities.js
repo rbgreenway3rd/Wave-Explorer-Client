@@ -86,6 +86,7 @@
 // MetricsUtilities.js
 import * as d3 from "d3";
 
+// Existing API kept for callers that already work with {x,y}[] arrays.
 export const linearRegression = (data) => {
   let xsum = 0;
   let ysum = 0;
@@ -108,56 +109,121 @@ export const linearRegression = (data) => {
 };
 
 export const calculateSlope = (heatmapData) => {
-  // console.log(heatmapData);
   return heatmapData.length > 0 ? linearRegression(heatmapData) : 0;
 };
 
 export const calculateRange = (heatmapData) => {
-  if (heatmapData.length === 0) return 0; // If no data, return 0
-
+  if (heatmapData.length === 0) return 0;
   const maxY = d3.max(heatmapData, (d) => d.y);
   const minY = d3.min(heatmapData, (d) => d.y);
-  // console.log(maxY - minY);
-  return maxY - minY; // Return the range (difference between max and min)
+  return maxY - minY;
 };
 
-export const getAllValues = (wellArrays, annotationRange, metricIndicator) => {
-  return wellArrays.flatMap((well) => {
-    const filteredData = well.indicators[metricIndicator]?.filteredData || [];
-    if (annotationRange.start !== null && annotationRange.end !== null) {
-      return filteredData
-        .filter(
-          (_, i) => i >= annotationRange.start && i <= annotationRange.end
-        )
-        .map((d) => d.y);
-    } else {
-      return filteredData.map((d) => d.y);
+// ---- typed-array-aware helpers ----------------------------------------
+// Reads filtered xs/ys for an indicator without forcing a {x,y}[] build.
+// Original semantics filtered by index — preserved here.
+function indicatorXsYs(indicator) {
+  if (!indicator) return null;
+  if (indicator.filteredXs && indicator.filteredYs) {
+    return { xs: indicator.filteredXs, ys: indicator.filteredYs };
+  }
+  const fd = indicator.filteredData;
+  if (Array.isArray(fd) && fd.length > 0) {
+    const n = fd.length;
+    const xs = new Float64Array(n);
+    const ys = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      xs[i] = fd[i].x;
+      ys[i] = fd[i].y;
     }
-  });
+    return { xs, ys };
+  }
+  return null;
+}
+
+function applyIndexRange(xs, ys, annotationRange) {
+  if (annotationRange.start == null || annotationRange.end == null) {
+    return { xs, ys };
+  }
+  const start = Math.max(0, Math.floor(annotationRange.start));
+  const end = Math.min(ys.length - 1, Math.floor(annotationRange.end));
+  if (end < start) return { xs: new Float64Array(0), ys: new Float64Array(0) };
+  return {
+    xs: xs.subarray ? xs.subarray(start, end + 1) : xs.slice(start, end + 1),
+    ys: ys.subarray ? ys.subarray(start, end + 1) : ys.slice(start, end + 1),
+  };
+}
+
+function slopeFromXsYs(xs, ys) {
+  const n = ys.length;
+  if (n === 0) return 0;
+  let xsum = 0;
+  let ysum = 0;
+  for (let i = 0; i < n; i++) {
+    xsum += xs[i];
+    ysum += ys[i];
+  }
+  const xmean = xsum / n;
+  const ymean = ysum / n;
+  let num = 0;
+  let denom = 0;
+  for (let i = 0; i < n; i++) {
+    const x = xs[i];
+    const y = ys[i];
+    num += (x - xmean) * (y - ymean);
+    denom += (x - xmean) * (x - xmean);
+  }
+  return denom === 0 ? 0 : num / denom;
+}
+
+function rangeFromYs(ys) {
+  if (ys.length === 0) return 0;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (let i = 0; i < ys.length; i++) {
+    const y = ys[i];
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+  }
+  return maxY - minY;
+}
+
+export const getAllValues = (wellArrays, annotationRange, metricIndicator) => {
+  // Preserve the flat-array contract callers rely on (d3.extent, etc.).
+  const out = [];
+  for (let w = 0; w < wellArrays.length; w++) {
+    const xy = indicatorXsYs(wellArrays[w].indicators?.[metricIndicator]);
+    if (!xy) continue;
+    const { ys } = applyIndexRange(xy.xs, xy.ys, annotationRange);
+    for (let i = 0; i < ys.length; i++) out.push(ys[i]);
+  }
+  return out;
 };
 
 export const getAllSlopes = (wellArrays, annotationRange, metricIndicator) => {
-  return wellArrays.flatMap((well) => {
-    let heatmapData = well.indicators[metricIndicator]?.filteredData || [];
-
-    if (annotationRange.start !== null && annotationRange.end !== null) {
-      heatmapData = heatmapData.filter(
-        (_, i) => i >= annotationRange.start && i <= annotationRange.end
-      );
+  const out = new Array(wellArrays.length);
+  for (let w = 0; w < wellArrays.length; w++) {
+    const xy = indicatorXsYs(wellArrays[w].indicators?.[metricIndicator]);
+    if (!xy) {
+      out[w] = 0;
+      continue;
     }
-    return calculateSlope(heatmapData);
-  });
+    const { xs, ys } = applyIndexRange(xy.xs, xy.ys, annotationRange);
+    out[w] = slopeFromXsYs(xs, ys);
+  }
+  return out;
 };
 
 export const getAllRanges = (wellArrays, annotationRange, metricIndicator) => {
-  return wellArrays.map((well) => {
-    let heatmapData = well.indicators[metricIndicator]?.filteredData || [];
-    if (annotationRange.start !== null && annotationRange.end !== null) {
-      heatmapData = heatmapData.filter(
-        (_, i) => i >= annotationRange.start && i <= annotationRange.end
-      );
+  const out = new Array(wellArrays.length);
+  for (let w = 0; w < wellArrays.length; w++) {
+    const xy = indicatorXsYs(wellArrays[w].indicators?.[metricIndicator]);
+    if (!xy) {
+      out[w] = 0;
+      continue;
     }
-
-    return calculateRange(heatmapData);
-  });
+    const { ys } = applyIndexRange(xy.xs, xy.ys, annotationRange);
+    out[w] = rangeFromYs(ys);
+  }
+  return out;
 };

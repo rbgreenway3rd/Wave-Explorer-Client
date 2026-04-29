@@ -55,17 +55,27 @@ const NeuralWellSelector = ({
     }
   }, [wellArrays]);
 
-  const getChartData = (well) => ({
-    datasets: [
-      {
-        label: "Filtered Data",
-        data: well.indicators[0].filteredData,
-        borderColor: "rgb(153, 102, 255)",
-        borderWidth: 1,
-        fill: false,
-      },
-    ],
-  });
+  const getChartData = (well) => {
+    const ind = well.indicators[0];
+    // Prefer the small pre-decimated {x,y}[] (post-Phase C, the full
+    // filteredData {x,y}[] is empty by default — canonical signal lives
+    // in filteredYs/filteredXs typed arrays).
+    const data =
+      (ind.miniFilteredPoints && ind.miniFilteredPoints.length > 0)
+        ? ind.miniFilteredPoints
+        : ind.filteredData;
+    return {
+      datasets: [
+        {
+          label: "Filtered Data",
+          data,
+          borderColor: "rgb(153, 102, 255)",
+          borderWidth: 1,
+          fill: false,
+        },
+      ],
+    };
+  };
 
   const getFilteredMedianData = (well) => ({
     datasets: [
@@ -84,11 +94,25 @@ const NeuralWellSelector = ({
     let min = Infinity,
       max = -Infinity;
     wellArrays.forEach((well) => {
-      (well.indicators[0].filteredData || []).forEach((point) => {
+      const ind = well.indicators[0];
+      // Prefer the typed-array path (post-Phase C, filteredData is empty
+      // until materializeFilteredData() is called per-well).
+      if (ind && ind.filteredYs) {
+        const ys = ind.filteredYs;
+        for (let i = 0; i < ys.length; i++) {
+          const y = ys[i];
+          if (y < min) min = y;
+          if (y > max) max = y;
+        }
+        return;
+      }
+      (ind?.filteredData || []).forEach((point) => {
         if (point.y < min) min = point.y;
         if (point.y > max) max = point.y;
       });
     });
+    if (!isFinite(min)) min = 0;
+    if (!isFinite(max)) max = 1;
     setGlobalYMin(min);
     setGlobalYMax(max);
   }, [wellArrays]);

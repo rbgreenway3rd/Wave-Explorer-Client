@@ -1,3 +1,5 @@
+import { lttbTyped } from "../utilities/lttbTyped.js";
+
 export class Project {
   constructor(title, date, time, instrument, protocol) {
     this.title = title;
@@ -62,6 +64,29 @@ export class Indicator {
     this.time = time;
     this.isDisplayed = isDisplayed; // boolean
 
+    // Typed-array primary storage for filtered data. After the filter
+    // pipeline runs, these hold the canonical results — `filteredData`
+    // becomes a stale {x,y}[] (or empty) and is rebuilt lazily only when
+    // a Chart.js consumer asks for it via materializeFilteredData(). This
+    // avoids the ~700MB transient allocation that otherwise OOMs the
+    // renderer on huge (200MB+) DAT files.
+    this.filteredXs = null;
+    this.filteredYs = null;
+    // Pre-decimated ~80-point {x,y}[] of the filtered signal — used by
+    // the neural-analysis grid (and any other all-wells filtered preview)
+    // so it doesn't have to materialize the full {x,y}[] for 96+ wells.
+    this.miniFilteredPoints = null;
+
+    // Same pattern for raw data after Phase C. distributeData populates
+    // rawXs/rawYs at load time so we never allocate {x,y}[] for every
+    // well. miniRawPoints is a small (~80-point) decimated copy used by
+    // the all-wells mini-grid; full {x,y}[] form (cached on rawData) is
+    // built only on demand via materializeRawData() — call this only for
+    // the small set of selected wells.
+    this.rawXs = null;
+    this.rawYs = null;
+    this.miniRawPoints = null;
+
     // New properties for calculated metrics
     this.APD90 = null;
     this.APD80 = null;
@@ -79,6 +104,66 @@ export class Indicator {
   }
   setDisplayed(value) {
     this.isDisplayed = value;
+  }
+
+  // Replace canonical filtered storage with typed arrays from the filter
+  // worker. Invalidates the {x,y}[] cache — consumers that need point-array
+  // form must call materializeFilteredData().
+  setFilteredTypedArrays(xs, ys) {
+    this.filteredXs = xs;
+    this.filteredYs = ys;
+    this.filteredData = []; // mark stale; do NOT allocate {x,y}[] here
+    // Refresh the small decimated cache used by all-wells filtered previews.
+    // ~80 points × 32B × wells ≈ 250KB per indicator — cheap.
+    this.miniFilteredPoints = xs && ys ? lttbTyped(xs, ys, 80) : null;
+  }
+
+  // Build (and cache on `this.filteredData`) a {x,y}[] view of the filtered
+  // data. Allocates ~32 bytes per point — only call this for indicators
+  // you actually need to feed into Chart.js or a {x,y}-shaped API. Iterating
+  // all wells with this method on a huge DAT file will OOM; use the typed
+  // array fields directly when computing aggregate metrics.
+  materializeFilteredData() {
+    if (Array.isArray(this.filteredData) && this.filteredData.length > 0) {
+      return this.filteredData;
+    }
+    const xs = this.filteredXs;
+    const ys = this.filteredYs;
+    if (!xs || !ys) return this.filteredData || [];
+    const n = ys.length;
+    const arr = new Array(n);
+    for (let j = 0; j < n; j++) arr[j] = { x: xs[j], y: ys[j] };
+    this.filteredData = arr;
+    return arr;
+  }
+
+  // Raw-data twin of setFilteredTypedArrays. Populated by distributeData at
+  // load time. Clears any cached {x,y}[] view in `rawData` and the small
+  // miniRawPoints decimation — the caller (distributeData) is responsible
+  // for repopulating miniRawPoints if it wants the mini-grid view.
+  setRawTypedArrays(xs, ys) {
+    this.rawXs = xs;
+    this.rawYs = ys;
+    this.rawData = [];
+    this.miniRawPoints = null;
+  }
+
+  // Raw-data twin of materializeFilteredData. Builds {x,y}[] from rawXs /
+  // rawYs on demand and caches in this.rawData. Same warning: do NOT
+  // iterate-and-call across all wells on a huge file — allocate per-point
+  // is expensive. Use rawXs/rawYs directly for aggregate metrics.
+  materializeRawData() {
+    if (Array.isArray(this.rawData) && this.rawData.length > 0) {
+      return this.rawData;
+    }
+    const xs = this.rawXs;
+    const ys = this.rawYs;
+    if (!xs || !ys) return this.rawData || [];
+    const n = ys.length;
+    const arr = new Array(n);
+    for (let j = 0; j < n; j++) arr[j] = { x: xs[j], y: ys[j] };
+    this.rawData = arr;
+    return arr;
   }
 
   setMetrics(metrics) {

@@ -67,9 +67,31 @@ const NeuralGraph = forwardRef(
     // decimationEnabled is now a prop
     const neuralGraphRef = useRef(null);
 
-    const localMaxY = processedSignal
-      ? Math.max(...processedSignal.map((pt) => pt.y))
-      : globalMaxY;
+    // Explicit loop instead of Math.{min,max}(...arr.map(...)) — spread
+    // into a function call blows V8's argument limit on a 250K-point
+    // signal. Compute y-max plus x-min/x-max in a single pass; the scales
+    // config below reuses these.
+    let localMaxY;
+    let localMinX;
+    let localMaxX;
+    if (processedSignal && processedSignal.length > 0) {
+      let yMax = -Infinity;
+      let xMin = Infinity;
+      let xMax = -Infinity;
+      for (let i = 0; i < processedSignal.length; i++) {
+        const pt = processedSignal[i];
+        if (pt.y > yMax) yMax = pt.y;
+        if (pt.x < xMin) xMin = pt.x;
+        if (pt.x > xMax) xMax = pt.x;
+      }
+      localMaxY = isFinite(yMax) ? yMax : globalMaxY;
+      localMinX = isFinite(xMin) ? xMin : undefined;
+      localMaxX = isFinite(xMax) ? xMax : undefined;
+    } else {
+      localMaxY = globalMaxY;
+      localMinX = undefined;
+      localMaxX = undefined;
+    }
 
     // Color palette for unique ROI colors (memoized to prevent dependency changes)
     const roiColors = useMemo(
@@ -259,14 +281,8 @@ const NeuralGraph = forwardRef(
           x: {
             type: "linear",
             grace: 10,
-            min:
-              processedSignal && processedSignal.length > 0
-                ? Math.min(...processedSignal.map((pt) => pt.x))
-                : undefined,
-            max:
-              processedSignal && processedSignal.length > 0
-                ? Math.max(...processedSignal.map((pt) => pt.x))
-                : undefined,
+            min: localMinX,
+            max: localMaxX,
             ticks: {
               display: true,
               color: "#666666",

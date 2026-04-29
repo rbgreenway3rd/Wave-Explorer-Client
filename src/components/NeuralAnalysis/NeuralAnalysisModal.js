@@ -127,12 +127,24 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
         metrics: {},
       };
 
+    // Post-Phase C, filteredData is an empty {x,y}[] until materialized
+    // from the canonical filteredXs/filteredYs typed arrays. The neural
+    // pipeline expects a {x,y}[]; materialize on demand for just the two
+    // wells the modal needs (selected + optional control), not the whole plate.
+    const selectedFilteredData =
+      typeof selectedWell.indicators[0].materializeFilteredData === "function"
+        ? selectedWell.indicators[0].materializeFilteredData()
+        : selectedWell.indicators[0].filteredData;
+    const controlFilteredData =
+      controlWell && controlWell.indicators && controlWell.indicators[0]
+        ? typeof controlWell.indicators[0].materializeFilteredData === "function"
+          ? controlWell.indicators[0].materializeFilteredData()
+          : controlWell.indicators[0].filteredData
+        : [];
+
     const pipeline = runNeuralAnalysisPipeline({
-      rawSignal: selectedWell.indicators[0].filteredData,
-      controlSignal:
-        controlWell && controlWell.indicators && controlWell.indicators[0]
-          ? controlWell.indicators[0].filteredData
-          : [],
+      rawSignal: selectedFilteredData,
+      controlSignal: controlFilteredData,
       params: {
         subtractControl,
         trendFlatteningEnabled,
@@ -190,11 +202,14 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
       !spikeParamsManuallySet.current &&
       selectedWell &&
       selectedWell.indicators &&
-      selectedWell.indicators[0] &&
-      selectedWell.indicators[0].filteredData &&
-      selectedWell.indicators[0].filteredData.length > 0
+      selectedWell.indicators[0]
     ) {
-      const rawSignal = selectedWell.indicators[0].filteredData;
+      const ind = selectedWell.indicators[0];
+      const rawSignal =
+        typeof ind.materializeFilteredData === "function"
+          ? ind.materializeFilteredData()
+          : ind.filteredData;
+      if (!rawSignal || rawSignal.length === 0) return;
       const suggestedProminence = suggestProminence(rawSignal, 0.5);
       setSpikeProminence(suggestedProminence);
       const suggestedWindow = suggestWindow(

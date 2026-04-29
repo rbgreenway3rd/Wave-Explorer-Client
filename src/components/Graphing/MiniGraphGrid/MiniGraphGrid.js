@@ -5,6 +5,7 @@ import React, {
   useState,
   useRef,
   useEffect,
+  useCallback,
 } from "react";
 import { DataContext } from "../../../providers/DataProvider";
 import useDecimateWorker from "../../../utilities/useDecimateWorker";
@@ -25,8 +26,93 @@ import {
 import DotWaveLoader from "../../../assets/animations/DotWaveLoader";
 import * as d3 from "d3";
 
+const INDICATOR_COLORS = [
+  "rgb(75, 192, 192)",
+  "rgb(255, 99, 132)",
+  "rgb(54, 162, 235)",
+  "rgb(255, 206, 86)",
+  "rgb(153, 102, 255)",
+  "rgb(255, 159, 64)",
+];
+
+const MINI_LINE_BASE_STYLE = {
+  zIndex: 10,
+  width: "100%",
+  height: "100%",
+};
+
+// Memoized per-well chart. Re-renders only when this well's own selection
+// state, indicators, options, dimensions, or filtered/raw toggle change —
+// NOT when an unrelated well is clicked, which previously forced all
+// 96/384 Chart.js instances to redraw.
+const MiniLine = memo(function MiniLine({
+  well,
+  isSelected,
+  showFiltered,
+  minigraphOptions,
+  cellWidth,
+  cellHeight,
+  onWellClick,
+}) {
+  const data = useMemo(
+    () => ({
+      datasets: well.indicators
+        .filter((indicator) => indicator.isDisplayed)
+        .map((indicator, indIndex) => {
+          // Default (showFiltered=false) reads the pre-decimated
+          // miniRawPoints (~80 points/well) — Chart.js holds 96×80 across
+          // the whole grid instead of 96×N raw, which is what made huge
+          // files load-OOM. showFiltered=true builds {x,y}[] for this
+          // well's filtered data on demand; toggling it on a 200MB+ file
+          // across all 384 wells is expensive (~700MB transient), so
+          // prefer FilteredGraph for bulk filtered viewing on big data.
+          const filteredPoints =
+            showFiltered &&
+            typeof indicator.materializeFilteredData === "function"
+              ? indicator.materializeFilteredData()
+              : indicator.filteredData;
+          const rawPoints =
+            indicator.miniRawPoints || indicator.rawData;
+          return {
+            label: `${well.label} - Indicator ${indIndex + 1}`,
+            data: showFiltered ? filteredPoints : rawPoints,
+            fill: false,
+            borderColor: INDICATOR_COLORS[indIndex % INDICATOR_COLORS.length],
+            tension: 1,
+            hidden: !indicator.isDisplayed,
+          };
+        }),
+    }),
+    [well, showFiltered]
+  );
+
+  const style = useMemo(
+    () => ({
+      ...MINI_LINE_BASE_STYLE,
+      maxWidth: cellWidth,
+      maxHeight: cellHeight,
+      ...(isSelected ? { border: "solid 0.1em yellow" } : {}),
+    }),
+    [isSelected, cellWidth, cellHeight]
+  );
+
+  const handleClick = useCallback(() => onWellClick(well.id), [onWellClick, well.id]);
+
+  return (
+    <Line
+      type="line"
+      id="minigraphCanvas"
+      className="minigraph-and-controls__minigraph-canvas"
+      data-well-id={well.id}
+      style={style}
+      data={data}
+      options={minigraphOptions}
+      onClick={handleClick}
+    />
+  );
+});
+
 export const MiniGraphGrid = ({
-  analysisData,
   extractedIndicatorTimes,
   smallCanvasWidth,
   smallCanvasHeight,
@@ -147,16 +233,27 @@ export const MiniGraphGrid = ({
       : well.indicators?.rawData?.map((point) => point.y) || []
   );
 
-  const handleWellClick = (wellId) => {
-    const isSelected = selectedWellArray.some((well) => well.id === wellId);
+  const handleWellClick = useCallback(
+    (wellId) => {
+      const isSelected = selectedWellArray.some((w) => w.id === wellId);
+      if (isSelected) {
+        handleDeselectWell(wellId);
+      } else {
+        const well = wellArrays.find((w) => w.id === wellId);
+        handleSelectWell(well);
+      }
+    },
+    [selectedWellArray, wellArrays, handleSelectWell, handleDeselectWell]
+  );
 
-    if (isSelected) {
-      handleDeselectWell(wellId); // Deselect by ID if already selected
-    } else {
-      const well = wellArrays.find((well) => well.id === wellId);
-      handleSelectWell(well); // Select by finding the well in wellArrays
+  // O(1) selection lookup; rebuilt only when the selection set changes.
+  const selectedIdSet = useMemo(() => {
+    const s = new Set();
+    if (selectedWellArray) {
+      for (let i = 0; i < selectedWellArray.length; i++) s.add(selectedWellArray[i].id);
     }
-  };
+    return s;
+  }, [selectedWellArray]);
 
   // Handle selection change to track selected wells during drag
   const handleSelectionChange = (box) => {
@@ -304,7 +401,6 @@ export const MiniGraphGrid = ({
 
   const minigraphOptions = useMemo(() => {
     return MiniGraphOptions(
-      analysisData,
       extractedIndicatorTimes,
       wellArrays,
       yValues,
@@ -313,7 +409,6 @@ export const MiniGraphGrid = ({
       maxPoints // <-- pass from context
     );
   }, [
-    // analysisData,
     // extractedIndicatorTimes,
     wellArrays,
     // yValues,
@@ -321,15 +416,8 @@ export const MiniGraphGrid = ({
     maxPoints,
   ]);
 
-  const indicatorColors = [
-    "rgb(75, 192, 192)", // Teal
-    "rgb(255, 99, 132)", // Red
-    "rgb(54, 162, 235)", // Blue
-    "rgb(255, 206, 86)", // Yellow
-    "rgb(153, 102, 255)", // Purple
-    "rgb(255, 159, 64)", // Orange
-    // Add more colors as needed
-  ];
+  // indicatorColors hoisted to module scope as INDICATOR_COLORS so MiniLine
+  // sees a stable reference and React.memo can short-circuit re-renders.
 
   // Helper: in-thread decimation (downsample)
   function downsample(data, samples = 50) {
@@ -504,63 +592,15 @@ export const MiniGraphGrid = ({
               wellArrays.map((well) => ( */}
             {wellArrays?.length > 0 &&
               wellArrays.map((well) => (
-                <Line
-                  type="line"
-                  id="minigraphCanvas"
-                  className="minigraph-and-controls__minigraph-canvas"
-                  data-well-id={well.id}
-                  style={
-                    selectedWellArray?.some(
-                      (selectedWell) => selectedWell.id === well.id
-                    )
-                      ? {
-                          border: "solid 0.1em yellow",
-                          zIndex: 10,
-                          // width: "95%",
-                          // height: "95%",
-                          width: "100%",
-                          height: "100%",
-                          maxWidth: cellWidth,
-                          maxHeight: cellHeight,
-                          // width: cellWidth,
-                          // height: cellHeight,
-                          // width: `${cellWidth}px`,
-                          // height: `${cellHeight}px`,
-                        } // styling for selected wells
-                      : {
-                          // border: "solid 1px grey",
-
-                          zIndex: 10,
-                          // width: "95%",
-                          // height: "95%",
-                          width: "100%",
-                          height: "100%",
-                          maxWidth: cellWidth,
-                          maxHeight: cellHeight,
-                          // width: cellWidth,
-                          // height: cellHeight,
-                          // width: `${cellWidth}px`,
-                          // height: `${cellHeight}px`,
-                        } // styling for un-selected wells
-                  }
+                <MiniLine
                   key={well.id}
-                  data={{
-                    datasets: well.indicators
-                      .filter((indicator) => indicator.isDisplayed)
-                      .map((indicator, indIndex) => ({
-                        label: `${well.label} - Indicator ${indIndex + 1}`, // Label for each indicator
-                        data: showFiltered
-                          ? indicator.filteredData
-                          : indicator.rawData,
-                        fill: false,
-                        borderColor:
-                          indicatorColors[indIndex % indicatorColors.length], // Cycle colors
-                        tension: 1,
-                        hidden: !indicator.isDisplayed,
-                      })),
-                  }}
-                  options={minigraphOptions}
-                  onClick={() => handleWellClick(well.id)}
+                  well={well}
+                  isSelected={selectedIdSet.has(well.id)}
+                  showFiltered={showFiltered}
+                  minigraphOptions={minigraphOptions}
+                  cellWidth={cellWidth}
+                  cellHeight={cellHeight}
+                  onWellClick={handleWellClick}
                 />
               ))}
           </div>
