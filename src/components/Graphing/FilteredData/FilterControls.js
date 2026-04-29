@@ -6,6 +6,8 @@ import Button from "@mui/material/Button";
 
 import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
+import ToggleButton from "@mui/material/ToggleButton";
+import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Modal from "@mui/material/Modal";
 import EditIcon from "@mui/icons-material/Edit";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
@@ -63,6 +65,8 @@ export const FilterControls = ({
   smallCanvasWidth,
   smallCanvasHeight,
   handleResetFilteredData,
+  yScaleMode,
+  setYScaleMode,
 }) => {
   const {
     wellArrays,
@@ -542,6 +546,43 @@ export const FilterControls = ({
 
   return (
     <div className="filter-controls">
+      {/* Y Scale toggle — sits above Apply Filters in the same column. */}
+      <Tooltip
+        title="Y Scale: Universal (whole plate) or Relative (selected wells only)"
+        arrow
+        placement="top"
+        disableInteractive
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            marginBottom: "0.6em",
+          }}
+        >
+          <Typography sx={{ fontSize: "0.7em", lineHeight: 1, marginBottom: "0.25em" }}>
+            Y Scale
+          </Typography>
+          <ToggleButtonGroup
+            size="small"
+            exclusive
+            value={yScaleMode}
+            onChange={(_, v) => {
+              if (v && setYScaleMode) setYScaleMode(v);
+            }}
+            sx={{ height: "1.6em" }}
+            aria-label="filtered waves y-scale source"
+          >
+            <ToggleButton value="all" sx={{ fontSize: "0.65em", padding: "0 0.6em" }}>
+              Universal
+            </ToggleButton>
+            <ToggleButton value="selected" sx={{ fontSize: "0.65em", padding: "0 0.6em" }}>
+              Relative
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </div>
+      </Tooltip>
       {/* Apply Filters Button */}
       <Tooltip
         title="Apply all enabled filters"

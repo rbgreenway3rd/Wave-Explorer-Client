@@ -3,7 +3,6 @@ import "chartjs-adapter-date-fns";
 Chart.register(...registerables);
 
 export const MiniGraphOptions = (
-  analysisData,
   extractedIndicatorTimes,
   wellArrays,
   yValues,
@@ -25,18 +24,32 @@ export const MiniGraphOptions = (
   // Use all wells for min/max calculation
   const wellsToUse = wellArrays;
 
-  // Efficient min/max calculation for allYValues
+  // Efficient min/max calculation for allYValues. Reads the appropriate
+  // typed-array directly so iterating every well doesn't force {x,y}[]
+  // materialization, which would OOM on large datasets.
   let minYValue = Infinity;
   let maxYValue = -Infinity;
   for (const well of wellsToUse) {
     for (const indicator of well.indicators) {
       if (!indicator.isDisplayed) continue;
+      const ys = showFiltered ? indicator.filteredYs : indicator.rawYs;
+      if (ys) {
+        for (let i = 0; i < ys.length; i++) {
+          const y = ys[i];
+          if (y < minYValue) minYValue = y;
+          if (y > maxYValue) maxYValue = y;
+        }
+        continue;
+      }
       const data = showFiltered
         ? indicator.filteredData
         : indicator.rawData ?? [];
-      for (const point of data) {
-        if (point.y < minYValue) minYValue = point.y;
-        if (point.y > maxYValue) maxYValue = point.y;
+      if (Array.isArray(data)) {
+        for (const point of data) {
+          if (!point) continue;
+          if (point.y < minYValue) minYValue = point.y;
+          if (point.y > maxYValue) maxYValue = point.y;
+        }
       }
     }
   }

@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useState } from "react";
 import "./FileUploader.css";
 import { DataContext } from "../../providers/DataProvider.js";
 import { Project, Plate, Experiment, Well, Indicator } from "../Models.js";
+import { lttbTyped } from "../../utilities/lttbTyped.js";
 import Button from "@mui/material/Button";
 import Tooltip from "@mui/material/Tooltip";
 import DriveFolderUploadIcon from "@mui/icons-material/DriveFolderUpload";
@@ -73,8 +74,19 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
   }, [dataExtracted, extractedTxtData]);
 
   useEffect(() => {
-    if (dataExtracted && fileType === "dat") {
-      distributeData(rowLabels, analysisData, extractedIndicatorTimes); // Distribute data after extraction
+    if (
+      dataExtracted &&
+      fileType === "dat" &&
+      analysisData &&
+      Object.keys(analysisData).length > 0
+    ) {
+      distributeData(rowLabels, analysisData, extractedIndicatorTimes);
+      // Phase D: analysisData duplicates rawYs (per-well column copies were
+      // just built by distributeData). Free the ~384MB flat row-major buffer
+      // now that nothing else reads it. The empty-object guard above keeps
+      // this effect from re-firing distributeData when the cleared state
+      // change re-triggers it.
+      setAnalysisData({});
     }
   }, [
     dataExtracted,
@@ -91,39 +103,61 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
       : "A" + String.fromCharCode(row + 40) + String(col + 1).padStart(2, "0");
   };
 
+  // Build the project tree directly from the worker's typed-array output.
+  // For each well × indicator, do one strided copy out of the row-major flat
+  // analysisData buffer into a per-well Float64Array, and pre-decimate to
+  // ~80 points for the mini grid. No {x,y}[] is allocated for any well —
+  // those views are built lazily by indicator.materializeRawData() only for
+  // the wells that get displayed in a non-mini chart. Old version allocated
+  // ~10M {x,y} objects on the main thread for a 500MB DAT, which OOM'd the
+  // renderer.
   const distributeData = (
     rowLabels,
-    analysisData, // Expecting an object with indicator names as keys, each containing an array of data points
-    extractedIndicatorTimes // Expecting an object with indicator names as keys, each containing an array of time points
+    analysisData,
+    extractedIndicatorTimes
   ) => {
-    const plateDimensions = extractedRows * extractedColumns;
     const newProject = new Project(
       extractedProjectTitle,
       extractedProjectDate,
       extractedProjectTime,
       extractedProjectInstrument,
       extractedProjectProtocol
-    ); // Create new project
+    );
     const newPlate = new Plate(
       extractedRows,
       extractedColumns,
       extractedAssayPlateBarcode,
       extractedAddPlateBarcode
-    ); // Create new plate
-
+    );
     newProject.plate.push(newPlate);
-
     const newExperiment = new Experiment(
       extractedBinning,
       extractedRows,
       extractedColumns,
       extractedIndicatorConfigurations,
       extractedOperator
-    ); // Create new experiment
+    );
     newPlate.experiments.push(newExperiment);
 
-    let newWellArrays = [];
+    const wellCount = extractedRows * extractedColumns;
+    // Cache once per indicator so we don't re-derive these inside the
+    // inner loop.
+    const indicatorNames = Object.keys(analysisData);
+    const indicatorMeta = indicatorNames.map((name) => {
+      const flat = analysisData[name];
+      const xs = extractedIndicatorTimes[name];
+      const totalLen = flat ? flat.length : 0;
+      const rowCount = wellCount > 0 ? Math.floor(totalLen / wellCount) : 0;
+      // Keep the times as a Float64Array shared across every well in this
+      // indicator — saves wellCount-1 copies.
+      const xsTyped =
+        xs && xs.buffer instanceof ArrayBuffer ? xs : Float64Array.from(xs || []);
+      return { name, flat, xs: xsTyped, rowCount };
+    });
+
     let wellId = 1;
+    const newWellArrays = new Array(wellCount);
+    let writeIdx = 0;
     for (let rowIndex = 0; rowIndex < rowLabels.length; rowIndex++) {
       for (let colIndex = 1; colIndex <= extractedColumns; colIndex++) {
         const wellKey = `${rowLabels[rowIndex]}${colIndex}`;
@@ -134,44 +168,51 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
           wellLabel,
           colIndex - 1,
           rowIndex
-        ); // Create new well
-        // Loop through each indicator for the well
-        let indicatorId = 0;
-        for (let wellKey in analysisData) {
-          let indicatorData = [];
-          let timeData = extractedIndicatorTimes[wellKey];
-          let i = 0;
-          // Collect data for this indicator in the current well
-          for (
-            let y = rowIndex * extractedColumns + (colIndex - 1);
-            y < analysisData[wellKey].length;
-            y += extractedRows * extractedColumns
-          ) {
-            indicatorData.push({
-              x: timeData[i],
-              y: analysisData[wellKey][y],
-            });
-            i++;
+        );
+        const wellIdx = rowIndex * extractedColumns + (colIndex - 1);
+        for (let i = 0; i < indicatorMeta.length; i++) {
+          const meta = indicatorMeta[i];
+          const rowCount = meta.rowCount;
+          const flat = meta.flat;
+          const wellYs = new Float64Array(rowCount);
+          // Strided copy: row-major → per-well column.
+          for (let r = 0; r < rowCount; r++) {
+            wellYs[r] = flat[r * wellCount + wellIdx];
           }
           const indicator = new Indicator(
-            indicatorId++,
-            wellKey,
-            indicatorData, // filteredData is initially set to the raw data
-            [...indicatorData], // Copy of the data for rawData
-            timeData, // Time points specific to this indicator
+            i,
+            meta.name,
+            [], // rawData lazy-built; setRawTypedArrays clears it
+            [], // filteredData empty until first filter run
+            meta.xs, // time array (shared ref)
             true
-          ); // Create new indicator and add to well
+          );
+          indicator.setRawTypedArrays(meta.xs, wellYs);
+          // Seed filtered typed arrays as aliases of the raw ones — same
+          // Float64Array references, zero extra memory. This makes the
+          // FilteredGraph and Heatmap render real data at load (matching
+          // the rawData == filteredData seed semantics that distributeData
+          // had pre-Phase-C). When a filter runs, mergeFilteredBack calls
+          // setFilteredTypedArrays with NEW worker-output buffers, so the
+          // raw side stays untouched.
+          indicator.filteredXs = meta.xs;
+          indicator.filteredYs = wellYs;
+          // Pre-decimated 80-point view for MiniGraphGrid. ~32B × 80 per
+          // well per indicator — total ~250KB at 96 wells × 2 indicators.
+          indicator.miniRawPoints = lttbTyped(meta.xs, wellYs, 80);
+          // Filtered side initially aliases raw — same shared decimation,
+          // no extra cost. setFilteredTypedArrays recomputes it after a
+          // filter run.
+          indicator.miniFilteredPoints = indicator.miniRawPoints;
           newWell.indicators.push(indicator);
         }
-        newExperiment.wells.push(newWell); // Add well to experiment
-        newWellArrays.push(newWell); // Add well to array
+        newExperiment.wells.push(newWell);
+        newWellArrays[writeIdx++] = newWell;
       }
     }
-    setWellArraysUpdated(true); // Notify that well arrays are updated
+    setWellArraysUpdated(true);
     setSelectedWellArray([]);
-    setProject(newProject); // Set the new project in context
-    console.log(newProject);
-    console.log("extractedIndicators: ", extractedIndicators);
+    setProject(newProject);
   };
 
   const handleExcelFileSelect = async (file) => {
@@ -315,16 +356,15 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
     width: 1,
   });
 
-  // Handle file selection and reading for .dat files
+  // Handle file selection and reading for .dat files. The File (a Blob) is
+  // passed directly to the extractWorker, which streams it via
+  // file.stream() — we never materialize the full UTF-16 string on the main
+  // thread. This is the load-side pivot that makes 500MB+ files possible
+  // without OOMing the renderer.
   const handleDatFileSelect = async (file) => {
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const fileContent = e.target.result;
-      await extractAllData(fileContent); // Extract all data from .dat file
-      setFileType("dat");
-      setDataExtracted(true); // Set state to trigger data distribution
-    };
-    reader.readAsText(file); // Read file as text
+    await extractAllData(file);
+    setFileType("dat");
+    setDataExtracted(true);
   };
 
   // Handle file selection and reading

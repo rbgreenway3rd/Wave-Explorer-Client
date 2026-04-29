@@ -10,6 +10,9 @@ import {
   RadioGroup,
   Typography,
   FormControl,
+  ToggleButtonGroup,
+  ToggleButton,
+  Tooltip,
 } from "@mui/material";
 import FitScreenTwoToneIcon from "@mui/icons-material/FitScreenTwoTone";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
@@ -28,6 +31,8 @@ export const LargeGraphControls = ({
   togglePanState,
   showLargeGraph,
   setShowLargeGraph,
+  yScaleMode,
+  setYScaleMode,
 }) => {
   const { overlayRawAndFiltered, setOverlayRawAndFiltered } =
     useContext(DataContext);
@@ -40,6 +45,42 @@ export const LargeGraphControls = ({
         }}
       >
         <div className="zoom-controls">
+          <Tooltip
+            title="Y Scale: Universal (whole plate) or Relative (selected wells only)"
+            disableInteractive
+            arrow
+            placement="top"
+          >
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                marginBottom: "0.4em",
+              }}
+            >
+              <Typography sx={{ fontSize: "0.7em", lineHeight: 1, marginBottom: "0.2em" }}>
+                Y Scale
+              </Typography>
+              <ToggleButtonGroup
+                size="small"
+                exclusive
+                value={yScaleMode}
+                onChange={(_, v) => {
+                  if (v) setYScaleMode(v);
+                }}
+                sx={{ height: "1.6em" }}
+                aria-label="raw waves y-scale source"
+              >
+                <ToggleButton value="all" sx={{ fontSize: "0.65em", padding: "0 0.6em" }}>
+                  Universal
+                </ToggleButton>
+                <ToggleButton value="selected" sx={{ fontSize: "0.65em", padding: "0 0.6em" }}>
+                  Relative
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </div>
+          </Tooltip>
           <FormControlLabel
             style={{
               // backgroundColor: "rgb(120, 120, 120)",

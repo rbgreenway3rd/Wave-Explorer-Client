@@ -26,6 +26,10 @@ export class StaticRatio_Filter {
     this.end = end;
   }
 
+  serialize() {
+    return { type: "staticRatio", params: { start: this.start, end: this.end } };
+  }
+
   execute(data) {
     for (let w = 0; w < data.length; ++w) {
       for (let i = 0; i < data[w].indicators.length; ++i) {
@@ -95,6 +99,13 @@ export class Smoothing_Filter {
   setParams(windowWidth, useMedian) {
     this.windowWidth = windowWidth;
     this.useMedian = useMedian;
+  }
+
+  serialize() {
+    return {
+      type: "smoothing",
+      params: { windowWidth: this.windowWidth, useMedian: this.useMedian },
+    };
   }
 
   median(arr) {
@@ -177,6 +188,17 @@ export class ControlSubtraction_Filter {
     this.applyWellArray = applyWellArray;
     console.log("control: ", controlWellArray);
     console.log("apply: ", applyWellArray);
+  }
+
+  serialize() {
+    return {
+      type: "controlSubtraction",
+      params: {
+        controlWellArray: this.controlWellArray,
+        applyWellArray: this.applyWellArray,
+        numberOfColumns: this.number_of_columns,
+      },
+    };
   }
 
   calculate_average_curve(wells) {
@@ -304,6 +326,10 @@ export class Derivative_Filter {
     this.isEnabled = value;
   }
 
+  serialize() {
+    return { type: "derivative", params: {} };
+  }
+
   execute(data) {
     for (let w = 0; w < data.length; w++) {
       for (let i = 0; i < data[w].indicators.length; i++) {
@@ -359,6 +385,13 @@ export class OutlierRemoval_Filter {
   setParams(halfWindow, threshold) {
     this.halfWindow = halfWindow;
     this.threshold = threshold;
+  }
+
+  serialize() {
+    return {
+      type: "outlierRemoval",
+      params: { halfWindow: this.halfWindow, threshold: this.threshold },
+    };
   }
 
   median(arr) {
@@ -459,6 +492,13 @@ export class FlatFieldCorrection_Filter {
     this.correctionMatrix = correctionMatrix;
   }
 
+  serialize() {
+    return {
+      type: "flatFieldCorrection",
+      params: { correctionMatrix: this.correctionMatrix },
+    };
+  }
+
   execute(data) {
     for (let w = 0; w < data.length; w++) {
       if (data.length !== this.correctionMatrix.length) {
@@ -508,6 +548,13 @@ export class DynamicRatio_Filter {
   setParams(numerator, denominator) {
     this.numerator = numerator;
     this.denominator = denominator;
+  }
+
+  serialize() {
+    return {
+      type: "dynamicRatio",
+      params: { numerator: this.numerator, denominator: this.denominator },
+    };
   }
 
   execute(data) {

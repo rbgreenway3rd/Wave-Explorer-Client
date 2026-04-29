@@ -25,7 +25,13 @@ import {
 import deepEqual from "fast-deep-equal"; // for deep comparison of project state
 import annotationPlugin from "chartjs-plugin-annotation";
 import zoomPlugin from "chartjs-plugin-zoom";
-import { ControlSubtraction_Filter } from "./Graphing/FilteredData/FilterModels.js";
+import useFilterWorkerPool from "../utilities/useFilterWorkerPool.js";
+import {
+  mergeFilteredBack,
+  splitPhasesByControlSubtraction,
+  serializeFilter,
+  computeControlAveragesFromPacked,
+} from "../utilities/filterPack.js";
 import html2canvas from "html2canvas";
 import { IconButton, Tooltip, Typography, Button } from "@mui/material";
 import { AddAPhotoTwoTone } from "@mui/icons-material";
@@ -44,7 +50,6 @@ export const CombinedComponent = ({ profile, setProfile }) => {
     wellArrays,
     rowLabels,
     extractedIndicatorTimes,
-    analysisData,
     showFiltered,
     setShowFiltered,
     selectedWellArray,
@@ -120,6 +125,15 @@ export const CombinedComponent = ({ profile, setProfile }) => {
   // State for tracking filter application progress
   const [isApplyingFilters, setIsApplyingFilters] = useState(false);
   const [isLoadingFilterResults, setIsLoadingFilterResults] = useState(false);
+  const [filterProgress, setFilterProgress] = useState(null);
+
+  // Y-axis scale source per graph: "all" → whole-plate range (default,
+  // good for comparing wells in context); "selected" → auto-zoom to the
+  // selected wells' range (good for reading detail).
+  const [largeGraphYScaleMode, setLargeGraphYScaleMode] = useState("all");
+  const [filteredGraphYScaleMode, setFilteredGraphYScaleMode] = useState("all");
+
+  const filterPool = useFilterWorkerPool();
 
   // Extracted plate and experiment data from the project
   const plate = project?.plate || [];
@@ -175,69 +189,101 @@ export const CombinedComponent = ({ profile, setProfile }) => {
   };
 
   const applyEnabledFilters = async () => {
-    setIsApplyingFilters(true); // Move this to the very start
+    setIsApplyingFilters(true);
     setIsLoadingFilterResults(true);
-    console.log("Applying filters started...");
-    console.log("filters: ", selectedFilters);
-    setTimeout(async () => {
-      try {
-        const updatedWellArrays = wellArrays.map((well) => ({
-          ...well,
-          indicators: well.indicators.map((indicator) => {
-            indicator.filteredData = indicator.rawData.map((point) => ({
-              ...point,
-            }));
-            return indicator;
-          }),
-        }));
-
-        for (let f = 0; f < enabledFilters.length; f++) {
-          console.log(`Executing filter:`, enabledFilters[f]);
-          // Log filteredData before
-          console.log(
-            `Before filter ${f}:`,
-            JSON.stringify(
-              updatedWellArrays[0].indicators[0].filteredData.slice(0, 10)
-            )
-          );
-          if (enabledFilters[f] instanceof ControlSubtraction_Filter) {
-            enabledFilters[f].calculate_average_curve(updatedWellArrays);
-          }
-          await enabledFilters[f].execute(updatedWellArrays);
-          // Log filteredData after
-          console.log(
-            `After filter ${f}:`,
-            JSON.stringify(
-              updatedWellArrays[0].indicators[0].filteredData.slice(0, 10)
-            )
-          );
-        }
-
-        const updatedProject = {
-          ...project,
-          plate: project.plate.map((plate, index) => ({
-            ...plate,
-            experiments: plate.experiments.map((experiment, expIndex) => ({
-              ...experiment,
-              wells: updatedWellArrays,
-            })),
-          })),
+    setFilterProgress({ phaseIndex: 0, totalPhases: 0 });
+    try {
+      // Phase D: defer the pack to dispatch time. Phase 1 uses runFromRaw,
+      // which packs each shard inline as it sends it to a worker — main
+      // thread peak drops from ~770MB (pack-everything-upfront) to
+      // ~770MB / numShards. Phases 2+ work off the already-packed result
+      // and use the unchanged `run` API, since their input lives in
+      // worker-transferred buffers, not rawXs/rawYs.
+      const phases = splitPhasesByControlSubtraction(enabledFilters);
+      let packed = null;
+      for (let p = 0; p < phases.length; p++) {
+        const phase = phases[p];
+        const onProgress = (evt) => {
+          setFilterProgress({
+            phaseIndex: p,
+            totalPhases: phases.length,
+            filterIndex: evt && evt.filterIndex,
+            totalFilters: evt && evt.totalFilters,
+            shardsDone: evt && evt.shardsDone,
+            totalShards: evt && evt.totalShards,
+          });
         };
-
-        setProject(updatedProject);
-        const updatedSelectedWellArray = selectedWellArray.map(
-          (selectedWell) =>
-            updatedWellArrays.find((well) => well.id === selectedWell.id) ||
-            selectedWell
-        );
-        setSelectedWellArray(updatedSelectedWellArray);
-      } catch (error) {
-        console.error("Error applying filters:", error);
-      } finally {
-        setIsApplyingFilters(false);
-        setIsLoadingFilterResults(false);
+        if (phase.kind === "segment") {
+          if (packed === null) {
+            packed = await filterPool.runFromRaw({
+              wellArrays,
+              filters: phase.filters.map(serializeFilter),
+              onProgress,
+              shardable: true,
+            });
+          } else {
+            packed = await filterPool.run({
+              wells: packed,
+              filters: phase.filters.map(serializeFilter),
+              onProgress,
+              shardable: true,
+            });
+          }
+        } else {
+          // ControlSubtraction must run un-sharded: its apply-well lookup is
+          // by global row/col, which only matches the full packed array.
+          if (packed === null) {
+            // CS as the very first phase. runFromRaw with shardable:false
+            // packs the whole plate once (equivalent to pre-Phase-D).
+            const seedPacked = await filterPool.runFromRaw({
+              wellArrays,
+              filters: [],
+              shardable: false,
+            });
+            packed = seedPacked;
+          }
+          const avgCurves = computeControlAveragesFromPacked(packed, phase.filter);
+          packed = await filterPool.run({
+            wells: packed,
+            filters: [serializeFilter(phase.filter)],
+            avgCurves,
+            onProgress,
+            shardable: false,
+          });
+        }
       }
-    }, 0);
+      mergeFilteredBack(wellArrays, packed);
+
+      // New wellArrays reference (same Indicator instances) so downstream
+      // memoization detects the update.
+      const updatedWellArrays = wellArrays.map((well) => ({
+        ...well,
+        indicators: [...well.indicators],
+      }));
+      const updatedProject = {
+        ...project,
+        plate: project.plate.map((plate) => ({
+          ...plate,
+          experiments: plate.experiments.map((experiment) => ({
+            ...experiment,
+            wells: updatedWellArrays,
+          })),
+        })),
+      };
+      setProject(updatedProject);
+      const updatedSelectedWellArray = selectedWellArray.map(
+        (selectedWell) =>
+          updatedWellArrays.find((well) => well.id === selectedWell.id) ||
+          selectedWell
+      );
+      setSelectedWellArray(updatedSelectedWellArray);
+    } catch (error) {
+      console.error("Error applying filters:", error);
+    } finally {
+      setIsApplyingFilters(false);
+      setIsLoadingFilterResults(false);
+      setFilterProgress(null);
+    }
   };
 
   const handleResetFilteredData = () => {
@@ -336,14 +382,20 @@ export const CombinedComponent = ({ profile, setProfile }) => {
     [selectedWellArray]
   );
 
-  // Memoize rawGraphData to prevent unnecessary re-renders
+  // Memoize rawGraphData to prevent unnecessary re-renders. Materialize
+  // {x,y}[] only for the small set of selected wells — raw storage is
+  // typed-array post-load (Phase C), so the full {x,y}[] view across all
+  // wells would re-OOM the renderer.
   const rawGraphData = useMemo(
     () => ({
-      labels: indicatorTimes[0], // Adjust based on your indicator-specific times
+      labels: indicatorTimes[0],
       datasets: selectedWellArray.flatMap((well, wellIndex) =>
         well.indicators.map((indicator, indIndex) => ({
           label: `${well.label} - Indicator ${indIndex + 1}`,
-          data: indicator.rawData,
+          data:
+            typeof indicator.materializeRawData === "function"
+              ? indicator.materializeRawData()
+              : indicator.rawData,
           fill: false,
           borderColor: indicatorColors[indIndex % indicatorColors.length],
           tension: 0.1,
@@ -354,14 +406,19 @@ export const CombinedComponent = ({ profile, setProfile }) => {
     [indicatorTimes, selectedWellIds]
   );
 
-  // Memoize filteredGraphData to prevent unnecessary re-renders
+  // Memoize filteredGraphData to prevent unnecessary re-renders. Materialize
+  // {x,y}[] only for the small set of selected wells (filtered storage is
+  // typed-array post-apply; full {x,y}[] view across every well would OOM).
   const filteredGraphData = useMemo(
     () => ({
       labels: indicatorTimes[0],
       datasets: selectedWellArray.flatMap((well, wellIndex) =>
         well.indicators.map((indicator, indIndex) => ({
           label: `${well.label} - Indicator ${indIndex + 1}`,
-          data: indicator.filteredData,
+          data:
+            typeof indicator.materializeFilteredData === "function"
+              ? indicator.materializeFilteredData()
+              : indicator.filteredData,
           fill: false,
           borderColor: indicatorColors[indIndex % indicatorColors.length],
           tension: 0.1,
@@ -372,24 +429,24 @@ export const CombinedComponent = ({ profile, setProfile }) => {
     [indicatorTimes, selectedWellIds]
   );
 
-  // Configuration objects for graph options
+  // Configuration objects for graph options. yScaleWells controls whether
+  // the y-range is computed from the whole plate or just the selected wells.
   const largeGraphConfig = LargeGraphOptions(
-    analysisData,
     wellArrays,
     extractedIndicatorTimes,
     zoomState,
     zoomMode,
     panState,
-    panMode
+    panMode,
+    largeGraphYScaleMode === "selected" ? selectedWellArray : wellArrays
   );
 
-  // Generate the chart options with dynamic min/max y-values
   const filteredGraphConfig = FilteredGraphOptions(
-    analysisData,
     wellArrays,
     filteredGraphData,
     extractedIndicatorTimes,
-    annotations
+    annotations,
+    filteredGraphYScaleMode === "selected" ? selectedWellArray : wellArrays
   );
 
   const handleToggleDataShown = () => {
@@ -415,6 +472,36 @@ export const CombinedComponent = ({ profile, setProfile }) => {
               cursor: isApplyingFilters ? "wait" : "default",
             }}
           >
+            {isApplyingFilters && (
+              <div
+                style={{
+                  position: "fixed",
+                  top: 12,
+                  right: 12,
+                  background: "rgba(0,0,0,0.78)",
+                  color: "#fff",
+                  padding: "8px 14px",
+                  borderRadius: 6,
+                  fontSize: 13,
+                  zIndex: 9999,
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+                  pointerEvents: "none",
+                }}
+                role="status"
+                aria-live="polite"
+              >
+                Applying filters
+                {filterProgress && filterProgress.totalPhases
+                  ? ` — phase ${Math.min(
+                      filterProgress.phaseIndex + 1,
+                      filterProgress.totalPhases
+                    )} of ${filterProgress.totalPhases}`
+                  : "…"}
+                {filterProgress && filterProgress.shardsDone
+                  ? ` (${filterProgress.shardsDone}/${filterProgress.totalShards} shards)`
+                  : ""}
+              </div>
+            )}
             <section className="combined-component__wave-container">
               <header className="combined-component__minigraph-header">
                 <Typography
@@ -448,7 +535,6 @@ export const CombinedComponent = ({ profile, setProfile }) => {
                 ref={miniGraphGridComponentRef}
               >
                 <MiniGraphGrid
-                  analysisData={analysisData}
                   extractedIndicatorTimes={extractedIndicatorTimes}
                   largeCanvasWidth={largeCanvasWidth}
                   largeCanvasHeight={largeCanvasHeight}
@@ -529,7 +615,6 @@ export const CombinedComponent = ({ profile, setProfile }) => {
                     panMode={panMode}
                     rawGraphData={rawGraphData}
                     filteredGraphData={filteredGraphData}
-                    analysisData={analysisData}
                     extractedIndicatorTimes={extractedIndicatorTimes}
                     largeGraphConfig={largeGraphConfig}
                   />
@@ -546,6 +631,8 @@ export const CombinedComponent = ({ profile, setProfile }) => {
                   changePanMode={changePanMode}
                   showLargeGraph={showLargeGraph}
                   setShowLargeGraph={setShowLargeGraph}
+                  yScaleMode={largeGraphYScaleMode}
+                  setYScaleMode={setLargeGraphYScaleMode}
                 />
               </div>
             </section>
@@ -579,7 +666,6 @@ export const CombinedComponent = ({ profile, setProfile }) => {
                   timeData={extractedIndicatorTimes}
                   columnLabels={columnLabels}
                   rowLabels={rowLabels}
-                  analysisData={analysisData}
                   annotationRangeStart={annotationRangeStart}
                   annotationRangeEnd={annotationRangeEnd}
                   metricType={metricType}
@@ -626,7 +712,6 @@ export const CombinedComponent = ({ profile, setProfile }) => {
                 ref={filteredGraphComponentRef}
               >
                 <FilteredGraph
-                  analysisData={analysisData}
                   wellArrays={wellArrays}
                   extractedIndicatorTimes={extractedIndicatorTimes}
                   selectedWellArray={selectedWellArray}
@@ -654,6 +739,8 @@ export const CombinedComponent = ({ profile, setProfile }) => {
                   setAnnotationRangeStart={setAnnotationRangeStart}
                   setAnnotationRangeEnd={setAnnotationRangeEnd}
                   handleResetFilteredData={handleResetFilteredData}
+                  yScaleMode={filteredGraphYScaleMode}
+                  setYScaleMode={setFilteredGraphYScaleMode}
                 />
               </div>
             </section>

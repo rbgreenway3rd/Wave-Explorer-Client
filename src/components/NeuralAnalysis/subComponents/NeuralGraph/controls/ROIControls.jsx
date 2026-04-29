@@ -40,11 +40,12 @@ const ROIControls = ({
   const timeArray = React.useMemo(() => {
     if (!extractedIndicatorTimes) return null;
     if (Array.isArray(extractedIndicatorTimes)) return extractedIndicatorTimes;
+    if (ArrayBuffer.isView(extractedIndicatorTimes)) return extractedIndicatorTimes;
     // If it's an object with numeric keys, convert to array
     if (typeof extractedIndicatorTimes === "object") {
       const values = Object.values(extractedIndicatorTimes);
-      // Check if the first value is an array (nested structure)
-      if (values.length > 0 && Array.isArray(values[0])) {
+      // Check if the first value is an array or typed-array (nested structure)
+      if (values.length > 0 && (Array.isArray(values[0]) || ArrayBuffer.isView(values[0]))) {
         return values[0];
       }
       return values;

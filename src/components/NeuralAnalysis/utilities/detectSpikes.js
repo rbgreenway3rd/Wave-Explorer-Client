@@ -66,8 +66,17 @@ function kMeans(data, k = 2) {
   if (!Array.isArray(data) || data.length < 2) {
     return { centroids: [0, 0], assignments: data.map(() => 0) };
   }
-  // Initialize centroids: min and max
-  let centroids = [Math.min(...data), Math.max(...data)];
+  // Initialize centroids: min and max. Use explicit loop instead of
+  // Math.min(...data) — spread into a function call blows the JS engine's
+  // argument-count limit (~10K-65K) on large prominences arrays.
+  let initMin = Infinity;
+  let initMax = -Infinity;
+  for (let i = 0; i < data.length; i++) {
+    const v = data[i];
+    if (v < initMin) initMin = v;
+    if (v > initMax) initMax = v;
+  }
+  let centroids = [initMin, initMax];
   let assignments = new Array(data.length).fill(0);
   let changed = true;
   let maxIterations = 1000; // Prevent infinite loop
@@ -278,11 +287,19 @@ export function detectSpikes(data, options = {}) {
   const minProminenceRatio = options.minProminenceRatio ?? 10;
   const stdMultiplier = options.stdMultiplier ?? 3; // Used for cluster separation check (not individual peak filtering)
 
-  // Calculated global statistics
-  const allYValues = data.map((d) => d.y);
-  const n = allYValues.length;
-  const globalMin = Math.min(...allYValues);
-  const globalMax = Math.max(...allYValues);
+  // Calculated global statistics. Build allYValues, globalMin, globalMax
+  // in one pass — Math.min(...allYValues) on a 250K-point signal blows the
+  // V8 argument-count limit and throws "Maximum call stack size exceeded".
+  const n = data.length;
+  const allYValues = new Array(n);
+  let globalMin = Infinity;
+  let globalMax = -Infinity;
+  for (let i = 0; i < n; i++) {
+    const y = data[i].y;
+    allYValues[i] = y;
+    if (y < globalMin) globalMin = y;
+    if (y > globalMax) globalMax = y;
+  }
   const signalRange = globalMax - globalMin;
 
   // New: Compute robust std (MAD) for noise estimate

@@ -2,24 +2,43 @@ import { useContext } from "react";
 import { DataContext } from "../../../providers/DataProvider";
 
 export const FilteredGraphOptions = (
-  analysisData = [],
   wellArrays = [],
   filteredGraphData,
   extractedIndicatorTimes = [],
-  annotations = []
+  annotations = [],
+  // Wells to include in the y-range computation. Defaults to wellArrays
+  // (whole-plate scale). Pass selectedWellArray to auto-zoom to the
+  // selected wells' range instead.
+  yScaleWells = null
 ) => {
-  // const { wellArrays, extractedIndicatorTimes } = useContext(DataContext);
   let indicatorTimes = Object.values(extractedIndicatorTimes);
 
+  const wellsForRange = yScaleWells || wellArrays;
+
+  // Compute filtered y-range across the chosen well set. Reads typed-array
+  // filtered values directly when present so we don't force {x,y}[]
+  // materialization across every well (would OOM on huge files).
   let minYValue = Infinity;
   let maxYValue = -Infinity;
-  for (const well of wellArrays) {
+  for (const well of wellsForRange) {
     for (const indicator of well.indicators) {
       if (!indicator.isDisplayed) continue;
+      if (indicator.filteredYs) {
+        const ys = indicator.filteredYs;
+        for (let i = 0; i < ys.length; i++) {
+          const y = ys[i];
+          if (y < minYValue) minYValue = y;
+          if (y > maxYValue) maxYValue = y;
+        }
+        continue;
+      }
       const data = indicator.filteredData ?? [];
-      for (const point of data) {
-        if (point.y < minYValue) minYValue = point.y;
-        if (point.y > maxYValue) maxYValue = point.y;
+      if (Array.isArray(data)) {
+        for (const point of data) {
+          if (!point) continue;
+          if (point.y < minYValue) minYValue = point.y;
+          if (point.y > maxYValue) maxYValue = point.y;
+        }
       }
     }
   }

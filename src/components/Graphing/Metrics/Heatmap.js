@@ -3,12 +3,11 @@ import * as d3 from "d3";
 import { DataContext } from "../../../providers/DataProvider";
 import { ColormapValues } from "../config/HeatmapConfig";
 import {
-  linearRegression,
-  calculateSlope,
   getAllValues,
   getAllSlopes,
   getAllRanges,
 } from "./MetricsUtilities";
+import { filteredXyInRange } from "../../../utilities/filterPack";
 import "./Heatmap.css";
 
 const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
@@ -91,24 +90,26 @@ const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
   const maxSlope = useMemo(() => d3.max(allSlopes), [allSlopes]);
   const rangeExtent = useMemo(() => d3.extent(allRanges), [allRanges]);
 
-  // Calculate minMin and maxMin values
+  // Calculate minMin and maxMin values. Reads typed-array filtered data
+  // directly so we never trigger {x,y}[] materialization across all wells.
   useEffect(() => {
-    const minValues = wellArrays.map((well) => {
-      let heatmapData = well.indicators[metricIndicator]?.filteredData || [];
-      if (annotationRange.start !== null && annotationRange.end !== null) {
-        heatmapData = heatmapData.filter(
-          (point) =>
-            point.x >= annotationRange.start && point.x <= annotationRange.end
-        );
-      }
-      return heatmapData.length > 0
-        ? d3.min(heatmapData, (d) => d.y)
-        : Infinity;
-    });
-
-    setMinMin(d3.min(minValues));
-    setMaxMin(d3.max(minValues));
-    // console.log(d3.min(minValues), d3.max(minValues));
+    let minMinV = Infinity;
+    let maxMinV = -Infinity;
+    for (let w = 0; w < wellArrays.length; w++) {
+      const ind = wellArrays[w].indicators?.[metricIndicator];
+      const { ys } = filteredXyInRange(
+        ind,
+        annotationRange.start,
+        annotationRange.end
+      );
+      if (!ys || ys.length === 0) continue;
+      let localMin = Infinity;
+      for (let i = 0; i < ys.length; i++) if (ys[i] < localMin) localMin = ys[i];
+      if (localMin < minMinV) minMinV = localMin;
+      if (localMin > maxMinV) maxMinV = localMin;
+    }
+    setMinMin(minMinV === Infinity ? undefined : minMinV);
+    setMaxMin(maxMinV === -Infinity ? undefined : maxMinV);
   }, [wellArrays, metricIndicator, annotationRange]);
 
   const colorScale = useMemo(() => {
@@ -201,38 +202,57 @@ const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
 
     let newColors = [];
 
-    // First pass: draw all cells and their default borders
+    // First pass: draw all cells and their default borders. Reads filtered
+    // typed arrays directly via filteredXyInRange — never materializes the
+    // {x,y}[] form, which would OOM for every-well iteration on large data.
+    const isValidRange =
+      typeof annotationRange.start === "number" &&
+      typeof annotationRange.end === "number" &&
+      !isNaN(annotationRange.start) &&
+      !isNaN(annotationRange.end) &&
+      annotationRange.start < annotationRange.end;
     wellArrays.forEach((well, i) => {
       const row = Math.floor(i / numColumns);
       const col = i % numColumns;
 
-      let heatmapData = well.indicators[metricIndicator]?.filteredData || [];
-      // Defensive: Only filter if annotationRange is valid
-      const isValidRange =
-        typeof annotationRange.start === "number" &&
-        typeof annotationRange.end === "number" &&
-        !isNaN(annotationRange.start) &&
-        !isNaN(annotationRange.end) &&
-        annotationRange.start < annotationRange.end;
-      if (isValidRange && heatmapData.length > 0) {
-        // Snap annotation range to nearest available x values
-        const xs = heatmapData.map((d) => d.x);
-        // Find the closest x >= start
-        const snappedStart =
-          xs.find((x) => x >= annotationRange.start) ?? xs[0];
-        // Find the closest x <= end
-        const snappedEnd =
-          [...xs].reverse().find((x) => x <= annotationRange.end) ??
-          xs[xs.length - 1];
-        heatmapData = heatmapData.filter(
-          (point) => point.x >= snappedStart && point.x <= snappedEnd
-        );
-      }
+      const ind = well.indicators?.[metricIndicator];
+      const { xs, ys } = filteredXyInRange(
+        ind,
+        isValidRange ? annotationRange.start : null,
+        isValidRange ? annotationRange.end : null
+      );
 
-      const max = heatmapData.length > 0 ? d3.max(heatmapData, (d) => d.y) : 0;
-      const min = heatmapData.length > 0 ? d3.min(heatmapData, (d) => d.y) : 0;
-      const rangeOfYValues = max - min;
-      const slope = calculateSlope(heatmapData);
+      let max = 0;
+      let min = 0;
+      if (ys.length > 0) {
+        max = -Infinity;
+        min = Infinity;
+        for (let k = 0; k < ys.length; k++) {
+          const y = ys[k];
+          if (y < min) min = y;
+          if (y > max) max = y;
+        }
+      }
+      const rangeOfYValues = ys.length > 0 ? max - min : 0;
+      let slope = 0;
+      if (ys.length > 0) {
+        let xsum = 0;
+        let ysum = 0;
+        for (let k = 0; k < ys.length; k++) {
+          xsum += xs[k];
+          ysum += ys[k];
+        }
+        const xmean = xsum / ys.length;
+        const ymean = ysum / ys.length;
+        let num = 0;
+        let denom = 0;
+        for (let k = 0; k < ys.length; k++) {
+          const dx = xs[k] - xmean;
+          num += dx * (ys[k] - ymean);
+          denom += dx * dx;
+        }
+        slope = denom === 0 ? 0 : num / denom;
+      }
 
       const activeMetric =
         metricType === "Max"
@@ -350,16 +370,24 @@ const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
 
     if (index >= 0 && index < wellArrays.length) {
       const well = wellArrays[index];
-      let heatmapData = well.indicators[metricIndicator]?.filteredData || [];
-      if (annotationRange.start !== null && annotationRange.end !== null) {
-        heatmapData = heatmapData.filter(
-          (point) =>
-            point.x >= annotationRange.start && point.x <= annotationRange.end
-        );
+      const ind = well.indicators?.[metricIndicator];
+      const { ys } = filteredXyInRange(
+        ind,
+        annotationRange.start,
+        annotationRange.end
+      );
+      let max = 0;
+      let min = 0;
+      if (ys.length > 0) {
+        max = -Infinity;
+        min = Infinity;
+        for (let i = 0; i < ys.length; i++) {
+          const y = ys[i];
+          if (y < min) min = y;
+          if (y > max) max = y;
+        }
       }
-      const max = heatmapData.length > 0 ? d3.max(heatmapData, (d) => d.y) : 0;
-      const min = heatmapData.length > 0 ? d3.min(heatmapData, (d) => d.y) : 0;
-      const rangeOfYValues = max - min;
+      const rangeOfYValues = ys.length > 0 ? max - min : 0;
       // Tooltip only shows static values (not async slope)
       const activeMetric =
         metricType === "Max"

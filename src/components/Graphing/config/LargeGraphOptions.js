@@ -5,27 +5,46 @@ import { DataContext } from "../../../providers/DataProvider";
 Chart.register(zoomPlugin);
 
 export const LargeGraphOptions = (
-  analysisData = [],
   wellArrays = [],
   extractedIndicatorTimes = [],
   zoomState,
   zoomMode,
   panState,
-  panMode
+  panMode,
+  // Wells to include in the y-range computation. Defaults to wellArrays
+  // (whole-plate scale, matches pre-Phase-C behavior). Pass selectedWellArray
+  // to auto-zoom to the selected wells' range instead.
+  yScaleWells = null
 ) => {
-  // const { wellArrays, extractedIndicatorTimes } = useContext(DataContext);
   let indicatorTimes = Object.values(extractedIndicatorTimes);
 
-  // Efficient min/max calculation for y-values
+  const wellsForRange = yScaleWells || wellArrays;
+
+  // Efficient min/max for y-values. Reads the rawYs Float64Array directly
+  // so unselected wells (whose rawData {x,y}[] cache is empty post-Phase-C)
+  // still contribute to the range — falls back to {x,y}[] for any caller
+  // that hasn't migrated.
   let minYValue = Infinity;
   let maxYValue = -Infinity;
-  for (const well of wellArrays) {
+  for (const well of wellsForRange) {
     for (const indicator of well.indicators) {
       if (!indicator.isDisplayed) continue;
+      const ys = indicator.rawYs;
+      if (ys) {
+        for (let i = 0; i < ys.length; i++) {
+          const y = ys[i];
+          if (y < minYValue) minYValue = y;
+          if (y > maxYValue) maxYValue = y;
+        }
+        continue;
+      }
       const data = indicator.rawData ?? [];
-      for (const point of data) {
-        if (point.y < minYValue) minYValue = point.y;
-        if (point.y > maxYValue) maxYValue = point.y;
+      if (Array.isArray(data)) {
+        for (const point of data) {
+          if (!point) continue;
+          if (point.y < minYValue) minYValue = point.y;
+          if (point.y > maxYValue) maxYValue = point.y;
+        }
       }
     }
   }

@@ -65,39 +65,66 @@ export const DataProvider = ({ children }) => {
     const updatedWellArrays = experiment.wells || [];
     setWellArrays(updatedWellArrays); // Update wellArrays based on current project
 
-    // Calculate maxPoints for all displayed indicators (raw and filtered)
+    // Calculate maxPoints for all displayed indicators (raw and filtered).
+    // Reads typed-array length directly when available so we don't trigger
+    // a {x,y}[] materialization across every well on huge files.
     let maxCount = 0;
-    updatedWellArrays.forEach((well) => {
-      well.indicators?.forEach((indicator) => {
-        if (indicator.isDisplayed) {
-          const rawLen = Array.isArray(indicator.rawData)
-            ? indicator.rawData.length
-            : 0;
-          const filteredLen = Array.isArray(indicator.filteredData)
-            ? indicator.filteredData.length
-            : 0;
-          maxCount = Math.max(maxCount, rawLen, filteredLen);
-        }
-      });
-    });
+    for (let w = 0; w < updatedWellArrays.length; w++) {
+      const inds = updatedWellArrays[w].indicators || [];
+      for (let i = 0; i < inds.length; i++) {
+        const ind = inds[i];
+        if (!ind || !ind.isDisplayed) continue;
+        const rawLen = ind.rawYs
+          ? ind.rawYs.length
+          : Array.isArray(ind.rawData)
+          ? ind.rawData.length
+          : 0;
+        const filteredLen = ind.filteredYs
+          ? ind.filteredYs.length
+          : Array.isArray(ind.filteredData)
+          ? ind.filteredData.length
+          : 0;
+        if (rawLen > maxCount) maxCount = rawLen;
+        if (filteredLen > maxCount) maxCount = filteredLen;
+      }
+    }
     setMaxPoints(maxCount);
 
-    // Calculate globalMaxY across all wells and all indicators
+    // Calculate globalMaxY across all wells and indicators. Walks raw and
+    // filtered typed arrays directly — never forces materialization of
+    // either {x,y}[] view, which would OOM on huge files.
     let maxY = -Infinity;
-    updatedWellArrays.forEach((well) => {
-      well.indicators?.forEach((indicator) => {
-        // Check both rawData and filteredData for y values
-        [indicator.rawData, indicator.filteredData].forEach((dataArr) => {
-          if (Array.isArray(dataArr)) {
-            dataArr.forEach((pt) => {
-              if (pt && typeof pt.y === "number" && pt.y > maxY) {
-                maxY = pt.y;
-              }
-            });
+    for (let w = 0; w < updatedWellArrays.length; w++) {
+      const inds = updatedWellArrays[w].indicators || [];
+      for (let i = 0; i < inds.length; i++) {
+        const ind = inds[i];
+        if (!ind) continue;
+        const rYs = ind.rawYs;
+        if (rYs) {
+          for (let j = 0; j < rYs.length; j++) {
+            if (rYs[j] > maxY) maxY = rYs[j];
           }
-        });
-      });
-    });
+        } else if (Array.isArray(ind.rawData)) {
+          const rd = ind.rawData;
+          for (let j = 0; j < rd.length; j++) {
+            const y = rd[j] && rd[j].y;
+            if (typeof y === "number" && y > maxY) maxY = y;
+          }
+        }
+        const fYs = ind.filteredYs;
+        if (fYs) {
+          for (let j = 0; j < fYs.length; j++) {
+            if (fYs[j] > maxY) maxY = fYs[j];
+          }
+        } else if (Array.isArray(ind.filteredData)) {
+          const fd = ind.filteredData;
+          for (let j = 0; j < fd.length; j++) {
+            const y = fd[j] && fd[j].y;
+            if (typeof y === "number" && y > maxY) maxY = y;
+          }
+        }
+      }
+    }
     setGlobalMaxY(maxY === -Infinity ? undefined : maxY);
   }, [project]);
 
@@ -440,12 +467,18 @@ export const DataProvider = ({ children }) => {
     new URL("../workers/extractWorker.js", import.meta.url)
   );
 
-  // Function to handle the entire asynchronous extraction process and update state using a Web Worker
-  function extractAllData(content) {
-    return new Promise((resolve) => {
+  // Accepts either a string (legacy / demo-file XHR path) or a File/Blob
+  // (preferred — streamed in the worker). The worker handles both shapes
+  // and returns the same result format. Float64Array fields in the result
+  // are zero-copy transferred when the input is a Blob.
+  function extractAllData(input) {
+    return new Promise((resolve, reject) => {
       extractWorker.onmessage = (e) => {
         const result = e.data;
-        // Update all state with the result from the worker
+        if (result && result.__error) {
+          reject(new Error(result.message || "extractWorker error"));
+          return;
+        }
         setExtractedIndicators(result.extractedIndicators);
         setExtractedLines(result.extractedLines);
         setExtractedRows(result.extractedRows);
@@ -467,7 +500,11 @@ export const DataProvider = ({ children }) => {
         setAnalysisData(result.analysisData);
         resolve(result);
       };
-      extractWorker.postMessage({ content });
+      if (input && typeof input.stream === "function") {
+        extractWorker.postMessage({ file: input });
+      } else {
+        extractWorker.postMessage({ content: input });
+      }
     });
   }
 
