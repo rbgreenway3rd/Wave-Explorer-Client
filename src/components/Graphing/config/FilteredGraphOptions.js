@@ -81,7 +81,7 @@ export const FilteredGraphOptions = (
         annotations: annotations,
       },
     },
-    maintainAspectRatio: true,
+    maintainAspectRatio: false,
     responsive: true,
     scales: {
       x: {

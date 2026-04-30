@@ -1,0 +1,132 @@
+/* primitives.css — cross-cutting opt-in rules that pair with the
+ * components/ui/ primitive library. Loaded after tokens.css so the rules
+ * here can reference design-token vars.
+ *
+ * Each rule is opt-in via an ancestor class — never a global override —
+ * so legacy un-migrated screens keep their existing styling unchanged.
+ */
+
+/* ---- ui-clean-forms ----------------------------------------------------
+ * Resets the legacy MuiFormControlLabel global hack (gray pill bg +
+ * uppercase + borderBottom) inside any subtree that opts in. Apply at the
+ * root of a migrated panel so all FormControlLabels inside RadioGroups
+ * etc. get clean, tokenized typography.
+ *
+ * Specificity 0,2,0 beats the legacy theme rule (0,1,0) without
+ * !important.
+ */
+.ui-clean-forms .MuiFormControlLabel-root {
+  background-color: transparent;
+  border-bottom: none;
+  text-transform: none;
+  padding: 0;
+  margin: 0 var(--space-1) 0 0;
+}
+
+.ui-clean-forms .MuiFormControlLabel-label {
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text);
+  line-height: var(--line-height-tight);
+}
+
+/* MuiFormLabel (the "Indicator" / "Metric" / etc. group titles) reads as
+ * tiny gray uppercase by default — clean it up alongside the labels.
+ */
+.ui-clean-forms .MuiFormLabel-root {
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  text-transform: none;
+  margin-bottom: var(--space-1);
+}
+
+/* ---- ui-divider -------------------------------------------------------
+ * Soft section divider — diffused 1px shadow instead of a hard border.
+ * Use as a top or bottom edge on section headers/footers when you want
+ * a subtle separation without the cut-out edge of a solid border.
+ */
+.ui-divider {
+  height: 0;
+  margin: 0;
+  border: none;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+}
+
+/* Edge variants — apply as a class on a parent element to get a soft
+ * separator at the top or bottom of that element instead of a child <hr>. */
+.ui-divider-top {
+  box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.06);
+}
+.ui-divider-bottom {
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+}
+
+/* ---- TextField focus refinement --------------------------------------
+ * Tighter focus ring on text inputs inside any `.ui-clean-forms` subtree:
+ * replaces MUI's default 2px outlined-input focus border with the
+ * design-system focus-ring shadow, matching primitive Button/IconButton.
+ */
+.ui-clean-forms .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--color-primary);
+  border-width: 1px;
+}
+
+.ui-clean-forms .MuiOutlinedInput-root.Mui-focused {
+  box-shadow: var(--shadow-focus);
+}
+
+.ui-clean-forms .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline {
+  border-color: var(--color-border);
+}
+
+.ui-clean-forms .MuiOutlinedInput-root:hover:not(.Mui-focused) .MuiOutlinedInput-notchedOutline {
+  border-color: var(--color-border-strong);
+}
+
+/* ---- quadrant-controls -----------------------------------------------
+ * Shared OUTER chrome for the four control columns (MiniGraphControls,
+ * LargeGraphControls, MetricsControls, FilterControls). Applied as a
+ * second class on each component's existing root so the four panels
+ * read as a coherent set: same bg, border, radius, shadow, padding.
+ *
+ * Each component still owns its inner layout (filter list, slider rows,
+ * etc.) — this class only guarantees outer-edge alignment.
+ */
+.quadrant-controls {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
+  padding: var(--space-2);
+  background-color: var(--color-bg-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  gap: var(--space-2);
+}
+
+/* Action button slots — when a panel has a primary action button at the
+ * top or bottom, wrap it in one of these classes for consistent inset
+ * (matches the panel's own internal padding so the button visually
+ * fills the column without abutting the panel border).
+ */
+.quadrant-controls__action {
+  flex: 0 0 auto;
+}
+
+/* Body slot — fills remaining space between the optional top/bottom
+ * action slots, scrolls if content overflows.
+ */
+.quadrant-controls__body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 0;
+  overflow-y: auto;
+}

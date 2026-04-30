@@ -1,197 +1,194 @@
+/* FilterControls — layout only. Colors, spacing, typography, and button
+ * styling all come from design tokens via the primitive library
+ * (frontend/src/components/ui/). This file should not contain hex codes
+ * or rgb() literals; reference --color-* tokens instead.
+ */
+
+/* FilterControls — outer chrome (bg, padding, border, shadow) comes
+ * from .quadrant-controls. Per-component rules below cover only the
+ * inner layout specific to this panel.
+ */
+
 .filter-controls {
+  /* .quadrant-controls already provides position, display, flex,
+   * padding, height, gap, etc. */
+}
+
+/* --- Y Scale toggle column above Apply Filters --- */
+
+.filter-controls__y-scale {
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* justify-content: space-between; */
-  margin-top: 0;
-  /* Center horizontally */
-  margin-bottom: 0;
-  /* Center horizontally */
-  height: 100%;
-  /* Ensure full height for vertical centering */
-  /* width: 100%; */
-  position: relative;
-  margin-left: 0.25em;
-  background-color: rgb(180, 180, 180);
-  clip-path: inset(0px -10px -10px -10px);
-  box-shadow: 0px 1px 2px 2px rgba(80, 80, 80, 0.25), 0px 1px 4px 4px rgb(100, 100, 100, 0.15), 0px 1px 8px 5px rgba(100, 100, 100, 0.07);
+  gap: var(--space-1);
 }
 
-.filter-controls__selection-controls {
-  /* display: flex; */
-  /* flex-direction: row; */
-  /* justify-content: center;  */
-  /* align-items: center;     */
-  /* width: 100%;    */
+/* --- Apply Filters / Undo Filters action buttons ---
+ * In-flow rather than absolute-positioned so they participate in the
+ * panel's flex column layout — this is what aligns them with the
+ * other quadrants' action buttons.
+ */
+
+.filter-controls__action-button {
   display: block;
   width: 100%;
-  box-sizing: border-box;
-  /* border-top: 0.1em solid rgb(100, 100, 100); */
-  margin-top: 0.1em;
-  /* width: 95%; */
-
-  box-shadow: 0px 1px 2px 2px rgba(80, 80, 80, 0.25), 0px 1px 4px 4px rgb(100, 100, 100, 0.15), 0px 1px 8px 5px rgba(100, 100, 100, 0.07);
-
+  flex: 0 0 auto;
 }
 
-.selection-controls-group {
-  display: flex;
-  flex-direction: row;
-  /* max-width: 50% ; */
-  padding-left: 0.05em;
-  padding-right: 0.05em;
-
+.filter-controls__action-button--bottom {
+  margin-top: auto;
 }
 
-.selection-controls-button {
-  display: flex;
+/* --- Selection toolbar (add / remove / reorder) --- */
+
+.filter-controls__selection-controls {
   width: 100%;
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  object-fit: fill;
-  gap: 0;
-  /* border: none; */
-  border: 0.1em solid rgb(100, 100, 100);
-  box-shadow: none;
-  background-image: radial-gradient(#eee, lightgray, rgb(101, 114, 144));
-  align-content: center;
-  justify-content: center;
+  padding: var(--space-1) 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
 }
 
-.selection-controls-button:hover {
-  background-image: radial-gradient(#dadada, rgb(171, 171, 171), rgb(89, 89, 89));
-  cursor: pointer;
-  /* Change cursor to pointer */
-}
+.filter-controls__icon-add    { color: green; }
+.filter-controls__icon-remove { color: var(--color-danger); }
+
+/* --- Selected filters list --- */
 
 .filter-controls__selected-filters {
   display: flex;
   flex-direction: column;
-  /* width: 100%; */
-  width: 95%;
-  height: 100%;
-  /* border: 1px solid #101010; */
-  /* max-height: 20em; */
+  flex: 1 1 auto;
+  min-height: 0;       /* allow internal scrolling */
   overflow-y: auto;
-  background-color: lightgray;
-  box-shadow: 0px 1px 2px 2px rgba(80, 80, 80, 0.25), 0px 1px 4px 4px rgb(100, 100, 100, 0.15), 0px 1px 8px 5px rgba(100, 100, 100, 0.07);
-  margin-top: 0.1em;
-  margin-bottom: 0.1em;
-  /* border-bottom: 1px solid rgb(238, 238, 238); */
-
-
-  /* position: absolute; */
-  bottom: 0
+  background-color: var(--color-bg-recessed);
+  box-shadow: var(--shadow-sm);
+  margin-top: var(--space-1);
 }
 
 .filter-controls__selected-filters-header {
-  /* padding-left: 0.25em; */
-  text-decoration: underline;
-  background-color: rgb(180, 180, 180);
-  border-bottom: 1px solid rgb(238, 238, 238);
-  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  background-color: var(--color-bg-panel);
+  border-bottom: 1px solid var(--color-border);
 }
 
-/* For WebKit browsers (Chrome, Safari) */
 .filter-controls__selected-filters::-webkit-scrollbar {
   width: 8px;
-  /* Width of the scrollbar */
 }
-
 .filter-controls__selected-filters::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  /* Background of the scrollbar track */
-  border-radius: 10px;
+  background: var(--color-bg-recessed);
+  border-radius: var(--radius-lg);
 }
-
 .filter-controls__selected-filters::-webkit-scrollbar-thumb {
-  background-color: #888;
-  /* Color of the scrollbar thumb */
-  border-radius: 10px;
-  border: 2px solid #f1f1f1;
-  /* Space around thumb for padding effect */
+  background-color: var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--color-bg-recessed);
 }
-
 .filter-controls__selected-filters::-webkit-scrollbar-thumb:hover {
-  background-color: #555;
-  /* Thumb color on hover */
+  background-color: var(--color-text-muted);
 }
 
-/* For Firefox */
 @-moz-document url-prefix() {
   .filter-controls__selected-filters {
-    scrollbar-color: #888 #f1f1f1;
-    /* Thumb and track color */
+    scrollbar-color: var(--color-border-strong) var(--color-bg-recessed);
     scrollbar-width: thin;
-    /* Width of the scrollbar */
   }
 }
 
 .filter-controls__filter-item {
   display: flex;
   flex-direction: row;
-  padding: 0;
-  margin: 0;
+  align-items: center;
   justify-content: space-between;
-  padding-left: 0.25em;
-  border-bottom: 1px solid rgb(238, 238, 238);
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--color-border);
 }
 
-.filter-controls__filter-item-info {
-  padding: 0;
-  display: flex;
-}
-
-.filter-controls__edit-button {
-  padding: 0;
+/* Highlight color preserved from the original — radial yellow gradient. */
+.filter-controls__filter-item--highlighted {
+  background: radial-gradient(rgba(255, 255, 0, 1) 10%, rgba(0, 0, 0, 0) 100%);
 }
 
 .filter-controls__filter-name {
-  display: flex;
-  flex-direction: row
+  flex: 1 1 auto;
+  text-align: center;
+  cursor: pointer;
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text);
+  background: transparent;
+  border: none;
+  padding: var(--space-1);
+  border-radius: var(--radius-md);
+}
+.filter-controls__filter-name:hover {
+  background-color: var(--color-bg-panel);
+}
+.filter-controls__filter-name--highlighted {
+  font-weight: var(--font-weight-bold);
 }
 
-.filter-controls__add-filter-button {
-  padding: 0
+/* Glow on the edit button when a Flat Field Correction filter is missing
+ * its correction matrix — preserved from the original visual cue.
+ */
+.filter-controls__edit-button--needs-upload {
+  animation: filter-controls-edit-glow 1s infinite alternate;
+  border-radius: 50%;
+}
+@keyframes filter-controls-edit-glow {
+  from { box-shadow: 0 0 5px var(--color-danger); }
+  to   { box-shadow: 0 0 20px var(--color-danger); }
 }
 
-.filter-controls__selected-filters-title {
-  font-weight: bold;
-  font-size: 1em;
+.filter-controls__empty {
+  padding: var(--space-3);
+}
+
+/* --- Filter selection modal --- */
+
+.filter-controls__filter-radio-list {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  /* Centers horizontally */
+  gap: var(--space-2);
+}
+
+.filter-controls__filter-radio {
+  display: flex;
+  flex-direction: row;
   align-items: center;
-  /* Centers vertically */
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--space-2);
 }
 
-.filter-controls__apply-button {
+.filter-controls__filter-radio:last-child {
+  border-bottom: none;
+}
+
+.filter-controls__filter-radio-row {
+  flex: 1 1 auto;
+}
+
+.filter-controls__filter-radio-help {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.filter-controls__filter-desc {
   position: absolute;
+  right: 100%;
   top: 0;
-  padding: 0;
-  width: 100%;
-  box-shadow: 0px 1px 20px 2px rgba(80, 80, 80, 0.25), 0px 1px 4px 4px rgb(100, 100, 100, 0.15), 0px 1px 8px 5px rgba(100, 100, 100, 0.07);
-
+  margin-right: var(--space-2);
+  background-color: var(--color-bg-recessed);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-2);
+  z-index: 1000;
+  width: 280px;
+  max-width: 60vw;
 }
-
-.filter-controls__reset-annotations {
-  position: absolute;
-  bottom: 0;
-  width: 100%
-}
-
-/* .edit-params-button {
-  animation: glow 1s infinite alternate;
-}
-
-@keyframes glow {
-  from {
-    box-shadow: 0 0 5px #ff0000;
-  }
-
-  to {
-    box-shadow: 0 0 20px #ff0000;
-  }
-} */

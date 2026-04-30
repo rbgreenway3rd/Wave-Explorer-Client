@@ -1,11 +1,5 @@
 import React, { useContext, useRef, useEffect } from "react";
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  IconButton,
-  Tooltip,
-} from "@mui/material";
+import { Tooltip } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import NeuralResults from "./subComponents/NeuralResults/NeuralResults";
 import ChartControls from "./subComponents/NeuralGraph/ChartControls";
@@ -16,7 +10,7 @@ import { NeuralContext } from "../NeuralAnalysis/NeuralProvider";
 import { DataContext } from "../../providers/DataProvider";
 import { Chart } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
-import { makeStyles } from "@mui/styles";
+import { Modal, IconButton, Heading } from "../ui";
 import NoiseFilterControls from "./subComponents/NeuralGraph/NeuralControls";
 
 import {
@@ -26,12 +20,6 @@ import {
 } from "./NeuralPipeline";
 
 Chart.register(zoomPlugin);
-
-const useStyles = makeStyles((theme) => ({
-  dialogPaper: {
-    backgroundColor: "rgb(150, 150, 150)", // Change this to your desired background color
-  },
-}));
 
 export const NeuralAnalysisModal = ({ open, onClose }) => {
   // Spike detection parameter state for NoiseFilterControls
@@ -52,7 +40,6 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
     spikeParamsManuallySet.current = true;
     setSpikeWindow(val);
   };
-  const classes = useStyles();
   const {
     selectedWell,
     useAdjustedBases,
@@ -237,25 +224,27 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
   //   pipelineResults.processedSignal?.slice(0, 5)
   // );
   return (
-    <Dialog
+    <Modal
       open={open}
       onClose={null}
       fullScreen
-      classes={{ paper: classes.dialogPaper }}
+      className="neural-analysis-modal"
     >
-      <DialogTitle>
-        Neural Analysis
+      <Modal.Header className="neural-analysis-modal__header">
+        <Heading level={2}>Neural Analysis</Heading>
         <Tooltip title="Exit Neural Analysis" arrow>
           <IconButton
+            variant="subtle"
+            size="md"
             aria-label="close"
             onClick={onClose}
-            style={{ position: "absolute", right: 8, top: 8 }}
+            className="neural-analysis-modal__close"
           >
-            <CloseIcon className="close-icon" />
+            <CloseIcon />
           </IconButton>
         </Tooltip>
-      </DialogTitle>
-      <DialogContent>
+      </Modal.Header>
+      <Modal.Body className="neural-analysis-modal__body">
         <div className="modal-content">
           <div className="modal-header">
             <div className="modal-header-item-container">
@@ -468,8 +457,8 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
             metrics={pipelineResults.metrics}
           />
         </div>
-      </DialogContent>
-    </Dialog>
+      </Modal.Body>
+    </Modal>
   );
 };
 

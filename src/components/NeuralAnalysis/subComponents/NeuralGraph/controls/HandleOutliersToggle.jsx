@@ -1,63 +1,33 @@
 import React from "react";
-import { Paper, FormControlLabel, Switch, Typography } from "@mui/material";
-import { controlsTheme } from "../styles/controlsTheme";
+import { FormControlLabel, Switch } from "@mui/material";
+import { Panel } from "../../../../ui";
+import "./NeuralToggle.css";
 
 /**
- * HandleOutliersToggle
- * Component for toggling outlier detection on the neural graph
- *
- * Features:
- * - Simple ON/OFF toggle
- * - Clear visual feedback
- * - Professional scientific styling
- * - Disabled by default
+ * HandleOutliersToggle — ON/OFF switch for outlier detection. Uses the
+ * `dark` Panel variant + shared `.neural-toggle` styling. Accent is the
+ * status-warning orange.
  */
 const HandleOutliersToggle = ({ handleOutliers, setHandleOutliers }) => {
   return (
-    <Paper
-      elevation={2}
-      sx={{
-        padding: controlsTheme.spacing.sm,
-        backgroundColor: controlsTheme.colors.paper,
-        display: "flex",
-        flexDirection: "row",
-        alignItems: "center",
-        gap: controlsTheme.spacing.sm,
-        borderRadius: "0.625rem",
-        minWidth: "fit-content",
-      }}
+    <Panel
+      variant="dark"
+      className="neural-toggle ui-panel--rounded-lg"
+      style={{ "--neural-toggle-accent": "var(--color-warning)" }}
     >
-      <Typography
-        variant="body2"
-        sx={{
-          color: controlsTheme.colors.text,
-          fontWeight: 500,
-          fontSize: `${controlsTheme.typography.fontSize.md}px`,
-          whiteSpace: "nowrap",
-        }}
-      >
-        Handle Outliers
-      </Typography>
+      <span className="neural-toggle__label">Handle Outliers</span>
       <FormControlLabel
         control={
           <Switch
             checked={handleOutliers}
             onChange={(e) => setHandleOutliers(e.target.checked)}
             size="small"
-            sx={{
-              "& .MuiSwitch-switchBase.Mui-checked": {
-                color: controlsTheme.colors.warning,
-              },
-              "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                backgroundColor: controlsTheme.colors.warning,
-              },
-            }}
           />
         }
         label=""
-        sx={{ margin: 0, borderRadius: "0.625rem" }}
+        sx={{ margin: 0 }}
       />
-    </Paper>
+    </Panel>
   );
 };
 

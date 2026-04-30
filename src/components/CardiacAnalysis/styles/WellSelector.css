@@ -1,55 +1,54 @@
-.well-grid {
-    border: 0.1em solid rgb(100, 100, 100);
-    background-color: grey;
-    padding: 0.2em;
-    /* display: grid; */
-    box-sizing: border-box;
-    justify-content: center;
-    align-content: center;
-    /* width: fit-content; */
-    /* width: auto; */
-    /* height: auto */
-    /* margin-right: 1em; */
+/* WellSelector — small wells grid in the Cardiac modal sidebar. Scoped
+ * to avoid colliding with similarly-named selectors in the main
+ * MiniGraphGrid.
+ */
+
+.cardiac-analysis-modal .well-grid {
+  border: 0.1em solid var(--gray-500);
+  background-color: var(--gray-500);
+  padding: 0.2em;
+  box-sizing: border-box;
+  justify-content: center;
+  align-content: center;
 }
 
-.well-canvas-container {}
+.cardiac-analysis-modal .well-canvas-container {}
 
-.grid-mode-button:hover {
-    background-color: rgb(100, 100, 100);
-    border: 0.1em solid rgb(100, 100, 100);
-    /* color: white; */
+.cardiac-analysis-modal .grid-mode-button:hover {
+  background-color: var(--gray-500);
+  border: 0.1em solid var(--gray-500);
 }
 
-.well-canvas {
-    background-color: black;
-    /* border: 0.05em solid grey; */
-    justify-self: space-between;
-    align-self: space-around;
-    /* width: fill */
-
+.cardiac-analysis-modal .well-canvas {
+  background-color: var(--color-bg-chart);
+  justify-self: space-between;
+  align-self: space-around;
 }
 
-/* Default styles for selected and hovered wells */
-.well-canvas:hover {
-    border: 0.1em solid red;
+.cardiac-analysis-modal .well-canvas:hover {
+  border: 0.1em solid var(--color-danger);
 }
 
-.well-canvas.selected {
-    border: 0.15em solid yellow;
+/* Yellow + purple selection accents kept literal — they're unique
+ * indicators for "selected" vs "selected-in-median-mode" and aren't
+ * shared with any other surface in the app palette.
+ */
+.cardiac-analysis-modal .well-canvas.selected {
+  border: 0.15em solid #ffeb3b;
 }
 
-/* Styles when showMedianGrid is true */
-.well-canvas.median-grid:hover {
-    border: 0.1em solid red;
-    /* Keep hover red */
+.cardiac-analysis-modal .well-canvas.median-grid:hover {
+  border: 0.1em solid var(--color-danger);
 }
 
-.well-canvas.median-grid.selected {
-    border: 0.15em solid rgb(93, 37, 205);
-    /* Purple border when selected */
+.cardiac-analysis-modal .well-canvas.median-grid.selected {
+  /* Purple accent when a well is selected in median-grid mode — kept
+   * literal because the value isn't reused elsewhere in the app palette.
+   */
+  border: 0.15em solid rgb(93, 37, 205);
 }
 
-.dotwave-loader {
-    width: 50px;
-    height: 50px;
+.cardiac-analysis-modal .dotwave-loader {
+  width: 50px;
+  height: 50px;
 }

@@ -8,6 +8,7 @@ import {
   getAllRanges,
 } from "./MetricsUtilities";
 import { filteredXyInRange } from "../../../utilities/filterPack";
+import { useContainerSize } from "../../../utilities/useContainerSize";
 import "./Heatmap.css";
 
 const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
@@ -22,12 +23,13 @@ const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
 
   const [currentCellColors, setCurrentCellColors] = useState([]);
 
-  const [largeCanvasWidth, setLargeCanvasWidth] = useState(
-    window.innerWidth / 2.3
-  );
-  const [largeCanvasHeight, setLargeCanvasHeight] = useState(
-    window.innerHeight / 2.3
-  );
+  // Track the actual container size via ResizeObserver — replaces the
+  // old `window.innerWidth / 2.3` heuristic, which over-sized the
+  // canvas (overflowed right) and under-fit the height (left empty
+  // space below) once the four-quadrant grid was made symmetric.
+  const [containerRef, containerSize] = useContainerSize();
+  const largeCanvasWidth = Math.max(0, Math.floor(containerSize.width));
+  const largeCanvasHeight = Math.max(0, Math.floor(containerSize.height));
 
   const [tooltip, setTooltip] = useState({
     visible: false,
@@ -37,20 +39,8 @@ const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
     value: "",
   });
 
-  // console.log(selectedWellArray);
-
   const numColumns = columnLabels.length;
   const numRows = rowLabels.length;
-
-  const handleResize = () => {
-    setLargeCanvasWidth(window.innerWidth / 2.3);
-    setLargeCanvasHeight(window.innerHeight / 2.3);
-  };
-
-  useEffect(() => {
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   const toggleGradientState = (gradientState) => {
     setGradientState(!gradientState);
@@ -415,8 +405,7 @@ const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
   return (
     <>
       {wellArrays && wellArrays.length > 0 ? (
-        <div className="heatmap-container" style={{ position: "relative" }}>
-          {/* Heatmap Canvas */}
+        <div className="heatmap-container" ref={containerRef}>
           <canvas
             className="heatmap-canvas"
             ref={heatmapRef}
@@ -425,7 +414,6 @@ const Heatmap = ({ rowLabels, columnLabels, metricType, metricIndicator }) => {
             onMouseLeave={handleMouseLeave}
             onMouseMove={handleMouseMove}
           />
-          {/* Tooltip */}
         </div>
       ) : (
         <div>No well data to display.</div>

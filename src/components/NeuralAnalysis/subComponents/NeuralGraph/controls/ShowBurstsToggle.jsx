@@ -1,65 +1,34 @@
 import React from "react";
-import { Paper, FormControlLabel, Switch, Typography } from "@mui/material";
-import { controlsTheme } from "../styles/controlsTheme";
-import "./ShowBurstsToggle.css";
+import { FormControlLabel, Switch } from "@mui/material";
+import { Panel } from "../../../../ui";
+import "./NeuralToggle.css";
 
 /**
- * ShowBurstsToggle
- * Component for toggling burst visualization on the neural graph
- *
- * Features:
- * - Simple ON/OFF toggle
- * - Clear visual feedback
- * - Professional scientific styling
- * - Enabled by default
+ * ShowBurstsToggle — ON/OFF switch for burst overlay on the neural
+ * graph. Uses the `dark` Panel variant + shared `.neural-toggle`
+ * styling. Accent is the secondary cyan to distinguish from the
+ * warning-orange outlier toggle.
  */
 const ShowBurstsToggle = ({ showBursts, setShowBursts }) => {
   return (
-    <Paper
-      elevation={2}
-      sx={{
-        padding: controlsTheme.spacing.sm,
-        backgroundColor: controlsTheme.colors.paper,
-        display: "flex",
-        flexDirection: "row",
-        alignItems: "center",
-        gap: controlsTheme.spacing.sm,
-        // borderRadius: controlsTheme.borderRadius.md,
-        borderRadius: "0.625rem",
-        minWidth: "fit-content",
-      }}
+    <Panel
+      variant="dark"
+      className="neural-toggle ui-panel--rounded-lg"
+      style={{ "--neural-toggle-accent": "var(--color-info)" }}
     >
-      <Typography
-        variant="body2"
-        sx={{
-          color: controlsTheme.colors.text,
-          fontWeight: 500,
-          fontSize: `${controlsTheme.typography.fontSize.md}px`,
-          whiteSpace: "nowrap",
-        }}
-      >
-        Show Bursts
-      </Typography>
+      <span className="neural-toggle__label">Show Bursts</span>
       <FormControlLabel
         control={
           <Switch
             checked={showBursts}
             onChange={(e) => setShowBursts(e.target.checked)}
             size="small"
-            sx={{
-              "& .MuiSwitch-switchBase.Mui-checked": {
-                color: controlsTheme.colors.secondary,
-              },
-              "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                backgroundColor: controlsTheme.colors.secondary,
-              },
-            }}
           />
         }
         label=""
-        sx={{ margin: 0, borderRadius: "0.625rem" }}
+        sx={{ margin: 0 }}
       />
-    </Paper>
+    </Panel>
   );
 };
 

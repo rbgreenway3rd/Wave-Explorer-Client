@@ -1,0 +1,399 @@
+/* Shared layout for the Neural module's larger control panels
+ * (HandleOutlier, BurstDetection, NoiseSuppression, Decimation,
+ * PanZoom, ROI, ReportGeneration, ControlWellSelector).
+ *
+ * Pairs with `<Panel variant="dark">` from the primitive library. Each
+ * consumer passes its accent color via the `--neural-control-accent`
+ * CSS custom property — matches the per-feature semantic color used
+ * throughout the Neural module (warning for outliers, info for bursts,
+ * etc.). When unset the accent falls back to the app's primary blue.
+ */
+
+.neural-control-panel.ui-panel.ui-panel--dark {
+  padding: var(--space-2);
+  border: 0.125rem solid var(--neural-control-accent, var(--color-primary));
+  border-radius: 0.5rem;
+  min-width: 15rem;
+  max-width: 20rem;
+  flex: 1 1 auto;
+  transition: opacity var(--transition-base),
+              background-color var(--transition-base),
+              border-color var(--transition-base);
+}
+
+/* Disabled state — light gray background, dimmed. Replaces the prior
+ * inline `backgroundColor: enabled ? paper : 'rgb(180,180,180)'` and
+ * `opacity: enabled ? 1 : 0.6`.
+ */
+.neural-control-panel--disabled.ui-panel.ui-panel--dark {
+  background-color: var(--color-bg-control);
+  color: var(--color-text);
+  opacity: 0.6;
+}
+
+/* ---- Header row ---- */
+
+.neural-control-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-1);
+}
+
+.neural-control-panel__title {
+  color: inherit;
+  font-family: var(--font-family);
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  margin: 0;
+}
+
+.neural-control-panel__reset.MuiIconButton-root {
+  color: var(--neural-control-accent, var(--color-primary));
+  transition: transform var(--transition-base);
+}
+.neural-control-panel__reset.MuiIconButton-root:hover:not(.Mui-disabled) {
+  background-color: rgba(33, 150, 243, 0.1);
+  transform: rotate(180deg);
+}
+.neural-control-panel__reset.MuiIconButton-root:active:not(.Mui-disabled) {
+  transform: rotate(180deg) scale(0.9);
+}
+
+/* ---- Per-field block (label + value + slider/control) ---- */
+
+.neural-control-panel__field {
+  margin-bottom: var(--space-2);
+}
+
+.neural-control-panel__field:last-child {
+  margin-bottom: 0;
+}
+
+.neural-control-panel__field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-1);
+}
+
+.neural-control-panel__field-label {
+  color: var(--color-neural-text-secondary);
+  font-family: var(--font-family);
+  font-size: 0.75rem;
+}
+
+.neural-control-panel--disabled .neural-control-panel__field-label {
+  color: var(--color-text-muted);
+}
+
+.neural-control-panel__field-value {
+  color: var(--neural-control-accent, var(--color-primary));
+  font-family: var(--font-family);
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-bold);
+}
+
+/* ---- Inner Slider tinting ---- */
+
+.neural-control-panel .MuiSlider-root {
+  color: var(--neural-control-accent, var(--color-primary));
+}
+
+.neural-control-panel .MuiSlider-thumb {
+  width: 16px;
+  height: 16px;
+}
+
+.neural-control-panel .MuiSlider-markLabel {
+  font-size: 0.6875rem;
+  color: var(--color-neural-text-secondary);
+}
+
+.neural-control-panel--disabled .MuiSlider-markLabel {
+  color: var(--color-text-muted);
+}
+
+/* ---- Section title (uppercase variant) — used by panels that act as
+ * a section header rather than a single-feature control card.
+ */
+.neural-control-panel__section-title {
+  color: var(--color-neural-text);
+  font-family: var(--font-family);
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.03125rem;
+  margin: 0 0 var(--space-1) 0;
+}
+
+/* ---- Method-switch row (Trend Flattening, Subtract Control, etc.) — */
+
+.neural-control-panel__methods {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.neural-control-panel__methods .MuiFormControlLabel-root {
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  background-color: transparent;
+  border-bottom: none;
+  text-transform: none;
+}
+
+.neural-control-panel__methods .MuiFormControlLabel-label {
+  color: var(--color-neural-text);
+  font-family: var(--font-family);
+  font-size: 0.625rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.neural-control-panel__methods .MuiSwitch-switchBase.Mui-checked {
+  color: var(--neural-method-accent, var(--color-primary));
+}
+.neural-control-panel__methods .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track {
+  background-color: var(--neural-method-accent, var(--color-primary));
+}
+
+/* ---- Dual ON/OFF toggle group (used by NoiseSuppressionControls) — */
+
+.neural-toggle-group {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+  padding: var(--space-1);
+  background-color: var(--color-neural-bg-dark);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-neural-border);
+}
+
+.neural-toggle-group__divider {
+  color: var(--color-neural-text-secondary);
+  font-size: 1rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.neural-toggle-group__button.MuiIconButton-root {
+  font-family: var(--font-family);
+  font-weight: var(--font-weight-bold);
+  font-size: 1rem;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  color: var(--color-neural-text-secondary);
+  background-color: transparent;
+  transition: all var(--transition-base);
+}
+
+.neural-toggle-group__button.MuiIconButton-root:hover {
+  background-color: var(--color-neural-bg-light);
+}
+
+.neural-toggle-group__button--on.MuiIconButton-root.neural-toggle-group__button--active,
+.neural-toggle-group__button--on.MuiIconButton-root.neural-toggle-group__button--active.Mui-disabled {
+  color: var(--color-primary);
+  background-color: var(--color-primary-soft);
+}
+
+.neural-toggle-group__button--off.MuiIconButton-root.neural-toggle-group__button--active,
+.neural-toggle-group__button--off.MuiIconButton-root.neural-toggle-group__button--active.Mui-disabled {
+  color: var(--color-danger-bright);
+  background-color: var(--color-danger-soft);
+}
+
+/* ---- Section header with leading icon (e.g. "Data Decimation") ---- */
+
+.neural-control-panel__section-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+.neural-control-panel__section-header .MuiSvgIcon-root {
+  color: var(--neural-control-accent, var(--color-primary));
+  font-size: 1rem;
+}
+
+.neural-control-panel__section-header.neural-control-panel--disabled .MuiSvgIcon-root {
+  color: var(--color-text-muted);
+}
+
+/* ---- Decimation samples radio strip — */
+
+.neural-decimation-samples {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: 0.125rem solid var(--color-neural-border);
+  background-color: var(--color-bg-control);
+}
+
+.neural-decimation-samples .MuiFormLabel-root {
+  color: #000;
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-bold);
+  margin-right: var(--space-1);
+}
+
+.neural-decimation-samples .MuiFormControlLabel-root {
+  margin: 0;
+  background-color: transparent;
+  border-bottom: none;
+  text-transform: none;
+  padding: 0 var(--space-1);
+}
+
+.neural-decimation-samples .MuiFormControlLabel-label {
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-bold);
+  color: #000;
+}
+
+/* ---- Mode indicator pill (e.g. "Pan & Zoom Mode Active") — */
+
+.neural-mode-indicator {
+  margin-top: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background-color: var(--neural-mode-bg, var(--color-primary-soft));
+  border: 1px solid var(--neural-mode-border, var(--color-primary));
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--neural-mode-text, var(--color-primary));
+  font-family: var(--family);
+  font-size: 0.625rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.neural-mode-indicator .MuiSvgIcon-root {
+  font-size: 0.875rem;
+}
+
+/* ---- Method-switch row with leading icon — used by PanZoom etc. */
+
+.neural-method-icon {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.neural-method-icon .MuiSvgIcon-root {
+  font-size: 1rem;
+  color: var(--neural-method-accent, var(--color-text-muted));
+}
+
+/* ---- Info note (e.g. "Selected Well: A1 (5 spikes detected)") — */
+
+.neural-control-panel__info {
+  margin-top: var(--space-1);
+  padding: var(--space-2);
+  background-color: var(--color-neural-bg-light);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-neural-divider);
+  color: var(--color-neural-text-secondary);
+  font-family: var(--font-family);
+  font-size: 0.75rem;
+  line-height: var(--line-height-relaxed, 1.6);
+}
+
+.neural-control-panel__info p {
+  margin: 0;
+}
+
+.neural-control-panel__info p + p {
+  margin-top: var(--space-1);
+}
+
+/* ---- Stacked-action button list (Report Generation, etc.) — */
+
+.neural-control-panel__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* ---- Control well selector chip-button — */
+
+.neural-control-well-button {
+  width: 100%;
+  padding: var(--space-1) var(--space-2);
+  font-family: var(--font-family);
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
+  border: 0.125rem solid var(--color-neural-border);
+  background-color: var(--color-neural-bg-light);
+  color: var(--color-neural-text);
+}
+
+.neural-control-well-button--selecting {
+  background-color: var(--color-info);
+  border-color: var(--color-info);
+  color: var(--color-text-on-accent);
+}
+
+.neural-control-well-button--selected {
+  background-color: var(--color-success-soft);
+  border-color: var(--color-success);
+  color: var(--color-success-dark);
+  cursor: default;
+}
+
+.neural-control-well-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.neural-control-well-button--reset {
+  width: 100%;
+  margin-top: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  background-color: var(--color-danger-soft);
+  color: var(--color-danger);
+  border: 0.125rem solid var(--color-danger);
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
+}
+
+.neural-control-well-info {
+  margin-top: auto;
+  padding: var(--space-1) var(--space-2);
+  background-color: var(--color-neural-bg-dark);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-neural-border);
+  color: var(--color-neural-text);
+  font-family: var(--font-family);
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.neural-control-well-info p {
+  margin: 0 0 var(--space-1) 0;
+}
+.neural-control-well-info p:last-child { margin-bottom: 0; }
+
+.neural-control-well-info__control-key {
+  color: var(--color-info);
+  font-weight: var(--font-weight-bold);
+}
+.neural-control-well-info__target-key {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-bold);
+}

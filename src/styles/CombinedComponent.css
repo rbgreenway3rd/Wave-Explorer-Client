@@ -1,233 +1,140 @@
-.combined-component {
-    /* padding-left: 0.25em; */
-    /* padding-right: 0.25em; */
-    background-color: rgb(100, 100, 100);
-    height: 100vh;
-    /* height: 95%; */
-    /* height: 100%; */
-    justify-content: center;
-    /* align-content: center; */
-    overflow: auto;
+/* CombinedComponent — outer shell + four-quadrant grid layout. Tokens
+ * drive colors and spacing. The two grids (top "wave" row and bottom
+ * "metrics + filter" row) share the same 4-column shape:
+ *
+ *     +-----------+------+-----------+------+
+ *     | minigraph | mini | large     | lg   |
+ *     |  /heatmap | ctrl | /filtered | ctrl |
+ *     +-----------+------+-----------+------+
+ *
+ *  Both rows: 6fr / 1fr / 6fr / 1fr — column proportions identical so
+ *  the four quadrants align horizontally edge-for-edge. Both grid
+ *  containers split the available vertical space 50/50 via `flex: 1`
+ *  on their parent so the four quadrants are also vertically symmetric.
+ *  Identical chrome (border, radius, bg) on every chart panel.
+ */
 
+.combined-component {
+  background-color: var(--color-bg-app);
+  height: 100vh;
+  /* Flex column so the NavBar + main-container stack and the
+   * main-container can `flex: 1 1 auto` to claim remaining height.
+   * `overflow: hidden` on the root prevents page-level scroll —
+   * the four-quadrant grid is sized to fit the viewport.
+   */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 body {
-    position: relative;
+  position: relative;
 }
 
-
 .combined-component__main-container {
-    padding-left: 0.25em;
-    padding-right: 0.25em;
-    padding-bottom: 0.5em;
-    /* background-color: gray; */
-    background-color: rgb(100, 100, 100);
-    /* background-color: rgb(101, 114, 144); */
-    /* background-image: linear-gradient(   rgb(101, 114, 144), grey, grey); */
-    display: flex;
-    flex-direction: column;
-    /* align-items: center; */
-    align-self: center;
-    /* height: 95vh */
-    /* height: 100%; */
+  background-color: var(--color-bg-app);
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  padding-left: var(--space-1);
+  padding-right: var(--space-1);
+  padding-bottom: var(--space-3);
+  /* Fill remaining vertical space below the navbar so the two child
+   * grid containers can divide it 50/50 via `flex: 1`. */
+  min-height: 0;
+  flex: 1 1 auto;
+}
 
-
+/* Inner wrapper rendered when a project is loaded — passes the parent
+ * flex sizing through to the two grid containers below. Without this
+ * the intermediate `<div style={{ cursor: ... }}>` would auto-size by
+ * content and break the 50/50 vertical split.
+ */
+.combined-component__project-frame {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .combined-component__no-data {
-    background-color: gray;
-    /* height: 100vh; */
+  background-color: var(--color-bg-app);
 }
 
-.combined-component__wave-container {
-    display: grid;
-    grid-template-columns: 6fr 1fr 6fr 1fr;
-    /* Four columns */
-    grid-template-rows: auto auto;
-    /* Two rows for header and content */
-    /* border-bottom: 0.5em solid #808080; */
-    /* gap: 1em;  */
-    /* Space between elements */
-
-}
-
-.combined-component__minigraph-header {
-    /* grid-column: 1 /span 2; */
-    display: flex;
-    grid-column: 1;
-    grid-row: 1;
-    text-align: center;
-    padding-right: 0.5em;
-    align-content: center;
-    justify-content: center;
-    justify-items: center;
-}
-
-.combined-component__minigraph {
-    /* padding-left: 0.25em; */
-    /* padding-right: 0.25em; */
-    border: solid 0.5em rgb(50, 50, 50);
-    background-color: black;
-    grid-column: 1;
-    grid-row: 2;
-    display: flex;
-    /* padding-left: 0.25em;
-    padding-right: 0.25em;
-    padding-top: 0.25em;
-    padding-bottom: 0.25em; */
-    /* box-shadow: 0.2em 0em 0.2em 0.2em black; */
-    /* justify-content:center ; */
-
-}
-
-.combined-component__minigraph-controls {
-    grid-column: 2;
-    grid-row: 2;
-    box-sizing: border-box;
-    /* position: relative;
-    z-index: 1;
-    background:
-    linear-gradient(rgb(120, 120, 120), rgb(120, 120, 120)) padding-box,
-    radial-gradient(farthest-corner at 50% 50%, #eee 0%, #bbb 70%, #222 100%) border-box;
-    background-clip: padding-box, border-box;
-    background-origin: padding-box, border-box; */
-    /* Optionally add a box-shadow for depth */
-    /* box-shadow: 0 2px 8px rgba(0,0,0,0.08); */
-    /* margin-right: 0.25em; */
-    /* margin-left: 0.25em; */
-    /* border: 5px solid transparent; */
-
-    margin-left: 0.25em;
-    margin-right: 0.25em;
-}
-
-.combined-component__large-graph-header {
-    /* grid-column: 3 /span 2; */
-    display: flex;
-    grid-column: 3;
-    grid-row: 1;
-    text-align: center;
-    justify-content: center;
-    align-content: center;
-}
-
-.combined-component__large-graph {
-    border: solid 0.5em rgb(50, 50, 50);
-    background: rgb(0, 0, 0);
-    grid-column: 3;
-    grid-row: 2;
-    /* margin-left: 0.5em; */
-}
-
-.combined-component__large-graph-controls {
-    /* padding-left: 0.25em; */
-    /* padding-right: 0.25em; */
-    grid-column: 4;
-    grid-row: 2;
-    height: 100%;
-    padding: 0;
-    /* box-sizing: border-box;  */
-    /* Include padding and border in button width */
-}
-
+/* Both grid containers share the same shape, gap, and proportional
+ * height. Splitting the parent flex into two equal slices is what gives
+ * the four quadrants their vertical symmetry — top and bottom rows
+ * always render the same height regardless of their content size.
+ */
+.combined-component__wave-container,
 .combined-component__metrics-filter-container {
-    display: grid;
-    grid-template-columns: 6fr 1fr 6fr 1fr;
-    /* Four columns */
-    grid-template-rows: auto auto;
-    /* Two rows for header and content */
-    /* border-bottom: 0.5em solid gray; */
-    /* gap: 1em; */
-    /* Space between elements */
-
+  display: grid;
+  grid-template-columns: 6fr 1fr 6fr 1fr;
+  grid-template-rows: auto 1fr;
+  column-gap: var(--space-2);
+  flex: 1 1 50%;
+  min-height: 0;
 }
 
-.combined-component__metrics-header {
-    display: flex;
-    grid-column: 1;
-    grid-row: 1;
-    text-align: center;
-    /* padding-right: 0.5em; */
-    align-content: center;
-    justify-content: center;
-}
+/* --- Headers (one per quadrant; row 1 of each grid) --- */
 
-.combined-component__metrics {
-    /* padding-left: 0.25em; */
-    /* padding-right: 0.25em; */
-    /* align-items: center; */
-    /* justify-content: center; */
-    border: solid 0.35em rgb(50, 50, 50);
-    border-left: solid 0.175em rgb(50, 50, 50);
-    border-right: solid 0.225em rgb(50, 50, 50);
-    padding-top: 0.25em;
-    padding-left: 0.25em;
-    padding-right: 0.25em;
-    background-color: rgb(50, 50, 50);
-    grid-column: 1;
-    grid-row: 2;
-}
-
-.combined-component__metrics-controls {
-    grid-column: 2;
-    grid-row: 2;
-
-    /* border-right: 0.5em solid gray; */
-    /* padding-right: 0.5em; */
-}
-
+.combined-component__minigraph-header,
+.combined-component__large-graph-header,
+.combined-component__metrics-header,
 .combined-component__filters-header {
-    display: flex;
-    grid-column: 3;
-    grid-row: 1;
-    text-align: center;
-    align-content: center;
-    justify-content: center;
+  display: flex;
+  grid-row: 1;
+  text-align: center;
+  align-content: center;
+  justify-content: center;
+  justify-items: center;
 }
 
+.combined-component__minigraph-header { grid-column: 1; }
+.combined-component__large-graph-header { grid-column: 3; }
+.combined-component__metrics-header { grid-column: 1; }
+.combined-component__filters-header { grid-column: 3; }
+
+/* --- The four chart panels (row 2 of each grid) ---
+ * Identical chrome: same border thickness, radius, background, so the
+ * quadrants align visually edge-for-edge. Width comes from the shared
+ * 6fr column; height from the shared `flex: 1` row split. `display: flex`
+ * + `min-height: 0` lets the inner canvas wrapper fill the panel.
+ */
+.combined-component__minigraph,
+.combined-component__large-graph,
+.combined-component__metrics,
 .combined-component__filtered-graph {
-    border: solid 0.5em rgb(50, 50, 50);
-    grid-column: 3;
-    grid-row: 2;
-    /* margin-left: 0.5em; */
-    justify-content: center;
-    align-content: center;
-    background-color: black;
+  grid-row: 2;
+  display: flex;
+  border: 0.25em solid var(--color-chart-frame);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-chart);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
+.combined-component__minigraph        { grid-column: 1; }
+.combined-component__large-graph      { grid-column: 3; }
+.combined-component__metrics          { grid-column: 1; }
+.combined-component__filtered-graph   { grid-column: 3; }
+
+/* --- The four control columns (row 2, columns 2 and 4 of each grid) ---
+ * Each control component additionally applies the shared `.quadrant-controls`
+ * class (defined in primitives.css) for consistent chrome.
+ */
+.combined-component__minigraph-controls,
+.combined-component__large-graph-controls,
+.combined-component__metrics-controls,
 .combined-component__filter-controls {
-    /* padding-left: 0.25em; */
-    /* padding-right: 0.25em; */
-    grid-column: 4;
-    grid-row: 2;
-    /* display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center; */
-    /* width: auto; */
-    /* margin: 0 auto; Center horizontally */
-    padding: 0;
-    height: 100%;
-    /* Ensure full height for vertical centering */
-
+  grid-row: 2;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
 }
 
-
-
-/* .combined-component__spinner {
-  width: 30px;
-  height: 30px;
-  border: 4px solid transparent;
-  border-top-color: #3498db;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-} */
+.combined-component__minigraph-controls   { grid-column: 2; }
+.combined-component__large-graph-controls { grid-column: 4; }
+.combined-component__metrics-controls     { grid-column: 2; }
+.combined-component__filter-controls      { grid-column: 4; }

@@ -150,7 +150,7 @@ export const MedianSignalGraph = () => {
       {selectedWell ? (
         <>
           <div className="average-signal-container-header">
-            <h3 style={{ margin: 0, borderBottom: "solid black 1px" }}>
+            <h3 className="average-signal-graph__title">
               {/* Median Signal from Well {selectedWell.key} */}
               Median Curve from Well {selectedWell.key}{" "}
               <IconButton
@@ -199,7 +199,7 @@ export const MedianSignalGraph = () => {
           </div>
 
           <Line
-            // className="average-signal-graph"
+            className="median-signal-line"
             data={
               // data={preparedChartData}
               {
@@ -449,13 +449,6 @@ export const MedianSignalGraph = () => {
                   },
                 },
               },
-            }}
-            // ref={}
-            style={{
-              background: "rgb(0, 0, 0)",
-              width: "100%",
-              border: "solid rgb(100, 100, 100), 0.25em",
-              //   height: "max-content",
             }}
           />
         </>

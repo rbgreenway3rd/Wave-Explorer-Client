@@ -1,27 +1,14 @@
 import React from "react";
-import {
-  Paper,
-  Typography,
-  Slider,
-  Box,
-  Tooltip,
-  IconButton,
-} from "@mui/material";
+import { Slider, Tooltip } from "@mui/material";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
-import { controlsTheme } from "../styles/controlsTheme";
-import "./HandleOutlierControls.css";
+import { Panel, IconButton } from "../../../../ui";
+import "./NeuralControlPanel.css";
 
 /**
- * HandleOutlierControls
- * Component for adjusting outlier detection parameters
- *
- * Features:
- * - Percentile threshold slider (50-99th percentile)
- * - Median multiplier slider (0.5-5.0×)
- * - Reset button to restore defaults
- * - Only visible when handleOutliers is enabled
- * - Professional scientific styling
- * - Real-time parameter updates
+ * HandleOutlierControls — sliders for percentile threshold (50–99) and
+ * median multiplier (0.5–5.0×) used by the outlier-detection step.
+ * Visible/active only when `handleOutliers` is true; renders dimmed when
+ * disabled.
  */
 const HandleOutlierControls = ({
   handleOutliers,
@@ -39,92 +26,43 @@ const HandleOutlierControls = ({
   };
 
   return (
-    <Paper
-      elevation={3}
-      sx={{
-        padding: controlsTheme.spacing.sm,
-        backgroundColor: handleOutliers
-          ? controlsTheme.colors.paper
-          : "rgb(180, 180, 180)",
-        borderRadius: "0.5rem",
-        border: `0.125rem solid ${controlsTheme.colors.warning}`,
-        minWidth: "15rem",
-        maxWidth: "20rem",
-        flex: 1,
-        opacity: handleOutliers ? 1 : 0.6,
-        transition: "all 0.2s ease-in-out",
-      }}
+    <Panel
+      variant="dark"
+      className={`neural-control-panel ${
+        handleOutliers ? "" : "neural-control-panel--disabled"
+      }`}
+      style={{ "--neural-control-accent": "var(--color-warning)" }}
     >
-      {/* Header with title and reset button */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: controlsTheme.spacing.sm,
-        }}
-      >
-        <Typography
-          variant="subtitle2"
-          sx={{
-            color: controlsTheme.colors.text,
-            fontWeight: 600,
-            fontSize: `${controlsTheme.typography.fontSize.md}px`,
-          }}
-        >
+      <div className="neural-control-panel__header">
+        <h4 className="neural-control-panel__title">
           Outlier Handling Parameters
-        </Typography>
+        </h4>
         <Tooltip title="Reset to defaults" placement="top">
           <IconButton
+            variant="subtle"
+            size="sm"
             onClick={handleReset}
             disabled={!handleOutliers}
-            size="small"
-            className="reset-outlier-button"
-            sx={{
-              color: controlsTheme.colors.primary,
-              "&:hover": {
-                backgroundColor: "rgba(33, 150, 243, 0.1)",
-              },
-            }}
+            className="neural-control-panel__reset"
+            aria-label="reset outlier parameters"
           >
             <RestartAltIcon fontSize="small" />
           </IconButton>
         </Tooltip>
-      </Box>
+      </div>
 
-      {/* Percentile Threshold Slider */}
-      <Box sx={{ marginBottom: controlsTheme.spacing.md }}>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: controlsTheme.spacing.xs,
-          }}
-        >
-          <Typography
-            variant="body2"
-            sx={{
-              color: controlsTheme.colors.textSecondary,
-              fontSize: `${controlsTheme.typography.fontSize.md}px`,
-            }}
-          >
+      <div className="neural-control-panel__field">
+        <div className="neural-control-panel__field-header">
+          <span className="neural-control-panel__field-label">
             Percentile Threshold
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{
-              color: controlsTheme.colors.warning,
-              fontWeight: 600,
-              fontSize: `${controlsTheme.typography.fontSize.md}px`,
-            }}
-          >
+          </span>
+          <span className="neural-control-panel__field-value">
             {outlierPercentile}th
-          </Typography>
-        </Box>
+          </span>
+        </div>
         <Slider
           value={outlierPercentile}
-          onChange={(e, value) => setOutlierPercentile(value)}
+          onChange={(_, value) => setOutlierPercentile(value)}
           disabled={!handleOutliers}
           min={50}
           max={99}
@@ -135,65 +73,21 @@ const HandleOutlierControls = ({
             { value: 95, label: "95" },
             { value: 99, label: "99" },
           ]}
-          sx={{
-            color: controlsTheme.colors.warning,
-            "& .MuiSlider-thumb": {
-              width: 16,
-              height: 16,
-            },
-            "& .MuiSlider-markLabel": {
-              fontSize: "0.6875rem",
-              color: controlsTheme.colors.textSecondary,
-            },
-          }}
         />
-        {/* <Typography
-          variant="caption"
-          sx={{
-            color: controlsTheme.colors.textSecondary,
-            fontSize: `${controlsTheme.typography.fontSize.xs}px`,
-            display: "block",
-            marginTop: controlsTheme.spacing.xs,
-          }}
-        >
-          Mark peaks in top {(100 - outlierPercentile).toFixed(0)}% by
-          prominence
-        </Typography> */}
-      </Box>
+      </div>
 
-      {/* Median Multiplier Slider */}
-      <Box>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: controlsTheme.spacing.xs,
-          }}
-        >
-          <Typography
-            variant="body2"
-            sx={{
-              color: controlsTheme.colors.textSecondary,
-              fontSize: `${controlsTheme.typography.fontSize.md}px`,
-            }}
-          >
+      <div className="neural-control-panel__field">
+        <div className="neural-control-panel__field-header">
+          <span className="neural-control-panel__field-label">
             Median Multiplier
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{
-              color: controlsTheme.colors.warning,
-              fontWeight: 600,
-              fontSize: `${controlsTheme.typography.fontSize.md}px`,
-            }}
-          >
+          </span>
+          <span className="neural-control-panel__field-value">
             {outlierMultiplier.toFixed(1)}×
-          </Typography>
-        </Box>
+          </span>
+        </div>
         <Slider
           value={outlierMultiplier}
-          onChange={(e, value) => setOutlierMultiplier(value)}
+          onChange={(_, value) => setOutlierMultiplier(value)}
           disabled={!handleOutliers}
           min={0.5}
           max={5.0}
@@ -206,31 +100,9 @@ const HandleOutlierControls = ({
             { value: 4.0, label: "4.0" },
             { value: 5.0, label: "5.0" },
           ]}
-          sx={{
-            color: controlsTheme.colors.warning,
-            "& .MuiSlider-thumb": {
-              width: 16,
-              height: 16,
-            },
-            "& .MuiSlider-markLabel": {
-              fontSize: "0.6875rem",
-              color: controlsTheme.colors.textSecondary,
-            },
-          }}
         />
-        {/* <Typography
-          variant="caption"
-          sx={{
-            color: controlsTheme.colors.textSecondary,
-            fontSize: `${controlsTheme.typography.fontSize.xs}px`,
-            display: "block",
-            marginTop: controlsTheme.spacing.xs,
-          }}
-        >
-          Minimum prominence relative to median
-        </Typography> */}
-      </Box>
-    </Paper>
+      </div>
+    </Panel>
   );
 };
 

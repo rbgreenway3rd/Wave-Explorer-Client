@@ -1,62 +1,30 @@
+/* Heatmap — fills the metrics chart panel completely. The container is
+ * the ref'd parent that ResizeObserver tracks, and the canvas inside
+ * fills it via 100% width/height + display:block.
+ */
+
 .heatmap-container {
-  display: flex;
-  /* Use flexbox to lay out the child elements side by side */
-  flex-direction: row;
-  /* Align horizontally */
-  /* align-items: flex-start; */
-  /* Align at the top */
-}
-
-.color-scale {
-  display: flex;
-  flex-direction: column;
-  border: solid 0.05em white;
-  background-color: rgb(140, 140, 140);
-
-}
-
-.color-scale-toggle {
-  display: flex;
-  justify-content: center;
-  /* align-self: center; */
-  margin-bottom: 0.25em;
-  margin-top: 0.25em;
-
-}
-
-.color-scale-canvas {
-  display: flex;
+  position: relative;
+  width: 100%;
   height: 100%;
-  /* width: 20px; */
-  /* Fixed width for the color scale */
-  justify-items: flex-start;
-  justify-self: flex-start;
-  border-top: solid 0.05em white;
-  /* margin-right: 0.25em; */
-  /* border: 2.5px solid rgba(255, 255, 255, 0.25); */
-  /* margin-right: 0.1em; */
-  /* height: 100%; */
-  /* Ensure it stretches to the height of the heatmap */
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .heatmap-canvas {
-  justify-items: flex-end;
-  justify-self: flex-end;
-  margin-left: 0.25em;
-  flex-grow: 1;
-  /* Allow the heatmap canvas to take the remaining space */
-  /* height: 100%; */
-  /* Ensure it stretches to the height of the container */
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
+/* Standalone tooltip class kept for any external mounts. */
 .tooltip {
   position: absolute;
   background-color: rgba(0, 0, 0, 0.8);
-  color: white;
-  padding: 5px;
-  border-radius: 3px;
+  color: var(--color-text-on-accent);
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
   pointer-events: none;
-  /* Prevent tooltip from blocking mouse events */
   z-index: 10;
-  /* Ensure tooltip is above other elements */
 }

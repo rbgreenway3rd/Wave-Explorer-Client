@@ -1,0 +1,91 @@
+/* Panel — the boxy column container that wraps a group of related
+ * controls. Replaces the ad-hoc `<div style={{ backgroundColor: ... }}>`
+ * blocks found across FilterControls / LargeGraphControls / etc.
+ */
+
+.ui-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  box-sizing: border-box;
+  transition: box-shadow var(--transition-base),
+              transform var(--transition-base);
+}
+
+/* ---- Variants ---- */
+
+.ui-panel--default {
+  background-color: var(--color-bg-panel);
+  border: 1px solid var(--color-border);
+}
+
+.ui-panel--recessed {
+  background-color: var(--color-bg-recessed);
+  border: 1px solid var(--color-border);
+}
+
+.ui-panel--elevated {
+  background-color: var(--color-bg-canvas);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-md);
+}
+.ui-panel--elevated:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+/* Interactive elevation — opt-in hover lift for clickable panels. */
+.ui-panel--interactive {
+  cursor: pointer;
+}
+.ui-panel--interactive:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-1px);
+}
+
+.ui-panel--accent {
+  background-image: var(--color-accent-grad);
+  color: var(--color-text-on-accent);
+  border: 1px solid var(--color-primary-deep);
+}
+
+/* Dark variant — for the Neural module's scientific dark theme. Uses the
+ * Neural-scoped surface tokens so the rest of the app's light gray
+ * panels are unaffected. Pair with `.ui-panel--rounded-lg` if a softer
+ * corner is wanted (the Neural toggles use 10px radius).
+ */
+.ui-panel--dark {
+  background-color: var(--color-neural-bg-paper);
+  color: var(--color-neural-text);
+  border: 1px solid var(--color-neural-border);
+  box-shadow: var(--shadow-md);
+}
+
+.ui-panel--dark-elevated {
+  background-color: var(--color-neural-bg-paper-elev);
+  color: var(--color-neural-text);
+  border: 1px solid var(--color-neural-border);
+  box-shadow: var(--shadow-lg);
+}
+
+.ui-panel--rounded-lg {
+  border-radius: 0.625rem;
+}
+
+/* ---- Optional title row ---- */
+
+.ui-panel__title {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  color: inherit;
+  margin: 0;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Padding-less variant for tight grouping */
+.ui-panel--flush {
+  padding: 0;
+  gap: 0;
+}

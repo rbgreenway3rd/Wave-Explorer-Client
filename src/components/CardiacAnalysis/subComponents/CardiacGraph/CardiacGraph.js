@@ -133,10 +133,6 @@ export const CardiacGraph = forwardRef(
             data={chartData}
             options={chartOptions}
             ref={cardiacGraphRef}
-            style={{
-              background: "rgb(0, 0, 0)",
-              width: "100%",
-            }}
           />
         ) : (
           <p className="no-well-selected">

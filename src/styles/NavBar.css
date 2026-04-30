@@ -1,34 +1,172 @@
+/* NavBar — top app chrome. Three-section flex strip: left (controls),
+ * middle (project title + screenshot), right (logo + profile menu).
+ */
+
 .navbar-container {
-    display: flex;
-    background-image: linear-gradient(grey, lightgrey, grey);
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
+  display: flex;
+  background-image: linear-gradient(
+    var(--gray-500),
+    var(--gray-300),
+    var(--gray-500)
+  );
+  padding-left: var(--space-3);
+  padding-right: var(--space-3);
 }
 
 .navbar-left {
-    display: flex;
-    align-items: center;
-    margin-right: auto;
+  display: flex;
+  align-items: center;
+  margin-right: auto;
+  gap: var(--space-2);
 }
 
 .navbar-middle {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
 }
 
 .navbar-right {
-    display: flex;
-    align-items: center;
-    margin-left: auto;
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  gap: var(--space-2);
 }
 
 .wave-explorer-icon {
-    width: 2.5em;
-    height: 2.5em;
+  width: 2.5em;
+  height: 2.5em;
 }
 
 .logo {
-    margin: 0.15em 0 0 0;
+  margin: 0.15em 0 0 0;
+}
+
+/* Toolbar-style bordered icon buttons (Batch / Cardiac / Neural). Used
+ * for top-level workflow toggles. Subtly rounded with the same pill
+ * treatment as nav-pill-button so the navbar reads as a coherent set.
+ */
+.navbar__action-button.MuiIconButton-root {
+  background-color: var(--color-bg-canvas);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-1);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+  transition: background-color var(--transition-fast),
+              border-color var(--transition-fast),
+              color var(--transition-fast),
+              box-shadow var(--transition-fast),
+              transform var(--transition-fast);
+}
+
+.navbar__action-button.MuiIconButton-root:hover:not(.Mui-disabled) {
+  background-color: var(--color-primary-soft);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.navbar__action-button.MuiIconButton-root:active:not(.Mui-disabled) {
+  transform: translateY(1px);
+}
+
+.navbar__action-button.MuiIconButton-root:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.navbar__action-button.MuiIconButton-root.Mui-disabled {
+  opacity: 0.4;
+}
+
+/* Wrapping span lets MUI's Tooltip mount on a positioned, non-disabled
+ * element while the IconButton inside can be disabled. The span gets the
+ * spacing instead of inline-style margin.
+ */
+.navbar__action-slot {
+  margin-left: var(--space-2);
+}
+
+.navbar__title {
+  margin-right: var(--space-3);
+}
+
+/* Shared pill-style IconButton — used by NavMenu's hamburger trigger
+ * and ProfileMenu's avatar button. Replaces the previous 8-stop radial
+ * "brushed aluminum" gradient (early-2010s look) with a flat panel-tone
+ * background + subtle inner highlight. Reads modern without losing the
+ * "raised affordance" cue.
+ */
+.nav-pill-button.MuiIconButton-root {
+  background-color: var(--color-bg-canvas);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm),
+              inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  color: var(--color-text);
+  transition: background-color var(--transition-fast),
+              border-color var(--transition-fast),
+              box-shadow var(--transition-fast),
+              transform var(--transition-fast);
+}
+
+.nav-pill-button.MuiIconButton-root:hover {
+  background-color: var(--color-primary-soft);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-md),
+              inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.nav-pill-button.MuiIconButton-root:active:not(.Mui-disabled) {
+  transform: translateY(1px);
+}
+
+.nav-pill-button.MuiIconButton-root:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.nav-pill-button--square.MuiIconButton-root {
+  border-radius: var(--radius-md);
+}
+
+.nav-pill-button--circle.MuiIconButton-root {
+  border-radius: 50%;
+}
+
+/* File-input MenuItem in NavMenu — the label is the visible target;
+ * the input itself is hidden but still accessible via click on the label.
+ */
+.navmenu__file-input-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.navmenu__file-input {
+  display: none;
+}
+
+.profile-menu__trigger.MuiIconButton-root {
+  margin-left: var(--space-4);
+}
+
+.profile-menu__icon.MuiSvgIcon-root {
+  font-size: 1.1em;
+  border-radius: 50%;
+}
+
+.profile-menu__signout {
+  font-weight: var(--font-weight-medium);
+}
+
+.profile-menu__must-change.MuiAlert-root {
+  margin-bottom: var(--space-2);
+}
+
+.profile-menu__form {
+  display: flex;
+  flex-direction: column;
 }

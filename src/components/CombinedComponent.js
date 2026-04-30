@@ -468,6 +468,7 @@ export const CombinedComponent = ({ profile, setProfile }) => {
       >
         {project ? (
           <div
+            className="combined-component__project-frame"
             style={{
               cursor: isApplyingFilters ? "wait" : "default",
             }}

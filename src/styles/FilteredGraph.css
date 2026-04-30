@@ -1,4 +1,16 @@
-.filtered-graph-canvas { 
-  background: rgb(0, 0, 0);
-  
+/* FilteredGraph — wrapper fills the parent chart panel; chart.js's
+ * Line canvas auto-sizes to it via responsive: true +
+ * maintainAspectRatio: false in FilteredGraphOptions.
+ */
+
+.filtered-graph-wrapper {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+}
+
+.filtered-graph-canvas {
+  background: var(--color-bg-chart);
 }

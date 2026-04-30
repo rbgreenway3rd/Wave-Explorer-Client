@@ -1,63 +1,50 @@
-.large-graph-controls {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    /* justify-self: center; */
-    /* align-self: center; */
-    position: relative;
-    /* background-color:  rgb(180, 180, 180); */
-    /* clip-path: inset(0px -10px -10px -10px); */
-    height: 100%;
-    /* width: 95%; */
-    /* width: 100%; */
-    margin-left: 0.25em;
-    /* margin-right: 0.25em; */
-    /* box-shadow: 0px 1px 2px 2px rgba(80, 80, 80, 0.25), 0px 1px 4px 4px rgb(100, 100, 100, 0.15), 0px 1px 8px 5px rgba(100, 100, 100, 0.07); */
+/* LargeGraphControls — outer chrome (bg, padding, border, shadow) comes
+ * from .quadrant-controls. Per-component rules below cover only the
+ * inner layout specific to this panel.
+ */
 
+.large-graph-controls {
+  /* .quadrant-controls already provides display, flex, padding, etc.
+   * — only justify-content: space-between needed to push the Reset
+   * button to the panel floor. */
+  justify-content: space-between;
 }
 
 .zoom-and-pan-controls {
-    box-shadow: 0px 1px 2px 2px rgba(80, 80, 80, 0.25), 0px 1px 4px 4px rgb(100, 100, 100, 0.15), 0px 1px 8px 5px rgba(100, 100, 100, 0.07);
-    clip-path: inset(0px -10px -10px -10px);
+  display: flex;
+  flex-direction: column;
 }
 
-.zoom-controls {
-    display: flex;
-    flex-direction: column;
-    /* margin-left: 0.05em; */
-    /* margin-right: 0.05em; */
-    /* background-image: linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%); */
-}
-
-.zoom-controls-radios {
-    display: flex;
-    flex-direction: column;
-    margin-left: 0.25em;
-    margin-right: 0.25em;
-
-}
-
+.zoom-controls,
 .pan-controls {
-    display: flex;
-    flex-direction: column;
-    /* background-color:  rgb(0,32,96, 0.85); */
-    /* margin-left: 0.05em;
-    margin-right: 0.05em; */
-    /* background-image: linear-gradient( rgb(96, 127, 190, 0.25) 0%,rgb(48, 79.5, 143, 0.15) 50%, rgb(0,32,96, 0.05) 70%); */
+  display: flex;
+  flex-direction: column;
+}
 
+.zoom-controls-radios,
+.pan-controls-radios {
+  display: flex;
+  flex-direction: column;
 }
 
 .pan-controls-radios {
-    display: flex;
-    flex-direction: column;
-    margin-left: 0.25em;
-    margin-right: 0.25em;
-
+  margin-bottom: var(--space-1);
 }
 
-.reset-zoom-button {
-    position: absolute;
-    width: 100%;
-    bottom: 0;
-    /* right: 0 */
+.large-graph-controls__y-scale {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+.large-graph-controls__overlay-label.MuiFormControlLabel-root {
+  margin-top: var(--space-2);
+}
+
+.large-graph-controls__reset-button.MuiButton-root {
+  position: relative;
+  width: 100%;
+  flex: 0 0 auto;
 }

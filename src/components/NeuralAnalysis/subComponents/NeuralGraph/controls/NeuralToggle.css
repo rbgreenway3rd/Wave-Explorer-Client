@@ -1,0 +1,41 @@
+/* Shared layout for the Neural module's small toggle panels
+ * (HandleOutliersToggle, ShowBurstsToggle, etc.). Pairs with
+ * `<Panel variant="dark">` from the primitive library — this file only
+ * adds the row layout + label typography + Switch accent override hook.
+ */
+
+.neural-toggle.ui-panel.ui-panel--dark {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  min-width: fit-content;
+}
+
+.neural-toggle__label {
+  color: var(--color-neural-text);
+  font-family: var(--font-family);
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+/* Variant-tinted Switch — set the accent via a CSS custom property the
+ * jsx passes inline. Default is the primary blue if unset.
+ */
+.neural-toggle .MuiSwitch-switchBase.Mui-checked {
+  color: var(--neural-toggle-accent, var(--color-primary));
+}
+.neural-toggle .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track {
+  background-color: var(--neural-toggle-accent, var(--color-primary));
+}
+
+.neural-toggle .MuiSwitch-root {
+  transition: all var(--transition-base);
+}
+
+.neural-toggle .MuiSwitch-root:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

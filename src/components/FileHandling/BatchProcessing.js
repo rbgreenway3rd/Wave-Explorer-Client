@@ -1,24 +1,15 @@
 import React, { useState, useRef, useContext, useEffect } from "react";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogActions from "@mui/material/DialogActions";
-import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
 import DeleteForeverTwoToneIcon from "@mui/icons-material/DeleteForeverTwoTone";
 import DynamicFeedIcon from "@mui/icons-material/DynamicFeed";
-import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
-import ListItemText from "@mui/material/ListItemText";
 import "./BatchProcessing.css";
 import {
   Checkbox,
   FormControl,
   FormControlLabel,
   FormLabel,
-  Radio,
-  RadioGroup,
 } from "@mui/material";
+import { Modal, Button } from "../ui";
 import { DataContext } from "../../providers/DataProvider";
 // Import filter classes from FilterModels.js
 import * as filterModule from "../Graphing/FilteredData/FilterModels.js";
@@ -348,43 +339,47 @@ const BatchProcessing = ({ open, onClose }) => {
     );
   }, [savedMetrics, uploadedFilters]);
 
+  // Renders one row of a batch list (file / filter / metric) — text on
+  // the left, optional params, delete IconButton on the right.
+  const renderListItem = (key, primaryText, paramsText, onRemove) => (
+    <li key={key} className="batch-list-item">
+      <div className="batch-list-item__row">
+        <span>
+          {primaryText}
+          {paramsText && (
+            <span className="batch-list-item__params">{paramsText}</span>
+          )}
+        </span>
+        <IconButton className="batch-list-item__remove" onClick={onRemove}>
+          <DeleteForeverTwoToneIcon />
+        </IconButton>
+      </div>
+    </li>
+  );
+
   return (
-    <Dialog
+    <Modal
       open={open}
       onClose={onClose}
-      className="batch-processing-dialog"
-      PaperProps={{
-        style: {
-          minWidth: "70vw",
-          minHeight: "75vh",
-          cursor: isBatchProcessing ? "wait" : "default",
-        },
-      }}
+      className={`batch-processing-modal ${
+        isBatchProcessing ? "batch-processing-modal--processing" : ""
+      }`}
     >
-      <DialogTitle sx={{ fontWeight: "bold", padding: "0.5em" }}>
-        Batch Report Generation
-      </DialogTitle>
-      <DialogContent sx={{ height: "50vh", paddingBottom: 0 }}>
+      <Modal.Header>Batch Report Generation</Modal.Header>
+      <Modal.Body>
         {isBatchProcessing && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              marginBottom: "1em",
-            }}
-          >
+          <div className="batch-processing__progress">
             <LinearProgress
               variant="determinate"
               value={progress}
-              style={{ flex: 1, marginRight: "1em" }}
+              className="batch-processing__progress-bar"
             />
-            <span style={{ minWidth: "12em", fontSize: "1em" }}>
+            <span className="batch-processing__progress-name">
               {currentFileName}
             </span>
             <Button
+              variant="ghost"
               onClick={handleCancelBatch}
-              color="secondary"
-              style={{ marginLeft: "1em", pointerEvents: "auto", zIndex: 2 }}
               disabled={
                 progress === 0 || progress === 100 || !isBatchProcessing
               }
@@ -393,20 +388,10 @@ const BatchProcessing = ({ open, onClose }) => {
             </Button>
           </div>
         )}
+
         <section className="file-upload-section">
           <div className="upload-config-container">
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                alignItems: "center",
-                gap: "0.5em",
-                marginBottom: "0.5em",
-                marginLeft: "0.5em",
-                marginTop: "0.5em",
-                position: "relative",
-              }}
-            >
+            <div className="batch-processing__row">
               <button
                 className="batch-processing-add-btn"
                 onClick={handleButtonClick}
@@ -416,96 +401,46 @@ const BatchProcessing = ({ open, onClose }) => {
               <button
                 className="batch-processing-clear-btn"
                 onClick={() => setUploadedFiles([])}
-                style={{ marginLeft: "0.5em" }}
               >
                 Clear
               </button>
-              <p
-                style={{
-                  position: "absolute",
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  margin: 0,
-                  fontWeight: 500,
-                  fontSize: "1.1em",
-                  textAlign: "center",
-                  width: "max-content",
-                }}
-              >
-                .DAT Files
-              </p>
+              <p className="batch-processing__row-title">.DAT Files</p>
             </div>
             <input
               type="file"
               accept=".dat"
               multiple
               ref={fileInputRef}
-              style={{ display: "none" }}
+              hidden
               onChange={handleAddFile}
-              //   webkitdirectory="true"
             />
-
             <input
               type="file"
               accept="application/json"
               ref={configFileInputRef}
-              style={{ display: "none" }}
+              hidden
               onChange={handleConfigFileUpload}
             />
 
-            <div className="batch-processing-list-container">
-              <ul className="batch-processing-list">
+            <div className="batch-list-container">
+              <ul className="batch-list">
                 {uploadedFiles && uploadedFiles.length > 0 ? (
-                  uploadedFiles.map((file, idx) => (
-                    <li key={idx} className="batch-processing-list-item">
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        }}
-                      >
-                        <span>{file.name}</span>
-                        <IconButton
-                          className="batch-processing-remove-btn"
-                          onClick={() =>
-                            setUploadedFiles((prev) =>
-                              prev.filter((_, i) => i !== idx)
-                            )
-                          }
-                        >
-                          <DeleteForeverTwoToneIcon
-                            sx={{
-                              fontSize: "0.75em",
-                              color: "rgb(255,0,0, 0.7)",
-                            }}
-                          />
-                        </IconButton>
-                      </div>
-                    </li>
-                  ))
+                  uploadedFiles.map((file, idx) =>
+                    renderListItem(idx, file.name, null, () =>
+                      setUploadedFiles((prev) =>
+                        prev.filter((_, i) => i !== idx)
+                      )
+                    )
+                  )
                 ) : (
-                  <li style={{ color: "#888", fontSize: "0.8em" }}>
-                    No files uploaded.
-                  </li>
+                  <li className="batch-list--empty">No files uploaded.</li>
                 )}
               </ul>
             </div>
           </div>
 
           <section className="metrics-and-filters-container">
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                alignItems: "center",
-                gap: "0.5em",
-                marginBottom: "0.5em",
-                marginLeft: "0.5em",
-                marginTop: "0.5em",
-                position: "relative",
-              }}
-            >
+            <div className="batch-processing__row">
               <button
                 className="batch-processing-add-config-file-btn"
                 onClick={handleConfigFileButtonClick}
@@ -514,233 +449,106 @@ const BatchProcessing = ({ open, onClose }) => {
               </button>
               <button
                 className="batch-processing-clear-btn"
-                onClick={() => handleClearConfig()}
+                onClick={handleClearConfig}
               >
                 Clear
               </button>
-              <p
-                style={{
-                  position: "absolute",
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  margin: 0,
-                  fontWeight: 500,
-                  fontSize: "1.1em",
-                  textAlign: "center",
-                  width: "max-content",
-                }}
-              >
-                Filters and Metrics
-              </p>
+              <p className="batch-processing__row-title">Filters and Metrics</p>
             </div>
-            <div className="filters-list-container">
-              <p
-                style={{
-                  marginLeft: "1em",
-                  marginRight: "1em",
-                  borderBottom: "solid 1px #888",
-                  marginTop: "0.5em",
-                  marginBottom: "0.5em",
-                }}
-              >
-                Filters
-              </p>
-              <ul className="filters-list">
+
+            <div className="batch-list-container">
+              <p className="batch-list-section-title">Filters</p>
+              <ul className="batch-list">
                 {uploadedFilters && uploadedFilters.length > 0 ? (
-                  uploadedFilters.map((filter, idx) => (
-                    <li
-                      className="filters-list-item"
-                      key={idx}
-                      style={{ fontSize: "0.9em" }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        }}
-                      >
-                        <span>
-                          {filter.name || filter.type || `Filter ${idx + 1}`}{" "}
-                          <span
-                            style={{
-                              color: "#555",
-                              fontSize: "0.85em",
-                              marginLeft: "0.5em",
-                            }}
-                          >
-                            {getFilterParamsDisplay(filter)}
-                          </span>
-                        </span>
-                        <IconButton
-                          className="filters-list-remove-btn"
-                          onClick={() => {
-                            const newFilters = uploadedFilters.filter(
-                              (_, i) => i !== idx
-                            );
-                            setUploadedFilters(newFilters);
-                            console.log("uploadedFilters:", newFilters);
-                          }}
-                        >
-                          <DeleteForeverTwoToneIcon
-                            sx={{
-                              fontSize: "0.75em",
-                              color: "rgb(255,0,0, 0.7)",
-                            }}
-                          />
-                        </IconButton>
-                      </div>
-                    </li>
-                  ))
+                  uploadedFilters.map((filter, idx) =>
+                    renderListItem(
+                      idx,
+                      filter.name || filter.type || `Filter ${idx + 1}`,
+                      getFilterParamsDisplay(filter),
+                      () =>
+                        setUploadedFilters(
+                          uploadedFilters.filter((_, i) => i !== idx)
+                        )
+                    )
+                  )
                 ) : (
-                  <li style={{ color: "#888", fontSize: "0.8em" }}>
-                    No filters uploaded.
-                  </li>
+                  <li className="batch-list--empty">No filters uploaded.</li>
                 )}
               </ul>
             </div>
-            <div className="metrics-list-container">
-              <p
-                style={{
-                  marginLeft: "1em",
-                  marginRight: "1em",
-                  borderBottom: "solid 1px #888",
-                  marginTop: "0.5em",
-                  marginBottom: "0.5em",
-                }}
-              >
-                Metrics
-              </p>
-              <ul className="metrics-list">
+
+            <div className="batch-list-container">
+              <p className="batch-list-section-title">Metrics</p>
+              <ul className="batch-list">
                 {savedMetrics && savedMetrics.length > 0 ? (
-                  savedMetrics.map((metric, idx) => (
-                    <li
-                      className="metrics-list-item"
-                      key={idx}
-                      style={{ fontSize: "0.9em" }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        }}
-                      >
-                        <span>
-                          {metric.metricType ||
-                            metric.name ||
-                            `Metric ${idx + 1}`}{" "}
-                          <span
-                            style={{
-                              color: "#555",
-                              fontSize: "0.85em",
-                              marginLeft: "0.5em",
-                            }}
-                          >
-                            {getMetricParamsDisplay(metric)}
-                          </span>
-                        </span>
-                        <IconButton
-                          className="metrics-list-remove-btn"
-                          onClick={() => {
-                            const newMetrics = savedMetrics.filter(
-                              (_, i) => i !== idx
-                            );
-                            setSavedMetrics(newMetrics);
-                          }}
-                        >
-                          <DeleteForeverTwoToneIcon
-                            sx={{
-                              fontSize: "0.75em",
-                              color: "rgb(255,0,0, 0.7)",
-                            }}
-                          />
-                        </IconButton>
-                      </div>
-                    </li>
-                  ))
+                  savedMetrics.map((metric, idx) =>
+                    renderListItem(
+                      idx,
+                      metric.metricType || metric.name || `Metric ${idx + 1}`,
+                      getMetricParamsDisplay(metric),
+                      () =>
+                        setSavedMetrics(
+                          savedMetrics.filter((_, i) => i !== idx)
+                        )
+                    )
+                  )
                 ) : (
-                  <li style={{ color: "#888", fontSize: "0.8em" }}>
-                    No metrics uploaded.
-                  </li>
+                  <li className="batch-list--empty">No metrics uploaded.</li>
                 )}
               </ul>
             </div>
           </section>
         </section>
-      </DialogContent>
-      <section className="dialog-actions-container">
-        <DialogActions>
-          <section className="batch-processing-config-checkboxes">
-            <FormControl
-              component="fieldset"
-              sx={{ display: "flex", flexDirection: "row" }}
-            >
-              <FormLabel sx={{ textAlign: "center" }} component="legend">
-                Batch Options
-              </FormLabel>
-              <FormControlLabel
-                sx={{
-                  backgroundColor: "transparent",
-                  border: "none",
-                  marginRight: "1em",
-                  marginLeft: "1em",
-                }}
-                control={
-                  <Checkbox
-                    checked={includeRawData}
-                    onChange={(e) => setIncludeRawData(e.target.checked)}
-                  />
-                }
-                label="Include Raw Data"
-              />
-              <FormControlLabel
-                sx={{
-                  backgroundColor: "transparent",
-                  border: "none",
-                  marginRight: "1em",
-                  marginLeft: "1em",
-                }}
-                control={
-                  <Checkbox
-                    checked={includeFilteredData}
-                    onChange={(e) => setIncludeFilteredData(e.target.checked)}
-                  />
-                }
-                label="Include Filtered Data"
-              />
-              <FormControlLabel
-                sx={{
-                  backgroundColor: "transparent",
-                  border: "none",
-                  marginRight: "1em",
-                  marginLeft: "1em",
-                }}
-                control={
-                  <Checkbox
-                    checked={includeSavedMetrics}
-                    onChange={(e) => setIncludeSavedMetrics(e.target.checked)}
-                  />
-                }
-                label="Include Saved Metrics"
-              />
-            </FormControl>
-          </section>
-        </DialogActions>
-        <DialogActions>
-          <Button
-            className="batch-processing-submit-btn"
-            onClick={handleBatchReportGeneration}
-            color="primary"
-            variant="contained"
-            sx={{ padding: "0.5em", borderRadius: "4px" }}
+      </Modal.Body>
+
+      <div className="dialog-actions-container">
+        <section className="batch-processing-config-checkboxes ui-clean-forms">
+          <FormControl
+            component="fieldset"
+            sx={{ display: "flex", flexDirection: "row" }}
           >
-            <DynamicFeedIcon />
-            Generate Batch
-          </Button>
-        </DialogActions>
-      </section>
-    </Dialog>
+            <FormLabel sx={{ textAlign: "center" }} component="legend">
+              Batch Options
+            </FormLabel>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={includeRawData}
+                  onChange={(e) => setIncludeRawData(e.target.checked)}
+                />
+              }
+              label="Include Raw Data"
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={includeFilteredData}
+                  onChange={(e) => setIncludeFilteredData(e.target.checked)}
+                />
+              }
+              label="Include Filtered Data"
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={includeSavedMetrics}
+                  onChange={(e) => setIncludeSavedMetrics(e.target.checked)}
+                />
+              }
+              label="Include Saved Metrics"
+            />
+          </FormControl>
+        </section>
+        <Button
+          variant="primary"
+          startIcon={<DynamicFeedIcon />}
+          onClick={handleBatchReportGeneration}
+          className="batch-processing-submit-btn"
+        >
+          Generate Batch
+        </Button>
+      </div>
+    </Modal>
   );
 };
 

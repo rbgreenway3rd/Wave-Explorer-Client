@@ -1,25 +1,30 @@
-.chart-controls {
-    display: flex;
-    flex-direction: row;
-    align-self: flex-end;
-    background-color: lightgray;
-    margin-left: 0.25em;
-    border: solid black 1px;
-    box-sizing: border-box;
+/* ChartControls — top strip for the Cardiac graph (peak detection
+ * parameters + reset zoom). Scoped under the modal to avoid colliding
+ * with the unrelated Neural-module `chart-controls` class.
+ */
+
+.cardiac-analysis-modal .chart-controls {
+  display: flex;
+  flex-direction: row;
+  align-self: flex-end;
+  background-color: var(--gray-200);
+  margin-left: var(--space-1);
+  border: 1px solid var(--color-text);
+  box-sizing: border-box;
 }
 
-.parameters {
-    display: flex;
-    flex-direction: column;
+.cardiac-analysis-modal .parameters {
+  display: flex;
+  flex-direction: column;
 }
 
-.parameter-item {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
+.cardiac-analysis-modal .parameter-item {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
 }
 
-.checkboxes {
-    display: flex;
-    flex-direction: column
+.cardiac-analysis-modal .checkboxes {
+  display: flex;
+  flex-direction: column;
 }

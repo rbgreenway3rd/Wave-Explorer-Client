@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useContext } from "react";
-import { Box, Typography, Paper, TextField } from "@mui/material";
+import { Box, Typography, TextField } from "@mui/material";
 import { controlsTheme } from "../styles/controlsTheme";
+import { Panel } from "../../../../ui";
 import { DataContext } from "../../../../../providers/DataProvider";
 import "./ROIControls.css";
+import "./NeuralControlPanel.css";
 
 /**
  * ROIControls
@@ -486,17 +488,9 @@ const ROIControls = ({
   };
 
   return (
-    <Paper
-      className="roi-controls-container"
-      elevation={2}
-      sx={{
-        backgroundColor: controlsTheme.colors.paper,
-        padding: `${controlsTheme.spacing.md}px`,
-        borderRadius: `${controlsTheme.borderRadius.lg}px`,
-        border: `0.0625rem solid ${controlsTheme.colors.border}`,
-        marginTop: `${controlsTheme.spacing.md}px`,
-        marginBottom: `${controlsTheme.spacing.md}px`,
-      }}
+    <Panel
+      variant="dark"
+      className="neural-control-panel roi-controls-container"
     >
       <Typography
         variant="subtitle2"
@@ -708,7 +702,7 @@ const ROIControls = ({
           Click and drag on the chart to define ROI {pendingRoiIndex + 1}
         </Typography>
       )}
-    </Paper>
+    </Panel>
   );
 };
 

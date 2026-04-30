@@ -1,22 +1,55 @@
-/* Placeholder styles for NeuralAnalysisModal */
-.modal-content {
-    /* padding: 0.5em; */
+/* NeuralAnalysisModal — fullscreen modal for spike/burst analysis. The
+ * dark "scientific" interior comes from the Neural module's own
+ * controlsTheme.js (used by inner control panels). The outer chrome is
+ * gray and tokenized to match the rest of the app.
+ */
+
+.neural-analysis-modal .MuiPaper-root {
+  background-color: var(--color-bg-control);
+  border-radius: 0;
+  box-shadow: none;
 }
 
-.chart-controls {
-    /* margin-bottom: 1em; */
+.neural-analysis-modal__header {
+  position: relative;
+  background-color: var(--color-bg-control);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-3) var(--space-5);
 }
 
-.modal-header {
-    display: flex;
-    flex-direction: row;
-    /* justify-content: space-evenly */
+.neural-analysis-modal__close.MuiIconButton-root {
+  position: absolute;
+  right: var(--space-3);
+  top: var(--space-2);
 }
 
-.modal-body {
-    display: grid;
-    grid-template-columns: 5fr 2fr;
-    grid-template-rows: 1fr;
-    height: 100%;
-    width: 100%;
+.neural-analysis-modal__body {
+  padding: var(--space-3) var(--space-4);
+}
+
+/* Page-level layout inside the modal body. Scoped under
+ * `.neural-analysis-modal` so the generic `.modal-content/.modal-header
+ * /.modal-body` class names don't collide with the same names used by
+ * the Cardiac modal stylesheet.
+ */
+
+.neural-analysis-modal .modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.neural-analysis-modal .modal-header {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-3);
+}
+
+.neural-analysis-modal .modal-body {
+  display: grid;
+  grid-template-columns: 5fr 2fr;
+  grid-template-rows: 1fr;
+  height: 100%;
+  width: 100%;
+  gap: var(--space-3);
 }

@@ -1,25 +1,49 @@
 import React, { useState } from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
   FormGroup,
   FormControlLabel,
   Checkbox,
-  Typography,
-  Box,
   Divider,
   LinearProgress,
   CircularProgress,
 } from "@mui/material";
+import { Modal, Button } from "../ui";
 import { GenerateFullPlateReport } from "./NeuralFullPlateReport";
+import "./ReportModal.css";
+
+const PLATE_OPTIONS = [
+  {
+    key: "includeProcessedSignal",
+    title: "Processed Signal",
+    caption:
+      "Time-series data after all processing steps (may result in large file)",
+  },
+  {
+    key: "includeSpikeData",
+    title: "Spike Data",
+    caption: "Detailed information for each detected spike",
+  },
+  {
+    key: "includeOverallMetrics",
+    title: "Overall Metrics",
+    caption: "Summary statistics for spike frequency, amplitude, width, etc.",
+  },
+  {
+    key: "includeBurstData",
+    title: "Burst Data",
+    caption: "Details of detected burst events",
+  },
+  {
+    key: "includeBurstMetrics",
+    title: "Burst Metrics",
+    caption: "Summary statistics for burst duration and intervals",
+  },
+];
 
 /**
- * NeuralFullPlateReportModal
- * Modal dialog for configuring and generating full-plate neural analysis CSV reports
- * Processes all wells and combines results into a single CSV file
+ * NeuralFullPlateReportModal — full-plate CSV export. Iterates every
+ * well, runs the analysis pipeline, and emits a combined CSV. Shows a
+ * progress overlay while processing; user can cancel mid-flight.
  */
 const NeuralFullPlateReportModal = ({
   open,
@@ -27,9 +51,8 @@ const NeuralFullPlateReportModal = ({
   project,
   wellArrays,
   processingParams,
-  roiList = [], // Accept roiList prop, default to empty array
+  roiList = [],
 }) => {
-  // State for CSV generation options
   const [options, setOptions] = useState({
     includeProcessedSignal: false,
     includeSpikeData: false,
@@ -39,96 +62,56 @@ const NeuralFullPlateReportModal = ({
     includeROIAnalysis: true,
   });
 
-  // State for processing progress
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentWellIndex, setCurrentWellIndex] = useState(0);
   const [totalWells, setTotalWells] = useState(0);
   const [isCancelled, setIsCancelled] = useState(false);
 
-  // Handle checkbox changes
-  const handleOptionChange = (optionName) => (event) => {
-    setOptions({
-      ...options,
-      [optionName]: event.target.checked,
-    });
+  const handleOptionChange = (key) => (event) => {
+    setOptions({ ...options, [key]: event.target.checked });
   };
 
-  // Handle cancel during processing
-  const handleCancelProcessing = () => {
-    setIsCancelled(true);
-  };
+  const handleCancelProcessing = () => setIsCancelled(true);
 
-  // Handle generate full-plate report
   const handleGenerate = async () => {
     try {
       setIsProcessing(true);
       setIsCancelled(false);
       setCurrentWellIndex(0);
 
-      console.log("[FullPlateReport] wellArrays:", wellArrays);
-      console.log("[FullPlateReport] wellArrays type:", typeof wellArrays);
-      console.log(
-        "[FullPlateReport] wellArrays isArray:",
-        Array.isArray(wellArrays)
-      );
-      console.log("[FullPlateReport] wellArrays length:", wellArrays?.length);
-
-      // Get all wells from wellArrays
       const allWells = [];
-
       if (wellArrays && Array.isArray(wellArrays)) {
-        // wellArrays is a flat array of wells
-        wellArrays.forEach((well, index) => {
+        wellArrays.forEach((well) => {
           if (
             well &&
             well.indicators &&
             well.indicators[0] &&
             well.indicators[0].filteredData
           ) {
-            console.log(
-              `[FullPlateReport] Adding well ${index}: ${
-                well.key || well.id || "unknown"
-              } with ${well.indicators[0].filteredData.length} data points`
-            );
             allWells.push(well);
-          } else {
-            console.log(
-              `[FullPlateReport] Skipping well ${index} - no valid data`,
-              {
-                hasWell: !!well,
-                hasIndicators: !!well?.indicators,
-                hasIndicator0: !!well?.indicators?.[0],
-                hasFilteredData: !!well?.indicators?.[0]?.filteredData,
-              }
-            );
           }
         });
       }
-
-      console.log(`[FullPlateReport] Total wells found: ${allWells.length}`);
 
       if (allWells.length === 0) {
         alert("No wells with data found.");
         setIsProcessing(false);
         return;
       }
-
       setTotalWells(allWells.length);
 
-      // Progress callback for updating UI
-      const handleProgress = (wellIndex, total) => {
+      const handleProgress = (wellIndex) => {
         if (isCancelled) return;
         setCurrentWellIndex(wellIndex);
       };
 
-      // Generate the full-plate CSV report
       const fullPlateCSV = GenerateFullPlateReport(
         project,
         allWells,
         processingParams,
         options,
         handleProgress,
-        roiList // Pass roiList to the report generator
+        roiList
       );
 
       if (isCancelled) {
@@ -138,21 +121,17 @@ const NeuralFullPlateReportModal = ({
         return;
       }
 
-      // Create download
       const blob = new Blob([fullPlateCSV], {
         type: "text/csv;charset=utf-8;",
       });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-
-      // Generate filename with timestamp
       const timestamp = new Date()
         .toISOString()
         .replace(/[:.]/g, "-")
         .slice(0, 19);
       link.download = `Neural_Analysis_FullPlate_${timestamp}.csv`;
-
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -170,270 +149,134 @@ const NeuralFullPlateReportModal = ({
     }
   };
 
-  // Handle cancel button in dialog
   const handleCancel = () => {
-    if (isProcessing) {
-      handleCancelProcessing();
-    } else {
-      onClose();
-    }
+    if (isProcessing) handleCancelProcessing();
+    else onClose();
   };
 
-  // Calculate progress percentage
   const progressPercentage =
     totalWells > 0 ? (currentWellIndex / totalWells) * 100 : 0;
 
+  const hasROIs = roiList && roiList.length > 0;
+  const roiCaption = hasROIs
+    ? `Apply ${roiList.length} defined ROI${roiList.length > 1 ? "s" : ""} to all wells`
+    : "No ROIs defined (define ROIs in the graph above)";
+
   return (
-    <Dialog
+    <Modal
       open={open}
-      onClose={isProcessing ? undefined : onClose} // Prevent closing during processing
+      onClose={isProcessing ? undefined : onClose}
       maxWidth="sm"
       fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 2,
-          boxShadow: 3,
-        },
+      className="report-modal"
+      style={{
+        "--report-modal-accent": "var(--color-primary)",
+        "--report-modal-info-bg": "var(--color-primary-soft)",
       }}
     >
-      <DialogTitle
-        sx={{
-          backgroundColor: "#2196f3",
-          color: "white",
-          fontWeight: "bold",
-          fontSize: "1.25rem",
-        }}
-      >
-        Generate Full-Plate Neural Analysis Report
-      </DialogTitle>
+      <Modal.Header>Generate Full-Plate Neural Analysis Report</Modal.Header>
 
-      <DialogContent sx={{ pt: 3, pb: 2 }}>
+      <Modal.Body>
         {!isProcessing ? (
           <>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            <p className="report-modal__intro">
               This will process all wells in the plate and generate a
               comprehensive CSV report.
-            </Typography>
+            </p>
 
-            <Divider sx={{ mb: 2 }} />
+            <Divider style={{ marginBottom: "var(--space-3)" }} />
 
-            <FormGroup>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={options.includeProcessedSignal}
-                    onChange={handleOptionChange("includeProcessedSignal")}
-                    color="primary"
-                  />
-                }
-                label={
-                  <Box>
-                    <Typography variant="body1" fontWeight="medium">
-                      Processed Signal
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Time-series data after all processing steps (may result in
-                      large file)
-                    </Typography>
-                  </Box>
-                }
-                sx={{ mb: 1.5 }}
-              />
-
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={options.includeSpikeData}
-                    onChange={handleOptionChange("includeSpikeData")}
-                    color="primary"
-                  />
-                }
-                label={
-                  <Box>
-                    <Typography variant="body1" fontWeight="medium">
-                      Spike Data
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Detailed information for each detected spike
-                    </Typography>
-                  </Box>
-                }
-                sx={{ mb: 1.5 }}
-              />
+            <FormGroup className="report-modal__option-list">
+              {PLATE_OPTIONS.map(({ key, title, caption }) => (
+                <FormControlLabel
+                  key={key}
+                  control={
+                    <Checkbox
+                      checked={options[key]}
+                      onChange={handleOptionChange(key)}
+                      color="primary"
+                    />
+                  }
+                  label={
+                    <div>
+                      <div className="report-modal__option-title">{title}</div>
+                      <span className="report-modal__option-caption">
+                        {caption}
+                      </span>
+                    </div>
+                  }
+                />
+              ))}
 
               <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={options.includeOverallMetrics}
-                    onChange={handleOptionChange("includeOverallMetrics")}
-                    color="primary"
-                  />
-                }
-                label={
-                  <Box>
-                    <Typography variant="body1" fontWeight="medium">
-                      Overall Metrics
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Summary statistics for spike frequency, amplitude, width,
-                      etc.
-                    </Typography>
-                  </Box>
-                }
-                sx={{ mb: 1.5 }}
-              />
-
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={options.includeBurstData}
-                    onChange={handleOptionChange("includeBurstData")}
-                    color="primary"
-                  />
-                }
-                label={
-                  <Box>
-                    <Typography variant="body1" fontWeight="medium">
-                      Burst Data
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Details of detected burst events
-                    </Typography>
-                  </Box>
-                }
-                sx={{ mb: 1.5 }}
-              />
-
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={options.includeBurstMetrics}
-                    onChange={handleOptionChange("includeBurstMetrics")}
-                    color="primary"
-                  />
-                }
-                label={
-                  <Box>
-                    <Typography variant="body1" fontWeight="medium">
-                      Burst Metrics
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Summary statistics for burst duration and intervals
-                    </Typography>
-                  </Box>
-                }
-                sx={{ mb: 1.5 }}
-              />
-
-              <FormControlLabel
+                className={hasROIs ? "" : "report-modal__option--disabled"}
                 control={
                   <Checkbox
                     checked={options.includeROIAnalysis}
                     onChange={handleOptionChange("includeROIAnalysis")}
                     color="primary"
-                    disabled={!roiList || roiList.length === 0}
+                    disabled={!hasROIs}
                   />
                 }
                 label={
-                  <Box>
-                    <Typography
-                      variant="body1"
-                      fontWeight="medium"
-                      color={
-                        roiList && roiList.length > 0
-                          ? "text.primary"
-                          : "text.disabled"
-                      }
-                    >
-                      ROI Analysis
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {roiList && roiList.length > 0
-                        ? `Apply ${roiList.length} defined ROI${
-                            roiList.length > 1 ? "s" : ""
-                          } to all wells`
-                        : "No ROIs defined (define ROIs in the graph above)"}
-                    </Typography>
-                  </Box>
+                  <div>
+                    <div className="report-modal__option-title">ROI Analysis</div>
+                    <span className="report-modal__option-caption">
+                      {roiCaption}
+                    </span>
+                  </div>
                 }
-                sx={{ mb: 1.5 }}
               />
             </FormGroup>
 
-            <Divider sx={{ mt: 2, mb: 2 }} />
+            <Divider style={{ marginTop: "var(--space-3)" }} />
 
-            <Box sx={{ backgroundColor: "#e3f2fd", p: 2, borderRadius: 1 }}>
-              <Typography variant="body2" fontWeight="medium" gutterBottom>
-                Processing Information:
-              </Typography>
-              <Typography
-                variant="caption"
-                display="block"
-                color="text.secondary"
-              >
+            <div className="report-modal__info">
+              <h6 className="report-modal__info-title">Processing Information:</h6>
+              <span className="report-modal__info-line">
                 This will analyze all wells with the current processing
                 parameters.
-              </Typography>
-              <Typography
-                variant="caption"
-                display="block"
-                color="text.secondary"
-              >
+              </span>
+              <span className="report-modal__info-line">
                 Processing time will depend on the number of wells and selected
                 options.
-              </Typography>
-            </Box>
+              </span>
+            </div>
           </>
         ) : (
-          <Box sx={{ textAlign: "center", py: 3 }}>
-            <CircularProgress size={60} sx={{ mb: 3 }} />
-            <Typography variant="h6" gutterBottom>
-              Processing Wells...
-            </Typography>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
+          <div className="report-modal__progress">
+            <CircularProgress size={60} />
+            <h6 className="report-modal__progress-title">Processing Wells...</h6>
+            <p className="report-modal__progress-status">
               Well {currentWellIndex} of {totalWells}
-            </Typography>
-            <Box sx={{ width: "100%", mt: 2 }}>
-              <LinearProgress
-                variant="determinate"
-                value={progressPercentage}
-              />
-            </Box>
-            <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+            </p>
+            <div className="report-modal__progress-bar">
+              <LinearProgress variant="determinate" value={progressPercentage} />
+            </div>
+            <span className="report-modal__progress-percent">
               {progressPercentage.toFixed(0)}% complete
-            </Typography>
-          </Box>
+            </span>
+          </div>
         )}
-      </DialogContent>
+      </Modal.Body>
 
-      <DialogActions sx={{ px: 3, pb: 2 }}>
+      <Modal.Footer>
         <Button
+          variant="ghost"
           onClick={handleCancel}
-          color="inherit"
-          sx={{
-            fontWeight: "medium",
-          }}
           disabled={isProcessing && isCancelled}
         >
           {isProcessing ? "Cancel" : "Close"}
         </Button>
         <Button
+          variant="primary"
           onClick={handleGenerate}
-          variant="contained"
-          color="primary"
           disabled={isProcessing}
-          sx={{
-            fontWeight: "bold",
-            backgroundColor: "#2196f3",
-            "&:hover": {
-              backgroundColor: "#1976d2",
-            },
-          }}
         >
           {isProcessing ? "Processing..." : "Generate Full-Plate Report"}
         </Button>
-      </DialogActions>
-    </Dialog>
+      </Modal.Footer>
+    </Modal>
   );
 };
 

@@ -5,28 +5,18 @@ import MenuIcon from "@mui/icons-material/Menu";
 import FileDownloadTwoToneIcon from "@mui/icons-material/FileDownloadTwoTone";
 import SaveIcon from "@mui/icons-material/Save";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import DynamicFeedIcon from "@mui/icons-material/DynamicFeed";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogActions from "@mui/material/DialogActions";
 import Checkbox from "@mui/material/Checkbox";
 import FormControlLabel from "@mui/material/FormControlLabel";
-import Button from "@mui/material/Button";
+import { Tooltip } from "@mui/material";
+import { Modal, Button } from "../ui";
 import { DataContext } from "../../providers/DataProvider";
 import { GenerateCSV } from "../FileHandling/GenerateReport";
-import { Tooltip } from "@mui/material";
-import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
-import BatchProcessing from "../FileHandling/BatchProcessing";
-
-import { PERMISSIONS } from "../../permissions";
 
 export const NavMenu = ({ profile, onOpenCardiac }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   const {
     project,
     selectedFilters,
@@ -39,106 +29,6 @@ export const NavMenu = ({ profile, onOpenCardiac }) => {
   const [includeRawData, setIncludeRawData] = useState(true);
   const [includeFilteredData, setIncludeFilteredData] = useState(true);
   const [includeSavedMetrics, setIncludeSavedMetrics] = useState(false);
-
-  // state for editParams dialogue
-  const [openDialog, setOpenDialog] = useState(false);
-  const [currentFilter, setCurrentFilter] = useState(null);
-  const [editModalType, setEditModalType] = useState(null);
-  // state for static ratio filter params
-  const [startValue, setStartValue] = useState(0);
-  const [endValue, setEndValue] = useState(5);
-  // state for smoothing filter params
-  const [windowWidth, setWindowWidth] = useState(0);
-  // state for control subtraction filter params
-  const [controlWellArray, setControlWellArray] = useState([]);
-  const [applyWellArray, setApplyWellArray] = useState([]);
-  // state for outlier removal filter params
-  const [halfWindow, setHalfWindow] = useState(2);
-  const [threshold, setThreshold] = useState(3);
-  // state for flat field correction filter params
-  const [correctionMatrix, setCorrectionMatrix] = useState([]);
-
-  // PERMISSIONS
-  // Only allow opening CardiacAnalysisModal for users with CARDIAC or ADMIN permission
-  const canOpenCardiac =
-    (profile?.permissions & PERMISSIONS.CARDIAC) === PERMISSIONS.CARDIAC ||
-    (profile?.permissions & PERMISSIONS.ADMIN) === PERMISSIONS.ADMIN;
-
-  const handleOpenBatchDialog = () => {
-    setBatchDialogOpen(true);
-    handleClose();
-  };
-  const handleCloseBatchDialog = () => {
-    setBatchDialogOpen(false);
-  };
-
-  const handleEditStaticRatioParams = (start, end, setParams) => {
-    setStartValue(start);
-    setEndValue(end);
-    setCurrentFilter({ setParams });
-    setEditModalType("staticRatio");
-    setOpenDialog(true);
-  };
-
-  const handleEditSmoothingFilterParams = (windowWidth, setParams) => {
-    setWindowWidth(windowWidth);
-    setCurrentFilter({ setParams });
-    setEditModalType("smoothingFilter");
-    setOpenDialog(true);
-
-    // console.log(currentFilter);
-  };
-
-  const handleEditControlSubtractionFilterParams = (
-    controlWellArray,
-    applyWellArray,
-    setParams
-  ) => {
-    setControlWellArray(controlWellArray);
-    setApplyWellArray(applyWellArray);
-    setCurrentFilter({ setParams });
-    setEditModalType("controlSubtractionFilter");
-    setOpenDialog(true);
-  };
-
-  const handleEditOutlierRemovalFilterParams = (
-    halfWindow,
-    threshold,
-    setParams
-  ) => {
-    setHalfWindow(halfWindow);
-    setThreshold(threshold);
-    setCurrentFilter({ setParams });
-    setEditModalType("outlierRemovalFilter");
-    setOpenDialog(true);
-  };
-
-  const handleEditFlatFieldCorrectionFilterParams = (
-    correctionMatrix,
-    setParams
-  ) => {
-    setCorrectionMatrix(correctionMatrix);
-    setCurrentFilter({ setParams });
-    setEditModalType("flatFieldCorrectionFilter");
-    setOpenDialog(true);
-  };
-
-  const handleSaveParams = () => {
-    // Save logic depending on the filter type
-    if (editModalType === "staticRatio") {
-      currentFilter.setParams(startValue, endValue);
-    } else if (editModalType === "smoothingFilter") {
-      currentFilter.setParams(windowWidth);
-    } else if (editModalType === "controlSubtractionFilter") {
-      currentFilter.setParams(controlWellArray, applyWellArray);
-    } else if (editModalType === "outlierRemovalFilter") {
-      currentFilter.setParams(halfWindow, threshold);
-    } else if (editModalType === "flatFieldCorrectionFilter") {
-      currentFilter.setParams(correctionMatrix);
-    }
-
-    setOpenDialog(false);
-  };
 
   const handleClick = (event) => setAnchorEl(event.currentTarget);
   const handleClose = () => setAnchorEl(null);
@@ -200,8 +90,7 @@ export const NavMenu = ({ profile, onOpenCardiac }) => {
         try {
           const data = JSON.parse(e.target.result);
           if (data.filters && data.metrics) {
-            let newFilters = data.filters;
-            setUploadedFilters(newFilters);
+            setUploadedFilters(data.filters);
             setSavedMetrics(data.metrics);
           } else {
             alert(
@@ -212,7 +101,6 @@ export const NavMenu = ({ profile, onOpenCardiac }) => {
           alert("Error reading the file. Make sure it's a valid JSON file.");
         }
       };
-
       reader.readAsText(file);
     }
   };
@@ -221,13 +109,8 @@ export const NavMenu = ({ profile, onOpenCardiac }) => {
     <>
       <Tooltip title="Generate Reports and More" arrow>
         <IconButton
+          className="nav-pill-button nav-pill-button--square"
           onClick={handleClick}
-          style={{
-            border: "solid rgb(140, 140, 140) 1px",
-            borderRadius: 0,
-            backgroundImage:
-              "radial-gradient(rgb(240,240,240),rgb(230,230,230), rgb(220,220,230), rgb(210,210,220), rgb(200,200,210), rgb(180,180,190), rgb(160,160,170),rgb(140,140,150))",
-          }}
         >
           <MenuIcon style={{ fontSize: "0.9em" }} />
         </IconButton>
@@ -244,7 +127,7 @@ export const NavMenu = ({ profile, onOpenCardiac }) => {
         <MenuItem>
           <label
             htmlFor="upload-json"
-            style={{ display: "flex", alignItems: "center", cursor: "pointer" }}
+            className="navmenu__file-input-label"
           >
             <UploadFileIcon />
             Load Filters and Metrics
@@ -253,30 +136,20 @@ export const NavMenu = ({ profile, onOpenCardiac }) => {
             type="file"
             id="upload-json"
             accept="application/json"
-            style={{ display: "none" }}
+            className="navmenu__file-input"
             onChange={handleLoadPreferencesFromJSON}
           />
         </MenuItem>
-        {/* <MenuItem
-          className="batchProcessingButton"
-          onClick={handleOpenBatchDialog}
-        >
-          <DynamicFeedIcon />
-          Batch Processing
-        </MenuItem> */}
-        {/* <MenuItem
-          className="cardiacAnalysisButton"
-          onClick={canOpenCardiac && onOpenCardiac ? onOpenCardiac : undefined}
-          disabled={!canOpenCardiac}
-        >
-          <FavoriteBorderIcon />
-          Cardiac Analysis
-        </MenuItem> */}
       </Menu>
 
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
-        <DialogTitle>Configure Report</DialogTitle>
-        <DialogContent>
+      <Modal
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <Modal.Header>Configure Report</Modal.Header>
+        <Modal.Body className="ui-clean-forms">
           <FormControlLabel
             control={
               <Checkbox
@@ -304,20 +177,16 @@ export const NavMenu = ({ profile, onOpenCardiac }) => {
             }
             label="Include Saved Metrics"
           />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDialogOpen(false)} color="secondary">
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="ghost" onClick={() => setDialogOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={handleDownloadReport} color="primary">
+          <Button variant="primary" onClick={handleDownloadReport}>
             Download Report
           </Button>
-        </DialogActions>
-      </Dialog>
-      {/* <BatchProcessing
-        open={batchDialogOpen}
-        onClose={handleCloseBatchDialog}
-      /> */}
+        </Modal.Footer>
+      </Modal>
     </>
   );
 };

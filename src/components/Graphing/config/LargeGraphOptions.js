@@ -113,7 +113,7 @@ export const LargeGraphOptions = (
         },
       },
     },
-    maintainAspectRatio: true,
+    maintainAspectRatio: false,
     responsive: true,
     scales: {
       x: {

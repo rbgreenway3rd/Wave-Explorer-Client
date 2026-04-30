@@ -39,32 +39,10 @@ export const FilteredGraph = ({
     y: 0,
   });
 
-  const [largeCanvasWidth, setLargeCanvasWidth] = useState(
-    window.innerWidth / 2.3
-  );
-  const [largeCanvasHeight, setLargeCanvasHeight] = useState(
-    expanded ? window.innerHeight * 0.7 : window.innerHeight / 2.3
-  );
-
-  const handleResize = React.useCallback(() => {
-    setLargeCanvasWidth(window.innerWidth / 2.3);
-    setLargeCanvasHeight(
-      expanded ? window.innerHeight * 0.7 : window.innerHeight / 2.3
-    );
-  }, [expanded]);
-
-  useEffect(() => {
-    window.addEventListener("resize", handleResize);
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, [handleResize]);
-
-  useEffect(() => {
-    setLargeCanvasHeight(
-      expanded ? window.innerHeight * 0.7 : window.innerHeight / 2.3
-    );
-  }, [expanded]);
+  // Chart.js Line is sized by its parent when responsive: true +
+  // maintainAspectRatio: false (set in FilteredGraphOptions). The
+  // wrapper below fills the chart panel; we don't pass explicit
+  // width/height props anymore.
 
   // Update chart when annotations change
   useEffect(() => {
@@ -218,18 +196,18 @@ export const FilteredGraph = ({
   };
 
   return (
-    <Line
-      key={JSON.stringify(filteredGraphData)}
-      ref={chartRef}
-      className={`filtered-graph-canvas${expanded ? " expanded" : ""}`}
-      data={filteredGraphData}
-      options={filteredGraphConfig}
-      width={largeCanvasWidth}
-      height={largeCanvasHeight}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-    />
+    <div className="filtered-graph-wrapper">
+      <Line
+        key={JSON.stringify(filteredGraphData)}
+        ref={chartRef}
+        className={`filtered-graph-canvas${expanded ? " expanded" : ""}`}
+        data={filteredGraphData}
+        options={filteredGraphConfig}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+      />
+    </div>
   );
 };
 // );
