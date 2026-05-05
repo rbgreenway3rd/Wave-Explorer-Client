@@ -46,6 +46,15 @@ export const NeuralSettingsProvider = ({ children }) => {
   const [spikeThreshold, setSpikeThreshold] = useState(0);
   const [spikeMinDistance, setSpikeMinDistance] = useState(0);
   const [stdMultiplier, setStdMultiplier] = useState(1.0);
+  const [noiseFloorMultiplier, setNoiseFloorMultiplier] = useState(0);
+  // Shape-based filters (rejects asymmetric / narrow noise peaks).
+  // Defaults preserve previous hardcoded behavior (passes through).
+  const [spikeMinWidth, setSpikeMinWidth] = useState(5);
+  const [spikeMinProminenceRatio, setSpikeMinProminenceRatio] = useState(0.01);
+  // Block size for local windowed σ (used by the noise-floor check).
+  // 0 = use global σ (current behavior). > 0 = block-wise local σ at that
+  // window size; lets the per-peak floor adapt to non-stationary noise.
+  const [noiseWindowSize, setNoiseWindowSize] = useState(0);
   // Tracks the well key the user has overridden spike params for. When
   // the selected well changes, the override no longer applies and the
   // effective values fall back to the auto-suggestion (computed in
@@ -73,11 +82,18 @@ export const NeuralSettingsProvider = ({ children }) => {
 
   // ---- Noise / smoothing / baseline --------------------------------------
   const [noiseSuppressionActive, setNoiseSuppressionActive] = useState(true);
+  // Savitzky-Golay smoothing — high-frequency noise reducer applied
+  // after trend-flattening but before outlier removal. `smoothingWindow`
+  // is the SG window (5/7/9), order 2.
+  const [smoothingEnabled, setSmoothingEnabled] = useState(true);
   const [smoothingWindow, setSmoothingWindow] = useState(5);
   const [subtractControl, setSubtractControl] = useState(false);
-  const [filterBaseline, setFilterBaseline] = useState(false);
   const [baselineCorrection, setBaselineCorrection] = useState(false);
   const [trendFlatteningEnabled, setTrendFlatteningEnabled] = useState(true);
+  // Baseline tracker (used by both trendFlattening and baselineCorrected).
+  // Hardcoded as 200 / 50 historically; now exposed for per-file tuning.
+  const [trendFlatteningWindow, setTrendFlatteningWindow] = useState(200);
+  const [trendFlatteningMinimums, setTrendFlatteningMinimums] = useState(50);
 
   // ---- Decimation --------------------------------------------------------
   const [decimationEnabled, setDecimationEnabled] = useState(false);
@@ -111,6 +127,14 @@ export const NeuralSettingsProvider = ({ children }) => {
       setSpikeMinDistance,
       stdMultiplier,
       setStdMultiplier,
+      noiseFloorMultiplier,
+      setNoiseFloorMultiplier,
+      spikeMinWidth,
+      setSpikeMinWidth,
+      spikeMinProminenceRatio,
+      setSpikeMinProminenceRatio,
+      noiseWindowSize,
+      setNoiseWindowSize,
       spikeParamsOverrideForWellKey,
       handleSpikeProminenceChange,
       handleSpikeWindowChange,
@@ -118,16 +142,20 @@ export const NeuralSettingsProvider = ({ children }) => {
       // noise / smoothing
       noiseSuppressionActive,
       setNoiseSuppressionActive,
+      smoothingEnabled,
+      setSmoothingEnabled,
       smoothingWindow,
       setSmoothingWindow,
       subtractControl,
       setSubtractControl,
-      filterBaseline,
-      setFilterBaseline,
       baselineCorrection,
       setBaselineCorrection,
       trendFlatteningEnabled,
       setTrendFlatteningEnabled,
+      trendFlatteningWindow,
+      setTrendFlatteningWindow,
+      trendFlatteningMinimums,
+      setTrendFlatteningMinimums,
       // decimation
       decimationEnabled,
       setDecimationEnabled,
@@ -161,16 +189,22 @@ export const NeuralSettingsProvider = ({ children }) => {
       spikeThreshold,
       spikeMinDistance,
       stdMultiplier,
+      noiseFloorMultiplier,
+      spikeMinWidth,
+      spikeMinProminenceRatio,
+      noiseWindowSize,
       spikeParamsOverrideForWellKey,
       handleSpikeProminenceChange,
       handleSpikeWindowChange,
       handleResetSpikeParams,
       noiseSuppressionActive,
+      smoothingEnabled,
       smoothingWindow,
       subtractControl,
-      filterBaseline,
       baselineCorrection,
       trendFlatteningEnabled,
+      trendFlatteningWindow,
+      trendFlatteningMinimums,
       decimationEnabled,
       decimationSamples,
       handleOutliers,

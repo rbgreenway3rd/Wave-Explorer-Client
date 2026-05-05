@@ -31,6 +31,32 @@ const STALE = Symbol("stale");
 const yieldToBrowser = () =>
   new Promise((resolve) => setTimeout(resolve, 0));
 
+// ---- HMR-aware worker recycling ---------------------------------------
+// Webpack bundles the worker as a separate chunk; iterative dev edits
+// rebuild the chunk but the running Worker instance keeps executing the
+// chunk it loaded at first creation. Symptom: pipeline params added in
+// recent edits get sent from the main thread but ignored by the worker.
+//
+// Each makePipelineRunner() instance registers itself with a module-level
+// Set on creation. On `module.hot.accept`, we mark every live runner so
+// the next .run() call disposes its stale worker and ensureWorker()
+// creates a fresh one against the latest bundle.
+//
+// Production builds: `module.hot` is undefined, the registry sits unused,
+// zero-cost.
+const liveRunners = new Set();
+
+if (typeof module !== "undefined" && module.hot) {
+  module.hot.accept(
+    "../../../workers/neuralPipeline.worker.js",
+    () => {
+      // Mark every live runner stale; ensureWorker() will recycle on the
+      // next run().
+      for (const r of liveRunners) r.markWorkerStale();
+    }
+  );
+}
+
 // Build typed-array views over a {x,y}[] for Transferable posting.
 function flattenSignal(signal) {
   const n = signal ? signal.length : 0;
@@ -56,11 +82,25 @@ function materialize(xs, ys) {
 export function makePipelineRunner() {
   let activeReqId = 0;
   let worker = null;
+  let workerStale = false;
   // pending: reqId → { resolve, reject }
   const pending = new Map();
 
   function ensureWorker() {
-    if (worker) return worker;
+    if (worker && !workerStale) return worker;
+    if (worker && workerStale) {
+      // Dispose the stale worker before creating a fresh one against the
+      // latest bundle. In-flight requests would have been rejected by
+      // the HMR teardown if any.
+      try {
+        worker.terminate();
+      } catch (_e) {
+        // ignore
+      }
+      worker = null;
+      workerStale = false;
+      perf.count("pipelineRunner.workerRecycled");
+    }
     worker = new Worker(
       new URL("../../../workers/neuralPipeline.worker.js", import.meta.url)
     );
@@ -89,7 +129,16 @@ export function makePipelineRunner() {
     });
   }
 
-  return {
+  const api = {
+    /** Internal: HMR uses this to flag the worker for recycle on next run. */
+    markWorkerStale() {
+      workerStale = true;
+      // Cancel anything in flight — those results would come from the
+      // stale worker and are no longer trusted.
+      activeReqId++;
+      for (const [, entry] of pending) entry.reject(new Error("worker recycled"));
+      pending.clear();
+    },
     /**
      * Run the pipeline with `inputs` ({ rawSignal, controlSignal,
      * params, analysis, noiseSuppressionActive }). Returns a Promise
@@ -131,6 +180,10 @@ export function makePipelineRunner() {
               params: inputs.params,
               analysis: inputs.analysis,
               noiseSuppressionActive: inputs.noiseSuppressionActive,
+              // Worker has no window.location to gate on. Pass the
+              // main-thread perf state so worker-side logs surface in
+              // the parent console when ?perfMode=1 is set.
+              perfMode: perf.enabled,
             },
             transferList
           )
@@ -176,8 +229,11 @@ export function makePipelineRunner() {
       }
       for (const [, entry] of pending) entry.reject(new Error("disposed"));
       pending.clear();
+      liveRunners.delete(api);
     },
   };
+  liveRunners.add(api);
+  return api;
 }
 
 export const PIPELINE_STALE = STALE;

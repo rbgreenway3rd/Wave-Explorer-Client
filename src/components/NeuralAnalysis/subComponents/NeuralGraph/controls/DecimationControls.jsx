@@ -41,6 +41,7 @@ const DecimationControls = () => {
           style={{ "--neural-method-accent": "var(--color-primary)" }}
           control={
             <Switch
+              size="small"
               checked={decimationEnabled}
               onChange={(_, checked) => setDecimationEnabled(checked)}
             />

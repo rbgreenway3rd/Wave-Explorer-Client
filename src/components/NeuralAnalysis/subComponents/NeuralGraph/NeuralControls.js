@@ -19,10 +19,6 @@ const NoiseFilterControls = () => {
   return (
     <Box className="neural-controls-container">
       <FormGroup>
-        <Box className="spike-detection-controls">
-          <SpikeDetectionControls />
-        </Box>
-
         {/* Detection Controls — toggles stacked above their control panels. */}
         <Box className="detection-controls-row">
           {/* Outlier Detection Column */}
@@ -52,6 +48,10 @@ const NoiseFilterControls = () => {
             <ShowBurstsToggle />
             <BurstDetectionControls />
           </Box>
+        </Box>
+
+        <Box className="spike-detection-controls">
+          <SpikeDetectionControls />
         </Box>
       </FormGroup>
     </Box>

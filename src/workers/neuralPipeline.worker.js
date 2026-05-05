@@ -26,6 +26,7 @@
 
 import { runNeuralAnalysisPipeline } from "../components/NeuralAnalysis/NeuralPipeline";
 import { makePipelineCache } from "../components/NeuralAnalysis/utilities/pipelineCache";
+import { perf } from "../components/NeuralAnalysis/utilities/perfLogger";
 
 const cache = makePipelineCache();
 
@@ -77,12 +78,36 @@ function stripSpike(p) {
 self.onmessage = (event) => {
   const msg = event.data;
   if (!msg || msg.type !== "run") return;
-  const { reqId, signal, control, params, analysis, noiseSuppressionActive } =
-    msg;
+  const {
+    reqId,
+    signal,
+    control,
+    params,
+    analysis,
+    noiseSuppressionActive,
+    perfMode,
+  } = msg;
+
+  // Mirror main-thread perf state into the worker so per-stage timings
+  // surface in the parent console when ?perfMode=1 is enabled.
+  perf.setEnabled(perfMode === true);
 
   try {
     const rawSignal = materialize(signal.xs, signal.ys);
     const controlSignal = materialize(control?.xs, control?.ys);
+
+    // One-shot diagnostic: prints the per-call signal size + the keys
+    // present on `analysis` and `params`. Lets us see immediately
+    // whether the worker is being called with the inputs we expect
+    // (or e.g. an empty rawSignal that would explain a < 1 ms run).
+    if (perf.enabled) {
+      // eslint-disable-next-line no-console
+      console.log(
+        `[worker] run reqId=${reqId} rawSignal.length=${rawSignal.length} controlSignal.length=${controlSignal.length} analysis=${JSON.stringify(
+          analysis
+        )} params.spikeProminence=${params?.spikeProminence} params.smoothingEnabled=${params?.smoothingEnabled}`
+      );
+    }
 
     const result = runNeuralAnalysisPipeline({
       rawSignal,
@@ -92,6 +117,13 @@ self.onmessage = (event) => {
       noiseSuppressionActive,
       cache,
     });
+
+    if (perf.enabled) {
+      // eslint-disable-next-line no-console
+      console.log(
+        `[worker] run reqId=${reqId} done — spikes=${result.spikeResults?.length ?? 0} bursts=${result.burstResults?.length ?? 0} processedSignal.length=${result.processedSignal?.length ?? 0}`
+      );
+    }
 
     const { xs: processedXs, ys: processedYs } = flatten(result.processedSignal);
     const wireSpikes = (result.spikeResults || []).map(stripSpike);

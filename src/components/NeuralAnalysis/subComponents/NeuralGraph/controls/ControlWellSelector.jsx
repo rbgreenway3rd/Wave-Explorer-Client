@@ -1,6 +1,10 @@
 import React from "react";
+import { FormControlLabel, Switch } from "@mui/material";
 import { Panel, Button } from "../../../../ui";
-import { useNeuralSelection } from "../../../NeuralProvider";
+import {
+  useNeuralSelection,
+  useNeuralSettings,
+} from "../../../NeuralProvider";
 import "./NeuralControlPanel.css";
 
 /**
@@ -24,6 +28,7 @@ const ControlWellSelector = ({ disabled = false }) => {
     selectingControl,
     setSelectingControl,
   } = useNeuralSelection();
+  const { subtractControl, setSubtractControl } = useNeuralSettings();
 
   const handleButtonClick = () => {
     if (disabled || controlWell) return;
@@ -47,6 +52,19 @@ const ControlWellSelector = ({ disabled = false }) => {
       <div className="neural-control-panel__header">
         <h4 className="neural-control-panel__title">Control Well Selection</h4>
       </div>
+
+      <FormControlLabel
+        style={{ "--neural-method-accent": "var(--color-info)" }}
+        control={
+          <Switch
+            size="small"
+            checked={subtractControl}
+            disabled={disabled}
+            onChange={(_, checked) => setSubtractControl(checked)}
+          />
+        }
+        label="Subtract Control Well Signature"
+      />
 
       <Button
         variant="secondary"

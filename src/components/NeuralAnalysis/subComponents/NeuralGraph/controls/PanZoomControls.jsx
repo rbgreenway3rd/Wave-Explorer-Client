@@ -61,6 +61,7 @@ const PanZoomControls = ({ resetZoom }) => {
           }}
           control={
             <Switch
+              size="small"
               checked={panZoomActive}
               onChange={(_, checked) => handlePanZoomToggle(checked)}
             />
@@ -81,6 +82,7 @@ const PanZoomControls = ({ resetZoom }) => {
           }}
           control={
             <Switch
+              size="small"
               checked={!!defineROI}
               onChange={(_, checked) => handleDefineROIToggle(checked)}
             />

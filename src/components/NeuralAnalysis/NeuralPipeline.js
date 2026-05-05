@@ -3,7 +3,12 @@ import {
   trendFlattening,
   baselineCorrected,
 } from "./utilities/neuralSmoothing";
-import { detectSpikes } from "./utilities/detectSpikes";
+import { savitzkyGolay } from "./utilities/savitzkyGolay";
+import {
+  detectSpikes,
+  computeResidualRobustStd,
+  computeLocalRobustStd,
+} from "./utilities/detectSpikes";
 import { detectBursts } from "./utilities/burstDetection";
 import {
   removeOutliers,
@@ -132,17 +137,24 @@ export function runNeuralAnalysisPipeline({
   // 2. Apply trend flattening FIRST (before outlier removal)
   // This ensures outliers are detected on the flattened signal
   let processedForDetection = processed;
+  // Snapshot of the signal BEFORE Savitzky-Golay smoothing (when SG is
+  // enabled). Used as the noise reference for the noise-floor σ estimate
+  // in detectSpikes — see step 4 below.
+  let preSmoothingSignal = null;
 
   if (noiseSuppressionActive) {
+    const tfWindow = params.trendFlatteningWindow ?? 200;
+    const tfMinimums = params.trendFlatteningMinimums ?? 50;
+
     if (params.trendFlatteningEnabled) {
       processed = memo(
         "trendFlattening",
-        [id(processed)], // params (windowSize=200, numMinimums=50) are constants
+        [id(processed), tfWindow, tfMinimums],
         () =>
           perf.time("trendFlattening", () =>
             trendFlattening(processed, {
-              windowSize: 200,
-              numMinimums: 50,
+              windowSize: tfWindow,
+              numMinimums: tfMinimums,
             })
           )
       );
@@ -152,11 +164,27 @@ export function runNeuralAnalysisPipeline({
     if (params.baselineCorrection) {
       processed = memo(
         "baselineCorrected",
-        [id(processed), params.smoothingWindow || 200],
+        [id(processed), tfWindow, tfMinimums],
         () =>
           perf.time("baselineCorrected", () =>
-            baselineCorrected(processed, params.smoothingWindow || 200, 50)
+            baselineCorrected(processed, tfWindow, tfMinimums)
           )
+      );
+      processedForDetection = processed;
+    }
+
+    if (params.smoothingEnabled) {
+      const sgWindow = params.smoothingWindow ?? 5;
+      // Snapshot pre-smoothing as the noise reference for residual-based
+      // σ. Lets the noise-floor slider's "× σ" threshold reflect the
+      // actual noise (data − smoothed) regardless of how aggressive the
+      // smoother is.
+      preSmoothingSignal = processed;
+      processed = memo(
+        "smoothing",
+        [id(processed), sgWindow],
+        () =>
+          perf.time("smoothing", () => savitzkyGolay(processed, sgWindow))
       );
       processedForDetection = processed;
     }
@@ -192,16 +220,40 @@ export function runNeuralAnalysisPipeline({
   // 4. Spike detection (on cleaned signal without outliers)
   let spikeResults = [];
   if (analysis.runSpikeDetection) {
+    // Optional per-sample local σ — kicks in when the user sets a
+    // Noise Window > 0 in the UI. Cached separately so the same
+    // (signal × reference × window) tuple is computed once across
+    // slider drags that change downstream-only params.
+    const noiseWindowSize = params.noiseWindowSize ?? 0;
+    const localStds =
+      noiseWindowSize > 0
+        ? memo(
+            "localStds",
+            [id(processedForDetection), id(preSmoothingSignal), noiseWindowSize],
+            () =>
+              perf.time("localStds", () =>
+                computeLocalRobustStd(
+                  processedForDetection,
+                  preSmoothingSignal,
+                  noiseWindowSize
+                )
+              )
+          )
+        : null;
+
     spikeResults = memo(
       "detectSpikes",
       [
         id(processedForDetection),
+        id(preSmoothingSignal),
+        id(localStds),
         params.spikeProminence,
         params.spikeWindow,
         params.spikeMinWidth,
         params.spikeMinDistance,
         params.spikeMinProminenceRatio,
         params.stdMultiplier,
+        params.noiseFloorMultiplier,
       ],
       () =>
         perf.time("detectSpikes", () =>
@@ -212,6 +264,9 @@ export function runNeuralAnalysisPipeline({
             minDistance: params.spikeMinDistance,
             minProminenceRatio: params.spikeMinProminenceRatio,
             stdMultiplier: params.stdMultiplier,
+            noiseFloorMultiplier: params.noiseFloorMultiplier,
+            noiseReference: preSmoothingSignal,
+            localStds,
           })
         )
     );
@@ -252,9 +307,22 @@ export function runNeuralAnalysisPipeline({
   // 7. Metrics
   const metrics = memo(
     "metrics",
-    [id(spikeResults), id(burstResults), id(processed)],
+    [
+      id(spikeResults),
+      id(burstResults),
+      id(processed),
+      id(processedForDetection),
+      id(preSmoothingSignal),
+    ],
     () =>
       perf.time("metrics", () => ({
+        // Same σ the noise-floor check uses (residual when SG is on,
+        // data-only otherwise). Surfaced so the UI can show the
+        // absolute threshold value next to the slider.
+        robustStd:
+          processedForDetection.length > 0
+            ? computeResidualRobustStd(processedForDetection, preSmoothingSignal)
+            : 0,
         spikeFrequency: calculateSpikeFrequency(
           spikeResults,
           processed[0]?.x || 0,
