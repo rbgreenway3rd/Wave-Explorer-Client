@@ -82,9 +82,31 @@ export const NeuralResultsProvider = ({ children }) => {
   // for x-axis bounds) require no further plumbing.
   useContext(DataContext);
 
+  // ---- Suggested spike params (signal-derived, override-independent) ----
+  // Always-computed auto-suggestion for the currently selected well.
+  // Exposed alongside the effective values so consumers (e.g. the
+  // SpikeDetectionControls slider) can size their range to the
+  // suggestion regardless of whether the user has overridden it.
+  const suggestedSpikeParams = useMemo(() => {
+    if (!selectedWell?.indicators?.[0]) {
+      return { prominence: null, window: null };
+    }
+    const ind = selectedWell.indicators[0];
+    const rawSignal =
+      typeof ind.materializeFilteredData === "function"
+        ? ind.materializeFilteredData()
+        : ind.filteredData;
+    if (!rawSignal || rawSignal.length === 0) {
+      return { prominence: null, window: null };
+    }
+    const prominence = suggestProminence(rawSignal, 0.5);
+    const wndw = suggestWindow(rawSignal, Number(prominence), 5);
+    return { prominence, window: wndw };
+  }, [selectedWell]);
+
   // ---- Effective spike params -------------------------------------------
   // If the user has explicitly set prominence / window for this well,
-  // use those values; otherwise auto-suggest from the well's signal.
+  // use those values; otherwise fall back to the auto-suggestion.
   const { effectiveSpikeProminence, effectiveSpikeWindow } = useMemo(() => {
     const userOverride =
       selectedWell?.key && spikeParamsOverrideForWellKey === selectedWell.key;
@@ -94,38 +116,17 @@ export const NeuralResultsProvider = ({ children }) => {
         effectiveSpikeWindow: spikeWindow,
       };
     }
-    if (!selectedWell?.indicators?.[0]) {
-      return {
-        effectiveSpikeProminence: spikeProminence,
-        effectiveSpikeWindow: spikeWindow,
-      };
-    }
-    const ind = selectedWell.indicators[0];
-    const rawSignal =
-      typeof ind.materializeFilteredData === "function"
-        ? ind.materializeFilteredData()
-        : ind.filteredData;
-    if (!rawSignal || rawSignal.length === 0) {
-      return {
-        effectiveSpikeProminence: spikeProminence,
-        effectiveSpikeWindow: spikeWindow,
-      };
-    }
-    const suggestedProminence = suggestProminence(rawSignal, 0.5);
-    const suggestedWindow = suggestWindow(
-      rawSignal,
-      Number(suggestedProminence),
-      5
-    );
     return {
-      effectiveSpikeProminence: suggestedProminence,
-      effectiveSpikeWindow: suggestedWindow,
+      effectiveSpikeProminence:
+        suggestedSpikeParams.prominence ?? spikeProminence,
+      effectiveSpikeWindow: suggestedSpikeParams.window ?? spikeWindow,
     };
   }, [
-    selectedWell,
+    selectedWell?.key,
     spikeParamsOverrideForWellKey,
     spikeProminence,
     spikeWindow,
+    suggestedSpikeParams,
   ]);
 
   // ---- Pipeline runner (worker-backed, stale-aware) ---------------------
@@ -234,8 +235,18 @@ export const NeuralResultsProvider = ({ children }) => {
       pipelineResults,
       effectiveSpikeProminence,
       effectiveSpikeWindow,
+      // Raw signal-derived suggestions, exposed so the prominence
+      // slider can size its range to the suggestion (which can exceed
+      // 2,000 on noisy wells) regardless of any user override.
+      suggestedSpikeProminence: suggestedSpikeParams.prominence,
+      suggestedSpikeWindow: suggestedSpikeParams.window,
     }),
-    [pipelineResults, effectiveSpikeProminence, effectiveSpikeWindow]
+    [
+      pipelineResults,
+      effectiveSpikeProminence,
+      effectiveSpikeWindow,
+      suggestedSpikeParams,
+    ]
   );
 
   return (

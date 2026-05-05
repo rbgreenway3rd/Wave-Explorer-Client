@@ -4,8 +4,7 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
-  IconButton,
-  Tooltip,
+  Switch,
 } from "@mui/material";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import { Panel } from "../../../../ui";
@@ -17,6 +16,9 @@ import "./NeuralControlPanel.css";
  * sample count. Reduces points rendered to chart.js for very long
  * recordings; improves interactivity at the cost of fidelity. Reads its
  * own state from NeuralSettingsContext.
+ *
+ * Master toggle uses a plain MUI Switch (matches every other toggle in
+ * the modal). Sample picker uses dark-themed `.neural-decimation-samples`.
  */
 const DecimationControls = () => {
   const {
@@ -29,36 +31,22 @@ const DecimationControls = () => {
 
   return (
     <Panel variant="dark" className="neural-control-panel">
-      <div className="neural-control-panel__section-header">
-        <FilterListIcon />
+      <div className="neural-control-panel__header">
+        <FilterListIcon className="neural-control-panel__icon" />
         <h4 className="neural-control-panel__title">Data Decimation</h4>
       </div>
 
-      {/* ON/OFF dual-toggle */}
-      <div className="neural-toggle-group">
-        <Tooltip title="Enable Decimation" arrow>
-          <IconButton
-            className={`neural-toggle-group__button neural-toggle-group__button--on ${
-              decimationEnabled ? "neural-toggle-group__button--active" : ""
-            }`}
-            onClick={() => setDecimationEnabled(true)}
-            disabled={decimationEnabled}
-          >
-            ON
-          </IconButton>
-        </Tooltip>
-        <span className="neural-toggle-group__divider">/</span>
-        <Tooltip title="Disable Decimation" arrow>
-          <IconButton
-            className={`neural-toggle-group__button neural-toggle-group__button--off ${
-              !decimationEnabled ? "neural-toggle-group__button--active" : ""
-            }`}
-            onClick={() => setDecimationEnabled(false)}
-            disabled={!decimationEnabled}
-          >
-            OFF
-          </IconButton>
-        </Tooltip>
+      <div className="neural-control-panel__methods">
+        <FormControlLabel
+          style={{ "--neural-method-accent": "var(--color-primary)" }}
+          control={
+            <Switch
+              checked={decimationEnabled}
+              onChange={(_, checked) => setDecimationEnabled(checked)}
+            />
+          }
+          label={decimationEnabled ? "Enabled" : "Disabled"}
+        />
       </div>
 
       {/* Sample count radio group */}

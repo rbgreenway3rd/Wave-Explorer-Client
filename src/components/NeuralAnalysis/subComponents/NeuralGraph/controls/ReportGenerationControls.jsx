@@ -44,7 +44,9 @@ const ReportGenerationControls = ({
       variant="dark"
       className="neural-control-panel report-generation-controls-container"
     >
-      <h4 className="neural-control-panel__section-title">Report Generation</h4>
+      <div className="neural-control-panel__header">
+        <h4 className="neural-control-panel__title">Report Generation</h4>
+      </div>
 
       <div className="neural-control-panel__actions">
         <Tooltip title={singleWellTooltip} arrow placement="top">
@@ -56,7 +58,6 @@ const ReportGenerationControls = ({
               onClick={handleGenerateReport}
               disabled={isSingleWellDisabled}
               className="single-well-report-button"
-              style={{ "--neural-button-accent": "var(--color-success)" }}
             >
               Generate Single-Well Report
             </Button>

@@ -1,14 +1,17 @@
 import React from "react";
-import { FormControlLabel, Switch, Tooltip, IconButton } from "@mui/material";
+import { FormControlLabel, Switch } from "@mui/material";
 import { Panel } from "../../../../ui";
 import { useNeuralSettings } from "../../../NeuralProvider";
 import "./NeuralControlPanel.css";
 
 /**
- * NoiseSuppressionControls — wraps a section header, a dual ON/OFF
- * IconButton toggle for the suppression pipeline as a whole, and a list
- * of method switches (Trend Flattening, Subtract Control). Reads its own
- * state from NeuralSettingsContext.
+ * NoiseSuppressionControls — section header + a master Switch for the
+ * suppression pipeline + per-method switches (Trend Flattening,
+ * Subtract Control). Reads its own state from NeuralSettingsContext.
+ *
+ * Master toggle is a plain MUI Switch — replaces the previous nested
+ * dual ON/OFF IconButton pill which read as triple-bordered chrome on
+ * top of the new card design.
  */
 const NoiseSuppressionControls = () => {
   const {
@@ -25,42 +28,30 @@ const NoiseSuppressionControls = () => {
       variant="dark"
       className="neural-control-panel noise-suppression-container"
     >
-      <h4 className="neural-control-panel__section-title">Noise Suppression</h4>
-
-      {/* ON/OFF dual-toggle */}
-      <div className="neural-toggle-group">
-        <Tooltip title="Enable Noise Suppression" arrow>
-          <IconButton
-            className={`neural-toggle-group__button neural-toggle-group__button--on ${
-              noiseSuppressionActive ? "neural-toggle-group__button--active" : ""
-            }`}
-            onClick={() => setNoiseSuppressionActive(true)}
-            disabled={noiseSuppressionActive}
-          >
-            ON
-          </IconButton>
-        </Tooltip>
-        <span className="neural-toggle-group__divider">/</span>
-        <Tooltip title="Disable Noise Suppression" arrow>
-          <IconButton
-            className={`neural-toggle-group__button neural-toggle-group__button--off ${
-              !noiseSuppressionActive ? "neural-toggle-group__button--active" : ""
-            }`}
-            onClick={() => setNoiseSuppressionActive(false)}
-            disabled={!noiseSuppressionActive}
-          >
-            OFF
-          </IconButton>
-        </Tooltip>
+      <div className="neural-control-panel__header">
+        <h4 className="neural-control-panel__title">Noise Suppression</h4>
       </div>
 
-      {/* Method switches */}
       <div className="neural-control-panel__methods">
+        {/* Master toggle */}
+        <FormControlLabel
+          style={{ "--neural-method-accent": "var(--color-primary)" }}
+          control={
+            <Switch
+              checked={noiseSuppressionActive}
+              onChange={(_, checked) => setNoiseSuppressionActive(checked)}
+            />
+          }
+          label={noiseSuppressionActive ? "Enabled" : "Disabled"}
+        />
+
+        {/* Method switches */}
         <FormControlLabel
           style={{ "--neural-method-accent": "var(--color-primary)" }}
           control={
             <Switch
               checked={!!trendFlatteningEnabled}
+              disabled={!noiseSuppressionActive}
               onChange={(_, checked) => {
                 if (typeof setTrendFlatteningEnabled === "function") {
                   setTrendFlatteningEnabled(checked);
@@ -76,6 +67,7 @@ const NoiseSuppressionControls = () => {
           control={
             <Switch
               checked={subtractControl}
+              disabled={!noiseSuppressionActive}
               onChange={(_, checked) => {
                 setSubtractControl(checked);
                 if (checked && typeof setFilterBaseline === "function") {

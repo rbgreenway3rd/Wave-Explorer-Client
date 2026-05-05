@@ -9,35 +9,81 @@
  * etc.). When unset the accent falls back to the app's primary blue.
  */
 
+/* Replaces the previous 2px ringed accent border with a calmer card:
+ *   - 1px hairline neutral border (--color-neural-border) on three sides
+ *   - 4px accent "spine" along the left, using the per-feature accent
+ *   - same rounded corners, slightly softer
+ *
+ * The accent (warning-orange for outliers, info-cyan for bursts, etc.)
+ * survives as the visual identifier of each card without dominating the
+ * card chrome. Matches the "GitHub callout" / "Mailbox folder" pattern.
+ */
 .neural-control-panel.ui-panel.ui-panel--dark {
-  padding: var(--space-2);
-  border: 0.125rem solid var(--neural-control-accent, var(--color-primary));
-  border-radius: 0.5rem;
-  min-width: 15rem;
-  max-width: 20rem;
-  flex: 1 1 auto;
+  padding: var(--space-3);
+  border: 1px solid var(--color-neural-border);
+  border-left: 4px solid var(--neural-control-accent, var(--color-primary));
+  border-radius: var(--radius-md);
+  /* Grid parent (`.neural-chart-controls`) controls column widths via
+   * `repeat(6, 1fr)`, so the card itself just fills its column. The
+   * previous `min-width: 15rem / max-width: 20rem / flex: 1 1 auto`
+   * was tug-of-war with content and produced asymmetric widths. */
+  width: 100%;
+  box-sizing: border-box;
+  /* Flex-column body so dense and sparse cards both have a consistent
+   * top→bottom flow; secondary content (info blocks, indicator pills)
+   * can `margin-top: auto` to dock at the bottom. */
+  display: flex;
+  flex-direction: column;
   transition: opacity var(--transition-base),
               background-color var(--transition-base),
               border-color var(--transition-base);
 }
 
-/* Disabled state — light gray background, dimmed. Replaces the prior
- * inline `backgroundColor: enabled ? paper : 'rgb(180,180,180)'` and
- * `opacity: enabled ? 1 : 0.6`.
- */
-.neural-control-panel--disabled.ui-panel.ui-panel--dark {
-  background-color: var(--color-bg-control);
-  color: var(--color-text);
-  opacity: 0.6;
+/* Chart-controls bar cards share a baseline height so sparse panels
+ * (Decimation) match dense ones (Report). Right-column cards (Burst,
+ * Outlier, Spike sliders) intentionally NOT scoped here — they stack
+ * vertically in a different container and don't need the floor. */
+.neural-chart-controls > .neural-control-panel {
+  min-height: 14rem;
 }
 
-/* ---- Header row ---- */
+/* Disabled state — softer, drained accent + reduced opacity. Replaces
+ * the previous opaque-gray flat fill.
+ */
+.neural-control-panel--disabled.ui-panel.ui-panel--dark {
+  background-color: var(--color-neural-bg);
+  border-left-color: var(--color-neural-border);
+  opacity: 0.55;
+}
+
+/* ---- Header row ----
+ * Canonical card-header layout for every Neural control panel. Three
+ * shapes flow naturally:
+ *   - title only:       <header><h4>Title</h4></header>
+ *   - leading icon:     <header><Icon /><h4>Title</h4></header>
+ *   - trailing action:  <header><h4>Title</h4><Tooltip><IconButton /></Tooltip></header>
+ *
+ * `gap` handles icon→title spacing; `margin-left: auto` on the trailing
+ * action pushes it flush right (the previous `justify-content: space-
+ * between` couldn't accommodate a leading icon).
+ */
 
 .neural-control-panel__header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--space-1);
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+.neural-control-panel__icon.MuiSvgIcon-root {
+  color: var(--neural-control-accent, var(--color-primary));
+  font-size: 1rem;
+}
+
+/* Tooltip's forwardRef pattern means the IconButton renders directly
+ * as a sibling of the title (no Tooltip wrapper element in the DOM). */
+.neural-control-panel__header > .neural-control-panel__reset.MuiIconButton-root {
+  margin-left: auto;
 }
 
 .neural-control-panel__title {
@@ -51,10 +97,19 @@
 
 .neural-control-panel__reset.MuiIconButton-root {
   color: var(--neural-control-accent, var(--color-primary));
-  transition: transform var(--transition-base);
+  transition: transform var(--transition-base),
+              background-color var(--transition-fast);
 }
+/* Hover bg is a tint of the panel's accent color (was previously a
+ * hardcoded blue tint regardless of the panel's accent — looked off
+ * for orange/cyan/green panels). color-mix lets us derive the tint
+ * directly from the same custom property the spine uses. */
 .neural-control-panel__reset.MuiIconButton-root:hover:not(.Mui-disabled) {
-  background-color: rgba(33, 150, 243, 0.1);
+  background-color: color-mix(
+    in srgb,
+    var(--neural-control-accent, var(--color-primary)) 14%,
+    transparent
+  );
   transform: rotate(180deg);
 }
 .neural-control-panel__reset.MuiIconButton-root:active:not(.Mui-disabled) {
@@ -115,18 +170,9 @@
   color: var(--color-text-muted);
 }
 
-/* ---- Section title (uppercase variant) — used by panels that act as
- * a section header rather than a single-feature control card.
- */
-.neural-control-panel__section-title {
-  color: var(--color-neural-text);
-  font-family: var(--font-family);
-  font-size: 0.75rem;
-  font-weight: var(--font-weight-bold);
-  text-transform: uppercase;
-  letter-spacing: 0.03125rem;
-  margin: 0 0 var(--space-1) 0;
-}
+/* `__section-title` and `__section-header` were earlier alternate
+ * header patterns. They're consolidated into the canonical
+ * `__header > __title` pattern above; consumers were migrated. */
 
 /* ---- Method-switch row (Trend Flattening, Subtract Control, etc.) — */
 
@@ -147,7 +193,7 @@
 .neural-control-panel__methods .MuiFormControlLabel-label {
   color: var(--color-neural-text);
   font-family: var(--font-family);
-  font-size: 0.625rem;
+  font-size: 0.75rem; /* was 0.625rem (10px) — below readability for body text */
   font-weight: var(--font-weight-medium);
 }
 
@@ -158,86 +204,24 @@
   background-color: var(--neural-method-accent, var(--color-primary));
 }
 
-/* ---- Dual ON/OFF toggle group (used by NoiseSuppressionControls) — */
-
-.neural-toggle-group {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  gap: var(--space-1);
-  margin-bottom: var(--space-2);
-  padding: var(--space-1);
-  background-color: var(--color-neural-bg-dark);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-neural-border);
-}
-
-.neural-toggle-group__divider {
-  color: var(--color-neural-text-secondary);
-  font-size: 1rem;
-  font-weight: var(--font-weight-medium);
-}
-
-.neural-toggle-group__button.MuiIconButton-root {
-  font-family: var(--font-family);
-  font-weight: var(--font-weight-bold);
-  font-size: 1rem;
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
-  color: var(--color-neural-text-secondary);
-  background-color: transparent;
-  transition: all var(--transition-base);
-}
-
-.neural-toggle-group__button.MuiIconButton-root:hover {
-  background-color: var(--color-neural-bg-light);
-}
-
-.neural-toggle-group__button--on.MuiIconButton-root.neural-toggle-group__button--active,
-.neural-toggle-group__button--on.MuiIconButton-root.neural-toggle-group__button--active.Mui-disabled {
-  color: var(--color-primary);
-  background-color: var(--color-primary-soft);
-}
-
-.neural-toggle-group__button--off.MuiIconButton-root.neural-toggle-group__button--active,
-.neural-toggle-group__button--off.MuiIconButton-root.neural-toggle-group__button--active.Mui-disabled {
-  color: var(--color-danger-bright);
-  background-color: var(--color-danger-soft);
-}
-
-/* ---- Section header with leading icon (e.g. "Data Decimation") ---- */
-
-.neural-control-panel__section-header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-  margin-bottom: var(--space-2);
-}
-
-.neural-control-panel__section-header .MuiSvgIcon-root {
-  color: var(--neural-control-accent, var(--color-primary));
-  font-size: 1rem;
-}
-
-.neural-control-panel__section-header.neural-control-panel--disabled .MuiSvgIcon-root {
-  color: var(--color-text-muted);
-}
-
-/* ---- Decimation samples radio strip — */
+/* ---- Decimation samples radio strip ----
+ * Dark-themed to match its parent panel. Was previously a light-gray
+ * block (`--color-bg-control` + hardcoded black labels) which clashed
+ * inside a dark Neural panel.
+ */
 
 .neural-decimation-samples {
   display: flex;
   align-items: center;
   gap: var(--space-1);
   padding: var(--space-2);
-  border: 0.125rem solid var(--color-neural-border);
-  background-color: var(--color-bg-control);
+  border: 1px solid var(--color-neural-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-neural-bg-dark);
 }
 
 .neural-decimation-samples .MuiFormLabel-root {
-  color: #000;
+  color: var(--color-neural-text);
   font-size: 0.75rem;
   font-weight: var(--font-weight-bold);
   margin-right: var(--space-1);
@@ -253,25 +237,51 @@
 
 .neural-decimation-samples .MuiFormControlLabel-label {
   font-size: 0.75rem;
-  font-weight: var(--font-weight-bold);
-  color: #000;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-neural-text);
 }
 
-/* ---- Mode indicator pill (e.g. "Pan & Zoom Mode Active") — */
+.neural-decimation-samples .MuiRadio-root {
+  color: var(--color-neural-text-secondary);
+}
+
+.neural-decimation-samples .MuiRadio-root.Mui-checked {
+  color: var(--neural-control-accent, var(--color-primary));
+}
+
+.neural-decimation-samples .MuiFormControlLabel-root.Mui-disabled .MuiFormControlLabel-label,
+.neural-decimation-samples .MuiFormLabel-root.Mui-disabled {
+  color: var(--color-neural-text-disabled);
+}
+
+/* ---- Mode indicator pill (e.g. "Pan & Zoom Mode Active") ----
+ * Two color modifiers (--roi / --panzoom) replace the prior inline-
+ * styled custom-property variant. `margin-top: auto` docks the pill
+ * to the bottom of the card (the panel is flex-column).
+ */
 
 .neural-mode-indicator {
-  margin-top: var(--space-1);
+  margin-top: auto;
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
-  background-color: var(--neural-mode-bg, var(--color-primary-soft));
-  border: 1px solid var(--neural-mode-border, var(--color-primary));
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  color: var(--neural-mode-text, var(--color-primary));
-  font-family: var(--family);
-  font-size: 0.625rem;
+  font-family: var(--font-family);
+  font-size: 0.75rem; /* was 0.625rem (10px) — bumped to match other small labels */
   font-weight: var(--font-weight-medium);
+}
+
+.neural-mode-indicator--panzoom {
+  background-color: var(--color-primary-soft);
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary-hover);
+}
+
+.neural-mode-indicator--roi {
+  background-color: var(--color-info-soft);
+  border: 1px solid var(--color-info);
+  color: var(--color-info-dark);
 }
 
 .neural-mode-indicator .MuiSvgIcon-root {
@@ -291,10 +301,15 @@
   color: var(--neural-method-accent, var(--color-text-muted));
 }
 
-/* ---- Info note (e.g. "Selected Well: A1 (5 spikes detected)") — */
+/* ---- Info note (e.g. "Selected Well: A1 (5 spikes detected)") ----
+ * `margin-top: auto` docks the info block to the bottom of the card
+ * so secondary information sits below the actions, against the panel
+ * floor — keeps the bar's vertical rhythm consistent across cards
+ * even when content density varies.
+ */
 
 .neural-control-panel__info {
-  margin-top: var(--space-1);
+  margin-top: auto;
   padding: var(--space-2);
   background-color: var(--color-neural-bg-light);
   border-radius: var(--radius-sm);
@@ -321,55 +336,54 @@
   gap: var(--space-1);
 }
 
-/* ---- Control well selector chip-button — */
+/* ---- Control well selector chip-button ----
+ * Layered on top of the Button primitive. The base sizing/typography/
+ * focus-ring/disabled-state come from `.ui-button.MuiButton-root`; these
+ * modifiers only override colors for the two non-default states
+ * (selecting → info-cyan, selected → success-green).
+ */
 
-.neural-control-well-button {
-  width: 100%;
-  padding: var(--space-1) var(--space-2);
-  font-family: var(--font-family);
-  font-size: 0.875rem;
-  font-weight: var(--font-weight-medium);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all var(--transition-base);
-  box-shadow: var(--shadow-sm);
-  border: 0.125rem solid var(--color-neural-border);
-  background-color: var(--color-neural-bg-light);
+.neural-control-well-button.MuiButton-root {
+  /* Default state inherits Button's `secondary` variant chrome
+   * (transparent bg + primary border + primary text). Override the
+   * neutral baseline so it reads against the dark panel. */
   color: var(--color-neural-text);
+  border-color: var(--color-neural-border);
+  background-color: var(--color-neural-bg-light);
+}
+.neural-control-well-button.MuiButton-root:hover:not(:disabled) {
+  background-color: var(--color-neural-bg-paper-elev);
+  border-color: var(--color-neural-border-light);
 }
 
-.neural-control-well-button--selecting {
+.neural-control-well-button--selecting.MuiButton-root,
+.neural-control-well-button--selecting.MuiButton-root.Mui-disabled {
   background-color: var(--color-info);
   border-color: var(--color-info);
   color: var(--color-text-on-accent);
+  opacity: 1;
 }
 
-.neural-control-well-button--selected {
-  background-color: var(--color-success-soft);
+.neural-control-well-button--selected.MuiButton-root,
+.neural-control-well-button--selected.MuiButton-root.Mui-disabled {
+  background-color: var(--color-success);
   border-color: var(--color-success);
-  color: var(--color-success-dark);
+  color: var(--color-text-on-accent);
   cursor: default;
+  opacity: 1;
 }
 
-.neural-control-well-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.neural-control-well-button--reset {
-  width: 100%;
+/* Reset Control Well — uses Button's `danger` variant directly; this
+ * rule just adds top-margin so it stacks under the main button. */
+.neural-control-well-reset.MuiButton-root {
   margin-top: var(--space-1);
-  padding: var(--space-1) var(--space-2);
-  background-color: var(--color-danger-soft);
-  color: var(--color-danger);
-  border: 0.125rem solid var(--color-danger);
-  border-radius: var(--radius-md);
-  font-family: var(--font-family);
-  font-size: 0.75rem;
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: all var(--transition-base);
-  box-shadow: var(--shadow-sm);
+}
+
+/* Whole-panel inert state — replaces the previous inline style on
+ * <Panel> (`opacity:0.5; pointer-events:none`). */
+.neural-control-panel--inert {
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 .neural-control-well-info {

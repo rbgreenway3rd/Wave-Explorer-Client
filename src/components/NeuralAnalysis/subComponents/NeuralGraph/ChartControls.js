@@ -91,8 +91,20 @@ const ChartControls = ({ resetZoom }) => {
     minSpikesPerBurst: settings.minSpikesPerBurst,
   };
 
+  // ControlWellSelector is meaningful only when both noise suppression
+  // is on AND the user has chosen to subtract a control signal.
+  // Rendered always (so the bar's column count stays stable) but
+  // disabled when either upstream toggle is off — its `disabled` prop
+  // also applies the `.neural-control-panel--inert` class so the whole
+  // card dims out without layout shift.
+  const controlWellDisabled =
+    !settings.noiseSuppressionActive || !settings.subtractControl;
+
   return (
-    <div className="neural-chart-controls">
+    <>
+      {/* Report modals portal out of the DOM tree on open; rendering
+       * them outside the grid container keeps them from being counted
+       * as grid items. */}
       <NeuralReportModal
         open={reportModalOpen}
         onClose={() => setReportModalOpen(false)}
@@ -106,7 +118,6 @@ const ChartControls = ({ resetZoom }) => {
         roiList={roiList}
         processingParams={processingParams}
       />
-
       <NeuralFullPlateReportModal
         open={fullPlateModalOpen}
         onClose={() => setFullPlateModalOpen(false)}
@@ -116,35 +127,21 @@ const ChartControls = ({ resetZoom }) => {
         roiList={roiList}
       />
 
-      {/* Control well selector only shows when noise suppression is active. */}
-      {settings.noiseSuppressionActive && (
-        <ControlWellSelector disabled={!settings.subtractControl} />
-      )}
-
-      {settings.noiseSuppressionActive && (
-        <div className="chart-controls-divider" />
-      )}
-
-      <NoiseSuppressionControls />
-
-      <div className="chart-controls-divider" />
-
-      <div style={{ display: "flex", flexDirection: "row", gap: 4 }}>
+      {/* Six fixed grid columns. ControlWellSelector is always present
+       * (inert when off) and PanZoom + ROI each get their own slot —
+       * the bar's shape never shifts. */}
+      <div className="neural-chart-controls">
+        <ControlWellSelector disabled={controlWellDisabled} />
+        <NoiseSuppressionControls />
         <PanZoomControls resetZoom={resetZoom} />
         <ROIControls />
+        <ReportGenerationControls
+          handleGenerateReport={handleGenerateReport}
+          handleGenerateFullPlateReport={handleGenerateFullPlateReport}
+        />
+        <DecimationControls />
       </div>
-
-      <div className="chart-controls-divider" />
-
-      <ReportGenerationControls
-        handleGenerateReport={handleGenerateReport}
-        handleGenerateFullPlateReport={handleGenerateFullPlateReport}
-      />
-
-      <div className="chart-controls-divider" />
-
-      <DecimationControls />
-    </div>
+    </>
   );
 };
 

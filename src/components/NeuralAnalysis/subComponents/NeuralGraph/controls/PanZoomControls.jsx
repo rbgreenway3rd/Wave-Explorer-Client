@@ -48,7 +48,9 @@ const PanZoomControls = ({ resetZoom }) => {
       variant="dark"
       className="neural-control-panel pan-zoom-controls-container"
     >
-      <h4 className="neural-control-panel__section-title">Chart Interaction</h4>
+      <div className="neural-control-panel__header">
+        <h4 className="neural-control-panel__title">Chart Interaction</h4>
+      </div>
 
       <FormGroup className="neural-control-panel__methods">
         <FormControlLabel
@@ -104,19 +106,10 @@ const PanZoomControls = ({ resetZoom }) => {
 
       {(defineROI || panZoomActive) && (
         <div
-          className="neural-mode-indicator"
-          style={
+          className={
             defineROI
-              ? {
-                  "--neural-mode-bg": "var(--color-info-soft)",
-                  "--neural-mode-border": "var(--color-info)",
-                  "--neural-mode-text": "var(--color-info-dark)",
-                }
-              : {
-                  "--neural-mode-bg": "var(--color-primary-soft)",
-                  "--neural-mode-border": "var(--color-primary)",
-                  "--neural-mode-text": "var(--color-primary-hover)",
-                }
+              ? "neural-mode-indicator neural-mode-indicator--roi"
+              : "neural-mode-indicator neural-mode-indicator--panzoom"
           }
         >
           {defineROI ? <CropFreeIcon /> : <ZoomOutMapIcon />}

@@ -25,7 +25,11 @@ import "./NeuralControlPanel.css";
  * again, and resets minDistance/stdMultiplier to their fixed defaults.
  */
 const SpikeDetectionControls = () => {
-  const { effectiveSpikeProminence, effectiveSpikeWindow } = useNeuralResults();
+  const {
+    effectiveSpikeProminence,
+    effectiveSpikeWindow,
+    suggestedSpikeProminence,
+  } = useNeuralResults();
   const {
     spikeMinDistance,
     setSpikeMinDistance,
@@ -37,6 +41,26 @@ const SpikeDetectionControls = () => {
   } = useNeuralSettings();
   const DEFAULT_MIN_DISTANCE = 0;
   const DEFAULT_STD_MULTIPLIER = 1.0;
+
+  // ---- Dynamic prominence-slider range ----
+  // The auto-suggested prominence can range from a few units (clean
+  // signals) to several thousand (noisy or high-amplitude wells). Size
+  // the slider to suggested * 1.2 so the user always has headroom past
+  // the suggestion without losing fine-grained control on quiet signals.
+  // Floor at 100 so the slider stays usable when the suggestion is tiny.
+  const PROMINENCE_FLOOR = 100;
+  const PROMINENCE_HEADROOM = 1.2;
+  const promMax = Math.max(
+    Math.ceil(((suggestedSpikeProminence ?? 0) || PROMINENCE_FLOOR) * PROMINENCE_HEADROOM),
+    PROMINENCE_FLOOR
+  );
+  // Step scales with range so dragging always covers ~200 increments.
+  const promStep = Math.max(0.5, Math.round((promMax / 200) * 10) / 10);
+  // Marks at 0 / 25 / 50 / 75 / 100 % of the dynamic max, integer-rounded.
+  const promMarks = [0, 0.25, 0.5, 0.75, 1].map((f) => {
+    const v = Math.round(promMax * f);
+    return { value: v, label: String(v) };
+  });
 
   const prominence = useDraftSlider(
     effectiveSpikeProminence,
@@ -85,22 +109,16 @@ const SpikeDetectionControls = () => {
           </span>
         </div>
         <Slider
-          value={Number(prominence.value) || 0}
+          value={Math.min(Number(prominence.value) || 0, promMax)}
           onChange={(e, v) => {
             perf.count("slider.spikeProminence");
             prominence.onChange(e, v);
           }}
           onChangeCommitted={prominence.onChangeCommitted}
           min={0}
-          max={100}
-          step={0.5}
-          marks={[
-            { value: 0, label: "0" },
-            { value: 25, label: "25" },
-            { value: 50, label: "50" },
-            { value: 75, label: "75" },
-            { value: 100, label: "100" },
-          ]}
+          max={promMax}
+          step={promStep}
+          marks={promMarks}
         />
       </div>
 

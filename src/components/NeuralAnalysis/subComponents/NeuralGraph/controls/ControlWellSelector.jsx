@@ -1,5 +1,5 @@
 import React from "react";
-import { Panel } from "../../../../ui";
+import { Panel, Button } from "../../../../ui";
 import { useNeuralSelection } from "../../../NeuralProvider";
 import "./NeuralControlPanel.css";
 
@@ -8,6 +8,13 @@ import "./NeuralControlPanel.css";
  * Reads selection state from NeuralSelectionContext directly. The only
  * prop is `disabled`, since whether the control should be active is
  * driven by the parent's noise-suppression toggle (not selection state).
+ *
+ * Buttons use the Button primitive (variants: secondary / danger) plus
+ * two state-modifier classes (`--selecting` / `--selected`) that
+ * override the variant's color tokens for the dark-theme info-cyan and
+ * success-green visual states. Replaces ~50 lines of hand-rolled
+ * <button>/CSS that didn't share size/font/focus-ring conventions with
+ * the rest of the modal's actions.
  */
 const ControlWellSelector = ({ disabled = false }) => {
   const {
@@ -17,51 +24,55 @@ const ControlWellSelector = ({ disabled = false }) => {
     selectingControl,
     setSelectingControl,
   } = useNeuralSelection();
+
   const handleButtonClick = () => {
     if (disabled || controlWell) return;
     setSelectingControl(!selectingControl);
   };
 
-  const buttonClass = [
-    "neural-control-well-button",
-    selectingControl && "neural-control-well-button--selecting",
-    !selectingControl && controlWell && "neural-control-well-button--selected",
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const stateClass = selectingControl
+    ? "neural-control-well-button--selecting"
+    : controlWell
+    ? "neural-control-well-button--selected"
+    : "";
 
   return (
     <Panel
       variant="dark"
-      className="neural-control-panel control-well-selector-container"
-      style={{ opacity: disabled ? 0.5 : 1, pointerEvents: disabled ? "none" : "auto" }}
+      className={
+        "neural-control-panel control-well-selector-container" +
+        (disabled ? " neural-control-panel--inert" : "")
+      }
     >
-      <h4 className="neural-control-panel__section-title">
-        Control Well Selection
-      </h4>
+      <div className="neural-control-panel__header">
+        <h4 className="neural-control-panel__title">Control Well Selection</h4>
+      </div>
 
-      <button
-        type="button"
-        className={buttonClass}
+      <Button
+        variant="secondary"
+        block
+        className={`neural-control-well-button ${stateClass}`.trim()}
         onClick={handleButtonClick}
-        disabled={disabled}
+        disabled={disabled || (!selectingControl && !!controlWell)}
       >
         {selectingControl
           ? "Click a well to set as Control"
           : controlWell
           ? `Control: ${controlWell.key}`
           : "Select Control Well"}
-      </button>
+      </Button>
 
       {controlWell && !selectingControl && (
-        <button
-          type="button"
-          className="neural-control-well-button--reset"
+        <Button
+          variant="danger"
+          block
+          size="sm"
+          className="neural-control-well-reset"
           onClick={() => setControlWell(null)}
           disabled={disabled}
         >
           Reset Control Well
-        </button>
+        </Button>
       )}
 
       {controlWell && (
