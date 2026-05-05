@@ -1,24 +1,25 @@
 import React from "react";
 import { FormControlLabel, Switch, Tooltip, IconButton } from "@mui/material";
 import { Panel } from "../../../../ui";
+import { useNeuralSettings } from "../../../NeuralProvider";
 import "./NeuralControlPanel.css";
 
 /**
  * NoiseSuppressionControls — wraps a section header, a dual ON/OFF
  * IconButton toggle for the suppression pipeline as a whole, and a list
- * of method switches (Trend Flattening, Subtract Control). Layout +
- * coloring driven by the shared `.neural-control-panel` CSS.
+ * of method switches (Trend Flattening, Subtract Control). Reads its own
+ * state from NeuralSettingsContext.
  */
-const NoiseSuppressionControls = ({
-  noiseSuppressionActive,
-  setNoiseSuppressionActive,
-  trendFlatteningEnabled,
-  setTrendFlatteningEnabled,
-  subtractControl,
-  setSubtractControl,
-  filterBaseline,
-  setFilterBaseline,
-}) => {
+const NoiseSuppressionControls = () => {
+  const {
+    noiseSuppressionActive,
+    setNoiseSuppressionActive,
+    trendFlatteningEnabled,
+    setTrendFlatteningEnabled,
+    subtractControl,
+    setSubtractControl,
+    setFilterBaseline,
+  } = useNeuralSettings();
   return (
     <Panel
       variant="dark"

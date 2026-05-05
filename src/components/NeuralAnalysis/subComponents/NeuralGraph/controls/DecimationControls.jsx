@@ -9,19 +9,22 @@ import {
 } from "@mui/material";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import { Panel } from "../../../../ui";
+import { useNeuralSettings } from "../../../NeuralProvider";
 import "./NeuralControlPanel.css";
 
 /**
  * DecimationControls — toggles graph decimation and selects target
  * sample count. Reduces points rendered to chart.js for very long
- * recordings; improves interactivity at the cost of fidelity.
+ * recordings; improves interactivity at the cost of fidelity. Reads its
+ * own state from NeuralSettingsContext.
  */
-const DecimationControls = ({
-  decimationEnabled,
-  setDecimationEnabled,
-  decimationSamples,
-  setDecimationSamples,
-}) => {
+const DecimationControls = () => {
+  const {
+    decimationEnabled,
+    setDecimationEnabled,
+    decimationSamples,
+    setDecimationSamples,
+  } = useNeuralSettings();
   const sampleOptions = [50, 100, 200, 400];
 
   return (

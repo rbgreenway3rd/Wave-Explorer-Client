@@ -1,6 +1,11 @@
 import React from "react";
 import { Grid, Divider } from "@mui/material";
 import { Panel } from "../../../ui";
+import {
+  useNeuralInteraction,
+  useNeuralResults,
+  useNeuralSelection,
+} from "../../NeuralProvider";
 import "./NeuralResults.css";
 
 // Explicit min/max over a `keyFn` projection of an array. Replaces the
@@ -26,12 +31,12 @@ function median(sortedAsc) {
     : sortedAsc[Math.floor(n / 2)];
 }
 
-const NeuralResults = ({
-  peakResults,
-  burstResults,
-  roiList,
-  selectedWell,
-}) => {
+const NeuralResults = () => {
+  const { selectedWell } = useNeuralSelection();
+  const { roiList } = useNeuralInteraction();
+  const { pipelineResults } = useNeuralResults();
+  const peakResults = pipelineResults.spikeResults;
+  const burstResults = pipelineResults.burstResults;
   const calculateSpikeFrequency = (spikes, startTime, endTime) => {
     const spikesInRange = spikes.filter(
       (spike) => spike.time >= startTime && spike.time <= endTime

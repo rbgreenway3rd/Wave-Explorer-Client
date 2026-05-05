@@ -86,14 +86,55 @@
   border-color: var(--color-border-strong);
 }
 
-/* ---- quadrant-controls -----------------------------------------------
- * Shared OUTER chrome for the four control columns (MiniGraphControls,
- * LargeGraphControls, MetricsControls, FilterControls). Applied as a
- * second class on each component's existing root so the four panels
- * read as a coherent set: same bg, border, radius, shadow, padding.
+/* ---- ui-surface --------------------------------------------------------
+ * Shared chrome recipe for app-level surfaces — every framed panel, tile,
+ * or modal that should read as a coherent member of the design system.
+ * Owns *only* the outer chrome (border + radius + shadow + base bg);
+ * components layer their own padding, layout, and gap on top.
  *
- * Each component still owns its inner layout (filter list, slider rows,
- * etc.) — this class only guarantees outer-edge alignment.
+ * Pair with a `--bg` modifier to set the surface fill:
+ *   .ui-surface              → canvas (white)         — default page tile
+ *   .ui-surface--panel       → panel  (light gray)    — control columns
+ *   .ui-surface--chart       → chart  (near-white)    — graph canvases
+ *
+ * Usage:
+ *   <div class="ui-surface ui-surface--panel"> control panel </div>
+ *   <div class="ui-surface ui-surface--chart"> chart canvas </div>
+ */
+.ui-surface {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  background-color: var(--color-bg-canvas);
+}
+
+/* Control-panel surface — slightly more pronounced shadow gives the four
+ * control columns a real sense of depth against the main container bg.
+ */
+.ui-surface--panel {
+  background-color: var(--color-bg-panel);
+  box-shadow: var(--shadow-md);
+}
+
+/* Chart surface — thicker, stronger-toned border frames the canvases
+ * so the graphs/heatmap/grid read as deliberate framed plots, not just
+ * tinted rectangles. Darker border line picks up presence against the
+ * black chart bg.
+ */
+.ui-surface--chart {
+  background-color: var(--color-bg-chart);
+  border: 2px solid var(--color-border-strong);
+}
+
+/* ---- quadrant-controls -----------------------------------------------
+ * Inner layout for the four control columns (MiniGraphControls,
+ * LargeGraphControls, MetricsControls, FilterControls). Outer chrome is
+ * delegated to `.ui-surface --panel` (added alongside this class on each
+ * component's root) so all framed surfaces share one chrome language.
+ *
+ * This class only owns the padding, vertical flex layout, and overflow
+ * behavior — every other aspect of the panel's appearance comes from the
+ * shared surface recipe.
  */
 .quadrant-controls {
   position: relative;
@@ -102,10 +143,6 @@
   height: 100%;
   box-sizing: border-box;
   padding: var(--space-2);
-  background-color: var(--color-bg-panel);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
   overflow: hidden;
   gap: var(--space-2);
 }

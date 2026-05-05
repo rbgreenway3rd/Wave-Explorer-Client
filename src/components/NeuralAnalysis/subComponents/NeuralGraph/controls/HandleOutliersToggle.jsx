@@ -1,14 +1,16 @@
 import React from "react";
 import { FormControlLabel, Switch } from "@mui/material";
 import { Panel } from "../../../../ui";
+import { useNeuralSettings } from "../../../NeuralProvider";
 import "./NeuralToggle.css";
 
 /**
- * HandleOutliersToggle — ON/OFF switch for outlier detection. Uses the
- * `dark` Panel variant + shared `.neural-toggle` styling. Accent is the
- * status-warning orange.
+ * HandleOutliersToggle — ON/OFF switch for outlier detection. Reads its
+ * own state from NeuralSettingsContext directly so parent routers don't
+ * thread `handleOutliers` / `setHandleOutliers`.
  */
-const HandleOutliersToggle = ({ handleOutliers, setHandleOutliers }) => {
+const HandleOutliersToggle = () => {
+  const { handleOutliers, setHandleOutliers } = useNeuralSettings();
   return (
     <Panel
       variant="dark"

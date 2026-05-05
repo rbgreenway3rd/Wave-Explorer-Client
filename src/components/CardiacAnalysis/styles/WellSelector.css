@@ -12,11 +12,17 @@
   align-content: center;
 }
 
-.cardiac-analysis-modal .well-canvas-container {}
+/* Mode toggle (Original / Median) — full-width segmented control above
+ * the wells grid. Replaces a pair of inline-styled <button>s that
+ * alternated 50%/100% widths to indicate selection.
+ */
+.cardiac-analysis-modal .well-selector__mode-toggle {
+  width: 100%;
+  margin-bottom: var(--space-1);
+}
 
-.cardiac-analysis-modal .grid-mode-button:hover {
-  background-color: var(--gray-500);
-  border: 0.1em solid var(--gray-500);
+.cardiac-analysis-modal .well-selector__mode-toggle .MuiToggleButton-root {
+  flex: 1 1 0;
 }
 
 .cardiac-analysis-modal .well-canvas {

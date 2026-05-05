@@ -27,7 +27,7 @@ export const MiniGraphControls = ({
   };
 
   return (
-    <div className="minigraph-and-controls__controls-container quadrant-controls ui-clean-forms">
+    <div className="minigraph-and-controls__controls-container quadrant-controls ui-surface ui-surface--panel ui-clean-forms">
       <section className="minigraph-and-controls__main-controls">
         {/* Show Raw or Filtered data radio buttons */}
         <div className="minigraph-and-controls__show-raw-or-filtered">

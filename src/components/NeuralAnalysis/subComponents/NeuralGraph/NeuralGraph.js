@@ -8,60 +8,68 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import { suppressNoise } from "../../utilities/noiseSuppression";
-import {
-  baselineCorrected,
-  baselineSmoothed,
-} from "../../utilities/neuralSmoothing";
 import { Line } from "react-chartjs-2";
-import { NeuralContext } from "../../NeuralProvider";
+import {
+  useNeuralInteraction,
+  useNeuralResults,
+  useNeuralSelection,
+  useNeuralSettings,
+} from "../../NeuralProvider";
 import { DataContext } from "../../../../providers/DataProvider";
+import { perf } from "../../utilities/perfLogger";
 import { Chart, registerables, Tooltip } from "chart.js";
 import annotationPlugin from "chartjs-plugin-annotation";
 import zoomPlugin from "chartjs-plugin-zoom";
-// ROI and Pan/Zoom toggles moved to NeuralControls
 
 Chart.register(...registerables, Tooltip, zoomPlugin, annotationPlugin);
 
-const NeuralGraph = forwardRef(
-  (
-    {
-      useAdjustedBases,
-      findPeaksWindowWidth,
-      peakProminence,
-      className,
-      processedSignal,
-      noiseSuppressionActive = false,
-      smoothingWindow = 5,
-      subtractControl = false,
-      filterBaseline = false,
-      baselineCorrection = false,
-      controlWell = null,
-      decimationEnabled = true,
-      decimationSamples = 200,
-      defineROI = false,
-      enablePanZoom = true,
-      zoomState = true,
-      panState = true,
+/**
+ * NeuralGraph — chart.js Line wrapper. After Tier B reads everything from
+ * the four narrower contexts:
+ *   - selectedWell    → NeuralSelectionContext
+ *   - settings (noise/decimation/spike-display) → NeuralSettingsContext
+ *   - interaction (ROI list, pan/zoom mode)     → NeuralInteractionContext
+ *   - pipelineResults (processedSignal, spikes, bursts) → NeuralResultsContext
+ *
+ * Only the imperative chart-instance ref is forwarded from the parent
+ * (NeuralAnalysisModal) so it can call resetZoom() from elsewhere.
+ *
+ * `className` stays as a prop for layout flexibility.
+ */
+const NeuralGraph = forwardRef(({ className }, ref) => {
+    const { selectedWell } = useNeuralSelection();
+    const {
+      noiseSuppressionActive,
+      decimationEnabled,
+      decimationSamples,
+      showBursts,
+    } = useNeuralSettings();
+    const {
+      defineROI,
+      enablePanZoom,
+      zoomState,
+      panState,
       roiList,
       setRoiList,
       currentRoiIndex,
       setCurrentRoiIndex,
-      showBursts = false,
-    },
-    ref
-  ) => {
-    const { selectedWell, peakResults, burstResults } =
-      useContext(NeuralContext);
-    const { extractedIndicatorTimes, wellArrays, globalMaxY } =
-      useContext(DataContext);
+    } = useNeuralInteraction();
+    const { pipelineResults } = useNeuralResults();
+    const processedSignal = pipelineResults.processedSignal;
+    const peakResults = pipelineResults.spikeResults;
+    const burstResults = pipelineResults.burstResults;
+    const { globalMaxY } = useContext(DataContext);
     const [chartData, setChartData] = useState(null);
-    // ROI selection state
+    // ROI selection state. roiEnd / annotationKey are set during click-drag
+    // for their re-render side-effect only — the values themselves are not
+    // read anywhere, so we discard the value half of the tuple.
     const [roiStart, setRoiStart] = useState(null);
-    const [roiEnd, setRoiEnd] = useState(null);
+    // eslint-disable-next-line no-unused-vars
+    const [, setRoiEnd] = useState(null);
     const [isSelectingROI, setIsSelectingROI] = useState(false);
     const [roiAnnotation, setRoiAnnotation] = useState(null);
-    const [annotationKey, setAnnotationKey] = useState(0); // for forcing re-render
+    // eslint-disable-next-line no-unused-vars
+    const [, setAnnotationKey] = useState(0); // for forcing re-render
     // Pan/Zoom and ROI mode toggles are now props
     // zoomState, panState, defineROI, enablePanZoom, setZoomState, setPanState are now props
     // decimationEnabled is now a prop
@@ -108,18 +116,6 @@ const NeuralGraph = forwardRef(
       []
     );
 
-    // Helper: is array of {x, y} objects?
-    const isXYArray = (arr) =>
-      Array.isArray(arr) &&
-      arr.length > 0 &&
-      typeof arr[0] === "object" &&
-      arr[0] !== null &&
-      "x" in arr[0] &&
-      "y" in arr[0];
-    // Helper: is array of numbers?
-    const isNumArray = (arr) =>
-      Array.isArray(arr) && arr.length > 0 && typeof arr[0] === "number";
-
     // Initialize chart data once when well is selected
     useEffect(() => {
       if (
@@ -148,29 +144,44 @@ const NeuralGraph = forwardRef(
       }
     }, [processedSignal, chartData]);
 
+    // Memoized chart-data projections. Each useMemo skips its allocation
+    // when its single source of truth is reference-stable across renders
+    // — critical because spike-prominence drags trigger pipeline re-runs
+    // that change peakResults but reuse the same processedSignal (Tier E
+    // cache hits upstream stages), so we should NOT re-allocate the
+    // 250K-element chartPoints just because peakResults updated.
+    const chartPoints = useMemo(
+      () =>
+        processedSignal && processedSignal.length > 0
+          ? processedSignal.map((pt) => ({ x: pt.x, y: pt.y }))
+          : [],
+      [processedSignal]
+    );
+    const peakScatter = useMemo(
+      () =>
+        Array.isArray(peakResults) && peakResults.length > 0
+          ? peakResults.map((pk) => ({
+              x: pk.peakCoords.x,
+              y: pk.peakCoords.y,
+            }))
+          : [],
+      [peakResults]
+    );
+    const baseScatter = useMemo(
+      () =>
+        Array.isArray(peakResults) && peakResults.length > 0
+          ? peakResults.flatMap((pk) => [
+              { x: pk.leftBaseCoords.x, y: pk.leftBaseCoords.y },
+              { x: pk.rightBaseCoords.x, y: pk.rightBaseCoords.y },
+            ])
+          : [],
+      [peakResults]
+    );
+
     // Update chart data imperatively to preserve zoom state
     useEffect(() => {
       const chart = neuralGraphRef.current;
       if (!chart || !processedSignal || processedSignal.length === 0) return;
-
-      // Prepare updated datasets
-      const chartPoints = processedSignal.map((pt) => ({ x: pt.x, y: pt.y }));
-
-      let peakScatter = [];
-      if (Array.isArray(peakResults) && peakResults.length > 0) {
-        peakScatter = peakResults.map((pk) => ({
-          x: pk.peakCoords.x,
-          y: pk.peakCoords.y,
-        }));
-      }
-
-      let baseScatter = [];
-      if (Array.isArray(peakResults) && peakResults.length > 0) {
-        baseScatter = peakResults.flatMap((pk) => [
-          { x: pk.leftBaseCoords.x, y: pk.leftBaseCoords.y },
-          { x: pk.rightBaseCoords.x, y: pk.rightBaseCoords.y },
-        ]);
-      }
 
       const newDatasets = [
         ...(baseScatter.length > 0
@@ -214,8 +225,8 @@ const NeuralGraph = forwardRef(
 
       // Mutate chart data imperatively without triggering re-render
       chart.data.datasets = newDatasets;
-      chart.update("none"); // Update without animation to preserve zoom
-    }, [processedSignal, noiseSuppressionActive, peakResults]);
+      perf.time("chart.update (data)", () => chart.update("none"));
+    }, [processedSignal, noiseSuppressionActive, chartPoints, peakScatter, baseScatter]);
 
     // Memoize chartOptions - recalculate when processedSignal changes to update axis ranges
     // Initialize with pan/zoom enabled based on initial props
@@ -346,8 +357,16 @@ const NeuralGraph = forwardRef(
           },
         },
       }),
+      // Intentional: the dynamic options (decimation, pan/zoom, events,
+      // initialPanZoomEnabled, localMinX/MaxX) are mutated in place on
+      // chart.options by the effect below. Including them in the deps
+      // here would cause useMemo to recompute the entire options object,
+      // which would force chart.js to re-create the chart instance and
+      // lose the user's current zoom/pan state. Recompute only when the
+      // signal axes actually shift (i.e. when processedSignal changes).
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       [processedSignal]
-    ); // Recalculate when processedSignal changes to update axis ranges
+    );
 
     // Mutate chart options in place when controls change (preserves zoom)
     useEffect(() => {
@@ -388,7 +407,7 @@ const NeuralGraph = forwardRef(
 
       // Use regular update() to reinitialize zoom plugin event handlers
       // This is necessary for pan/zoom to work properly when enabled
-      chart.update();
+      perf.time("chart.update (full)", () => chart.update());
     }, [
       defineROI,
       enablePanZoom,
@@ -455,7 +474,7 @@ const NeuralGraph = forwardRef(
 
       // Mutate annotations in place
       chart.options.plugins.annotation.annotations = allRoiAnnotations;
-      chart.update("none");
+      perf.time("chart.update (annotations)", () => chart.update("none"));
     }, [
       roiList,
       showBursts,
@@ -536,9 +555,6 @@ const NeuralGraph = forwardRef(
       // Convert to data values
       let xMinVal = chart.scales.x.getValueForPixel(xMin);
       let xMaxVal = chart.scales.x.getValueForPixel(xMax);
-
-      // Use the color for the current ROI being defined
-      const currentColor = roiColors[currentRoiIndex % roiColors.length];
 
       // Add ROI to list and clear currentRoiIndex
       if (

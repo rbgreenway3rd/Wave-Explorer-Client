@@ -12,14 +12,14 @@
 
 :root {
   /* ===== Primitive: blue (preserved from current palette) ===== */
-  --blue-50:  #e3f2fd;
+  --blue-50: #e3f2fd;
   --blue-300: rgb(96, 127, 190);
   --blue-500: #1976d2;
   --blue-700: #1565c0;
   --blue-900: rgb(0, 32, 96);
 
   /* ===== Primitive: gray ===== */
-  --gray-50:  #f1f1f1;
+  --gray-50: #f1f1f1;
   --gray-100: #e0e0e0;
   --gray-200: rgb(210, 210, 210);
   --gray-300: rgb(180, 180, 180);
@@ -32,65 +32,69 @@
   /* ===== Primitive: status colors ===== */
   --red-400: #f44336;
   --red-500: #d32f2f;
-  --red-50:  #ffebee;
+  --red-50: #ffebee;
 
   --orange-300: #ffb74d;
   --orange-500: #ff9800;
   --orange-700: #f57c00;
-  --orange-50:  #fff3e0;
+  --orange-50: #fff3e0;
 
   --green-300: #81c784;
   --green-500: #4caf50;
   --green-700: #388e3c;
-  --green-50:  #e8f5e9;
+  --green-50: #e8f5e9;
 
   --cyan-300: #4dd0e1;
   --cyan-500: #00bcd4;
   --cyan-700: #0097a7;
-  --cyan-50:  #e0f7fa;
+  --cyan-50: #e0f7fa;
 
   /* ===== Semantic: color ===== */
-  --color-primary:        var(--blue-500);
-  --color-primary-hover:  var(--blue-700);
-  --color-primary-deep:   var(--blue-900);
-  --color-primary-soft:   var(--blue-50);
+  --color-primary: var(--blue-500);
+  --color-primary-hover: var(--blue-700);
+  --color-primary-deep: var(--blue-900);
+  --color-primary-soft: var(--blue-50);
   /* Action-button gradient — softer than the original blue-300 → blue-900
    * jump. Stays close to --color-primary with a subtle darken at the
    * bottom for a hint of depth, plus a 1px inner highlight via box-shadow
    * inset (applied separately in Button.css).
    */
-  --color-accent-grad:    linear-gradient(180deg, var(--blue-500) 0%, var(--blue-700) 100%);
+  --color-accent-grad: linear-gradient(
+    180deg,
+    var(--blue-500) 0%,
+    var(--blue-700) 100%
+  );
 
-  --color-text:           var(--gray-900);
-  --color-text-muted:     var(--gray-500);
+  --color-text: var(--gray-900);
+  --color-text-muted: var(--gray-500);
   --color-text-on-accent: #fff;
 
-  --color-bg-canvas:      #fff;
-  --color-bg-panel:       var(--gray-200);
-  --color-bg-control:     var(--gray-300);
-  --color-bg-recessed:    var(--gray-100);
-  --color-bg-app:         var(--gray-500);
-  --color-bg-chart:       #000;
-  --color-chart-frame:    var(--gray-800);
+  --color-bg-canvas: #fff;
+  --color-bg-panel: var(--gray-200);
+  --color-bg-control: var(--gray-300);
+  --color-bg-recessed: var(--gray-100);
+  --color-bg-app: var(--gray-400);
+  --color-bg-chart: #000;
+  --color-chart-frame: var(--gray-800);
 
-  --color-border:         var(--gray-400);
-  --color-border-strong:  var(--gray-500);
+  --color-border: var(--gray-400);
+  --color-border-strong: var(--gray-500);
 
-  --color-danger:         var(--red-500);
-  --color-danger-bright:  var(--red-400);
-  --color-danger-soft:    var(--red-50);
+  --color-danger: var(--red-500);
+  --color-danger-bright: var(--red-400);
+  --color-danger-soft: var(--red-50);
 
-  --color-warning:        var(--orange-500);
-  --color-warning-dark:   var(--orange-700);
-  --color-warning-soft:   var(--orange-50);
+  --color-warning: var(--orange-500);
+  --color-warning-dark: var(--orange-700);
+  --color-warning-soft: var(--orange-50);
 
-  --color-success:        var(--green-500);
-  --color-success-dark:   var(--green-700);
-  --color-success-soft:   var(--green-50);
+  --color-success: var(--green-500);
+  --color-success-dark: var(--green-700);
+  --color-success-soft: var(--green-50);
 
-  --color-info:           var(--cyan-500);
-  --color-info-dark:      var(--cyan-700);
-  --color-info-soft:      var(--cyan-50);
+  --color-info: var(--cyan-500);
+  --color-info-dark: var(--cyan-700);
+  --color-info-soft: var(--cyan-50);
 
   /* ----- Neural-module dark surface tokens -----
    * Used by the Neural Analysis modal interior (and only there). The
@@ -98,18 +102,18 @@
    * higher contrast than the app's light gray panel chrome. Routed
    * through controlsTheme.js for the existing Neural control panels.
    */
-  --color-neural-bg:               #1e1e1e;
-  --color-neural-bg-light:         #424242;
-  --color-neural-bg-dark:          #141414;
-  --color-neural-bg-paper:         #252525;
-  --color-neural-bg-paper-elev:    #2d2d2d;
-  --color-neural-text:             #fff;
-  --color-neural-text-secondary:   #aaa;
-  --color-neural-text-disabled:    #888;
-  --color-neural-border:           #555;
-  --color-neural-border-light:     #888;
-  --color-neural-divider:          #444;
-  --color-neural-disabled:         #ccc;
+  --color-neural-bg: #1e1e1e;
+  --color-neural-bg-light: #424242;
+  --color-neural-bg-dark: #141414;
+  --color-neural-bg-paper: #252525;
+  --color-neural-bg-paper-elev: #2d2d2d;
+  --color-neural-text: #fff;
+  --color-neural-text-secondary: #aaa;
+  --color-neural-text-disabled: #888;
+  --color-neural-border: #555;
+  --color-neural-border-light: #888;
+  --color-neural-divider: #444;
+  --color-neural-disabled: #ccc;
 
   /* ===== Spacing scale (4px base) ===== */
   --space-1: 4px;
@@ -128,7 +132,7 @@
 
   /* ===== Shadows ===== */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.10);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.16);
   /* Hover-elevation step — small lift used on interactive surfaces. */
   --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.12);
@@ -136,9 +140,9 @@
   --shadow-focus: 0 0 0 3px rgba(25, 118, 210, 0.25);
 
   /* ===== Typography ===== */
-  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
-    "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
-    "Helvetica Neue", sans-serif;
+  --font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
+    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
 
   --font-size-xs: 0.65rem;
   --font-size-sm: 0.75rem;
@@ -147,11 +151,11 @@
   --font-size-xl: 1.25rem;
 
   --font-weight-regular: 400;
-  --font-weight-medium:  500;
-  --font-weight-bold:    600;
+  --font-weight-medium: 500;
+  --font-weight-bold: 600;
 
-  --line-height-tight:   1.2;
-  --line-height-normal:  1.4;
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.4;
 
   /* ===== Motion ===== */
   --transition-fast: 120ms ease;

@@ -76,7 +76,11 @@ body {
   min-height: 0;
 }
 
-/* --- Headers (one per quadrant; row 1 of each grid) --- */
+/* --- Headers (one per quadrant; row 1 of each grid) ---
+ * Tokenized title row above each tile: centered flex with shared gap,
+ * font-size, weight, color. The grid-column placement is the only thing
+ * that varies per quadrant (assigned via the per-quadrant rules below).
+ */
 
 .combined-component__minigraph-header,
 .combined-component__large-graph-header,
@@ -84,10 +88,32 @@ body {
 .combined-component__filters-header {
   display: flex;
   grid-row: 1;
-  text-align: center;
-  align-content: center;
+  align-items: center;
   justify-content: center;
-  justify-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+  font-family: var(--font-family);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+}
+
+/* Inline title text inside each header — Typography with no own styling
+ * inherits the header's font tokens. */
+.combined-component__minigraph-header .MuiTypography-root,
+.combined-component__large-graph-header .MuiTypography-root,
+.combined-component__metrics-header .MuiTypography-root,
+.combined-component__filters-header .MuiTypography-root {
+  font: inherit;
+  color: inherit;
+}
+
+/* Screenshot camera icon — sized via tokens; no per-call sx needed. */
+.combined-component__minigraph-header .MuiSvgIcon-root,
+.combined-component__large-graph-header .MuiSvgIcon-root,
+.combined-component__metrics-header .MuiSvgIcon-root,
+.combined-component__filters-header .MuiSvgIcon-root {
+  font-size: var(--font-size-md);
 }
 
 .combined-component__minigraph-header { grid-column: 1; }
@@ -96,10 +122,13 @@ body {
 .combined-component__filters-header { grid-column: 3; }
 
 /* --- The four chart panels (row 2 of each grid) ---
- * Identical chrome: same border thickness, radius, background, so the
- * quadrants align visually edge-for-edge. Width comes from the shared
- * 6fr column; height from the shared `flex: 1` row split. `display: flex`
- * + `min-height: 0` lets the inner canvas wrapper fill the panel.
+ * Layout-only — outer chrome is delegated to `.ui-surface --chart`
+ * (added alongside these grid-placement classes on each panel's root)
+ * so all eight tiles in the 2x4 grid share one chrome language.
+ *
+ * Width comes from the shared 6fr column; height from the shared `flex: 1`
+ * row split. `display: flex` + `min-height: 0` lets the inner canvas
+ * wrapper fill the panel.
  */
 .combined-component__minigraph,
 .combined-component__large-graph,
@@ -107,9 +136,6 @@ body {
 .combined-component__filtered-graph {
   grid-row: 2;
   display: flex;
-  border: 0.25em solid var(--color-chart-frame);
-  border-radius: var(--radius-md);
-  background-color: var(--color-bg-chart);
   min-width: 0;
   min-height: 0;
   overflow: hidden;

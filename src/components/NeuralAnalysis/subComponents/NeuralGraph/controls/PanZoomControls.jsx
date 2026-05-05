@@ -4,24 +4,27 @@ import ZoomOutMapIcon from "@mui/icons-material/ZoomOutMap";
 import CropFreeIcon from "@mui/icons-material/CropFree";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import { Panel, Button } from "../../../../ui";
+import { useNeuralInteraction } from "../../../NeuralProvider";
 import "./NeuralControlPanel.css";
 
 /**
  * PanZoomControls — switches for chart-interaction mode (pan/zoom vs.
  * ROI-definition, mutually exclusive) plus a Reset Zoom action and a
- * pill that shows the currently active mode.
+ * pill that shows the currently active mode. Reads interaction state
+ * from NeuralInteractionContext; only the imperative `resetZoom` handler
+ * (a ref into NeuralGraph) is passed as a prop.
  */
-const PanZoomControls = ({
-  defineROI,
-  setDefineROI,
-  enablePanZoom,
-  setEnablePanZoom,
-  zoomState,
-  setZoomState,
-  panState,
-  setPanState,
-  resetZoom,
-}) => {
+const PanZoomControls = ({ resetZoom }) => {
+  const {
+    defineROI,
+    setDefineROI,
+    enablePanZoom,
+    setEnablePanZoom,
+    zoomState,
+    setZoomState,
+    panState,
+    setPanState,
+  } = useNeuralInteraction();
   const panZoomActive = !!enablePanZoom && !!zoomState && !!panState;
 
   const handlePanZoomToggle = (checked) => {

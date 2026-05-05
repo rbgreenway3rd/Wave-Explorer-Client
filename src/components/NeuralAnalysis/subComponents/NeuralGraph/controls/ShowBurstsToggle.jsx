@@ -1,15 +1,16 @@
 import React from "react";
 import { FormControlLabel, Switch } from "@mui/material";
 import { Panel } from "../../../../ui";
+import { useNeuralSettings } from "../../../NeuralProvider";
 import "./NeuralToggle.css";
 
 /**
  * ShowBurstsToggle — ON/OFF switch for burst overlay on the neural
- * graph. Uses the `dark` Panel variant + shared `.neural-toggle`
- * styling. Accent is the secondary cyan to distinguish from the
- * warning-orange outlier toggle.
+ * graph. Reads its own state directly from NeuralSettingsContext, so
+ * parent routers don't need to thread `showBursts` / `setShowBursts`.
  */
-const ShowBurstsToggle = ({ showBursts, setShowBursts }) => {
+const ShowBurstsToggle = () => {
+  const { showBursts, setShowBursts } = useNeuralSettings();
   return (
     <Panel
       variant="dark"

@@ -443,7 +443,7 @@ export const FilterControls = ({
   ];
 
   return (
-    <div className="filter-controls quadrant-controls">
+    <div className="filter-controls quadrant-controls ui-surface ui-surface--panel">
       {/* Y Scale toggle — sits above Apply Filters in the same column. */}
       <Tooltip
         title="Y Scale: Universal (whole plate) or Relative (selected wells only)"

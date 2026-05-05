@@ -2,23 +2,31 @@ import React from "react";
 import { Slider, Tooltip } from "@mui/material";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import { Panel, IconButton } from "../../../../ui";
+import { useNeuralSettings } from "../../../NeuralProvider";
+import { perf } from "../../../utilities/perfLogger";
+import { useDraftSlider } from "../../../utilities/useDraftSlider";
 import "./NeuralControlPanel.css";
 
 /**
  * HandleOutlierControls — sliders for percentile threshold (50–99) and
- * median multiplier (0.5–5.0×) used by the outlier-detection step.
- * Visible/active only when `handleOutliers` is true; renders dimmed when
- * disabled.
+ * median multiplier (0.5–5.0×). Reads outlier state directly from
+ * NeuralSettingsContext; sliders use useDraftSlider so dragging only
+ * updates a local value and the pipeline-triggering setter fires once
+ * on release.
  */
-const HandleOutlierControls = ({
-  handleOutliers,
-  outlierPercentile,
-  setOutlierPercentile,
-  outlierMultiplier,
-  setOutlierMultiplier,
-}) => {
+const HandleOutlierControls = () => {
+  const {
+    handleOutliers,
+    outlierPercentile,
+    setOutlierPercentile,
+    outlierMultiplier,
+    setOutlierMultiplier,
+  } = useNeuralSettings();
   const DEFAULT_PERCENTILE = 95;
   const DEFAULT_MULTIPLIER = 2.0;
+
+  const percentile = useDraftSlider(outlierPercentile, setOutlierPercentile);
+  const multiplier = useDraftSlider(outlierMultiplier, setOutlierMultiplier);
 
   const handleReset = () => {
     setOutlierPercentile(DEFAULT_PERCENTILE);
@@ -57,12 +65,16 @@ const HandleOutlierControls = ({
             Percentile Threshold
           </span>
           <span className="neural-control-panel__field-value">
-            {outlierPercentile}th
+            {percentile.value}th
           </span>
         </div>
         <Slider
-          value={outlierPercentile}
-          onChange={(_, value) => setOutlierPercentile(value)}
+          value={percentile.value}
+          onChange={(e, v) => {
+            perf.count("slider.outlierPercentile");
+            percentile.onChange(e, v);
+          }}
+          onChangeCommitted={percentile.onChangeCommitted}
           disabled={!handleOutliers}
           min={50}
           max={99}
@@ -82,12 +94,16 @@ const HandleOutlierControls = ({
             Median Multiplier
           </span>
           <span className="neural-control-panel__field-value">
-            {outlierMultiplier.toFixed(1)}×
+            {Number(multiplier.value).toFixed(1)}×
           </span>
         </div>
         <Slider
-          value={outlierMultiplier}
-          onChange={(_, value) => setOutlierMultiplier(value)}
+          value={multiplier.value}
+          onChange={(e, v) => {
+            perf.count("slider.outlierMultiplier");
+            multiplier.onChange(e, v);
+          }}
+          onChangeCommitted={multiplier.onChangeCommitted}
           disabled={!handleOutliers}
           min={0.5}
           max={5.0}

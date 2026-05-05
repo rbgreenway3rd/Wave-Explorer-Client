@@ -1,6 +1,13 @@
 /**
  * Burst detection utility for WaveExplorer Neural Analysis
  * Identifies bursts as rapid successions of spikes followed by quiet periods.
+ *
+ * After Tier G6d this is a single linear sweep over time-sorted spikes
+ * — drops the previous O(n²) DBSCAN with `.includes()` linear seed
+ * search. The user-facing semantic ("a burst is a maximal run of
+ * spikes whose consecutive inter-spike intervals are all ≤
+ * maxInterSpikeInterval, with at least minSpikesPerBurst members")
+ * is locked by the Tier D tests under __tests__/detectBursts.test.js.
  */
 
 // Class to encapsulate a detected neural burst
@@ -27,112 +34,72 @@ export class NeuralBurst {
 }
 
 /**
- * DBSCAN clustering for 1D spike times.
- * @param {number[]} times - Array of spike times
- * @param {number} eps - Maximum time gap for points to be in the same cluster
- * @param {number} minPts - Minimum number of points to form a cluster
- * @returns {number[][]} Array of clusters (each is an array of indices into times)
- */
-function dbscan1D(times, eps, minPts) {
-  const n = times.length;
-  const visited = new Array(n).fill(false);
-  const clustered = new Array(n).fill(false);
-  const clusters = [];
-
-  function regionQuery(idx) {
-    const neighbors = [];
-    for (let j = 0; j < n; j++) {
-      if (Math.abs(times[j] - times[idx]) <= eps) {
-        neighbors.push(j);
-      }
-    }
-    return neighbors;
-  }
-
-  for (let i = 0; i < n; i++) {
-    if (visited[i]) continue;
-    visited[i] = true;
-    const neighbors = regionQuery(i);
-    if (neighbors.length < minPts) {
-      // Noise, do nothing
-      continue;
-    }
-    // Start a new cluster
-    const cluster = [];
-    const seeds = [...neighbors];
-    for (let k = 0; k < seeds.length; k++) {
-      const j = seeds[k];
-      if (!visited[j]) {
-        visited[j] = true;
-        const neighbors2 = regionQuery(j);
-        if (neighbors2.length >= minPts) {
-          for (const nidx of neighbors2) {
-            if (!seeds.includes(nidx)) seeds.push(nidx);
-          }
-        }
-      }
-      if (!clustered[j]) {
-        cluster.push(j);
-        clustered[j] = true;
-      }
-    }
-    clusters.push(cluster);
-  }
-  return clusters;
-}
-
-/**
  * Detect bursts in a sequence of neural spikes.
- * A burst is defined as a group of spikes with inter-spike intervals below a threshold,
- * containing at least a minimum number of spikes.
  *
  * @param {NeuralPeak[]} peaks - Array of detected neural spikes
- * @param {Object} options - Configuration options
- * @param {number} [options.maxInterSpikeInterval=50] - Maximum time between spikes to be in same burst (in same units as x)
- * @param {number} [options.minSpikesPerBurst=3] - Minimum number of spikes to form a burst
- * @returns {NeuralBurst[]} Array of detected bursts
+ * @param {Object} options
+ * @param {number} [options.maxInterSpikeInterval=50] - Max time between
+ *        consecutive spikes for them to be considered same burst
+ * @param {number} [options.minSpikesPerBurst=3] - Minimum spike count
+ * @returns {NeuralBurst[]}
  */
 export function detectBursts(peaks, options = {}) {
-  // --- DBSCAN logic ---
-  const dbscanEps = options.dbscanEps ?? options.maxInterSpikeInterval ?? 50;
+  const maxIsi = options.dbscanEps ?? options.maxInterSpikeInterval ?? 50;
   const minSpikesPerBurst = options.minSpikesPerBurst ?? 3;
   if (!Array.isArray(peaks) || peaks.length < minSpikesPerBurst) return [];
-  // Sort peaks by time
+
+  // Sort peaks by time. The pipeline already produces time-sorted spikes,
+  // but defensive sort here keeps this function safe for direct callers
+  // (e.g. tests passing unsorted input).
   const sortedPeaks = [...peaks].sort(
     (a, b) => a.peakCoords.x - b.peakCoords.x
   );
-  const times = sortedPeaks.map((p) => p.peakCoords.x);
-  const indices = sortedPeaks.map((p) => p.index);
-  // Run DBSCAN
-  const clusters = dbscan1D(times, dbscanEps, minSpikesPerBurst);
-  // Build NeuralBurst objects
+
   const bursts = [];
   let lastBurstEndTime = null;
-  for (const cluster of clusters) {
-    if (cluster.length < minSpikesPerBurst) continue;
-    const clusterIndices = cluster.sort((a, b) => times[a] - times[b]);
-    const startIdx = indices[clusterIndices[0]];
-    const endIdx = indices[clusterIndices[clusterIndices.length - 1]];
-    const spikeIndices = clusterIndices.map((i) => indices[i]);
-    const startTime = times[clusterIndices[0]];
-    const endTime = times[clusterIndices[clusterIndices.length - 1]];
-    const duration = endTime - startTime;
-    const spikeCount = cluster.length;
+
+  // Linear sweep — accumulate consecutive spikes into the current run;
+  // when the gap exceeds maxIsi (or we hit the end), close the run and
+  // emit a NeuralBurst if it has ≥ minSpikesPerBurst members.
+  let runStart = 0;
+
+  function emitRun(startIncl, endIncl) {
+    const count = endIncl - startIncl + 1;
+    if (count < minSpikesPerBurst) return;
+    const startPeak = sortedPeaks[startIncl];
+    const endPeak = sortedPeaks[endIncl];
+    const startTime = startPeak.peakCoords.x;
+    const endTime = endPeak.peakCoords.x;
+    const spikeIndices = new Array(count);
+    for (let k = 0; k < count; k++) {
+      spikeIndices[k] = sortedPeaks[startIncl + k].index;
+    }
     const interBurstInterval =
       lastBurstEndTime !== null ? startTime - lastBurstEndTime : null;
     bursts.push(
       new NeuralBurst(
-        startIdx,
-        endIdx,
+        startPeak.index,
+        endPeak.index,
         spikeIndices,
         startTime,
         endTime,
-        duration,
-        spikeCount,
+        endTime - startTime,
+        count,
         interBurstInterval
       )
     );
     lastBurstEndTime = endTime;
   }
+
+  for (let i = 1; i < sortedPeaks.length; i++) {
+    const isi = sortedPeaks[i].peakCoords.x - sortedPeaks[i - 1].peakCoords.x;
+    if (isi > maxIsi) {
+      emitRun(runStart, i - 1);
+      runStart = i;
+    }
+  }
+  // Close the final run.
+  emitRun(runStart, sortedPeaks.length - 1);
+
   return bursts;
 }

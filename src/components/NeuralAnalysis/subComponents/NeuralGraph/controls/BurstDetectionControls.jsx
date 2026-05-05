@@ -2,22 +2,34 @@ import React from "react";
 import { Slider, Tooltip } from "@mui/material";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import { Panel, IconButton } from "../../../../ui";
+import { useNeuralSettings } from "../../../NeuralProvider";
+import { perf } from "../../../utilities/perfLogger";
+import { useDraftSlider } from "../../../utilities/useDraftSlider";
 import "./NeuralControlPanel.css";
 
 /**
  * BurstDetectionControls — sliders for max inter-spike interval (ms)
- * and min spikes per burst, used by the burst-grouping step. Visible/
- * active only when `showBursts` is true; renders dimmed when disabled.
+ * and min spikes per burst. Reads burst state directly from
+ * NeuralSettingsContext; sliders use useDraftSlider so dragging only
+ * updates a local value and the pipeline-triggering setter fires once
+ * on release.
  */
-const BurstDetectionControls = ({
-  showBursts,
-  maxInterSpikeInterval,
-  setMaxInterSpikeInterval,
-  minSpikesPerBurst,
-  setMinSpikesPerBurst,
-}) => {
+const BurstDetectionControls = () => {
+  const {
+    showBursts,
+    maxInterSpikeInterval,
+    setMaxInterSpikeInterval,
+    minSpikesPerBurst,
+    setMinSpikesPerBurst,
+  } = useNeuralSettings();
   const DEFAULT_MAX_INTERVAL = 50;
   const DEFAULT_MIN_SPIKES = 3;
+
+  const interval = useDraftSlider(
+    maxInterSpikeInterval,
+    setMaxInterSpikeInterval
+  );
+  const minSpikes = useDraftSlider(minSpikesPerBurst, setMinSpikesPerBurst);
 
   const handleReset = () => {
     setMaxInterSpikeInterval(DEFAULT_MAX_INTERVAL);
@@ -55,12 +67,16 @@ const BurstDetectionControls = ({
             Max Inter-Spike Interval
           </span>
           <span className="neural-control-panel__field-value">
-            {maxInterSpikeInterval} ms
+            {interval.value} ms
           </span>
         </div>
         <Slider
-          value={maxInterSpikeInterval}
-          onChange={(_, value) => setMaxInterSpikeInterval(value)}
+          value={interval.value}
+          onChange={(e, v) => {
+            perf.count("slider.maxInterSpikeInterval");
+            interval.onChange(e, v);
+          }}
+          onChangeCommitted={interval.onChangeCommitted}
           disabled={!showBursts}
           min={0}
           max={250}
@@ -82,12 +98,16 @@ const BurstDetectionControls = ({
             Min Spikes Per Burst
           </span>
           <span className="neural-control-panel__field-value">
-            {minSpikesPerBurst}
+            {minSpikes.value}
           </span>
         </div>
         <Slider
-          value={minSpikesPerBurst}
-          onChange={(_, value) => setMinSpikesPerBurst(value)}
+          value={minSpikes.value}
+          onChange={(e, v) => {
+            perf.count("slider.minSpikesPerBurst");
+            minSpikes.onChange(e, v);
+          }}
+          onChangeCommitted={minSpikes.onChangeCommitted}
           disabled={!showBursts}
           min={2}
           max={10}

@@ -4,11 +4,9 @@
 
 .navbar-container {
   display: flex;
-  background-image: linear-gradient(
-    var(--gray-500),
-    var(--gray-300),
-    var(--gray-500)
-  );
+  background-color: var(--color-bg-canvas);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
   padding-left: var(--space-3);
   padding-right: var(--space-3);
 }

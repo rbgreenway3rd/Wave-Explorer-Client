@@ -35,7 +35,6 @@ import {
 import html2canvas from "html2canvas";
 import { IconButton, Tooltip, Typography, Button } from "@mui/material";
 import { AddAPhotoTwoTone } from "@mui/icons-material";
-import AddAPhotoTwoToneIcon from "@mui/icons-material/AddAPhotoTwoTone";
 import { motion } from "framer-motion";
 import { PERMISSIONS } from "../permissions";
 
@@ -505,15 +504,7 @@ export const CombinedComponent = ({ profile, setProfile }) => {
             )}
             <section className="combined-component__wave-container">
               <header className="combined-component__minigraph-header">
-                <Typography
-                  style={{
-                    marginRight: "1em",
-                    fontWeight: "bold",
-                    fontSize: 15,
-                  }}
-                >
-                  All Waves
-                </Typography>
+                <Typography>All Waves</Typography>
                 <Tooltip
                   title="Capture Screenshot of 'All Waves' Grid"
                   disableInteractive
@@ -523,16 +514,12 @@ export const CombinedComponent = ({ profile, setProfile }) => {
                   <IconButton
                     onClick={() => handleScreenshot(miniGraphGridComponentRef)}
                   >
-                    <AddAPhotoTwoTone
-                      sx={{
-                        fontSize: "0.75em",
-                      }}
-                    />
+                    <AddAPhotoTwoTone />
                   </IconButton>
                 </Tooltip>
               </header>
               <div
-                className="combined-component__minigraph"
+                className="combined-component__minigraph ui-surface ui-surface--chart"
                 ref={miniGraphGridComponentRef}
               >
                 <MiniGraphGrid
@@ -583,9 +570,7 @@ export const CombinedComponent = ({ profile, setProfile }) => {
                 />
               </div>
               <header className="combined-component__large-graph-header">
-                <Typography style={{ marginRight: "1em", fontWeight: "bold" }}>
-                  Raw Waves
-                </Typography>
+                <Typography>Raw Waves</Typography>
                 <Tooltip
                   title="Capture Screenshot of 'Raw Waves' Graph"
                   disableInteractive
@@ -595,17 +580,13 @@ export const CombinedComponent = ({ profile, setProfile }) => {
                   <IconButton
                     onClick={() => handleScreenshot(largeGraphComponentRef)}
                   >
-                    <AddAPhotoTwoTone
-                      sx={{
-                        fontSize: "0.75em",
-                      }}
-                    />
+                    <AddAPhotoTwoTone />
                   </IconButton>
                 </Tooltip>
               </header>
               {showLargeGraph && (
                 <div
-                  className="combined-component__large-graph"
+                  className="combined-component__large-graph ui-surface ui-surface--chart"
                   ref={largeGraphComponentRef}
                 >
                   <LargeGraph
@@ -639,9 +620,7 @@ export const CombinedComponent = ({ profile, setProfile }) => {
             </section>
             <section className="combined-component__metrics-filter-container">
               <header className="combined-component__metrics-header">
-                <Typography style={{ marginRight: "1em", fontWeight: "bold" }}>
-                  Metrics
-                </Typography>
+                <Typography>Metrics</Typography>
                 <Tooltip
                   title="Capture Screenshot of 'Metrics' Heatmap"
                   disableInteractive
@@ -650,16 +629,12 @@ export const CombinedComponent = ({ profile, setProfile }) => {
                   <IconButton
                     onClick={() => handleScreenshot(heatmapComponentRef)}
                   >
-                    <AddAPhotoTwoTone
-                      sx={{
-                        fontSize: "0.75em",
-                      }}
-                    />
+                    <AddAPhotoTwoTone />
                   </IconButton>
                 </Tooltip>
               </header>
               <div
-                className="combined-component__metrics"
+                className="combined-component__metrics ui-surface ui-surface--chart"
                 ref={heatmapComponentRef}
               >
                 <Heatmap
@@ -687,9 +662,7 @@ export const CombinedComponent = ({ profile, setProfile }) => {
                 />
               </div>
               <header className="combined-component__filters-header">
-                <Typography style={{ marginRight: "1em", fontWeight: "bold" }}>
-                  Filtered Waves
-                </Typography>
+                <Typography>Filtered Waves</Typography>
                 <Tooltip
                   title="Capture Screenshot of 'Filtered Waves' Graph"
                   disableInteractive
@@ -698,16 +671,12 @@ export const CombinedComponent = ({ profile, setProfile }) => {
                   <IconButton
                     onClick={() => handleScreenshot(filteredGraphComponentRef)}
                   >
-                    <AddAPhotoTwoTone
-                      sx={{
-                        fontSize: "0.75em",
-                      }}
-                    />
+                    <AddAPhotoTwoTone />
                   </IconButton>
                 </Tooltip>
               </header>
               <div
-                className={`combined-component__filtered-graph${
+                className={`combined-component__filtered-graph ui-surface ui-surface--chart${
                   !showLargeGraph ? " expanded" : ""
                 }`}
                 ref={filteredGraphComponentRef}

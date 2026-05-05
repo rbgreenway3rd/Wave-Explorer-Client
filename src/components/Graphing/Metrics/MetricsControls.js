@@ -278,7 +278,7 @@ export const MetricsControls = ({
   );
 
   return (
-    <div className="metrics__controls-container quadrant-controls ui-clean-forms">
+    <div className="metrics__controls-container quadrant-controls ui-surface ui-surface--panel ui-clean-forms">
       <Button
         className="save-metric-button"
         variant="primary"

@@ -1,22 +1,22 @@
 import React from "react";
 import { Panel } from "../../../../ui";
+import { useNeuralSelection } from "../../../NeuralProvider";
 import "./NeuralControlPanel.css";
 
 /**
  * ControlWellSelector — picks a control well for noise suppression.
- * Three states reflected in the chip button:
- *   - default:  "Select Control Well"
- *   - selecting: "Click a well to set as Control" (info-blue)
- *   - selected:  "Control: <key>" (success-green) + Reset button
+ * Reads selection state from NeuralSelectionContext directly. The only
+ * prop is `disabled`, since whether the control should be active is
+ * driven by the parent's noise-suppression toggle (not selection state).
  */
-const ControlWellSelector = ({
-  controlWell,
-  setControlWell,
-  selectingControl,
-  setSelectingControl,
-  selectedWell,
-  disabled = false,
-}) => {
+const ControlWellSelector = ({ disabled = false }) => {
+  const {
+    selectedWell,
+    controlWell,
+    setControlWell,
+    selectingControl,
+    setSelectingControl,
+  } = useNeuralSelection();
   const handleButtonClick = () => {
     if (disabled || controlWell) return;
     setSelectingControl(!selectingControl);

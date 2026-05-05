@@ -33,7 +33,7 @@ export const LargeGraphControls = ({
     useContext(DataContext);
 
   return (
-    <div className="large-graph-controls quadrant-controls ui-clean-forms">
+    <div className="large-graph-controls quadrant-controls ui-surface ui-surface--panel ui-clean-forms">
       <section className="zoom-and-pan-controls">
         <div className="zoom-controls">
           <Tooltip

@@ -1,23 +1,32 @@
-import React from "react";
+import React, { useContext } from "react";
 import { Tooltip } from "@mui/material";
 import DescriptionIcon from "@mui/icons-material/Description";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import { Panel, Button } from "../../../../ui";
+import { DataContext } from "../../../../../providers/DataProvider";
+import {
+  useNeuralResults,
+  useNeuralSelection,
+} from "../../../NeuralProvider";
 import "./NeuralControlPanel.css";
 
 /**
  * ReportGenerationControls — two CSV-export actions:
  *   - single-well report (requires a selected well + spikes detected)
  *   - full-plate report   (requires loaded well array)
- * Each disabled state shows a helper tooltip.
+ * Each disabled state shows a helper tooltip. Reads selectedWell from
+ * NeuralSelectionContext, peak count from NeuralResultsContext, and
+ * wellArrays from DataContext. The two action handlers stay as props
+ * because the parent owns the "open report modal" state.
  */
 const ReportGenerationControls = ({
-  selectedWell,
-  peakResults,
-  wellArrays,
   handleGenerateReport,
   handleGenerateFullPlateReport,
 }) => {
+  const { selectedWell } = useNeuralSelection();
+  const { pipelineResults } = useNeuralResults();
+  const { wellArrays } = useContext(DataContext);
+  const peakResults = pipelineResults.spikeResults;
   const isSingleWellDisabled =
     !selectedWell || !peakResults || peakResults.length === 0;
   const isFullPlateDisabled = !wellArrays || wellArrays.length === 0;

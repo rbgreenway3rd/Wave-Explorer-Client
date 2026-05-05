@@ -1,5 +1,59 @@
 import { detectBursts } from "./burstDetection.js";
 
+// ---- Signal statistics cache --------------------------------------------
+// Per-detection on the same `data` array, the median, MAD, baseline
+// percentile, and global min/max are constant — they depend only on the
+// signal, not on spike-detection params. Caching them via a WeakMap keyed
+// on the data array lets repeat detections (e.g. a slider drag of
+// prominence/window after Tier E warms upstream stages) skip the three
+// O(n log n) sorts and the y-extraction pass.
+const signalStatsCache = new WeakMap();
+
+function computeSignalStats(data) {
+  const cached = signalStatsCache.get(data);
+  if (cached) return cached;
+
+  const n = data.length;
+  const allYValues = new Array(n);
+  let globalMin = Infinity;
+  let globalMax = -Infinity;
+  for (let i = 0; i < n; i++) {
+    const y = data[i].y;
+    allYValues[i] = y;
+    if (y < globalMin) globalMin = y;
+    if (y > globalMax) globalMax = y;
+  }
+  const signalRange = globalMax - globalMin;
+
+  // Median (and MAD-based robust std)
+  const medianY = allYValues.slice().sort((a, b) => a - b)[Math.floor(n / 2)];
+  const absDevs = allYValues.map((y) => Math.abs(y - medianY));
+  const medianAbsDev = absDevs.slice().sort((a, b) => a - b)[Math.floor(n / 2)];
+  const robustStd = medianAbsDev / 0.6745;
+
+  // 2nd-percentile baseline + global-range fallback
+  const sortedY = [...allYValues].sort((a, b) => a - b);
+  const percentileIndex = Math.floor(sortedY.length * 0.02);
+  const baselineThreshold = sortedY[Math.max(0, percentileIndex)];
+  const alternativeThreshold = globalMin + signalRange * 0.05;
+  const finalBaselineThreshold = Math.min(
+    baselineThreshold,
+    alternativeThreshold
+  );
+  const fallbackThreshold = globalMin + signalRange * 0.02;
+
+  const stats = {
+    globalMin,
+    globalMax,
+    signalRange,
+    robustStd,
+    finalBaselineThreshold,
+    fallbackThreshold,
+  };
+  signalStatsCache.set(data, stats);
+  return stats;
+}
+
 // Class to encapsulate a detected neural spike (like Cardiac Peak)
 export class NeuralPeak {
   constructor(
@@ -287,42 +341,19 @@ export function detectSpikes(data, options = {}) {
   const minProminenceRatio = options.minProminenceRatio ?? 10;
   const stdMultiplier = options.stdMultiplier ?? 3; // Used for cluster separation check (not individual peak filtering)
 
-  // Calculated global statistics. Build allYValues, globalMin, globalMax
-  // in one pass — Math.min(...allYValues) on a 250K-point signal blows the
-  // V8 argument-count limit and throws "Maximum call stack size exceeded".
-  const n = data.length;
-  const allYValues = new Array(n);
-  let globalMin = Infinity;
-  let globalMax = -Infinity;
-  for (let i = 0; i < n; i++) {
-    const y = data[i].y;
-    allYValues[i] = y;
-    if (y < globalMin) globalMin = y;
-    if (y > globalMax) globalMax = y;
-  }
-  const signalRange = globalMax - globalMin;
-
-  // New: Compute robust std (MAD) for noise estimate
-  const medianY = allYValues.slice().sort((a, b) => a - b)[Math.floor(n / 2)];
-  const absDevs = allYValues.map((y) => Math.abs(y - medianY));
-  const medianAbsDev = absDevs.slice().sort((a, b) => a - b)[Math.floor(n / 2)];
-  const robustStd = medianAbsDev / 0.6745; // Normalize to std equiv
+  // Signal-derived statistics (cached per data-array identity — see
+  // computeSignalStats above).
+  const {
+    globalMax,
+    robustStd,
+    finalBaselineThreshold,
+    fallbackThreshold,
+  } = computeSignalStats(data);
 
   // Auto-set prominence if 'auto'
   if (prominence === "auto") {
     prominence = 2 * robustStd;
   }
-
-  // Baseline threshold calculations (unchanged)
-  const sortedY = [...allYValues].sort((a, b) => a - b);
-  const percentileIndex = Math.floor(sortedY.length * 0.02);
-  const baselineThreshold = sortedY[Math.max(0, percentileIndex)];
-  const alternativeThreshold = globalMin + signalRange * 0.05;
-  const finalBaselineThreshold = Math.min(
-    baselineThreshold,
-    alternativeThreshold
-  );
-  const fallbackThreshold = globalMin + signalRange * 0.02;
 
   // === MAIN DETECTION LOGIC === (unchanged from previous)
 
@@ -348,9 +379,14 @@ export function detectSpikes(data, options = {}) {
     }
   }
 
-  let filteredPeakIndices = [];
-  for (let peakIdx of peakIndices) {
-    let searchRange = wlen ? Math.floor(wlen / 2) : data.length;
+  // Compute bases ONCE per peak (was previously computed twice — first
+  // for prominence filtering, then again to build the NeuralPeak in the
+  // second pass). Cache here is per-detection, keyed on peakIdx.
+  const baseCache = new Map();
+  function basesFor(peakIdx) {
+    let cached = baseCache.get(peakIdx);
+    if (cached !== undefined) return cached;
+    const searchRange = wlen ? Math.floor(wlen / 2) : data.length;
     let { leftBaseIdx, rightBaseIdx } = findBases(
       data,
       peakIdx,
@@ -373,6 +409,14 @@ export function detectSpikes(data, options = {}) {
         globalMax
       ));
     }
+    cached = { leftBaseIdx, rightBaseIdx };
+    baseCache.set(peakIdx, cached);
+    return cached;
+  }
+
+  let filteredPeakIndices = [];
+  for (let peakIdx of peakIndices) {
+    const { leftBaseIdx, rightBaseIdx } = basesFor(peakIdx);
     let leftProminence = data[peakIdx].y - data[leftBaseIdx].y;
     let rightProminence = data[peakIdx].y - data[rightBaseIdx].y;
     let prominenceValue = Math.min(leftProminence, rightProminence);
@@ -408,29 +452,7 @@ export function detectSpikes(data, options = {}) {
 
   let peaks = [];
   for (let peakIdx of finalFilteredPeakIndices) {
-    let searchRange = wlen ? Math.floor(wlen / 2) : data.length;
-    let { leftBaseIdx, rightBaseIdx } = findBases(
-      data,
-      peakIdx,
-      searchRange,
-      finalBaselineThreshold
-    );
-    if (leftBaseIdx === peakIdx || rightBaseIdx === peakIdx) {
-      ({ leftBaseIdx, rightBaseIdx } = findBases(
-        data,
-        peakIdx,
-        searchRange,
-        fallbackThreshold
-      ));
-    }
-    if (leftBaseIdx === peakIdx || rightBaseIdx === peakIdx) {
-      ({ leftBaseIdx, rightBaseIdx } = findBases(
-        data,
-        peakIdx,
-        searchRange,
-        globalMax
-      ));
-    }
+    const { leftBaseIdx, rightBaseIdx } = basesFor(peakIdx);
     let leftProminence = data[peakIdx].y - data[leftBaseIdx].y;
     let rightProminence = data[peakIdx].y - data[rightBaseIdx].y;
     let prominences = { leftProminence, rightProminence };

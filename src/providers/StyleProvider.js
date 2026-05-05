@@ -163,6 +163,29 @@ export const theme = createTheme({
         root: { width: "auto" },
       },
     },
+    MuiTooltip: {
+      styleOverrides: {
+        // Replace MUI's default flat dark-gray tooltip with a tokenized
+        // surface: deep-charcoal bg, soft shadow, slightly larger type,
+        // matching arrow. Reads consistently with the rest of the app.
+        tooltip: {
+          backgroundColor: colors.gray900,
+          color: "#fff",
+          fontFamily:
+            '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          fontSize: fontSize.xs,
+          fontWeight: 500,
+          lineHeight: 1.3,
+          padding: "6px 10px",
+          borderRadius: 6,
+          boxShadow: "0 2px 6px rgba(0, 0, 0, 0.18)",
+          maxWidth: 260,
+        },
+        arrow: {
+          color: colors.gray900,
+        },
+      },
+    },
   },
 });
 
