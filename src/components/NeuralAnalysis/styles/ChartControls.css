@@ -1,45 +1,38 @@
-/* ChartControls.css */
-/* Container-level styles for ChartControls component */
+/* ChartControls.css — top control bar in the Neural Analysis modal.
+ *
+ * Layout: CSS grid with 6 equal-fr columns. Replaces the prior flex
+ * row whose per-card `min/max-width: 15rem/20rem` made widths drift
+ * with content and gaps drift with `justify-content: space-evenly`.
+ * Grid + repeat(6, 1fr) gives true equal widths, uniform gaps, and
+ * trivial row-symmetry — every card is exactly the same shape.
+ *
+ * One slot is always present for `<ControlWellSelector>` (rendered
+ * `--inert` when noise suppression is off) so the column count is
+ * stable; toggling never reflows the bar.
+ *
+ * Reads as a section of the modal body, not a tray bolted on top:
+ * no outer frame, transparent bg, subtle inset top-edge shadow for
+ * the "recessed section" feel.
+ */
 
 .neural-chart-controls {
-    /* Main container for all chart control components */
-    /* height: 100%; */
-    display: flex;
-    flex-direction: row;
-    /* justify-content: end; */
-    justify-content: space-evenly;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     align-items: stretch;
-    align-content: center;
-    border: solid black 1px;
     box-sizing: border-box;
-    /* justify-content: space-evenly; */
     width: 100%;
-    gap: 8px;
-    background-color: rgb(178, 178, 178);
-    /* Consistent spacing between control sections */
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    background-color: transparent;
+    border: none;
+    box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.08);
 }
 
-/* Vertical divider line */
+/* Legacy divider class — no longer rendered after the JSX cleanup
+ * but kept as a defensive zero-width selector in case any consumer
+ * still emits the element. */
 .chart-controls-divider {
-    width: 1px;
-    background-color: #555555;
-    align-self: stretch;
+    display: none;
 }
 
-/* Responsive adjustments */
-/* @media (max-width: 768px) {
-    .chart-controls {
-        gap: 12px;
-       
-    }
-} */
-
-/* 
- * Note: Individual control styling (noise suppression, ROI, pan/zoom, etc.) 
- * is now handled by the respective component CSS files in the controls/ directory:
- * - NoiseSuppressionControls.css
- * - ROIControls.css
- * - PanZoomControls.css
- * - ReportGenerationControls.css
- * - DecimationControls.css
- */
+/* Individual panel styling lives in NeuralControlPanel.css. */

@@ -1,0 +1,62 @@
+/* Compound selectors so these win over the global `MuiIconButton.root
+ * { padding: 0 }` override kept in StyleProvider.js for legacy screens.
+ */
+
+.ui-icon-button.MuiIconButton-root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background var(--transition-fast),
+              color var(--transition-fast),
+              border-color var(--transition-fast);
+}
+
+.ui-icon-button.MuiIconButton-root:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.ui-icon-button.MuiIconButton-root:disabled,
+.ui-icon-button.MuiIconButton-root.Mui-disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ---- Variants ---- */
+
+.ui-icon-button.ui-icon-button--default.MuiIconButton-root:hover:not(:disabled) {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.ui-icon-button.ui-icon-button--subtle.MuiIconButton-root {
+  color: var(--color-text-muted);
+}
+.ui-icon-button.ui-icon-button--subtle.MuiIconButton-root:hover:not(:disabled) {
+  background-color: var(--color-bg-recessed);
+  color: var(--color-text);
+}
+
+.ui-icon-button.ui-icon-button--accent.MuiIconButton-root {
+  background-image: var(--color-accent-grad);
+  color: var(--color-text-on-accent);
+}
+.ui-icon-button.ui-icon-button--accent.MuiIconButton-root:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+/* ---- Sizes ---- */
+
+.ui-icon-button.ui-icon-button--sm.MuiIconButton-root { padding: var(--space-1); }
+.ui-icon-button.ui-icon-button--sm .MuiSvgIcon-root { font-size: 1rem; }
+
+.ui-icon-button.ui-icon-button--md.MuiIconButton-root { padding: var(--space-2); }
+.ui-icon-button.ui-icon-button--md .MuiSvgIcon-root { font-size: 1.25rem; }
+
+.ui-icon-button.ui-icon-button--lg.MuiIconButton-root { padding: var(--space-3); }
+.ui-icon-button.ui-icon-button--lg .MuiSvgIcon-root { font-size: 1.5rem; }

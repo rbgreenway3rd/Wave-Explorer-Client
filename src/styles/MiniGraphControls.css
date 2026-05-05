@@ -1,77 +1,68 @@
+/* MiniGraphControls — layout only. Action button (Clear Selections)
+ * styled by the primitive layer. Colors come from design tokens.
+ */
+
+/* Outer chrome (bg, padding, border, shadow) comes from .quadrant-controls
+ * applied alongside this class. Per-component rules below cover only the
+ * inner layout specific to MiniGraphControls.
+ */
+
 .minigraph-and-controls__controls-container {
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  /* box-sizing: border-box;  */
+  /* .quadrant-controls already provides display, flex, padding, etc.
+   * — only justify-content: space-between needed to push the bottom
+   * action button to the panel floor. */
   justify-content: space-between;
-  align-content: space-evenly;
-  /* justify-self: center; */
-  height: 100%;
-  /* width: 100%; */
-  /* margin-left: 0.25em;
-  margin-right: 0.25em; */
-
-
 }
-
 
 .minigraph-and-controls__main-controls {
-  background-color: rgb(120, 120, 120);
-  box-shadow: 0px 1px 2px 2px rgba(80, 80, 80, 0.25), 0px 1px 4px 4px rgb(100, 100, 100, 0.15), 0px 1px 8px 5px rgba(100, 100, 100, 0.07);
-
-}
-
-.minigraph-and-controls__show-raw-or-filtered {
+  /* Inner control group reads as a recessed cell within the panel — no
+   * bg or shadow because the .quadrant-controls outer chrome already
+   * handles depth.
+   */
   display: flex;
   flex-direction: column;
-  margin-left: 0.25em;
-  margin-right: 0.25em;
 }
 
+.minigraph-and-controls__show-raw-or-filtered,
 .minigraph-and-controls__visibility {
   display: flex;
   flex-direction: column;
-  margin-left: 0.25em;
-  margin-right: 0.25em;
-  margin-bottom: 0.25em;
+  margin-left: var(--space-1);
+  margin-right: var(--space-1);
 }
 
-.clear-selections-button {
-  position: absolute;
+.minigraph-and-controls__visibility {
+  margin-bottom: var(--space-1);
+}
+
+.clear-selections-button.MuiButton-root {
+  /* No longer absolute-positioned — the parent flex pushes it to the
+   * bottom via `justify-content: space-between` so it aligns with the
+   * other quadrants' bottom action buttons.
+   */
+  position: relative;
   width: 100%;
-  bottom: 0;
-  /* right: 0 */
-  display: flex;
-
+  flex: 0 0 auto;
 }
 
-.clear-selections-button.animate-line::before {
+/* Animated "slide" line when Clear Selections is clicked — preserves the
+ * original visual feedback. The pseudo-element is positioned over the
+ * primitive Button.
+ */
+.clear-selections-button.MuiButton-root.animate-line::before {
   content: "";
   position: absolute;
-  /* top: 0; */
   top: 0;
   left: 0;
   width: 4px;
-  /* line width */
   height: 100%;
   transform-origin: left;
-  background-color: green;
+  background-color: var(--color-success);
   animation: slide-line 0.5s ease-in-out;
 }
 
 @keyframes slide-line {
-  0% {
-    transform: translateX(0%);
-    /* start */
-  }
-
-  50% {
-    transform: translateX(2000%);
-    /* midpoint */
-  }
-
-  100% {
-    transform: translateX(-100%);
-    /* end */
-  }
+  0%   { transform: translateX(0%); }
+  50%  { transform: translateX(2000%); }
+  100% { transform: translateX(-100%); }
 }

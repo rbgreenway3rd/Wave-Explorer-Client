@@ -1,32 +1,32 @@
-import React from "react";
-import { Box, Button, Typography, Paper, Tooltip } from "@mui/material";
+import React, { useContext } from "react";
+import { Tooltip } from "@mui/material";
 import DescriptionIcon from "@mui/icons-material/Description";
 import DashboardIcon from "@mui/icons-material/Dashboard";
+import { Panel, Button } from "../../../../ui";
+import { DataContext } from "../../../../../providers/DataProvider";
 import {
-  controlsTheme,
-  buttonStyles,
-  createSxProps,
-} from "../styles/controlsTheme";
-import "./ReportGenerationControls.css";
+  useNeuralResults,
+  useNeuralSelection,
+} from "../../../NeuralProvider";
+import "./NeuralControlPanel.css";
 
 /**
- * ReportGenerationControls
- * Component for generating CSV reports from neural analysis data
- *
- * Features:
- * - Generate single-well neural analysis report
- * - Generate full-plate report for all wells
- * - Clear visual distinction between report types
- * - Disabled states with helpful tooltips
- * - Professional scientific styling
+ * ReportGenerationControls — two CSV-export actions:
+ *   - single-well report (requires a selected well + spikes detected)
+ *   - full-plate report   (requires loaded well array)
+ * Each disabled state shows a helper tooltip. Reads selectedWell from
+ * NeuralSelectionContext, peak count from NeuralResultsContext, and
+ * wellArrays from DataContext. The two action handlers stay as props
+ * because the parent owns the "open report modal" state.
  */
 const ReportGenerationControls = ({
-  selectedWell,
-  peakResults,
-  wellArrays,
   handleGenerateReport,
   handleGenerateFullPlateReport,
 }) => {
+  const { selectedWell } = useNeuralSelection();
+  const { pipelineResults } = useNeuralResults();
+  const { wellArrays } = useContext(DataContext);
+  const peakResults = pipelineResults.spikeResults;
   const isSingleWellDisabled =
     !selectedWell || !peakResults || peakResults.length === 0;
   const isFullPlateDisabled = !wellArrays || wellArrays.length === 0;
@@ -40,122 +40,48 @@ const ReportGenerationControls = ({
     : "Generate comprehensive CSV report for all wells in the plate";
 
   return (
-    <Paper
-      className="report-generation-controls-container"
-      elevation={2}
-      sx={{
-        ...createSxProps(),
-        backgroundColor: controlsTheme.colors.paper,
-        padding: `${controlsTheme.spacing.md}px`,
-        borderRadius: `${controlsTheme.borderRadius.lg}px`,
-        border: `0.125rem solid ${controlsTheme.colors.border}`,
-        marginBottom: `${controlsTheme.spacing.md}px`,
-        marginTop: `${controlsTheme.spacing.md}px`,
-        display: "flex",
-        flexDirection: "column",
-      }}
+    <Panel
+      variant="dark"
+      className="neural-control-panel report-generation-controls-container"
     >
-      {/* Section Header */}
-      <Typography
-        variant="subtitle2"
-        sx={{
-          color: controlsTheme.colors.text,
-          fontWeight: controlsTheme.typography.fontWeight.bold,
-          fontSize: `${controlsTheme.typography.fontSize.md}px`,
-          marginBottom: `${controlsTheme.spacing.sm}px`,
-          textTransform: "uppercase",
-          letterSpacing: "0.03125rem",
-        }}
-      >
-        Report Generation
-      </Typography>
+      <div className="neural-control-panel__header">
+        <h4 className="neural-control-panel__title">Report Generation</h4>
+      </div>
 
-      {/* Buttons Container */}
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          gap: `${controlsTheme.spacing.sm}px`,
-        }}
-      >
-        {/* Single-Well Report Button */}
+      <div className="neural-control-panel__actions">
         <Tooltip title={singleWellTooltip} arrow placement="top">
           <span>
-            {" "}
-            {/* Span wrapper needed for tooltip on disabled button */}
             <Button
-              className="single-well-report-button"
+              variant="primary"
+              block
+              startIcon={<DescriptionIcon />}
               onClick={handleGenerateReport}
               disabled={isSingleWellDisabled}
-              startIcon={<DescriptionIcon />}
-              fullWidth
-              sx={{
-                ...buttonStyles.base,
-                ...buttonStyles.success,
-                height: controlsTheme.components.button.height.lg,
-                fontSize: `${controlsTheme.typography.fontSize.md}px`,
-                "&:disabled": {
-                  backgroundColor: controlsTheme.colors.disabled,
-                  color: controlsTheme.colors.disabledText,
-                  boxShadow: controlsTheme.shadows.none,
-                  cursor: "not-allowed",
-                },
-              }}
+              className="single-well-report-button"
             >
               Generate Single-Well Report
             </Button>
           </span>
         </Tooltip>
 
-        {/* Full-Plate Report Button */}
         <Tooltip title={fullPlateTooltip} arrow placement="top">
           <span>
-            {" "}
-            {/* Span wrapper needed for tooltip on disabled button */}
             <Button
-              className="full-plate-report-button"
+              variant="primary"
+              block
+              startIcon={<DashboardIcon />}
               onClick={handleGenerateFullPlateReport}
               disabled={isFullPlateDisabled}
-              startIcon={<DashboardIcon />}
-              fullWidth
-              sx={{
-                ...buttonStyles.base,
-                ...buttonStyles.primary,
-                height: controlsTheme.components.button.height.lg,
-                fontSize: `${controlsTheme.typography.fontSize.md}px`,
-                "&:disabled": {
-                  backgroundColor: controlsTheme.colors.disabled,
-                  color: controlsTheme.colors.disabledText,
-                  boxShadow: controlsTheme.shadows.none,
-                  cursor: "not-allowed",
-                },
-              }}
+              className="full-plate-report-button"
             >
               Generate Full-Plate Report
             </Button>
           </span>
         </Tooltip>
-      </Box>
+      </div>
 
-      {/* Info Text */}
-      <Box
-        sx={{
-          marginTop: `${controlsTheme.spacing.sm}px`,
-          padding: `${controlsTheme.spacing.md}px`,
-          backgroundColor: controlsTheme.colors.backgroundLight,
-          borderRadius: `${controlsTheme.borderRadius.sm}px`,
-          border: `0.0625rem solid ${controlsTheme.colors.divider}`,
-          alignItems: "end",
-        }}
-      >
-        <Typography
-          variant="caption"
-          sx={{
-            color: controlsTheme.colors.textSecondary,
-            fontSize: `${controlsTheme.typography.fontSize.sm}px`,
-            lineHeight: controlsTheme.typography.lineHeight.relaxed,
-          }}
-        >
+      <div className="neural-control-panel__info">
+        <p>
           {selectedWell && peakResults && peakResults.length > 0 ? (
             <>
               <strong>Selected Well:</strong> {selectedWell.key} (
@@ -167,24 +93,15 @@ const ReportGenerationControls = ({
               generate reports.
             </>
           )}
-        </Typography>
-
+        </p>
         {wellArrays && wellArrays.length > 0 && (
-          <Typography
-            variant="caption"
-            sx={{
-              display: "block",
-              marginTop: `${controlsTheme.spacing.xs}px`,
-              color: controlsTheme.colors.textSecondary,
-              fontSize: `${controlsTheme.typography.fontSize.sm}px`,
-            }}
-          >
+          <p>
             <strong>Plate Data:</strong> {wellArrays.length} wells available for
             full-plate analysis
-          </Typography>
+          </p>
         )}
-      </Box>
-    </Paper>
+      </div>
+    </Panel>
   );
 };
 

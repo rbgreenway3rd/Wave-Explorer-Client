@@ -1,8 +1,137 @@
-/* ROIControls.css */
+/* ROIControls — styles for the ROI definition / editing panel inside
+ * the Neural Analysis modal. Static visual rules live here; dynamic
+ * per-ROI accent colors (bg/border that vary by ROI index) stay inline
+ * in JSX since they're driven by controlsTheme.colors.roi[i].
+ */
+
+/* ---- Section headings + helper text (Neural-scoped) ---- */
+
+.roi-section-heading.MuiTypography-root {
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.roi-section-helper.MuiTypography-root {
+    display: block;
+    color: #fff;
+    font-size: 10px;
+    margin-bottom: 2px;
+}
+
+.roi-section-helper--pending.MuiTypography-root {
+    color: #00bcd4;
+    font-style: italic;
+    margin-top: 2px;
+}
+
+/* ---- "Create ROI from Time Range" card ---- */
+
+.roi-create-card {
+    margin-bottom: 4px;
+    padding: 4px;
+    background-color: #424242;
+    border: 1px solid #555;
+    border-radius: 0;
+}
+
+.roi-create-card__heading.MuiTypography-root {
+    display: block;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.roi-create-card__row {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-wrap: wrap;
+}
+
+/* ---- Shared TextField appearance (Neural-scoped) ----
+ * Replaces 6 identical 17-line `sx={{ ... }}` blocks across the ROI rows
+ * and the Create-ROI form. Two bg variants: --paper for the create
+ * form, default `backgroundLight` for the per-row inputs.
+ */
+.neural-text-field.MuiTextField-root {
+    width: 7rem;
+}
+
+.neural-text-field .MuiInputBase-root {
+    background-color: #424242;
+    font-size: 10px;
+}
+
+.neural-text-field--paper .MuiInputBase-root {
+    background-color: #252525;
+}
+
+.neural-text-field .MuiInputBase-input {
+    color: #fff;
+    padding-left: 0.5rem;
+    padding-right: 0;
+}
+
+.neural-text-field .MuiInputLabel-root {
+    font-size: 10px;
+    color: #fff;
+}
+
+/* ---- Per-row layout (Box wrappers in renderRoiButtons) ---- */
+
+.roi-row-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.roi-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 2px;
+    width: 100%;
+    gap: 2px;
+}
+
+.roi-row__button-cell {
+    display: inline-flex;
+    align-items: center;
+}
+
+.roi-row__inputs {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: 1;
+    margin-top: 4px;
+}
+
+/* ---- ROI button (Define / Edit) ---- */
 
 .roi-button {
     font-family: 'Roboto', 'Helvetica Neue', 'Arial', sans-serif;
     outline: none;
+    padding: 2px 4px;
+    border-radius: 0;
+    font-size: 10px;
+    font-weight: 600;
+    min-width: 7.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.roi-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.roi-button:not(:disabled) {
+    cursor: pointer;
 }
 
 .roi-button:hover:not(:disabled) {
@@ -28,8 +157,19 @@
     }
 }
 
+/* ---- ROI delete button (the small × next to Edit ROI) ---- */
+
 .roi-delete-button {
     outline: none;
+    background: transparent;
+    border: none;
+    padding: 0 2px;
+    color: #f44336;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .roi-delete-button:hover {
@@ -41,14 +181,46 @@
     transform: scale(1);
 }
 
-/* Accessibility */
+/* ---- "Create ROI" submit button ---- */
+
+.roi-create-button {
+    padding: 2px 4px;
+    border-radius: 0;
+    font-size: 10px;
+    font-weight: 600;
+    min-width: 6.25rem;
+    color: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.roi-create-button:disabled {
+    background-color: #424242;
+    border: 2px solid #555;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.roi-create-button:not(:disabled) {
+    background-color: #4caf50;
+    border: 2px solid #4caf50;
+    cursor: pointer;
+}
+
+.roi-create-button:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+}
+
+/* ---- Accessibility ---- */
 .roi-button:focus-visible,
-.roi-delete-button:focus-visible {
+.roi-delete-button:focus-visible,
+.roi-create-button:focus-visible {
     outline: 2px solid #2196f3;
     outline-offset: 2px;
 }
 
-/* Responsive behavior */
+/* ---- Responsive behavior ---- */
 @media (max-width: 768px) {
     .roi-button {
         font-size: 12px;

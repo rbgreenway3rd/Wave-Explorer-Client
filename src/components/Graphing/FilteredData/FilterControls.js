@@ -1,39 +1,19 @@
 import "../../../styles/FilterControls.css";
-import Box from "@mui/material/Box";
-import Stack from "@mui/material/Stack";
-import Drawer from "@mui/material//Drawer";
-import Button from "@mui/material/Button";
-
-import IconButton from "@mui/material/IconButton";
-import Typography from "@mui/material/Typography";
-import ToggleButton from "@mui/material/ToggleButton";
-import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
-import Modal from "@mui/material/Modal";
 import EditIcon from "@mui/icons-material/Edit";
-import AddCircleIcon from "@mui/icons-material/AddCircle";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import AddCircleTwoToneIcon from "@mui/icons-material/AddCircleTwoTone";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import RefreshTwoToneIcon from "@mui/icons-material/RefreshTwoTone";
-import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
-import UploadFileIcon from "@mui/icons-material/UploadFile";
+import FileUploadTwoToneIcon from "@mui/icons-material/FileUploadTwoTone";
 import Tooltip from "@mui/material/Tooltip";
 import HelpTwoToneIcon from "@mui/icons-material/HelpTwoTone";
 import DoneOutlineTwoToneIcon from "@mui/icons-material/DoneOutlineTwoTone";
-import TuneTwoToneIcon from "@mui/icons-material/TuneTwoTone";
-import FileUploadTwoToneIcon from "@mui/icons-material/FileUploadTwoTone";
-
-import { ListItem, Checkbox, Radio, FormControlLabel } from "@mui/material";
+import InsightsIcon from "@mui/icons-material/Insights";
 import {
-  ArrowForwardIos as ArrowIcon,
-  ArrowBackIos as ArrowBackIcon,
   RemoveCircleTwoTone,
-  EqualizerTwoTone,
   InsightsTwoTone,
 } from "@mui/icons-material";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import InsightsIcon from "@mui/icons-material/Insights";
+import { ListItem, Checkbox, Radio } from "@mui/material";
 import { React, useState, useEffect, useContext } from "react";
 import { SmoothingFilterModal } from "./ParameterModals/SmoothingModal";
 import { StaticRatioModal } from "./ParameterModals/StaticRatioModal";
@@ -51,6 +31,16 @@ import {
   FlatFieldCorrection_Filter,
 } from "./FilterModels";
 import { DataContext } from "../../../providers/DataProvider";
+import {
+  Button,
+  IconButton,
+  Heading,
+  Text,
+  Toolbar,
+  FormRow,
+  ToggleGroup,
+  Modal,
+} from "../../ui";
 
 export const FilterControls = ({
   applyEnabledFilters,
@@ -93,10 +83,7 @@ export const FilterControls = ({
   const [endValue, setEndValue] = useState(5);
   // state for smoothing filter params
   const [windowWidth, setWindowWidth] = useState(0);
-  const [useMedian, setUseMedian] = useState(false); // New state
-  // state for control subtraction filter params
-  // const [controlWellArray, setControlWellArray] = useState([]);
-  // const [applyWellArray, setApplyWellArray] = useState([]);
+  const [useMedian, setUseMedian] = useState(false);
   // state for outlier removal filter params
   const [halfWindow, setHalfWindow] = useState(2);
   const [threshold, setThreshold] = useState(3);
@@ -106,34 +93,8 @@ export const FilterControls = ({
   const [numerator, setNumerator] = useState(0);
   const [denominator, setDenominator] = useState(1);
 
-  // state for drawer - collapsing controls
-  const [isCollapsed, setIsCollapsed] = useState(false);
-
   // State for controlling visibility of filter description within selection modal
   const [isDescVisible, setIsDescVisible] = useState(false);
-
-  const handleResetAnnotations = () => {
-    // Reset the annotationRangeStart and annotationRangeEnd
-    setAnnotationRangeStart(null);
-    setAnnotationRangeEnd(null);
-    setAnnotations([]);
-  };
-
-  const modalStyle = {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    // width: "80%",
-    // maxWidth: 800,
-    bgcolor: "background.paper",
-    border: "2px solid #000",
-    boxShadow: 24,
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    p: 2,
-  };
 
   // Update all handleEdit*Params to always set the filter instance as currentFilter
   const handleEditStaticRatioParams = (start, end, setParams, filter) => {
@@ -201,22 +162,14 @@ export const FilterControls = ({
   };
 
   const handleSaveParams = (param1, param2) => {
-    // Save logic depending on the filter type
     if (editModalType === "staticRatio") {
       currentFilter.setParams(startValue, endValue);
     } else if (editModalType === "smoothingFilter") {
       currentFilter.setParams(windowWidth, useMedian);
     } else if (editModalType === "controlSubtractionFilter") {
-      // param1: controlWellArray, param2: applyWellArray
-      // Instead of mutating the instance, replace it immutably in selectedFilters
-      // OLD ---
-      // currentFilter.setParams(param1, param2);
-      // ---
-      // NEW ---
       setSelectedFilters((prevFilters) =>
         prevFilters.map((f) => {
           if (f.id === currentFilter.id) {
-            // Create a new instance with updated arrays, preserving other properties
             const updated = Object.create(Object.getPrototypeOf(f));
             Object.assign(updated, f, {
               controlWellArray: [...param1],
@@ -227,7 +180,6 @@ export const FilterControls = ({
           return f;
         })
       );
-      // Also update the instance for enabledFilters if needed
       setEnabledFilters((prevFilters) =>
         prevFilters.map((f) => {
           if (f.id === currentFilter.id) {
@@ -241,11 +193,9 @@ export const FilterControls = ({
           return f;
         })
       );
-      // ---
     } else if (editModalType === "outlierRemovalFilter") {
       currentFilter.setParams(halfWindow, threshold);
     } else if (editModalType === "flatFieldCorrectionFilter") {
-      // param1 is the correctionMatrix from the modal
       setSelectedFilters((prevFilters) =>
         prevFilters.map((f) => {
           if (f.id === currentFilter.id) {
@@ -281,7 +231,6 @@ export const FilterControls = ({
   }, [selectedFilters]);
 
   const handleCheckboxChange = (filter) => {
-    // Check if the filter is "Flat Field Correction" and if the correctionMatrix is empty
     if (
       filter.name === "Flat Field Correction" &&
       correctionMatrix.length === 0
@@ -289,33 +238,21 @@ export const FilterControls = ({
       alert(
         "Please upload a correction matrix before enabling the Flat Field Correction filter."
       );
-      return; // Prevent enabling the filter
+      return;
     }
 
-    // Toggle the isEnabled value directly on the instance
     filter.setEnabled(!filter.isEnabled);
 
-    // Update selectedFilters immutably
     const updatedSelectedFilters = selectedFilters.map((f) =>
       f.id === filter.id ? filter : f
     );
-
     setSelectedFilters(updatedSelectedFilters);
 
-    // Update enabledFilters based on isEnabled
     if (filter.isEnabled) {
-      setEnabledFilters((prevEnabledFilters) => [
-        ...prevEnabledFilters,
-        filter,
-      ]);
+      setEnabledFilters((prev) => [...prev, filter]);
     } else {
-      setEnabledFilters((prevEnabledFilters) =>
-        prevEnabledFilters.filter((f) => f.id !== filter.id)
-      );
+      setEnabledFilters((prev) => prev.filter((f) => f.id !== filter.id));
     }
-
-    console.log(filter);
-    // console.log("enabledFilters: ", enabledFilters);
   };
 
   const handleFilterHighlight = (filter) => {
@@ -326,21 +263,8 @@ export const FilterControls = ({
     }
   };
 
-  const toggleFilter = (filter) => {
-    if (filter.isEnabled === true) {
-      filter.isEnabled = false;
-      console.log(filter);
-      return filter;
-    } else {
-      filter.isEnabled = true;
-      console.log(filter);
-      return filter;
-    }
-  };
-
   const handleRemoveHighlightedFilter = () => {
     if (highlightedFilter && highlightedFilter.id) {
-      // Update `selectedFilters` by toggling `isEnabled` for the highlighted filter
       const updatedSelectedFilters = selectedFilters.map((filter) => {
         if (filter.id === highlightedFilter.id) {
           filter.setEnabled(!filter.isEnabled);
@@ -348,20 +272,15 @@ export const FilterControls = ({
         return filter;
       });
 
-      // Filter out the highlighted filter from both `enabledFilters` and `selectedFilters`
       const newSelectedFilters = updatedSelectedFilters.filter(
         (filter) => filter.id !== highlightedFilter.id
       );
-
-      // Update `selectedFilters` with the remaining filters
       setSelectedFilters(newSelectedFilters);
 
-      // Update `enabledFilters` only once after all filters have been processed
-      setEnabledFilters((prevEnabledFilters) =>
-        prevEnabledFilters.filter((f) => f.id !== highlightedFilter.id)
+      setEnabledFilters((prev) =>
+        prev.filter((f) => f.id !== highlightedFilter.id)
       );
 
-      // Reset the highlighted filter
       setHighlightedFilter({});
     }
   };
@@ -370,14 +289,11 @@ export const FilterControls = ({
     const index = selectedFilters.findIndex(
       (filter) => filter.id === highlightedFilter.id
     );
-
     if (index > 0) {
-      // Swap the highlighted filter with the one preceding it
       const updatedFilters = [...selectedFilters];
       const temp = updatedFilters[index - 1];
       updatedFilters[index - 1] = updatedFilters[index];
       updatedFilters[index] = temp;
-
       setSelectedFilters(updatedFilters);
     }
   };
@@ -386,98 +302,72 @@ export const FilterControls = ({
     const index = selectedFilters.findIndex(
       (filter) => filter.id === highlightedFilter.id
     );
-
     if (index < selectedFilters.length - 1) {
-      // Swap the highlighted filter with the one following it
       const updatedFilters = [...selectedFilters];
       const temp = updatedFilters[index + 1];
       updatedFilters[index + 1] = updatedFilters[index];
       updatedFilters[index] = temp;
-
       setSelectedFilters(updatedFilters);
     }
   };
 
-  const filterSelectedWells = (selectedCells) => {
-    const newFilteredArray = wellArrays.filter((well) => {
-      return selectedCells.some(
-        (selectedCell) =>
-          well.row === selectedCell.row && well.column === selectedCell.col
-      );
-    });
-    setSelectedWells(newFilteredArray);
-    return selectedWells;
-  };
-
   const handleOpen = () => setOpen(true);
-
   const handleClose = () => setOpen(false);
 
-  // handle adding new filters to selectedFilters list on modal close
   const handleConfirm = () => {
     setOpen(false);
 
     if (selectedValue === "staticRatio") {
-      const newStaticRatioFilter = new StaticRatio_Filter(
+      const f = new StaticRatio_Filter(
         selectedFilters.length,
         handleEditStaticRatioParams
       );
-      // append it to filter list
-      console.log(newStaticRatioFilter);
-      setSelectedFilters([...selectedFilters, newStaticRatioFilter]);
-      setEnabledFilters([...enabledFilters, newStaticRatioFilter]);
+      setSelectedFilters([...selectedFilters, f]);
+      setEnabledFilters([...enabledFilters, f]);
     } else if (selectedValue === "smoothingFilter") {
-      const newSmoothingFilter = new Smoothing_Filter(
+      const f = new Smoothing_Filter(
         selectedFilters.length,
         handleEditSmoothingFilterParams
       );
-
-      console.log(newSmoothingFilter);
-      setSelectedFilters([...selectedFilters, newSmoothingFilter]);
-      setEnabledFilters([...enabledFilters, newSmoothingFilter]);
+      setSelectedFilters([...selectedFilters, f]);
+      setEnabledFilters([...enabledFilters, f]);
     } else if (selectedValue === "controlSubtraction") {
-      const newControlSubtractionFilter = new ControlSubtraction_Filter(
+      const f = new ControlSubtraction_Filter(
         selectedFilters.length,
         handleEditControlSubtractionFilterParams,
         columnLabels.length,
         rowLabels.length
       );
-      console.log(newControlSubtractionFilter);
-      setSelectedFilters([...selectedFilters, newControlSubtractionFilter]);
-      setEnabledFilters([...enabledFilters, newControlSubtractionFilter]);
+      setSelectedFilters([...selectedFilters, f]);
+      setEnabledFilters([...enabledFilters, f]);
     } else if (selectedValue === "derivative") {
-      const newDerivativeFilter = new Derivative_Filter(selectedFilters.length);
-      console.log(newDerivativeFilter);
-      setSelectedFilters([...selectedFilters, newDerivativeFilter]);
-      setEnabledFilters([...enabledFilters, newDerivativeFilter]);
+      const f = new Derivative_Filter(selectedFilters.length);
+      setSelectedFilters([...selectedFilters, f]);
+      setEnabledFilters([...enabledFilters, f]);
     } else if (selectedValue === "outlierRemoval") {
-      const newOutlierRemovalFilter = new OutlierRemoval_Filter(
+      const f = new OutlierRemoval_Filter(
         selectedFilters.length,
         handleEditOutlierRemovalFilterParams
       );
-      console.log(newOutlierRemovalFilter);
-      setSelectedFilters([...selectedFilters, newOutlierRemovalFilter]);
-      setEnabledFilters([...enabledFilters, newOutlierRemovalFilter]);
+      setSelectedFilters([...selectedFilters, f]);
+      setEnabledFilters([...enabledFilters, f]);
     } else if (selectedValue === "flatFieldCorrection") {
-      const newFlatFieldCorrectionFilter = new FlatFieldCorrection_Filter(
+      const f = new FlatFieldCorrection_Filter(
         selectedFilters.length,
         handleEditFlatFieldCorrectionFilterParams
       );
-      console.log(newFlatFieldCorrectionFilter);
-      setSelectedFilters([...selectedFilters, newFlatFieldCorrectionFilter]);
-      setEnabledFilters([...enabledFilters, newFlatFieldCorrectionFilter]);
+      setSelectedFilters([...selectedFilters, f]);
+      setEnabledFilters([...enabledFilters, f]);
     } else if (selectedValue === "dynamicRatio") {
-      const newDynamicRatioFilter = new DynamicRatio_Filter(
+      const f = new DynamicRatio_Filter(
         selectedFilters.length,
         handleEditDynamicRatioFilterParams
       );
-      console.log(newDynamicRatioFilter);
-      setSelectedFilters([...selectedFilters, newDynamicRatioFilter]);
-      setEnabledFilters([...enabledFilters, newDynamicRatioFilter]);
+      setSelectedFilters([...selectedFilters, f]);
+      setEnabledFilters([...enabledFilters, f]);
     }
   };
 
-  // handle radio button check in filter selection modal
   const handleRadioCheck = (event) => {
     setSelectedValue(event.target.value);
   };
@@ -529,7 +419,6 @@ export const FilterControls = ({
         );
         newFilter.setParams(filter.numerator, filter.denominator);
       }
-      // Set isEnabled if present in uploaded filter
       if (newFilter && filter.isEnabled) {
         newFilter.setEnabled(true);
       }
@@ -540,12 +429,21 @@ export const FilterControls = ({
     });
 
     setSelectedFilters(newFilters);
-    // Update enabledFilters to match enabled filters after rehydration
     setEnabledFilters(newFilters.filter((f) => f.isEnabled));
   }, [uploadedFilters]);
 
+  const filterRadioOptions = [
+    { id: "static-ratio", label: "Static Ratio", value: "staticRatio", desc: StaticRatio_Filter.desc },
+    { id: "smoothing-filter", label: "Smoothing", value: "smoothingFilter", desc: Smoothing_Filter.desc },
+    { id: "control-subtraction-filter", label: "Control Subtraction", value: "controlSubtraction", desc: ControlSubtraction_Filter.desc },
+    { id: "derivative-filter", label: "Derivative", value: "derivative", desc: Derivative_Filter.desc },
+    { id: "outlier-removal-filter", label: "Outlier Removal", value: "outlierRemoval", desc: OutlierRemoval_Filter.desc },
+    { id: "flat-field-correction-filter", label: "Flat Field Correction", value: "flatFieldCorrection", desc: FlatFieldCorrection_Filter.desc },
+    { id: "dynamic-ratio-filter", label: "Dynamic Ratio", value: "dynamicRatio", desc: DynamicRatio_Filter.desc },
+  ];
+
   return (
-    <div className="filter-controls">
+    <div className="filter-controls quadrant-controls ui-surface ui-surface--panel">
       {/* Y Scale toggle — sits above Apply Filters in the same column. */}
       <Tooltip
         title="Y Scale: Universal (whole plate) or Relative (selected wells only)"
@@ -553,317 +451,159 @@ export const FilterControls = ({
         placement="top"
         disableInteractive
       >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            marginBottom: "0.6em",
-          }}
-        >
-          <Typography sx={{ fontSize: "0.7em", lineHeight: 1, marginBottom: "0.25em" }}>
-            Y Scale
-          </Typography>
-          <ToggleButtonGroup
-            size="small"
-            exclusive
+        <div className="filter-controls__y-scale">
+          <Text size="xs" tone="muted" align="center">Y Scale</Text>
+          <ToggleGroup
+            size="sm"
             value={yScaleMode}
             onChange={(_, v) => {
               if (v && setYScaleMode) setYScaleMode(v);
             }}
-            sx={{ height: "1.6em" }}
+            options={[
+              { value: "all", label: "Universal" },
+              { value: "selected", label: "Relative" },
+            ]}
             aria-label="filtered waves y-scale source"
+          />
+        </div>
+      </Tooltip>
+
+      {/* Apply Filters button */}
+      <Tooltip title="Apply all enabled filters" arrow placement="top" disableInteractive>
+        <span className="filter-controls__action-button">
+          <Button
+            variant="primary"
+            block
+            startIcon={<InsightsIcon />}
+            onClick={applyEnabledFilters}
           >
-            <ToggleButton value="all" sx={{ fontSize: "0.65em", padding: "0 0.6em" }}>
-              Universal
-            </ToggleButton>
-            <ToggleButton value="selected" sx={{ fontSize: "0.65em", padding: "0 0.6em" }}>
-              Relative
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </div>
-      </Tooltip>
-      {/* Apply Filters Button */}
-      <Tooltip
-        title="Apply all enabled filters"
-        arrow
-        placement="top"
-        disableInteractive
-      >
-        <Button
-          className="filter-controls__apply-button"
-          variant="contained"
-          color="primary"
-          onClick={applyEnabledFilters}
-        >
-          <InsightsIcon sx={{ paddingLeft: "0.2em" }} />
-          Apply Filters
-        </Button>
+            Apply Filters
+          </Button>
+        </span>
       </Tooltip>
 
-      <section className="filter-controls__selection-controls">
-        <div className="selection-controls-group">
-          {/* Modal Trigger for Adding Filters */}
+      {/* Selection controls — add / remove / reorder */}
+      <Toolbar align="between" className="filter-controls__selection-controls">
+        <Toolbar align="start">
           <Tooltip title="Add a filter" disableInteractive>
-            <button className="selection-controls-button" onClick={handleOpen}>
-              <AddCircleTwoToneIcon
-                sx={{
-                  color: "green",
-                }}
-              />
-            </button>
+            <IconButton variant="default" size="sm" onClick={handleOpen} aria-label="add filter">
+              <AddCircleTwoToneIcon className="filter-controls__icon-add" />
+            </IconButton>
           </Tooltip>
-
           <Tooltip title="Move filter up" disableInteractive>
-            <button
-              className="selection-controls-button"
-              onClick={handleChangeFilterOrderUp}
-            >
+            <IconButton variant="default" size="sm" onClick={handleChangeFilterOrderUp} aria-label="move filter up">
               <ArrowUpwardIcon />
-            </button>
+            </IconButton>
           </Tooltip>
-        </div>
-
-        {/* <Box
-        className="filter-controls__selection-controls"
-        sx={{ display: "flex", flexDirection: "row" }}
-        > */}
-        {/* Remove Filter Button */}
-        <div className="selection-controls-group">
+        </Toolbar>
+        <Toolbar align="end">
           <Tooltip title="Remove highlighted filter" disableInteractive>
-            <button
-              className="selection-controls-button"
-              onClick={handleRemoveHighlightedFilter}
-            >
-              <RemoveCircleTwoTone
-                sx={{
-                  color: "red",
-                }}
-              />
-            </button>
+            <IconButton variant="default" size="sm" onClick={handleRemoveHighlightedFilter} aria-label="remove filter">
+              <RemoveCircleTwoTone className="filter-controls__icon-remove" />
+            </IconButton>
           </Tooltip>
-
           <Tooltip title="Move filter down" disableInteractive>
-            <button
-              className="selection-controls-button"
-              onClick={handleChangeFilterOrderDown}
-            >
+            <IconButton variant="default" size="sm" onClick={handleChangeFilterOrderDown} aria-label="move filter down">
               <ArrowDownwardIcon />
-            </button>
+            </IconButton>
           </Tooltip>
-          {/* </Box> */}
-        </div>
-      </section>
+        </Toolbar>
+      </Toolbar>
 
-      {/* Selected Filters List */}
+      {/* Selected filters list */}
       <section className="filter-controls__selected-filters">
-        <Typography
-          className="filter-controls__selected-filters-header"
-          variant="body1"
-          style={{
-            borderBottom: "none",
-          }}
-        >
+        <Heading level={4} className="filter-controls__selected-filters-header">
           <InsightsTwoTone />
-          Filters:
-        </Typography>
+          <span>Filters:</span>
+        </Heading>
 
         {selectedFilters.length > 0 ? (
-          selectedFilters.map((filter) => (
-            <ListItem
-              key={filter.id}
-              className={`filter-controls__filter-item ${
-                highlightedFilter.id === filter.id
-                  ? "filter-controls__filter-item--highlighted"
-                  : ""
-              }`}
-              sx={{
-                background:
-                  highlightedFilter.id === filter.id
-                    ? "radial-gradient( rgba(255,255,0,1) 10%, rgba(0,0,0,0) 100%)"
-                    : "transparent",
-              }}
-            >
-              <FormControlLabel
-                sx={{
-                  background:
-                    highlightedFilter.id === filter.id
-                      ? "radial-gradient( rgba(255,255,0,1) 10%, rgba(0,0,0,0) 100%)"
-                      : "transparent",
-                }}
-                control={
-                  <Checkbox
-                    className="filter-controls__checkbox"
-                    checked={filter.isEnabled || false}
-                    onChange={() => handleCheckboxChange(filter)}
-                    color="primary"
-                  />
-                }
-              />
-              <Typography
-                className="filter-controls__filter-name"
-                variant="body1"
-                sx={{
-                  textAlign: "center",
-                  cursor: "pointer",
-                  fontWeight:
-                    highlightedFilter.id === filter.id ? "bold" : "normal",
-                  fontSize: "0.6em",
-                  borderRadius: "8px",
-                  padding: "0.25em",
-                }}
-                onClick={() => handleFilterHighlight(filter)}
+          selectedFilters.map((filter) => {
+            const isHighlighted = highlightedFilter.id === filter.id;
+            const ffcMissing =
+              filter.name === "Flat Field Correction" &&
+              correctionMatrix.length === 0;
+            return (
+              <ListItem
+                key={filter.id}
+                className={`filter-controls__filter-item ${
+                  isHighlighted ? "filter-controls__filter-item--highlighted" : ""
+                }`}
               >
-                {filter.name}
-              </Typography>
-
-              {/* Edit Params Button */}
-              <IconButton
-                className="filter-controls__edit-button"
-                variant="outlined"
-                size="small"
-                onClick={() => filter.editParams()}
-                sx={{
-                  ml: 0,
-                  padding: 0,
-                  borderRadius: 100,
-                  ...(filter.name === "Flat Field Correction" &&
-                  correctionMatrix.length === 0
-                    ? {
-                        animation: "glow 1s infinite alternate",
-                        "@keyframes glow": {
-                          from: {
-                            boxShadow: "0 0 5px #ff0000",
-                          },
-                          to: {
-                            boxShadow: "0 0 20px #ff0000",
-                          },
-                        },
-                      }
-                    : {}),
-                }}
-                disabled={filter.name === "Derivative"}
-              >
-                {filter.name === "Flat Field Correction" ? (
-                  <FileUploadTwoToneIcon
-                    sx={{ fontSize: 13, padding: 0, margin: 0 }}
-                  />
-                ) : (
-                  <EditIcon sx={{ fontSize: 13, padding: 0, margin: 0 }} />
-                )}
-              </IconButton>
-            </ListItem>
-          ))
+                <Checkbox
+                  className="filter-controls__checkbox"
+                  checked={filter.isEnabled || false}
+                  onChange={() => handleCheckboxChange(filter)}
+                  color="primary"
+                  size="small"
+                />
+                <button
+                  type="button"
+                  className={`filter-controls__filter-name ${
+                    isHighlighted ? "filter-controls__filter-name--highlighted" : ""
+                  }`}
+                  onClick={() => handleFilterHighlight(filter)}
+                >
+                  {filter.name}
+                </button>
+                <IconButton
+                  className={`filter-controls__edit-button ${
+                    ffcMissing ? "filter-controls__edit-button--needs-upload" : ""
+                  }`}
+                  variant="subtle"
+                  size="sm"
+                  onClick={() => filter.editParams()}
+                  disabled={filter.name === "Derivative"}
+                  aria-label={`edit ${filter.name} parameters`}
+                >
+                  {filter.name === "Flat Field Correction" ? (
+                    <FileUploadTwoToneIcon fontSize="inherit" />
+                  ) : (
+                    <EditIcon fontSize="inherit" />
+                  )}
+                </IconButton>
+              </ListItem>
+            );
+          })
         ) : (
-          <Typography
-            style={{
-              display: "flex",
-              padding: 0,
-              color: "#888",
-              textAlign: "center",
-              fontSize: "0.7em",
-              justifySelf: "center",
-              alignSelf: "center",
-            }}
-          >
+          <Text size="xs" tone="muted" align="center" className="filter-controls__empty">
             No filters selected.
-          </Typography>
+          </Text>
         )}
       </section>
-      <Tooltip
-        title="Resets Filtered Data to match Raw Data"
-        arrow
-        placement="top"
-        disableInteractive
-      >
-        <Button
-          className="filter-controls__apply-button"
-          variant="contained"
-          color="primary"
-          onClick={handleResetFilteredData}
-        >
-          <RefreshTwoToneIcon />
-          Undo Filters
-        </Button>
+
+      {/* Undo Filters / reset to raw */}
+      <Tooltip title="Resets Filtered Data to match Raw Data" arrow placement="top" disableInteractive>
+        <span className="filter-controls__action-button filter-controls__action-button--bottom">
+          <Button
+            variant="primary"
+            block
+            startIcon={<RefreshTwoToneIcon />}
+            onClick={handleResetFilteredData}
+          >
+            Undo Filters
+          </Button>
+        </span>
       </Tooltip>
 
       {/* Modal for Filter Selection */}
       <Modal
-        className="filter-controls__filter-selection-modal"
         open={open}
         onClose={handleClose}
-        sx={{ display: "flex", justifyContent: "center" }}
+        maxWidth="xs"
+        fullWidth
+        className="filter-controls__filter-selection-modal"
       >
-        <Box
-          className="filter-controls__filter-selection-modal-content"
-          sx={modalStyle}
-        >
-          <Typography id="modal-modal-title">Select Filter</Typography>
-          <Box
-            sx={{
-              marginTop: 2,
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            {[
-              {
-                id: "static-ratio",
-                label: "Static Ratio",
-                value: "staticRatio",
-                desc: StaticRatio_Filter.desc,
-              },
-              {
-                id: "smoothing-filter",
-                label: "Smoothing",
-                value: "smoothingFilter",
-                desc: Smoothing_Filter.desc,
-              },
-              {
-                id: "control-subtraction-filter",
-                label: "Control Subtraction",
-                value: "controlSubtraction",
-                desc: ControlSubtraction_Filter.desc,
-              },
-              {
-                id: "derivative-filter",
-                label: "Derivative",
-                value: "derivative",
-                desc: Derivative_Filter.desc,
-              },
-              {
-                id: "outlier-removal-filter",
-                label: "Outlier Removal",
-                value: "outlierRemoval",
-                desc: OutlierRemoval_Filter.desc,
-              },
-              {
-                id: "flat-field-correction-filter",
-                label: "Flat Field Correction",
-                value: "flatFieldCorrection",
-                desc: FlatFieldCorrection_Filter.desc,
-              },
-              {
-                id: "dynamic-ratio-filter",
-                label: "Dynamic Ratio",
-                value: "dynamicRatio",
-                desc: DynamicRatio_Filter.desc,
-              },
-            ].map(({ id, label, value, desc }) => (
-              <Box
-                key={id}
-                className="filter-controls__filter-radio"
-                sx={{
-                  display: "flex",
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  borderBottom: "0.1em solid grey",
-                  marginBottom: "0.5em",
-                  alignItems: "center",
-                }}
-              >
-                {/* Radio and Label */}
-                <Box sx={{ display: "flex", alignItems: "center" }}>
+        <Modal.Header>Select Filter</Modal.Header>
+        <Modal.Body>
+          <div className="filter-controls__filter-radio-list">
+            {filterRadioOptions.map(({ id, label, value, desc }) => (
+              <div key={id} className="filter-controls__filter-radio">
+                <FormRow
+                  label={label}
+                  htmlFor={id}
+                  className="filter-controls__filter-radio-row"
+                >
                   <Radio
                     className="filter-controls__radio-input"
                     id={id}
@@ -871,74 +611,42 @@ export const FilterControls = ({
                     name="filter-radio"
                     checked={selectedValue === value}
                     onChange={handleRadioCheck}
-                    sx={{ pr: 1 }}
+                    size="small"
                   />
-                  <Typography
-                    className="filter-controls__radio-label"
-                    variant="body2"
-                    component="label"
-                    htmlFor={id}
-                    sx={{ fontWeight: "bold", marginRight: 1 }}
-                  >
-                    {label}
-                  </Typography>
-                </Box>
-
-                {/* Help Icon and Description Box */}
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <HelpTwoToneIcon
-                    sx={{ cursor: "pointer", color: "gray", marginRight: 1 }}
+                </FormRow>
+                <div className="filter-controls__filter-radio-help">
+                  <IconButton
+                    variant="subtle"
+                    size="sm"
                     onClick={() =>
-                      setIsDescVisible((current) =>
-                        current === id ? null : id
-                      )
-                    } // Toggle visibility
-                  />
+                      setIsDescVisible((current) => (current === id ? null : id))
+                    }
+                    aria-label={`toggle description for ${label}`}
+                  >
+                    <HelpTwoToneIcon />
+                  </IconButton>
                   {isDescVisible === id && (
-                    <Box
-                      sx={{
-                        position: "absolute",
-                        backgroundColor: "lightgrey",
-                        border: "1px solid grey",
-                        borderRadius: "4px",
-                        boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
-                        padding: "0.5em",
-                        zIndex: 1000,
-                        width: "100%",
-                        // maxWidth: "300px",
-                        marginLeft: "2em",
-                        // marginTop: "-2.5em",
-                      }}
-                    >
-                      <Typography variant="body2">{desc}</Typography>
-                    </Box>
+                    <div className="filter-controls__filter-desc">
+                      <Text size="sm">{desc}</Text>
+                    </div>
                   )}
-                </Box>
-              </Box>
+                </div>
+              </div>
             ))}
-          </Box>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="ghost" onClick={handleClose}>
+            Cancel
+          </Button>
           <Button
-            className="filter-controls__confirm-selection-button"
+            variant="primary"
+            startIcon={<DoneOutlineTwoToneIcon />}
             onClick={handleConfirm}
-            variant="contained"
-            sx={{
-              marginTop: 2,
-              display: "flex",
-              marginLeft: "auto",
-              marginRight: "auto",
-              paddingLeft: "0.5em",
-              paddingRight: "0.5em",
-              width: "60%",
-              justifyContent: "center",
-              alignContent: "center",
-            }}
           >
-            <DoneOutlineTwoToneIcon
-            // sx={{ mr: "0.25em" }}
-            />
             Confirm Selection
           </Button>
-        </Box>
+        </Modal.Footer>
       </Modal>
 
       {/* Parameter Modals for Editing Filters */}
@@ -955,20 +663,13 @@ export const FilterControls = ({
       )}
 
       {editModalType === "smoothingFilter" && (
-        // <SmoothingFilterModal
-        //   open={openDialog}
-        //   onClose={() => setOpenDialog(false)}
-        //   windowWidth={windowWidth}
-        //   setWindowWidth={setWindowWidth}
-        //   onSave={handleSaveParams}
-        // />
         <SmoothingFilterModal
           open={openDialog}
           onClose={() => setOpenDialog(false)}
           windowWidth={windowWidth}
           setWindowWidth={setWindowWidth}
-          useMedian={useMedian} // Pass the state
-          setUseMedian={setUseMedian} // Pass the setter
+          useMedian={useMedian}
+          setUseMedian={setUseMedian}
           onSave={handleSaveParams}
         />
       )}

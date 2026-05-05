@@ -1,0 +1,96 @@
+/* NeuralResults — read-only metric display panel inside the Neural
+ * Analysis modal. Dark-theme cards in a responsive grid, with cyan
+ * section accents and white-on-dark labels.
+ */
+
+.neural-results {
+  padding: var(--space-3);
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.neural-results__well-title {
+  color: var(--color-text-on-accent);
+  font-family: var(--font-family);
+  font-size: 1rem;
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 var(--space-3) 0;
+}
+
+.neural-results__section {
+  margin-bottom: var(--space-5);
+}
+
+.neural-results__section-title {
+  color: var(--color-info);
+  font-family: var(--font-family);
+  font-size: 1.125rem;
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 var(--space-2) 0;
+}
+
+.neural-results__section-title--overall {
+  /* The "Overall Spike Detection" header gets a yellow accent — the only
+   * non-cyan section heading in the panel.
+   */
+  color: #ffeb3b;
+}
+
+/* ---- Metric card — wraps a group of metric items ---- */
+
+.neural-result-card.ui-panel.ui-panel--dark {
+  padding: var(--space-3);
+  margin-bottom: var(--space-2);
+  background-color: #333;
+  color: var(--color-text-on-accent);
+  border: 1px solid var(--color-neural-border);
+  border-radius: var(--radius-md);
+}
+
+.neural-result-card__title {
+  color: var(--color-info);
+  font-family: var(--font-family);
+  font-size: 1rem;
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 var(--space-2) 0;
+}
+
+.neural-result-card__subtitle {
+  color: var(--color-info);
+  font-family: var(--font-family);
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-medium);
+  margin: var(--space-2) 0 var(--space-1) 0;
+}
+
+.neural-result-card__divider.MuiDivider-root {
+  background-color: var(--color-neural-border);
+  margin: var(--space-2) 0;
+}
+
+/* ---- Metric item — single label/value row ---- */
+
+.neural-result-item {
+  margin-bottom: var(--space-1);
+  font-family: var(--font-family);
+  font-size: 0.8125rem;
+  color: #ccc;
+}
+
+.neural-result-item__value {
+  color: var(--color-text-on-accent);
+  font-weight: var(--font-weight-bold);
+}
+
+.neural-result-card__caption {
+  color: #ccc;
+  font-family: var(--font-family);
+  font-size: 0.75rem;
+  margin-top: var(--space-1);
+}
+
+.neural-results__placeholder.ui-panel.ui-panel--dark {
+  padding: var(--space-3);
+  background-color: #333;
+  color: var(--color-text-on-accent);
+}

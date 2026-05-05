@@ -1,0 +1,105 @@
+/* Base button — every variant inherits these. The compound `.ui-button.MuiButton-root`
+ * selector exists to beat the global `MuiButton.root { padding: 0 }` override
+ * in StyleProvider.js (kept dense for legacy un-migrated screens).
+ */
+.ui-button.MuiButton-root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-tight);
+  letter-spacing: 0;
+  cursor: pointer;
+  text-transform: none;
+  transition: background var(--transition-fast),
+              border-color var(--transition-fast),
+              color var(--transition-fast),
+              box-shadow var(--transition-fast);
+  white-space: nowrap;
+}
+
+.ui-button.MuiButton-root:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.ui-button.MuiButton-root:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.ui-button.MuiButton-root:disabled,
+.ui-button.MuiButton-root.Mui-disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* ---- Variants ---- */
+
+.ui-button.ui-button--primary.MuiButton-root {
+  background-image: var(--color-accent-grad);
+  background-color: var(--color-primary);
+  color: var(--color-text-on-accent);
+  border-color: var(--color-primary-hover);
+  /* Inset 1px highlight at the top simulates a slight bevel without
+   * the heavy two-tone gradient. */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+.ui-button.ui-button--primary.MuiButton-root:hover:not(:disabled) {
+  filter: brightness(1.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2),
+              var(--shadow-md);
+}
+
+.ui-button.ui-button--secondary.MuiButton-root {
+  background-color: transparent;
+  background-image: none;
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+.ui-button.ui-button--secondary.MuiButton-root:hover:not(:disabled) {
+  background-color: var(--color-primary-soft);
+  border-color: var(--color-primary-hover);
+}
+
+.ui-button.ui-button--ghost.MuiButton-root {
+  background-color: transparent;
+  background-image: none;
+  color: var(--color-primary);
+  border-color: transparent;
+}
+.ui-button.ui-button--ghost.MuiButton-root:hover:not(:disabled) {
+  background-color: var(--color-primary-soft);
+}
+
+.ui-button.ui-button--danger.MuiButton-root {
+  background-color: var(--color-danger);
+  background-image: none;
+  color: var(--color-text-on-accent);
+  border-color: var(--color-danger);
+}
+.ui-button.ui-button--danger.MuiButton-root:hover:not(:disabled) {
+  filter: brightness(1.08);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ---- Sizes ---- */
+
+.ui-button.ui-button--sm.MuiButton-root {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-xs);
+}
+
+.ui-button.ui-button--lg.MuiButton-root {
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--font-size-md);
+}
+
+.ui-button.ui-button--block.MuiButton-root {
+  width: 100%;
+}

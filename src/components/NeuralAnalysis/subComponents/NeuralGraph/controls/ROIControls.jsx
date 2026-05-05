@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useContext } from "react";
-import { Box, Typography, Paper, TextField } from "@mui/material";
+import { Box, Typography, TextField } from "@mui/material";
 import { controlsTheme } from "../styles/controlsTheme";
+import { Panel } from "../../../../ui";
 import { DataContext } from "../../../../../providers/DataProvider";
+import { useNeuralInteraction } from "../../../NeuralProvider";
 import "./ROIControls.css";
+import "./NeuralControlPanel.css";
 
 /**
- * ROIControls
- * Component for managing Region of Interest (ROI) definition, editing, and deletion
+ * ROIControls — managing Region of Interest definition, editing, and
+ * deletion. Reads ROI list + active index + interaction-mode flag from
+ * NeuralInteractionContext (no props from parent routers needed).
  *
  * Features:
  * - Define new ROIs
@@ -14,17 +18,15 @@ import "./ROIControls.css";
  * - Delete ROIs
  * - Color-coded ROI buttons
  * - Visual feedback for active ROI
- *
- * This component eliminates duplication between ChartControls and NeuralControls
  */
-const ROIControls = ({
-  defineROI,
-  setDefineROI,
-  roiList,
-  setRoiList,
-  currentRoiIndex,
-  setCurrentRoiIndex,
-}) => {
+const ROIControls = () => {
+  const {
+    defineROI,
+    roiList,
+    setRoiList,
+    currentRoiIndex,
+    setCurrentRoiIndex,
+  } = useNeuralInteraction();
   const { extractedIndicatorTimes } = useContext(DataContext);
   const [pendingRoiIndex, setPendingRoiIndex] = useState(null);
   // Local state for editing ROI times (temporary values while typing)
@@ -289,23 +291,22 @@ const ROIControls = ({
       const roiColor =
         controlsTheme.colors.roi[i % controlsTheme.colors.roi.length];
 
+      // Per-ROI accent — only the bg + border color vary; everything else
+      // is in `.roi-button` / `.roi-button-active` in ROIControls.css.
+      const accentBg = isActive
+        ? controlsTheme.colors.secondary
+        : isDefined
+        ? roiColor.bg
+        : controlsTheme.colors.backgroundLight;
+      const accentBorder = isActive
+        ? controlsTheme.colors.secondary
+        : isDefined
+        ? roiColor.border
+        : controlsTheme.colors.border;
+
       buttons.push(
-        <Box
-          key={i}
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            marginBottom: `${controlsTheme.spacing.sm}px`,
-            width: "100%",
-            gap: `${controlsTheme.spacing.sm}px`,
-          }}
-        >
-          <Box
-            sx={{
-              display: "inline-flex",
-              alignItems: "center",
-            }}
-          >
+        <Box key={i} className="roi-row">
+          <Box className="roi-row__button-cell">
             <button
               className={`roi-button ${isActive ? "roi-button-active" : ""} ${
                 isDefined ? "roi-button-defined" : ""
@@ -313,37 +314,9 @@ const ROIControls = ({
               disabled={!defineROI || (pendingRoiIndex !== null && !isActive)}
               onClick={() => handleDefineRoi(i)}
               style={{
-                padding: `${controlsTheme.spacing.sm}px ${controlsTheme.spacing.md}px`,
-                backgroundColor: isActive
-                  ? controlsTheme.colors.secondary
-                  : isDefined
-                  ? roiColor.bg
-                  : controlsTheme.colors.backgroundLight,
-                color: isActive
-                  ? controlsTheme.colors.text
-                  : controlsTheme.colors.text,
-                border: `0.125rem solid ${
-                  isActive
-                    ? controlsTheme.colors.secondary
-                    : isDefined
-                    ? roiColor.border
-                    : controlsTheme.colors.border
-                }`,
-                borderRadius: `${controlsTheme.borderRadius.md}px`,
-                fontSize: `${controlsTheme.typography.fontSize.sm}px`,
-                fontWeight: controlsTheme.typography.fontWeight.semiBold,
-                cursor:
-                  !defineROI || (pendingRoiIndex !== null && !isActive)
-                    ? "not-allowed"
-                    : "pointer",
-                opacity:
-                  !defineROI || (pendingRoiIndex !== null && !isActive)
-                    ? 0.5
-                    : 1,
-                transition: `all ${controlsTheme.transitions.normal} ${controlsTheme.transitions.ease}`,
-                marginRight: isDefined ? controlsTheme.spacing.xs : 0,
-                boxShadow: controlsTheme.shadows.sm,
-                minWidth: "7.5rem",
+                backgroundColor: accentBg,
+                border: `0.125rem solid ${accentBorder}`,
+                color: controlsTheme.colors.text,
               }}
             >
               {label}
@@ -355,17 +328,6 @@ const ROIControls = ({
                 title={`Delete ROI ${i + 1}`}
                 onClick={() => handleDeleteRoi(i)}
                 tabIndex={-1}
-                style={{
-                  padding: `${controlsTheme.spacing.xs}px ${controlsTheme.spacing.sm}px`,
-                  background: "transparent",
-                  color: controlsTheme.colors.danger,
-                  border: "none",
-                  fontWeight: controlsTheme.typography.fontWeight.bold,
-                  fontSize: `${controlsTheme.typography.fontSize.xl}px`,
-                  cursor: "pointer",
-                  lineHeight: 1,
-                  transition: `all ${controlsTheme.transitions.fast} ${controlsTheme.transitions.ease}`,
-                }}
               >
                 ×
               </button>
@@ -373,16 +335,9 @@ const ROIControls = ({
           </Box>
 
           {isDefined && (
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: `${controlsTheme.spacing.sm}px`,
-                flex: 1,
-                marginTop: `${controlsTheme.spacing.md}px`,
-              }}
-            >
+            <Box className="roi-row__inputs">
               <TextField
+                className="neural-text-field"
                 label="Start Time"
                 type="number"
                 size="small"
@@ -393,28 +348,10 @@ const ROIControls = ({
                 onBlur={() => commitTimeEdit(i, "start")}
                 onKeyDown={(e) => handleKeyDown(i, "start", e)}
                 disabled={pendingRoiIndex !== null && pendingRoiIndex !== i}
-                sx={{
-                  width: "7rem",
-                  "& .MuiInputBase-root": {
-                    backgroundColor: controlsTheme.colors.backgroundLight,
-                    fontSize: `${controlsTheme.typography.fontSize.sm}px`,
-                  },
-                  "& .MuiInputBase-input": {
-                    color: "#ffffff",
-                    paddingLeft: "0.5rem",
-                    paddingRight: 0,
-                  },
-                  "& .MuiInputLabel-root": {
-                    fontSize: `${controlsTheme.typography.fontSize.sm}px`,
-                    color: "#ffffff",
-                  },
-                }}
-                inputProps={{
-                  step: 0.1,
-                  min: 0,
-                }}
+                inputProps={{ step: 0.1, min: 0 }}
               />
               <TextField
+                className="neural-text-field"
                 label="End Time"
                 type="number"
                 size="small"
@@ -425,28 +362,10 @@ const ROIControls = ({
                 onBlur={() => commitTimeEdit(i, "end")}
                 onKeyDown={(e) => handleKeyDown(i, "end", e)}
                 disabled={pendingRoiIndex !== null && pendingRoiIndex !== i}
-                sx={{
-                  width: "7rem",
-                  "& .MuiInputBase-root": {
-                    backgroundColor: controlsTheme.colors.backgroundLight,
-                    fontSize: `${controlsTheme.typography.fontSize.sm}px`,
-                  },
-                  "& .MuiInputBase-input": {
-                    color: "#ffffff",
-                    paddingLeft: "0.5rem",
-                    paddingRight: 0,
-                  },
-                  "& .MuiInputLabel-root": {
-                    fontSize: `${controlsTheme.typography.fontSize.sm}px`,
-                    color: "#ffffff",
-                  },
-                }}
-                inputProps={{
-                  step: 0.1,
-                  min: 0,
-                }}
+                inputProps={{ step: 0.1, min: 0 }}
               />
               <TextField
+                className="neural-text-field"
                 label="Duration"
                 type="number"
                 size="small"
@@ -455,26 +374,7 @@ const ROIControls = ({
                 onBlur={() => commitDurationEdit(i)}
                 onKeyDown={(e) => handleDurationKeyDown(i, e)}
                 disabled={pendingRoiIndex !== null && pendingRoiIndex !== i}
-                sx={{
-                  width: "7rem",
-                  "& .MuiInputBase-root": {
-                    backgroundColor: controlsTheme.colors.backgroundLight,
-                    fontSize: `${controlsTheme.typography.fontSize.sm}px`,
-                  },
-                  "& .MuiInputBase-input": {
-                    color: "#ffffff",
-                    paddingLeft: "0.5rem",
-                    paddingRight: 0,
-                  },
-                  "& .MuiInputLabel-root": {
-                    fontSize: `${controlsTheme.typography.fontSize.sm}px`,
-                    color: "#ffffff",
-                  },
-                }}
-                inputProps={{
-                  step: 0.1,
-                  min: 0.01,
-                }}
+                inputProps={{ step: 0.1, min: 0.01 }}
               />
             </Box>
           )}
@@ -486,41 +386,15 @@ const ROIControls = ({
   };
 
   return (
-    <Paper
-      className="roi-controls-container"
-      elevation={2}
-      sx={{
-        backgroundColor: controlsTheme.colors.paper,
-        padding: `${controlsTheme.spacing.md}px`,
-        borderRadius: `${controlsTheme.borderRadius.lg}px`,
-        border: `0.0625rem solid ${controlsTheme.colors.border}`,
-        marginTop: `${controlsTheme.spacing.md}px`,
-        marginBottom: `${controlsTheme.spacing.md}px`,
-      }}
+    <Panel
+      variant="dark"
+      className="neural-control-panel roi-controls-container"
     >
-      <Typography
-        variant="subtitle2"
-        sx={{
-          color: controlsTheme.colors.text,
-          fontWeight: controlsTheme.typography.fontWeight.bold,
-          fontSize: `${controlsTheme.typography.fontSize.md}px`,
-          marginBottom: `${controlsTheme.spacing.xs}px`,
-          textTransform: "uppercase",
-          letterSpacing: "0.03125rem",
-        }}
-      >
+      <Typography variant="subtitle2" className="roi-section-heading">
         Regions of Interest
       </Typography>
 
-      <Typography
-        variant="caption"
-        sx={{
-          display: "block",
-          marginBottom: `${controlsTheme.spacing.sm}px`,
-          color: "#ffffff",
-          fontSize: `${controlsTheme.typography.fontSize.sm}px`,
-        }}
-      >
+      <Typography variant="caption" className="roi-section-helper">
         {timeArray && timeArray.length > 0
           ? `Available time range: ${timeArray[0].toFixed(2)}s - ${timeArray[
               timeArray.length - 1
@@ -529,36 +403,13 @@ const ROIControls = ({
       </Typography>
 
       {/* Create ROI from Time Inputs */}
-      <Box
-        sx={{
-          marginBottom: `${controlsTheme.spacing.md}px`,
-          padding: `${controlsTheme.spacing.md}px`,
-          backgroundColor: controlsTheme.colors.backgroundLight,
-          borderRadius: `${controlsTheme.borderRadius.md}px`,
-          border: `0.0625rem solid ${controlsTheme.colors.border}`,
-        }}
-      >
-        <Typography
-          variant="caption"
-          sx={{
-            display: "block",
-            marginBottom: `${controlsTheme.spacing.sm}px`,
-            color: controlsTheme.colors.text,
-            fontSize: `${controlsTheme.typography.fontSize.sm}px`,
-            fontWeight: controlsTheme.typography.fontWeight.semiBold,
-          }}
-        >
+      <Box className="roi-create-card">
+        <Typography variant="caption" className="roi-create-card__heading">
           Create ROI from Time Range
         </Typography>
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: `${controlsTheme.spacing.sm}px`,
-            flexWrap: "wrap",
-          }}
-        >
+        <Box className="roi-create-card__row">
           <TextField
+            className="neural-text-field neural-text-field--paper"
             label="Start Time"
             type="number"
             size="small"
@@ -569,28 +420,10 @@ const ROIControls = ({
                 handleCreateRoiFromTimes();
               }
             }}
-            sx={{
-              width: "7rem",
-              "& .MuiInputBase-root": {
-                backgroundColor: controlsTheme.colors.paper,
-                fontSize: `${controlsTheme.typography.fontSize.sm}px`,
-              },
-              "& .MuiInputBase-input": {
-                color: "#ffffff",
-                paddingLeft: "0.5rem",
-                paddingRight: 0,
-              },
-              "& .MuiInputLabel-root": {
-                fontSize: `${controlsTheme.typography.fontSize.sm}px`,
-                color: "#ffffff",
-              },
-            }}
-            inputProps={{
-              step: 0.1,
-              min: 0,
-            }}
+            inputProps={{ step: 0.1, min: 0 }}
           />
           <TextField
+            className="neural-text-field neural-text-field--paper"
             label="Duration"
             type="number"
             size="small"
@@ -601,28 +434,10 @@ const ROIControls = ({
                 handleCreateRoiFromTimes();
               }
             }}
-            sx={{
-              width: "7rem",
-              "& .MuiInputBase-root": {
-                backgroundColor: controlsTheme.colors.paper,
-                fontSize: `${controlsTheme.typography.fontSize.sm}px`,
-              },
-              "& .MuiInputBase-input": {
-                color: "#ffffff",
-                paddingLeft: "0.5rem",
-                paddingRight: 0,
-              },
-              "& .MuiInputLabel-root": {
-                fontSize: `${controlsTheme.typography.fontSize.sm}px`,
-                color: "#ffffff",
-              },
-            }}
-            inputProps={{
-              step: 0.1,
-              min: 0.01,
-            }}
+            inputProps={{ step: 0.1, min: 0.01 }}
           />
           <TextField
+            className="neural-text-field neural-text-field--paper"
             label="End Time"
             type="number"
             size="small"
@@ -633,82 +448,30 @@ const ROIControls = ({
                 handleCreateRoiFromTimes();
               }
             }}
-            sx={{
-              width: "7rem",
-              "& .MuiInputBase-root": {
-                backgroundColor: controlsTheme.colors.paper,
-                fontSize: `${controlsTheme.typography.fontSize.sm}px`,
-              },
-              "& .MuiInputBase-input": {
-                color: "#ffffff",
-                paddingLeft: "0.5rem",
-                paddingRight: 0,
-              },
-              "& .MuiInputLabel-root": {
-                fontSize: `${controlsTheme.typography.fontSize.sm}px`,
-                color: "#ffffff",
-              },
-            }}
-            inputProps={{
-              step: 0.1,
-              min: 0,
-            }}
+            inputProps={{ step: 0.1, min: 0 }}
           />
 
           <button
+            className="roi-create-button"
             onClick={handleCreateRoiFromTimes}
             disabled={!isCreateButtonEnabled()}
-            style={{
-              padding: `${controlsTheme.spacing.sm}px ${controlsTheme.spacing.md}px`,
-              backgroundColor: isCreateButtonEnabled()
-                ? controlsTheme.colors.success
-                : controlsTheme.colors.backgroundLight,
-              color: controlsTheme.colors.text,
-              border: `0.125rem solid ${
-                isCreateButtonEnabled()
-                  ? controlsTheme.colors.success
-                  : controlsTheme.colors.border
-              }`,
-              borderRadius: `${controlsTheme.borderRadius.md}px`,
-              fontSize: `${controlsTheme.typography.fontSize.sm}px`,
-              fontWeight: controlsTheme.typography.fontWeight.semiBold,
-              cursor: isCreateButtonEnabled() ? "pointer" : "not-allowed",
-              opacity: isCreateButtonEnabled() ? 1 : 0.5,
-              transition: `all ${controlsTheme.transitions.normal} ${controlsTheme.transitions.ease}`,
-              boxShadow: controlsTheme.shadows.sm,
-              minWidth: "6.25rem",
-            }}
           >
             Create ROI
           </button>
         </Box>
       </Box>
 
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          gap: `${controlsTheme.spacing.xs}px`,
-        }}
-      >
-        {renderRoiButtons()}
-      </Box>
+      <Box className="roi-row-list">{renderRoiButtons()}</Box>
 
       {pendingRoiIndex !== null && (
         <Typography
           variant="caption"
-          sx={{
-            display: "block",
-            marginTop: `${controlsTheme.spacing.sm}px`,
-            color: controlsTheme.colors.secondary,
-            fontSize: `${controlsTheme.typography.fontSize.sm}px`,
-            fontStyle: "italic",
-          }}
+          className="roi-section-helper roi-section-helper--pending"
         >
           Click and drag on the chart to define ROI {pendingRoiIndex + 1}
         </Typography>
       )}
-    </Paper>
+    </Panel>
   );
 };
 

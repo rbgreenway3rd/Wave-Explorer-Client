@@ -1,130 +1,137 @@
-.cardiac-analysis-modal {}
+/* CardiacAnalysisModal — fullscreen modal for action-potential analysis.
+ * The Neural module uses the same generic `.modal-content/.modal-header
+ * /.modal-body` class names, so every selector here is scoped under
+ * `.cardiac-analysis-modal` to prevent rule collisions when both modal
+ * stylesheets are loaded in the same bundle.
+ */
 
-.modal-content {
-    display: flex;
-    flex-direction: column;
-    justify-self: center;
-    justify-content: center;
-    justify-items: center;
-    /* overflow-y: auto; */
-    /* height: fit-content; */
-    /* width: 100%; */
-    /* position: fixed; */
+.cardiac-analysis-modal .MuiPaper-root {
+  background-color: var(--color-bg-control);
+  border-radius: 0;
+  box-shadow: none;
 }
 
-.modal-header {
-    display: flex;
-    flex-direction: row;
+.cardiac-analysis-modal__header {
+  position: relative;
+  background-color: var(--color-bg-control);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-3) var(--space-5);
 }
 
-.modal-header-item-container {
-    display: flex;
-    flex-direction: column;
-    /* justify-self: left; */
-    text-align: left;
-
-    border: solid black 1px;
-    /* width: fit-content; */
-    width: 20%;
-    background-color: lightgray;
-    padding: 0.5em
+.cardiac-analysis-modal__close.MuiIconButton-root {
+  position: absolute;
+  right: var(--space-3);
+  top: var(--space-2);
 }
 
-.modal-header-item {
-    text-align: left;
-    padding: 0;
-    margin-top: 0;
-    margin-left: 0;
-    margin-right: 0;
-    margin-bottom: 0.25em;
-    width: fit-content;
+.cardiac-analysis-modal__body {
+  padding: var(--space-3) var(--space-4);
 }
 
-.modal-body {
-    display: grid;
-    grid-template-columns: 5fr 2fr;
-    grid-template-rows: 1fr 1fr;
-    height: 100%;
-    width: 100%
+.cardiac-analysis-modal__selected-well {
+  padding: 0;
+  margin: 0;
+  border-top: 1px solid var(--color-text);
 }
 
-.controls-and-graph {
-    display: flex;
-    flex-direction: column;
-    grid-column: 1;
+/* ---- Inner page-level layout (scoped to this modal) ---- */
 
-    position: relative;
-    /* width: fit-content; */
-    width: 100%;
-    height: 100%
-        /* height: auto; */
+.cardiac-analysis-modal .modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
-.selector-and-average-graph {
-    grid-column: 2;
-    flex: 0;
-    display: grid;
-    grid-template-rows: auto 3fr;
-    max-height: 100%;
-    position: relative;
-    /* width: 100% */
-    /* overflow-y: auto */
-    /* max-height: inherit; */
-
-
+.cardiac-analysis-modal .modal-header {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-3);
 }
 
-.well-selector {
-    grid-row: 1;
-    flex: 1;
-    /* overflow: hidden; */
-    /* height: 100%; */
-    width: 100%;
-    /* height: 30%; */
-    position: absolute;
-    top: 0;
+.cardiac-analysis-modal .modal-header-item-container {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  border: 1px solid var(--color-text);
+  width: 20%;
+  background-color: var(--gray-200);
+  padding: var(--space-2);
 }
 
-.average-signal-graph {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    /* Align content to the bottom */
-    /* align-items: center; */
-    /* Center horizontally if needed */
-    height: 100%;
-    width: 100%;
+.cardiac-analysis-modal .modal-header-item {
+  text-align: left;
+  padding: 0;
+  margin: 0 0 var(--space-1) 0;
+  width: fit-content;
 }
 
-.analysis-results {
-    grid-row: 2;
-    flex: 0;
-    overflow-y: auto;
-    /* max-height: inherit; */
-    position: absolute;
-    bottom: 0;
-    /* height: 70%; */
-    /* width: 100% */
-    max-height: initial
-        /* position: fixed; */
-        /* height: fixed; */
+.cardiac-analysis-modal .modal-body {
+  display: grid;
+  grid-template-columns: 5fr 2fr;
+  grid-template-rows: 1fr 1fr;
+  height: 100%;
+  width: 100%;
+  gap: var(--space-3);
 }
 
-.close-icon {
-    background-color: lightgrey;
-    color: red;
-    outline: black solid 1px
+.cardiac-analysis-modal .controls-and-graph {
+  display: flex;
+  flex-direction: column;
+  grid-column: 1;
+  position: relative;
+  width: 100%;
+  height: 100%;
 }
 
-.close-icon:hover {
-    background-color: gray;
+.cardiac-analysis-modal .selector-and-average-graph {
+  grid-column: 2;
+  flex: 0;
+  display: grid;
+  grid-template-rows: auto 3fr;
+  max-height: 100%;
+  position: relative;
 }
 
-.no-well-selected {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-    width: 100%;
+.cardiac-analysis-modal .well-selector {
+  grid-row: 1;
+  flex: 1;
+  width: 100%;
+  position: absolute;
+  top: 0;
+}
+
+.cardiac-analysis-modal .average-signal-graph {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 100%;
+  width: 100%;
+}
+
+.cardiac-analysis-modal .analysis-results {
+  grid-row: 2;
+  flex: 0;
+  overflow-y: auto;
+  position: absolute;
+  bottom: 0;
+  max-height: initial;
+}
+
+.cardiac-analysis-modal .close-icon {
+  background-color: var(--gray-200);
+  color: var(--color-danger);
+  outline: 1px solid var(--color-text);
+}
+
+.cardiac-analysis-modal .close-icon:hover {
+  background-color: var(--gray-500);
+}
+
+.cardiac-analysis-modal .no-well-selected {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
 }

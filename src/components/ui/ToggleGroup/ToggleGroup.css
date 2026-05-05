@@ -1,0 +1,50 @@
+/* ToggleGroup — wraps MUI ToggleButtonGroup with consistent sizing and
+ * tonal styling. Common pattern: "Y Scale: Universal | Relative".
+ */
+
+.ui-toggle-group {
+  display: inline-flex;
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-recessed);
+  padding: 2px;
+  gap: 2px;
+}
+
+.ui-toggle-group .MuiToggleButton-root {
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-3);
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-transform: none;
+  color: var(--color-text-muted);
+  background-color: transparent;
+  transition: background var(--transition-fast),
+              color var(--transition-fast);
+  line-height: var(--line-height-tight);
+  letter-spacing: 0;
+}
+
+.ui-toggle-group .MuiToggleButton-root:hover {
+  background-color: var(--color-bg-panel);
+  color: var(--color-text);
+}
+
+.ui-toggle-group .MuiToggleButton-root.Mui-selected,
+.ui-toggle-group .MuiToggleButton-root.Mui-selected:hover {
+  background-color: var(--color-bg-canvas);
+  color: var(--color-primary-deep);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ---- Sizes ---- */
+
+.ui-toggle-group--sm .MuiToggleButton-root {
+  padding: 2px var(--space-2);
+  font-size: var(--font-size-xs);
+}
+.ui-toggle-group--md .MuiToggleButton-root {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-sm);
+}

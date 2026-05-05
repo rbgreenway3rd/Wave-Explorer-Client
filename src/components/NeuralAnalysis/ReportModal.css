@@ -1,0 +1,122 @@
+/* Shared layout for the Neural module's CSV report modals
+ * (NeuralReportModal, NeuralFullPlateReportModal). Each modal varies
+ * only in its header accent color and which checkbox set is shown — the
+ * shape of the options list, divider rhythm, info box, and progress
+ * panel is identical.
+ */
+
+.report-modal .ui-modal__header {
+  background-color: var(--report-modal-accent, var(--color-primary));
+  color: var(--color-text-on-accent);
+  font-family: var(--font-family);
+  font-weight: var(--font-weight-bold);
+  font-size: 1.25rem;
+}
+
+.report-modal__intro {
+  color: var(--color-text-muted);
+  font-family: var(--font-family);
+  font-size: 0.875rem;
+  margin: 0 0 var(--space-3) 0;
+}
+
+.report-modal__option-list.MuiFormGroup-root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Each option row is `<FormControlLabel>` wrapping a Checkbox + a label
+ * block (title + caption). Override the legacy MuiFormControlLabel
+ * uppercase/gray-bg hack — the report modal uses light card styling.
+ */
+.report-modal .MuiFormControlLabel-root {
+  margin: 0;
+  padding: 0;
+  background-color: transparent;
+  border-bottom: none;
+  text-transform: none;
+  align-items: flex-start;
+}
+
+.report-modal .MuiFormControlLabel-root .MuiFormControlLabel-label {
+  font-family: var(--font-family);
+  text-transform: none;
+}
+
+.report-modal__option-title {
+  font-family: var(--font-family);
+  font-size: 0.9375rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  margin: 0;
+  line-height: var(--line-height-tight);
+}
+
+.report-modal__option-caption {
+  font-family: var(--font-family);
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  line-height: var(--line-height-normal);
+  display: block;
+  margin-top: 2px;
+}
+
+.report-modal__option--disabled .report-modal__option-title {
+  color: var(--color-text-muted);
+}
+
+/* Info / details panel below the option list. */
+.report-modal__info {
+  background-color: var(--report-modal-info-bg, var(--color-bg-recessed));
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  margin-top: var(--space-2);
+  font-family: var(--font-family);
+}
+
+.report-modal__info-title {
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  margin: 0 0 var(--space-1) 0;
+}
+
+.report-modal__info-line {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+/* Processing-progress panel for the full-plate modal. */
+.report-modal__progress {
+  text-align: center;
+  padding: var(--space-5) 0;
+  font-family: var(--font-family);
+}
+
+.report-modal__progress-title {
+  font-size: 1rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  margin: var(--space-3) 0 var(--space-1) 0;
+}
+
+.report-modal__progress-status {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.report-modal__progress-bar {
+  width: 100%;
+  margin-top: var(--space-2);
+}
+
+.report-modal__progress-percent {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  display: block;
+  margin-top: var(--space-1);
+}

@@ -3,20 +3,15 @@ import { useContext } from "react";
 import { DataContext } from "../../../providers/DataProvider";
 import zoomPlugin from "chartjs-plugin-zoom";
 import {
-  Button,
   Checkbox,
   FormControlLabel,
   Radio,
   RadioGroup,
-  Typography,
   FormControl,
-  ToggleButtonGroup,
-  ToggleButton,
   Tooltip,
 } from "@mui/material";
 import FitScreenTwoToneIcon from "@mui/icons-material/FitScreenTwoTone";
-import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
-import VisibilityIcon from "@mui/icons-material/Visibility";
+import { Button, Text, ToggleGroup } from "../../ui";
 import "../../../styles/LargeGraphControls.css";
 
 Chart.register(zoomPlugin);
@@ -36,14 +31,10 @@ export const LargeGraphControls = ({
 }) => {
   const { overlayRawAndFiltered, setOverlayRawAndFiltered } =
     useContext(DataContext);
+
   return (
-    <div className="large-graph-controls">
-      <section
-        className="zoom-and-pan-controls"
-        style={{
-          backgroundColor: "rgb(120, 120, 120)",
-        }}
-      >
+    <div className="large-graph-controls quadrant-controls ui-surface ui-surface--panel ui-clean-forms">
+      <section className="zoom-and-pan-controls">
         <div className="zoom-controls">
           <Tooltip
             title="Y Scale: Universal (whole plate) or Relative (selected wells only)"
@@ -51,42 +42,24 @@ export const LargeGraphControls = ({
             arrow
             placement="top"
           >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                marginBottom: "0.4em",
-              }}
-            >
-              <Typography sx={{ fontSize: "0.7em", lineHeight: 1, marginBottom: "0.2em" }}>
-                Y Scale
-              </Typography>
-              <ToggleButtonGroup
-                size="small"
-                exclusive
+            <div className="large-graph-controls__y-scale">
+              <Text size="xs" tone="muted" align="center">Y Scale</Text>
+              <ToggleGroup
+                size="sm"
                 value={yScaleMode}
                 onChange={(_, v) => {
                   if (v) setYScaleMode(v);
                 }}
-                sx={{ height: "1.6em" }}
+                options={[
+                  { value: "all", label: "Universal" },
+                  { value: "selected", label: "Relative" },
+                ]}
                 aria-label="raw waves y-scale source"
-              >
-                <ToggleButton value="all" sx={{ fontSize: "0.65em", padding: "0 0.6em" }}>
-                  Universal
-                </ToggleButton>
-                <ToggleButton value="selected" sx={{ fontSize: "0.65em", padding: "0 0.6em" }}>
-                  Relative
-                </ToggleButton>
-              </ToggleButtonGroup>
+              />
             </div>
           </Tooltip>
+
           <FormControlLabel
-            style={{
-              // backgroundColor: "rgb(120, 120, 120)",
-              backgroundColor: "rgba(0, 0, 0, 0)",
-              borderBottom: "none",
-            }}
             control={
               <Checkbox
                 id="zoom-state"
@@ -125,13 +98,9 @@ export const LargeGraphControls = ({
             </FormControl>
           </section>
         </div>
+
         <div className="pan-controls">
           <FormControlLabel
-            style={{
-              // backgroundColor: "rgb(120, 120, 120)",
-              backgroundColor: "rgba(0, 0, 0, 0)",
-              borderBottom: "none",
-            }}
             control={
               <Checkbox
                 id="pan-state"
@@ -143,10 +112,7 @@ export const LargeGraphControls = ({
             label="Pan"
           />
 
-          <section
-            className="pan-controls-radios"
-            style={{ marginBottom: "0.25em" }}
-          >
+          <section className="pan-controls-radios">
             <FormControl component="fieldset">
               <RadioGroup
                 aria-label="pan mode"
@@ -172,7 +138,7 @@ export const LargeGraphControls = ({
               </RadioGroup>
             </FormControl>
             <FormControlLabel
-              sx={{ marginTop: "0.5em", fontSize: "0.5em" }}
+              className="large-graph-controls__overlay-label"
               control={
                 <Checkbox
                   id="overlay-raw-filtered"
@@ -186,30 +152,16 @@ export const LargeGraphControls = ({
           </section>
         </div>
       </section>
-      {/* Reset Zoom Button */}
+
       <Button
-        className="reset-zoom-button"
-        variant="outlined"
+        className="large-graph-controls__reset-button"
+        variant="primary"
+        block
+        startIcon={<FitScreenTwoToneIcon />}
         onClick={resetZoom}
       >
-        <FitScreenTwoToneIcon />
-        <Typography align="center" variant="h1">
-          Reset Zoom
-        </Typography>
+        Reset Zoom
       </Button>
-      {/* Toggle LargeGraph visibility button */}
-      {/* <Button
-        className="toggle-large-graph-button"
-        variant="contained"
-        color={showLargeGraph ? "secondary" : "primary"}
-        onClick={() => setShowLargeGraph((prev) => !prev)}
-        sx={{ marginTop: "1em" }}
-      >
-        {showLargeGraph ? <VisibilityOffIcon /> : <VisibilityIcon />}
-        <Typography variant="button" sx={{ marginLeft: "0.5em" }}>
-          {showLargeGraph ? "Hide Large Graph" : "Show Large Graph"}
-        </Typography>
-      </Button> */}
     </div>
   );
 };

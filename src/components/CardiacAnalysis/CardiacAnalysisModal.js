@@ -1,35 +1,21 @@
-import React, { useState, useContext, useRef } from "react";
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  IconButton,
-  Tooltip,
-} from "@mui/material";
+import React, { useContext, useRef } from "react";
+import { Tooltip } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { WellSelector } from "./subComponents/WellSelection/WellSelector";
 import CardiacGraph from "./subComponents/CardiacGraph/CardiacGraph";
-import { AnalysisProvider, AnalysisContext } from "./AnalysisProvider";
+import { AnalysisContext } from "./AnalysisProvider";
 import ChartControls from "./subComponents/CardiacGraph/ChartControls";
 import "./styles/CardiacAnalysisModal.css";
 import AnalysisResults from "./subComponents/AnalysisResults/AnalysisResults";
-
 import { DataContext } from "../../providers/DataProvider";
 import { Chart } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
-import { makeStyles } from "@mui/styles";
+import { Modal, IconButton, Heading } from "../ui";
 import { MedianSignalGraph } from "./subComponents/MedianSignal/MedianSignalGraph";
 
 Chart.register(zoomPlugin);
 
-const useStyles = makeStyles((theme) => ({
-  dialogPaper: {
-    backgroundColor: "rgb(150, 150, 150)", // Change this to your desired background color
-  },
-}));
-
 const CardiacAnalysisModal = ({ open, onClose }) => {
-  const classes = useStyles();
   const {
     selectedWell,
     useAdjustedBases,
@@ -42,48 +28,36 @@ const CardiacAnalysisModal = ({ open, onClose }) => {
   } = useContext(AnalysisContext);
   const { project } = useContext(DataContext);
 
-  // Ref to access Cardiac Graph's chart instance
   const cardiacGraphRef = useRef(null);
 
-  // Reset zoom handler
   const resetZoom = () => {
     if (cardiacGraphRef.current) {
-      cardiacGraphRef.current.resetZoom(); // Call resetZoom on the chart instance
+      cardiacGraphRef.current.resetZoom();
     }
-  };
-
-  let averageTimeBetweenPeaks = (peakResults) => {
-    let timeBetweenPeaks = [];
-    for (let i = 1; i < peakResults.length; i++) {
-      timeBetweenPeaks.push(
-        peakResults[i].peakCoords.x - peakResults[i - 1].peakCoords.x
-      );
-    }
-    return (
-      timeBetweenPeaks.reduce((a, b) => a + b, 0) / timeBetweenPeaks.length
-    );
   };
 
   return (
-    <Dialog
+    <Modal
       open={open}
       onClose={null}
       fullScreen
-      classes={{ paper: classes.dialogPaper }}
+      className="cardiac-analysis-modal"
     >
-      <DialogTitle>
-        Cardiac Analysis
+      <Modal.Header className="cardiac-analysis-modal__header">
+        <Heading level={2}>Cardiac Analysis</Heading>
         <Tooltip title="Exit Cardiac Analysis" arrow>
           <IconButton
+            variant="subtle"
+            size="md"
             aria-label="close"
             onClick={onClose}
-            style={{ position: "absolute", right: 8, top: 8 }}
+            className="cardiac-analysis-modal__close"
           >
-            <CloseIcon className="close-icon" />
+            <CloseIcon />
           </IconButton>
         </Tooltip>
-      </DialogTitle>
-      <DialogContent>
+      </Modal.Header>
+      <Modal.Body className="cardiac-analysis-modal__body">
         <div className="modal-content">
           <div className="modal-header">
             <div className="modal-header-item-container">
@@ -100,38 +74,9 @@ const CardiacAnalysisModal = ({ open, onClose }) => {
                 Plate Barcode: {project?.plate?.[0]?.assayPlateBarcode || "N/A"}
               </h5>
               {selectedWell ? (
-                <>
-                  <h2
-                    style={{
-                      padding: 0,
-                      margin: 0,
-                      borderTop: "solid black 1px",
-                      // borderBottom: "solid black 1px",
-                    }}
-                  >
-                    Selected Well: {selectedWell.key}
-                  </h2>
-
-                  {/* <h5
-                    style={{
-                      padding: 0,
-                      margin: 0,
-                    }}
-                  >
-                    <li>Peaks Detected: {peakResults.length}</li>
-                  </h5>
-                  <h5
-                    style={{
-                      padding: 0,
-                      margin: 0,
-                    }}
-                  >
-                    <li>
-                      avg time between peaks:{" "}
-                      {averageTimeBetweenPeaks(peakResults).toFixed(2)}ms
-                    </li>
-                  </h5> */}
-                </>
+                <h2 className="cardiac-analysis-modal__selected-well">
+                  Selected Well: {selectedWell.key}
+                </h2>
               ) : (
                 <h2 className="no-well-selected">No Well Selected</h2>
               )}
@@ -152,7 +97,6 @@ const CardiacAnalysisModal = ({ open, onClose }) => {
               <CardiacGraph
                 className="cardiac-graph"
                 ref={cardiacGraphRef}
-                // resetZoom={resetZoom}
                 useAdjustedBases={useAdjustedBases}
                 findPeaksWindowWidth={findPeaksWindowWidth}
                 peakProminence={peakProminence}
@@ -165,8 +109,8 @@ const CardiacAnalysisModal = ({ open, onClose }) => {
             <AnalysisResults className="analysis-results" />
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </Modal.Body>
+    </Modal>
   );
 };
 

@@ -3,8 +3,9 @@ import {
   useSelectionContainer,
   boxesIntersect,
 } from "@air/react-drag-to-select";
-import { Dialog, DialogContent, Button, Tooltip } from "@mui/material";
+import { Dialog, DialogContent, Button as MuiButton, Tooltip } from "@mui/material";
 import NotInterestedIcon from "@mui/icons-material/NotInterested";
+import { Button } from "../../../ui";
 
 export const ControlSubtractionModal = ({
   open,
@@ -237,7 +238,7 @@ export const ControlSubtractionModal = ({
           }
           disableInteractive
         >
-          <Button
+          <MuiButton
             onClick={() => {
               if (className === "control-grid") {
                 const allSelected = controlGrid
@@ -277,10 +278,10 @@ export const ControlSubtractionModal = ({
           >
             {/* <HighlightOffIcon sx={{ color: "red" }} fontSize="medium" /> */}
             *
-          </Button>
+          </MuiButton>
         </Tooltip>
         {grid.map((_, rowIndex) => (
-          <Button
+          <MuiButton
             key={`row-btn-${rowIndex}`}
             variant="outlined"
             style={{
@@ -297,7 +298,7 @@ export const ControlSubtractionModal = ({
             onClick={() => handleRowButtonClick(rowIndex, className)}
           >
             {String.fromCharCode(65 + rowIndex)}
-          </Button>
+          </MuiButton>
         ))}
       </div>
       <div
@@ -319,7 +320,7 @@ export const ControlSubtractionModal = ({
           }}
         >
           {Array.from({ length: number_of_columns }).map((_, colIndex) => (
-            <Button
+            <MuiButton
               key={`col-btn-${colIndex}`}
               variant="outlined"
               style={{
@@ -336,7 +337,7 @@ export const ControlSubtractionModal = ({
               onClick={() => handleColButtonClick(colIndex, className)}
             >
               {colIndex + 1}
-            </Button>
+            </MuiButton>
           ))}
         </div>
         {/* The grid itself */}
@@ -468,39 +469,26 @@ export const ControlSubtractionModal = ({
         style={{
           display: "flex",
           justifyContent: "space-between",
-          padding: "0.5em 1em",
+          padding: "var(--space-3) var(--space-4)",
+          gap: "var(--space-2)",
         }}
       >
         <Tooltip title="Clear All Well Selections" disableInteractive>
           <Button
-            variant="text"
+            variant="danger"
+            startIcon={<NotInterestedIcon />}
             onClick={clearAllSelections}
-            sx={{
-              color: "red",
-              "&:hover": {
-                background: "lightgrey",
-              },
-              padding: "0.25em",
-            }}
           >
-            <NotInterestedIcon />
             Clear All
           </Button>
         </Tooltip>
 
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <Button
-            onClick={onClose}
-            sx={{
-              "&:hover": {
-                background: "lightgrey",
-              },
-              padding: "0.25em",
-            }}
-          >
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-2)" }}>
+          <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
           <Button
+            variant="primary"
             onClick={() => {
               const controlWells = controlGrid
                 .flat()
@@ -509,12 +497,6 @@ export const ControlSubtractionModal = ({
                 .flat()
                 .filter((cell) => cell.selected);
               onSave(controlWells, applyWells);
-            }}
-            sx={{
-              "&:hover": {
-                background: "lightgrey",
-              },
-              padding: "0.25em",
             }}
           >
             Confirm

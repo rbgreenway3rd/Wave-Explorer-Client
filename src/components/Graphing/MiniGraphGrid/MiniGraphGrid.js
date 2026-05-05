@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import { DataContext } from "../../../providers/DataProvider";
 import useDecimateWorker from "../../../utilities/useDecimateWorker";
+import { useContainerSize } from "../../../utilities/useContainerSize";
 import { MiniGraphOptions } from "../config/MiniGraphOptions";
 import "../../../styles/MiniGraphGrid.css";
 import "chartjs-adapter-date-fns"; // date-fns adapter for Chart.js necessary for decimation
@@ -146,11 +147,15 @@ export const MiniGraphGrid = ({
   const numRows = rowLabels.length;
   const numColumns = columnLabels.length;
 
-  // State for grid and cell dimensions, accounting for button areas
-  const [availableWidth, setAvailableWidth] = useState(window.innerWidth / 2.3);
-  const [availableHeight, setAvailableHeight] = useState(
-    window.innerHeight / 2.3
-  );
+  // Track the actual container size via ResizeObserver — the previous
+  // `window.innerWidth / 2.3` heuristic mismatched the real grid cell
+  // (the symmetric four-quadrant layout makes each quadrant ~6/14 of
+  // the available width minus column gaps + panel border), causing the
+  // last column of wells to fall off the right edge.
+  const [containerRef, containerSize] = useContainerSize();
+  const availableWidth = containerSize.width || 1;
+  const availableHeight = containerSize.height || 1;
+
   // Fixed button dimensions
   const buttonHeight = 40; // Height of row buttons
   const buttonWidth = 80; // Width of column buttons
@@ -168,18 +173,6 @@ export const MiniGraphGrid = ({
   // Dynamically calculate available grid space
   const availableGridWidth = parentWidth - buttonWidth; // Remaining width for the grid
   const availableGridHeight = parentHeight - buttonHeight; // Remaining height for the grid
-
-  // Update available dimensions on window resize
-  const handleResize = () => {
-    setAvailableWidth(window.innerWidth / 2.3);
-    setAvailableHeight(window.innerHeight / 2.3);
-  };
-
-  // Effect to listen to window resize events
-  useEffect(() => {
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   useEffect(() => {
     if (wellArrays.length > 0) {
@@ -431,16 +424,25 @@ export const MiniGraphGrid = ({
   }
 
   return (
-    <div className="container">
+    <div className="container" ref={containerRef}>
       {isRenderingComplete ? (
         <div
           className="minigraph-container"
           style={{
             display: "grid",
-            gridTemplateColumns: `${buttonWidth} 10fr`,
-            gridTemplateRows: `${buttonHeight} 10fr`,
-            maxWidth: `calc(${parentWidth})`,
-            maxHeight: `calc(${parentHeight})`,
+            /* The first column hosts the row-selector buttons, which are
+             * `width: buttonWidth/4` (20px). Pre-restyle the template
+             * was `${buttonWidth} 10fr` (no unit) which CSS interpreted
+             * as `auto 10fr`, so the column auto-sized to its 20px
+             * content. We make that explicit here. Same logic for the
+             * top row and the half-height column buttons.
+             */
+            gridTemplateColumns: `${buttonWidth / 4}px 10fr`,
+            gridTemplateRows: `${buttonHeight / 2}px 10fr`,
+            width: "100%",
+            height: "100%",
+            maxWidth: "100%",
+            maxHeight: "100%",
             boxSizing: "border-box",
           }}
         >

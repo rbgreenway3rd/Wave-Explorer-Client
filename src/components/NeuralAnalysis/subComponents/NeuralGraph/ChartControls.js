@@ -1,10 +1,9 @@
 import "../../styles/ChartControls.css";
 
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import NeuralReportModal from "../../NeuralReportModal";
 import NeuralFullPlateReportModal from "../../NeuralFullPlateReportModal";
 
-// Import extracted control components
 import NoiseSuppressionControls from "./controls/NoiseSuppressionControls";
 import ControlWellSelector from "./controls/ControlWellSelector";
 import ROIControls from "./controls/ROIControls";
@@ -12,132 +11,100 @@ import PanZoomControls from "./controls/PanZoomControls";
 import ReportGenerationControls from "./controls/ReportGenerationControls";
 import DecimationControls from "./controls/DecimationControls";
 
-const ChartControls = ({
-  resetZoom,
-  useAdjustedBases,
-  setUseAdjustedBases,
-  findPeaksWindowWidth,
-  setFindPeaksWindowWidth,
-  decimationEnabled,
-  setDecimationEnabled,
-  decimationSamples,
-  setDecimationSamples,
-  noiseSuppressionActive,
-  setNoiseSuppressionActive,
-  subtractControl,
-  setSubtractControl,
-  filterBaseline,
-  setFilterBaseline,
-  baselineCorrection,
-  setBaselineCorrection,
-  trendFlatteningEnabled,
-  setTrendFlatteningEnabled,
-  handleOutliers,
-  setHandleOutliers,
-  outlierPercentile,
-  outlierMultiplier,
-  controlWell,
-  setControlWell,
-  selectingControl,
-  setSelectingControl,
-  processedSignal,
-  smoothingWindow,
-  spikeProminence,
-  setSpikeProminence,
-  spikeWindow,
-  setSpikeWindow,
-  spikeThreshold,
-  setSpikeThreshold,
-  spikeMinDistance,
-  setSpikeMinDistance,
-  setPeakResults,
-  peakResults,
-  setBurstResults,
-  defineROI,
-  setDefineROI,
-  enablePanZoom,
-  setEnablePanZoom,
-  zoomState,
-  setZoomState,
-  panState,
-  setPanState,
-  roiList,
-  setRoiList,
-  currentRoiIndex,
-  setCurrentRoiIndex,
-  selectedWell,
-  // New props for CSV generation
-  project,
-  burstResults,
-  overallMetrics,
-  roiMetrics,
-  spikeMinWidth,
-  maxInterSpikeInterval,
-  minSpikesPerBurst,
-  wellArrays,
-}) => {
-  // State for Neural Report Modal
-  const [reportModalOpen, setReportModalOpen] = useState(false);
+import { DataContext } from "../../../../providers/DataProvider";
+import {
+  useNeuralInteraction,
+  useNeuralResults,
+  useNeuralSelection,
+  useNeuralSettings,
+} from "../../NeuralProvider";
 
-  // State for Full-Plate Report Modal
+/**
+ * ChartControls — top control bar above the Neural Graph. After Tier B
+ * this is a thin layout shell:
+ *
+ *   - Each child control panel self-subscribes to the relevant context.
+ *     ChartControls passes nothing to them (apart from `resetZoom`,
+ *     an imperative ref handle into NeuralGraph).
+ *   - ChartControls owns only the two report-modal `open` flags and the
+ *     processingParams snapshot it builds for the report modals.
+ *
+ * Pre-Tier-B this component received 31 props; it now receives 1.
+ */
+const ChartControls = ({ resetZoom }) => {
+  const { selectedWell, controlWell } = useNeuralSelection();
+  const settings = useNeuralSettings();
+  const { roiList } = useNeuralInteraction();
+  const { pipelineResults, effectiveSpikeProminence, effectiveSpikeWindow } =
+    useNeuralResults();
+  const { project, wellArrays } = useContext(DataContext);
+
+  const [reportModalOpen, setReportModalOpen] = useState(false);
   const [fullPlateModalOpen, setFullPlateModalOpen] = useState(false);
 
+  const peakResults = pipelineResults.spikeResults;
+  const burstResults = pipelineResults.burstResults;
+  const overallMetrics = pipelineResults.metrics;
+  const processedSignal = pipelineResults.processedSignal;
+
   const handleGenerateReport = () => {
-    // Validate we have the necessary data
     if (!selectedWell) {
       alert("No well selected. Please select a well to generate a report.");
       return;
     }
-
     if (!peakResults || peakResults.length === 0) {
       alert(
         "No spikes detected. Please run spike detection before generating a report."
       );
       return;
     }
-
-    // Open the report modal
     setReportModalOpen(true);
   };
 
   const handleGenerateFullPlateReport = () => {
-    console.log("[ChartControls] wellArrays:", wellArrays);
-    console.log("[ChartControls] wellArrays type:", typeof wellArrays);
-    console.log("[ChartControls] wellArrays length:", wellArrays?.length);
-
-    // Validate we have well data
     if (!wellArrays || wellArrays.length === 0) {
       alert("No well data available. Please load a dataset first.");
       return;
     }
-
-    // Open the full-plate report modal
     setFullPlateModalOpen(true);
   };
 
-  // Prepare processing parameters for report generation
+  // Snapshot of the processing params used when building the CSV export.
+  // Built per-render from settings + effective spike params + selection so
+  // a report generated right after a slider drag reflects the latest
+  // values (and not a stale snapshot from earlier).
   const processingParams = {
-    noiseSuppressionActive,
-    smoothingWindow,
-    subtractControl,
+    noiseSuppressionActive: settings.noiseSuppressionActive,
+    smoothingWindow: settings.smoothingWindow,
+    subtractControl: settings.subtractControl,
     controlWell,
-    baselineCorrection,
-    trendFlatteningEnabled,
-    handleOutliers,
-    outlierPercentile,
-    outlierMultiplier,
-    spikeProminence,
-    spikeWindow,
-    spikeMinWidth: spikeMinWidth ?? 5,
-    spikeMinDistance,
-    maxInterSpikeInterval: maxInterSpikeInterval ?? 50,
-    minSpikesPerBurst: minSpikesPerBurst ?? 3,
+    baselineCorrection: settings.baselineCorrection,
+    trendFlatteningEnabled: settings.trendFlatteningEnabled,
+    handleOutliers: settings.handleOutliers,
+    outlierPercentile: settings.outlierPercentile,
+    outlierMultiplier: settings.outlierMultiplier,
+    spikeProminence: effectiveSpikeProminence,
+    spikeWindow: effectiveSpikeWindow,
+    spikeMinWidth: 5,
+    spikeMinDistance: settings.spikeMinDistance,
+    maxInterSpikeInterval: settings.maxInterSpikeInterval,
+    minSpikesPerBurst: settings.minSpikesPerBurst,
   };
 
-  // --- UI ---
+  // ControlWellSelector is meaningful only when both noise suppression
+  // is on AND the user has chosen to subtract a control signal.
+  // Rendered always (so the bar's column count stays stable) but
+  // disabled when either upstream toggle is off — its `disabled` prop
+  // also applies the `.neural-control-panel--inert` class so the whole
+  // card dims out without layout shift.
+  const controlWellDisabled =
+    !settings.noiseSuppressionActive || !settings.subtractControl;
+
   return (
-    <div className="neural-chart-controls">
-      {/* Neural Report Modal */}
+    <>
+      {/* Report modals portal out of the DOM tree on open; rendering
+       * them outside the grid container keeps them from being counted
+       * as grid items. */}
       <NeuralReportModal
         open={reportModalOpen}
         onClose={() => setReportModalOpen(false)}
@@ -147,12 +114,10 @@ const ChartControls = ({
         peakResults={peakResults}
         burstResults={burstResults}
         overallMetrics={overallMetrics}
-        roiMetrics={roiMetrics}
+        roiMetrics={null}
         roiList={roiList}
         processingParams={processingParams}
       />
-
-      {/* Full-Plate Report Modal */}
       <NeuralFullPlateReportModal
         open={fullPlateModalOpen}
         onClose={() => setFullPlateModalOpen(false)}
@@ -162,83 +127,22 @@ const ChartControls = ({
         roiList={roiList}
       />
 
-      {/* Control Well Selector (shown when noise suppression is active) */}
-      {noiseSuppressionActive && (
-        <ControlWellSelector
-          controlWell={controlWell}
-          setControlWell={setControlWell}
-          selectingControl={selectingControl}
-          setSelectingControl={setSelectingControl}
-          selectedWell={selectedWell}
-          disabled={!subtractControl}
+      {/* Six fixed grid columns. ControlWellSelector is always present
+       * (inert when off) and PanZoom + ROI each get their own slot —
+       * the bar's shape never shifts. */}
+      <div className="neural-chart-controls">
+        <ControlWellSelector disabled={controlWellDisabled} />
+        <NoiseSuppressionControls />
+        <PanZoomControls resetZoom={resetZoom} />
+        <ROIControls />
+        <ReportGenerationControls
+          handleGenerateReport={handleGenerateReport}
+          handleGenerateFullPlateReport={handleGenerateFullPlateReport}
         />
-      )}
-
-      {noiseSuppressionActive && <div className="chart-controls-divider" />}
-
-      {/* Noise Suppression Controls */}
-      <NoiseSuppressionControls
-        noiseSuppressionActive={noiseSuppressionActive}
-        setNoiseSuppressionActive={setNoiseSuppressionActive}
-        trendFlatteningEnabled={trendFlatteningEnabled}
-        setTrendFlatteningEnabled={setTrendFlatteningEnabled}
-        subtractControl={subtractControl}
-        setSubtractControl={setSubtractControl}
-        baselineCorrection={baselineCorrection}
-        setBaselineCorrection={setBaselineCorrection}
-        filterBaseline={filterBaseline}
-        setFilterBaseline={setFilterBaseline}
-      />
-
-      <div className="chart-controls-divider" />
-
-      {/* Chart Interaction and ROI Controls - grouped together */}
-      <div style={{ display: "flex", flexDirection: "row", gap: 4 }}>
-        {/* Pan/Zoom Controls */}
-        <PanZoomControls
-          defineROI={defineROI}
-          setDefineROI={setDefineROI}
-          enablePanZoom={enablePanZoom}
-          setEnablePanZoom={setEnablePanZoom}
-          zoomState={zoomState}
-          setZoomState={setZoomState}
-          panState={panState}
-          setPanState={setPanState}
-          resetZoom={resetZoom}
-        />
-
-        {/* ROI Management */}
-        <ROIControls
-          defineROI={defineROI}
-          setDefineROI={setDefineROI}
-          roiList={roiList}
-          setRoiList={setRoiList}
-          currentRoiIndex={currentRoiIndex}
-          setCurrentRoiIndex={setCurrentRoiIndex}
-        />
+        <DecimationControls />
       </div>
-
-      <div className="chart-controls-divider" />
-
-      {/* Report Generation */}
-      <ReportGenerationControls
-        selectedWell={selectedWell}
-        peakResults={peakResults}
-        wellArrays={wellArrays}
-        handleGenerateReport={handleGenerateReport}
-        handleGenerateFullPlateReport={handleGenerateFullPlateReport}
-      />
-
-      <div className="chart-controls-divider" />
-
-      {/* Decimation Controls */}
-      <DecimationControls
-        decimationEnabled={decimationEnabled}
-        setDecimationEnabled={setDecimationEnabled}
-        decimationSamples={decimationSamples}
-        setDecimationSamples={setDecimationSamples}
-      />
-    </div>
+    </>
   );
 };
+
 export default ChartControls;

@@ -3,6 +3,12 @@
  * neuralReportWorker.js
  * Web Worker for parallel processing of neural analysis wells
  * Processes a single well and returns CSV content
+ *
+ * TODO(Tier F): Currently dormant — never instantiated via `new Worker(...)`.
+ * Kept as the starting skeleton for the planned Neural Analysis worker
+ * port (one request per (well, settings) snapshot, request-id cancellation,
+ * stage cache inside the worker, typed-array transfer). See the audit plan
+ * in /home/rbgreenway/.claude/plans/i-have-not-used-twinkly-flute.md.
  */
 
 import { detectSpikes } from "../components/NeuralAnalysis/utilities/detectSpikes";

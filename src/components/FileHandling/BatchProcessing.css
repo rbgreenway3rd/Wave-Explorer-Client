@@ -1,224 +1,173 @@
-.batch-processing-dialog {
-    /* min-width: 50vw; */
+/* BatchProcessing — multi-file batch report generator. Tokenized.
+ * The three list patterns (files, filters, metrics) share a common
+ * `.batch-list` shape, so per-list selectors are minimal.
+ */
+
+.batch-processing-modal .MuiPaper-root {
+  min-width: 70vw;
+  min-height: 75vh;
 }
 
-.file-upload-section {
-    /* border: solid 1px rgb(0, 0, 0); */
-    display: flex;
-    flex-direction: column;
-    /* background: rgb(210, 210, 210); */
-    /* border-radius: 0.25em;
-    border: solid 1px rgb(200, 200, 200); */
-    width: 100%;
-    height: 100%;
+.batch-processing-modal--processing .MuiPaper-root {
+  cursor: wait;
+}
 
+/* ---- Progress strip shown while a batch is running ---- */
+
+.batch-processing__progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.batch-processing__progress-bar {
+  flex: 1;
+}
+
+.batch-processing__progress-name {
+  min-width: 12em;
+  font-size: 1em;
+}
+
+/* ---- Section: file upload + filters/metrics layout ---- */
+
+.file-upload-section {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
 }
 
 .upload-config-container {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    width: 100%;
-    /* outline: solid 1px rgb(0, 0, 0); */
-    max-height: 60vh;
-    /* Ensure children do not overflow this container */
-    overflow: hidden;
-    background: rgb(210, 210, 210);
-    border-radius: 0.25em;
-    border: solid 1px rgb(200, 200, 200);
-}
-
-/* Button styling */
-.batch-processing-add-btn {}
-
-.batch-processing-preference-radios {}
-
-/* Scrollable list container */
-.batch-processing-list-container {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    /* Prevent from exceeding parent height */
-    max-height: 100%;
-    overflow: hidden;
-
-}
-
-
-
-.batch-processing-list {
-    flex: 1;
-    width: 95%;
-    min-height: 95%;
-    max-height: 90%;
-    overflow-y: auto;
-    padding: 0.25em;
-
-    margin-top: 0;
-    margin-bottom: 0.5em;
-    list-style-type: none;
-    border: solid 1px #888;
-    border-radius: 0.25em;
-    background: rgb(220, 220, 220);
-    align-self: center;
-    scrollbar-width: thin;
-    scrollbar-color: #888 #e0e0e0;
-}
-
-/* List item styling */
-.batch-processing-list-item {
-    font-size: 0.8rem;
-    margin-top: 0.25em;
-    margin-right: 0.5em;
-    border-bottom: 1px solid rgb(128, 128, 128);
-}
-
-/* Custom scrollbar styling */
-.batch-processing-list::-webkit-scrollbar {
-    width: 0.5em;
-    background: #e0e0e0;
-
-}
-
-.batch-processing-list::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 4px;
-}
-
-.batch-processing-list::-webkit-scrollbar-thumb:hover {
-    background: #555;
-}
-
-.batch-processing-add-config-file-btn {
-    width: auto;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  max-height: 60vh;
+  overflow: hidden;
+  background-color: var(--gray-200);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
 }
 
 .metrics-and-filters-container {
-    margin-top: 0.5em;
-    background: rgb(210, 210, 210);
-    border-radius: 0.25em;
-    border: solid 1px rgb(200, 200, 200);
-    width: 100%;
+  margin-top: var(--space-2);
+  background-color: var(--gray-200);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  width: 100%;
 }
 
-.filters-list-container {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    max-height: 100%;
-    overflow: hidden;
-    border-radius: 0.25em;
+/* Row containing add/clear buttons with a center-positioned title.
+ * Used in two places — files and filters/metrics. Center title floats
+ * absolutely so the button row width doesn't shift.
+ */
+.batch-processing__row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-2) var(--space-2);
+  position: relative;
 }
 
-.filters-list {
-    flex: 1;
-    width: 95%;
-    max-height: 100%;
-    overflow-y: auto;
-    padding: 0.25em;
-    margin-top: 0;
-    margin-bottom: 0.5em;
-    list-style-type: none;
-    border: solid 1px #888;
-    border-radius: 0.25em;
-    background: rgb(220, 220, 220);
-    align-self: center;
-    scrollbar-width: thin;
-    scrollbar-color: #888 #e0e0e0;
-    min-height: 3em;
-
+.batch-processing__row-title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  font-weight: var(--font-weight-medium);
+  font-size: 1.1em;
+  text-align: center;
+  width: max-content;
 }
 
-.filters-list::-webkit-scrollbar {
-    width: 0.5em;
-    background: #e0e0e0;
+/* ---- Shared list shape (files / filters / metrics) ---- */
+
+.batch-list-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  max-height: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-md);
 }
 
-.filters-list::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 4px;
+.batch-list {
+  flex: 1;
+  width: 95%;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: var(--space-1);
+  margin: 0 0 var(--space-2);
+  list-style-type: none;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background-color: var(--gray-100);
+  align-self: center;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) var(--gray-100);
+  min-height: 3em;
 }
 
-.filters-list::-webkit-scrollbar-thumb:hover {
-    background: #555;
+.batch-list::-webkit-scrollbar {
+  width: 0.5em;
+  background: var(--gray-100);
+}
+.batch-list::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: var(--radius-md);
+}
+.batch-list::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
 }
 
-.filters-list-item {
-
-    font-size: 0.9em;
-    /* margin: 0.25em; */
-    padding: 0.25em;
-    border-bottom: 1px solid rgb(128, 128, 128);
+.batch-list-item {
+  font-size: 0.85em;
+  padding: var(--space-1);
+  margin-right: var(--space-2);
+  border-bottom: 1px solid var(--gray-400);
 }
+
+.batch-list-item__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.batch-list-item__remove .MuiSvgIcon-root {
+  font-size: 0.75em;
+  color: rgba(255, 0, 0, 0.7);
+}
+
+.batch-list-item__params {
+  color: var(--color-text-muted);
+  font-size: 0.85em;
+  margin-left: var(--space-2);
+}
+
+.batch-list--empty {
+  color: var(--color-text-muted);
+  font-size: 0.8em;
+}
+
+.batch-list-section-title {
+  margin: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+/* ---- Footer (action buttons + checkboxes) ---- */
 
 .dialog-actions-container {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-}
-
-.metrics-list-container {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    max-height: 100%;
-    overflow: hidden;
-    border-radius: 0.25em;
-}
-
-.metrics-list {
-    min-height: 3em;
-
-    flex: 1;
-    width: 95%;
-    max-height: 100%;
-    overflow-y: auto;
-    padding: 0.25em;
-    margin-top: 0;
-    margin-bottom: 0.5em;
-    list-style-type: none;
-    border: solid 1px #888;
-    border-radius: 0.25em;
-    background: rgb(220, 220, 220);
-    align-self: center;
-    scrollbar-width: thin;
-    scrollbar-color: #888 #e0e0e0;
-}
-
-.metrics-list::-webkit-scrollbar {
-    width: 0.5em;
-    background: #e0e0e0;
-}
-
-.metrics-list::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 4px;
-}
-
-.metrics-list::-webkit-scrollbar-thumb:hover {
-    background: #555;
-}
-
-.metrics-list-item {
-    font-size: 0.8rem;
-    margin-top: 0.25em;
-    margin-right: 0.5em;
-    border-bottom: 1px solid rgb(128, 128, 128);
-    padding: 0.25em;
-}
-
-.dialog-actions-container {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    margin-left: 1.5em;
-    margin-right: 1.5em;
-    /* padding-bottom: 0.5em */
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  margin: 0 var(--space-5);
 }
 
 .batch-processing-config-checkboxes {
-    border: 1px solid rgb(128, 128, 128);
-    /* border-bottom: 1px solid rgb(128, 128, 128); */
-    /* border-top: 1px solid rgb(128, 128, 128); */
-    background-color: rgb(220, 220, 220);
+  border: 1px solid var(--color-border-strong);
+  background-color: var(--gray-100);
+  padding: var(--space-1) var(--space-2);
 }

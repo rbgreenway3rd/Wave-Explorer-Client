@@ -6,18 +6,14 @@ import AccountCircleOutlinedIcon from "@mui/icons-material/AccountCircleOutlined
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import Divider from "@mui/material/Divider";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogActions from "@mui/material/DialogActions";
 import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
 import Alert from "@mui/material/Alert";
 import InputAdornment from "@mui/material/InputAdornment";
-
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import { Modal, Button } from "../ui";
 import { supabase } from "../../supabaseClient";
+import "../../styles/NavBar.css";
 
 export default function ProfileMenu({ profile, setProfile }) {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -41,12 +37,8 @@ export default function ProfileMenu({ profile, setProfile }) {
     }
   }, [profile]);
 
-  const handleMenuOpen = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
+  const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
+  const handleMenuClose = () => setAnchorEl(null);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -80,7 +72,6 @@ export default function ProfileMenu({ profile, setProfile }) {
     }
     setLoading(true);
     try {
-      // No re-authentication: Supabase updates password for current user
       const { error: pwError } = await supabase.auth.updateUser({
         password: newPassword,
       });
@@ -88,7 +79,6 @@ export default function ProfileMenu({ profile, setProfile }) {
         setError(pwError.message);
       } else {
         setSuccess("Password changed successfully.");
-        // If must_change_password, update in DB
         if (mustChange && profile?.id) {
           await supabase
             .from("profiles")
@@ -97,7 +87,6 @@ export default function ProfileMenu({ profile, setProfile }) {
             .select()
             .single();
           setMustChange(false);
-          // Refetch profile to update parent state
           const { data: updatedProfile } = await supabase
             .from("profiles")
             .select("permissions, username, email, must_change_password, id")
@@ -117,6 +106,21 @@ export default function ProfileMenu({ profile, setProfile }) {
     setLoading(false);
   };
 
+  const visibilityAdornment = (visible, toggle, label) => ({
+    endAdornment: (
+      <InputAdornment position="end">
+        <IconButton
+          aria-label={`toggle ${label} visibility`}
+          onClick={() => toggle((v) => !v)}
+          edge="end"
+          size="small"
+        >
+          {visible ? <VisibilityOff /> : <Visibility />}
+        </IconButton>
+      </InputAdornment>
+    ),
+  });
+
   return (
     <>
       <IconButton
@@ -124,17 +128,9 @@ export default function ProfileMenu({ profile, setProfile }) {
         onClick={handleMenuOpen}
         size="large"
         aria-label="profile menu"
-        sx={{ ml: 3 }}
-        style={{
-          border: "solid rgb(140, 140, 140) 1px",
-          borderRadius: "50%",
-          backgroundImage:
-            "radial-gradient(rgb(240, 240, 240), rgb(230, 230, 230), rgb(220, 220, 230), rgb(210, 210, 220), rgb(200, 200, 210), rgb(180, 180, 190), rgb(160, 160, 170), rgb(140, 140, 150))",
-        }}
+        className="nav-pill-button nav-pill-button--circle profile-menu__trigger"
       >
-        <AccountCircleOutlinedIcon
-          sx={{ fontSize: "1.1em", borderRadius: "50%" }}
-        />
+        <AccountCircleOutlinedIcon className="profile-menu__icon" />
       </IconButton>
 
       <Menu
@@ -153,23 +149,25 @@ export default function ProfileMenu({ profile, setProfile }) {
         <Divider />
         <MenuItem onClick={handleSignOut}>
           <ListItemIcon>
-            <span style={{ fontWeight: 600 }}>Sign Out</span>
+            <span className="profile-menu__signout">Sign Out</span>
           </ListItemIcon>
         </MenuItem>
       </Menu>
 
-      <Dialog
+      <Modal
         open={showChangePw}
         onClose={mustChange ? undefined : handleCloseChangePw}
+        maxWidth="xs"
+        fullWidth
       >
-        <DialogTitle>Change Password</DialogTitle>
-        <DialogContent>
+        <Modal.Header>Change Password</Modal.Header>
+        <Modal.Body>
           {mustChange && (
-            <Alert severity="warning" sx={{ mb: 2 }}>
+            <Alert severity="warning" className="profile-menu__must-change">
               You must change your password before continuing.
             </Alert>
           )}
-          <form onSubmit={handleChangePassword}>
+          <form onSubmit={handleChangePassword} className="profile-menu__form">
             <TextField
               label="Current Password"
               type={showCurrent ? "text" : "password"}
@@ -179,20 +177,11 @@ export default function ProfileMenu({ profile, setProfile }) {
               margin="normal"
               autoComplete="current-password"
               required={!!profile?.must_change_password}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      aria-label="toggle current password visibility"
-                      onClick={() => setShowCurrent((show) => !show)}
-                      edge="end"
-                      size="small"
-                    >
-                      {showCurrent ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
+              InputProps={visibilityAdornment(
+                showCurrent,
+                setShowCurrent,
+                "current password"
+              )}
             />
             <TextField
               label="New Password"
@@ -202,20 +191,11 @@ export default function ProfileMenu({ profile, setProfile }) {
               fullWidth
               margin="normal"
               autoComplete="new-password"
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      aria-label="toggle new password visibility"
-                      onClick={() => setShowNew((show) => !show)}
-                      edge="end"
-                      size="small"
-                    >
-                      {showNew ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
+              InputProps={visibilityAdornment(
+                showNew,
+                setShowNew,
+                "new password"
+              )}
             />
             <TextField
               label="Confirm New Password"
@@ -225,41 +205,31 @@ export default function ProfileMenu({ profile, setProfile }) {
               fullWidth
               margin="normal"
               autoComplete="new-password"
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      aria-label="toggle confirm password visibility"
-                      onClick={() => setShowConfirm((show) => !show)}
-                      edge="end"
-                      size="small"
-                    >
-                      {showConfirm ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
+              InputProps={visibilityAdornment(
+                showConfirm,
+                setShowConfirm,
+                "confirm password"
+              )}
             />
             {error && <Alert severity="error">{error}</Alert>}
             {success && <Alert severity="success">{success}</Alert>}
-            <DialogActions>
-              {!mustChange && (
-                <Button onClick={handleCloseChangePw} color="secondary">
-                  Cancel
-                </Button>
-              )}
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                disabled={loading}
-              >
-                Change Password
-              </Button>
-            </DialogActions>
           </form>
-        </DialogContent>
-      </Dialog>
+        </Modal.Body>
+        <Modal.Footer>
+          {!mustChange && (
+            <Button variant="ghost" onClick={handleCloseChangePw}>
+              Cancel
+            </Button>
+          )}
+          <Button
+            variant="primary"
+            onClick={handleChangePassword}
+            disabled={loading}
+          >
+            Change Password
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </>
   );
 }

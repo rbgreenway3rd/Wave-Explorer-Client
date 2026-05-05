@@ -1,37 +1,35 @@
 import React from "react";
-import {
-  Paper,
-  Box,
-  Slider,
-  Typography,
-  IconButton,
-  Tooltip,
-} from "@mui/material";
+import { Slider, Tooltip } from "@mui/material";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
-import "./BurstDetectionControls.css";
-import { controlsTheme } from "../styles/controlsTheme";
+import { Panel, IconButton } from "../../../../ui";
+import { useNeuralSettings } from "../../../NeuralProvider";
+import { perf } from "../../../utilities/perfLogger";
+import { useDraftSlider } from "../../../utilities/useDraftSlider";
+import "./NeuralControlPanel.css";
 
 /**
- * BurstDetectionControls
- * Component for adjusting burst detection parameters
- *
- * Features:
- * - Max inter-spike interval slider (10-500ms)
- * - Min spikes per burst slider (2-10 spikes)
- * - Reset button to restore defaults
- * - Only visible when showBursts is enabled
- * - Professional scientific styling
- * - Real-time parameter updates
+ * BurstDetectionControls — sliders for max inter-spike interval (ms)
+ * and min spikes per burst. Reads burst state directly from
+ * NeuralSettingsContext; sliders use useDraftSlider so dragging only
+ * updates a local value and the pipeline-triggering setter fires once
+ * on release.
  */
-const BurstDetectionControls = ({
-  showBursts,
-  maxInterSpikeInterval,
-  setMaxInterSpikeInterval,
-  minSpikesPerBurst,
-  setMinSpikesPerBurst,
-}) => {
+const BurstDetectionControls = () => {
+  const {
+    showBursts,
+    maxInterSpikeInterval,
+    setMaxInterSpikeInterval,
+    minSpikesPerBurst,
+    setMinSpikesPerBurst,
+  } = useNeuralSettings();
   const DEFAULT_MAX_INTERVAL = 50;
   const DEFAULT_MIN_SPIKES = 3;
+
+  const interval = useDraftSlider(
+    maxInterSpikeInterval,
+    setMaxInterSpikeInterval
+  );
+  const minSpikes = useDraftSlider(minSpikesPerBurst, setMinSpikesPerBurst);
 
   const handleReset = () => {
     setMaxInterSpikeInterval(DEFAULT_MAX_INTERVAL);
@@ -39,92 +37,46 @@ const BurstDetectionControls = ({
   };
 
   return (
-    <Paper
-      elevation={3}
-      sx={{
-        padding: controlsTheme.spacing.sm,
-        backgroundColor: showBursts
-          ? controlsTheme.colors.paper
-          : "rgb(180, 180, 180)",
-        borderRadius: "0.5rem",
-        border: `0.125rem solid ${controlsTheme.colors.primary}`,
-        minWidth: "15rem",
-        maxWidth: "20rem",
-        flex: 1,
-        opacity: showBursts ? 1 : 0.6,
-        transition: "all 0.2s ease-in-out",
-      }}
+    <Panel
+      variant="dark"
+      className={`neural-control-panel ${
+        showBursts ? "" : "neural-control-panel--disabled"
+      }`}
     >
-      {/* Header with title and reset button */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: controlsTheme.spacing.sm,
-        }}
-      >
-        <Typography
-          variant="subtitle2"
-          sx={{
-            color: controlsTheme.colors.text,
-            fontWeight: 600,
-            fontSize: `${controlsTheme.typography.fontSize.md}px`,
-          }}
-        >
+      <div className="neural-control-panel__header">
+        <h4 className="neural-control-panel__title">
           Burst Detection Parameters
-        </Typography>
+        </h4>
         <Tooltip title="Reset to defaults" placement="top">
           <IconButton
+            variant="subtle"
+            size="sm"
             onClick={handleReset}
             disabled={!showBursts}
-            size="small"
-            className="reset-burst-button"
-            sx={{
-              color: controlsTheme.colors.primary,
-              "&:hover": {
-                backgroundColor: "rgba(33, 150, 243, 0.1)",
-              },
-            }}
+            className="neural-control-panel__reset"
+            aria-label="reset burst parameters"
           >
             <RestartAltIcon fontSize="small" />
           </IconButton>
         </Tooltip>
-      </Box>
+      </div>
 
-      {/* Max Inter-Spike Interval Slider */}
-      <Box sx={{ marginBottom: controlsTheme.spacing.md }}>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: controlsTheme.spacing.xs,
-          }}
-        >
-          <Typography
-            variant="body2"
-            sx={{
-              color: controlsTheme.colors.textSecondary,
-              fontSize: `${controlsTheme.typography.fontSize.md}px`,
-            }}
-          >
+      <div className="neural-control-panel__field">
+        <div className="neural-control-panel__field-header">
+          <span className="neural-control-panel__field-label">
             Max Inter-Spike Interval
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{
-              color: controlsTheme.colors.primary,
-              fontWeight: 600,
-              fontSize: `${controlsTheme.typography.fontSize.md}px`,
-            }}
-          >
-            {maxInterSpikeInterval} ms
-          </Typography>
-        </Box>
+          </span>
+          <span className="neural-control-panel__field-value">
+            {interval.value} ms
+          </span>
+        </div>
         <Slider
-          value={maxInterSpikeInterval}
-          onChange={(e, value) => setMaxInterSpikeInterval(value)}
+          value={interval.value}
+          onChange={(e, v) => {
+            perf.count("slider.maxInterSpikeInterval");
+            interval.onChange(e, v);
+          }}
+          onChangeCommitted={interval.onChangeCommitted}
           disabled={!showBursts}
           min={0}
           max={250}
@@ -137,64 +89,25 @@ const BurstDetectionControls = ({
             { value: 200, label: "200ms" },
             { value: 250, label: "250ms" },
           ]}
-          sx={{
-            color: controlsTheme.colors.primary,
-            "& .MuiSlider-thumb": {
-              width: 16,
-              height: 16,
-            },
-            "& .MuiSlider-markLabel": {
-              fontSize: "0.6875rem",
-              color: controlsTheme.colors.textSecondary,
-            },
-          }}
         />
-        {/* <Typography
-          variant="caption"
-          sx={{
-            color: controlsTheme.colors.textSecondary,
-            fontSize: `${controlsTheme.typography.fontSize.xs}px`,
-            display: "block",
-            marginTop: controlsTheme.spacing.xs,
-          }}
-        >
-          Maximum time between spikes to be grouped in the same burst (ms)
-        </Typography> */}
-      </Box>
+      </div>
 
-      {/* Min Spikes Per Burst Slider */}
-      <Box>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: controlsTheme.spacing.xs,
-          }}
-        >
-          <Typography
-            variant="body2"
-            sx={{
-              color: controlsTheme.colors.textSecondary,
-              fontSize: `${controlsTheme.typography.fontSize.md}px`,
-            }}
-          >
+      <div className="neural-control-panel__field">
+        <div className="neural-control-panel__field-header">
+          <span className="neural-control-panel__field-label">
             Min Spikes Per Burst
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{
-              color: controlsTheme.colors.primary,
-              fontWeight: 600,
-              fontSize: `${controlsTheme.typography.fontSize.md}px`,
-            }}
-          >
-            {minSpikesPerBurst}
-          </Typography>
-        </Box>
+          </span>
+          <span className="neural-control-panel__field-value">
+            {minSpikes.value}
+          </span>
+        </div>
         <Slider
-          value={minSpikesPerBurst}
-          onChange={(e, value) => setMinSpikesPerBurst(value)}
+          value={minSpikes.value}
+          onChange={(e, v) => {
+            perf.count("slider.minSpikesPerBurst");
+            minSpikes.onChange(e, v);
+          }}
+          onChangeCommitted={minSpikes.onChangeCommitted}
           disabled={!showBursts}
           min={2}
           max={10}
@@ -206,31 +119,9 @@ const BurstDetectionControls = ({
             { value: 8, label: "8" },
             { value: 10, label: "10" },
           ]}
-          sx={{
-            color: controlsTheme.colors.primary,
-            "& .MuiSlider-thumb": {
-              width: 16,
-              height: 16,
-            },
-            "& .MuiSlider-markLabel": {
-              fontSize: "0.6875rem",
-              color: controlsTheme.colors.textSecondary,
-            },
-          }}
         />
-        {/* <Typography
-          variant="caption"
-          sx={{
-            color: controlsTheme.colors.textSecondary,
-            fontSize: `${controlsTheme.typography.fontSize.sm}px`,
-            display: "block",
-            marginTop: controlsTheme.spacing.xs,
-          }}
-        >
-          Minimum number of spikes required to form a burst
-        </Typography> */}
-      </Box>
-    </Paper>
+      </div>
+    </Panel>
   );
 };
 

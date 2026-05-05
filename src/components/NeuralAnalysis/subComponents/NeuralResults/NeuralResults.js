@@ -1,13 +1,42 @@
 import React from "react";
-import { Box, Typography, Paper, Grid, Divider } from "@mui/material";
+import { Grid, Divider } from "@mui/material";
+import { Panel } from "../../../ui";
+import {
+  useNeuralInteraction,
+  useNeuralResults,
+  useNeuralSelection,
+} from "../../NeuralProvider";
+import "./NeuralResults.css";
 
-const NeuralResults = ({
-  peakResults,
-  burstResults,
-  roiList,
-  selectedWell,
-}) => {
-  // Helper functions for metrics calculation
+// Explicit min/max over a `keyFn` projection of an array. Replaces the
+// `Math.min(...arr.map(keyFn))` pattern, which blows V8's argument-count
+// limit on large arrays — a real risk here when `peakResults` covers a
+// long recording with thousands of detected spikes.
+function minMaxOf(items, keyFn) {
+  let min = Infinity;
+  let max = -Infinity;
+  for (let i = 0; i < items.length; i++) {
+    const v = keyFn(items[i]);
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
+  return { min: items.length ? min : 0, max: items.length ? max : 0 };
+}
+
+function median(sortedAsc) {
+  const n = sortedAsc.length;
+  if (n === 0) return 0;
+  return n % 2 === 0
+    ? (sortedAsc[n / 2 - 1] + sortedAsc[n / 2]) / 2
+    : sortedAsc[Math.floor(n / 2)];
+}
+
+const NeuralResults = () => {
+  const { selectedWell } = useNeuralSelection();
+  const { roiList } = useNeuralInteraction();
+  const { pipelineResults } = useNeuralResults();
+  const peakResults = pipelineResults.spikeResults;
+  const burstResults = pipelineResults.burstResults;
   const calculateSpikeFrequency = (spikes, startTime, endTime) => {
     const spikesInRange = spikes.filter(
       (spike) => spike.time >= startTime && spike.time <= endTime
@@ -15,11 +44,10 @@ const NeuralResults = ({
     const duration = endTime - startTime;
     const total = spikesInRange.length;
     const spikesPerSecond = duration > 0 ? total / (duration / 1000) : 0;
-
     return {
       total,
       average: spikesPerSecond,
-      median: spikesPerSecond, // For single value, median = average
+      median: spikesPerSecond,
       spikesPerSecond,
     };
   };
@@ -31,24 +59,11 @@ const NeuralResults = ({
     if (spikesInRange.length === 0) {
       return { average: 0, median: 0, min: 0, max: 0 };
     }
-
     const amplitudes = spikesInRange.map((spike) => spike.amplitude);
-    const average =
-      amplitudes.reduce((sum, amp) => sum + amp, 0) / amplitudes.length;
-    const sortedAmplitudes = [...amplitudes].sort((a, b) => a - b);
-    const median =
-      sortedAmplitudes.length % 2 === 0
-        ? (sortedAmplitudes[sortedAmplitudes.length / 2 - 1] +
-            sortedAmplitudes[sortedAmplitudes.length / 2]) /
-          2
-        : sortedAmplitudes[Math.floor(sortedAmplitudes.length / 2)];
-
-    return {
-      average,
-      median,
-      min: Math.min(...amplitudes),
-      max: Math.max(...amplitudes),
-    };
+    const average = amplitudes.reduce((s, v) => s + v, 0) / amplitudes.length;
+    const sorted = [...amplitudes].sort((a, b) => a - b);
+    const { min, max } = minMaxOf(amplitudes, (v) => v);
+    return { average, median: median(sorted), min, max };
   };
 
   const calculateSpikeWidth = (spikes, startTime, endTime) => {
@@ -61,23 +76,11 @@ const NeuralResults = ({
     if (spikesInRange.length === 0) {
       return { average: 0, median: 0, min: 0, max: 0 };
     }
-
     const widths = spikesInRange.map((spike) => spike.width);
-    const average = widths.reduce((sum, w) => sum + w, 0) / widths.length;
-    const sortedWidths = [...widths].sort((a, b) => a - b);
-    const median =
-      sortedWidths.length % 2 === 0
-        ? (sortedWidths[sortedWidths.length / 2 - 1] +
-            sortedWidths[sortedWidths.length / 2]) /
-          2
-        : sortedWidths[Math.floor(sortedWidths.length / 2)];
-
-    return {
-      average,
-      median,
-      min: Math.min(...widths),
-      max: Math.max(...widths),
-    };
+    const average = widths.reduce((s, v) => s + v, 0) / widths.length;
+    const sorted = [...widths].sort((a, b) => a - b);
+    const { min, max } = minMaxOf(widths, (v) => v);
+    return { average, median: median(sorted), min, max };
   };
 
   const calculateSpikeAUC = (spikes, startTime, endTime) => {
@@ -90,41 +93,23 @@ const NeuralResults = ({
     if (spikesInRange.length === 0) {
       return { average: 0, median: 0, min: 0, max: 0 };
     }
-
     const aucs = spikesInRange.map((spike) => spike.auc);
-    const average = aucs.reduce((sum, auc) => sum + auc, 0) / aucs.length;
-    const sortedAUCs = [...aucs].sort((a, b) => a - b);
-    const median =
-      sortedAUCs.length % 2 === 0
-        ? (sortedAUCs[sortedAUCs.length / 2 - 1] +
-            sortedAUCs[sortedAUCs.length / 2]) /
-          2
-        : sortedAUCs[Math.floor(sortedAUCs.length / 2)];
-
-    return {
-      average,
-      median,
-      min: Math.min(...aucs),
-      max: Math.max(...aucs),
-    };
+    const average = aucs.reduce((s, v) => s + v, 0) / aucs.length;
+    const sorted = [...aucs].sort((a, b) => a - b);
+    const { min, max } = minMaxOf(aucs, (v) => v);
+    return { average, median: median(sorted), min, max };
   };
 
   const calculateMaxSpikeSignal = (spikes, startTime, endTime) => {
     const spikesInRange = spikes.filter(
       (spike) => spike.time >= startTime && spike.time <= endTime
     );
-    if (spikesInRange.length === 0) {
-      return 0;
-    }
-
-    const maxSignal = Math.max(
-      ...spikesInRange.map((spike) => spike.peakCoords.y)
-    );
-    return maxSignal;
+    if (spikesInRange.length === 0) return 0;
+    const { max } = minMaxOf(spikesInRange, (s) => s.peakCoords.y);
+    return max;
   };
 
   const calculateBurstMetrics = (bursts, startTime, endTime) => {
-    // Safety check: ensure bursts is an array
     if (!Array.isArray(bursts) || bursts.length === 0) {
       return {
         total: 0,
@@ -132,11 +117,9 @@ const NeuralResults = ({
         interBurstInterval: { average: 0, median: 0 },
       };
     }
-
     const burstsInRange = bursts.filter(
       (burst) => burst.startTime >= startTime && burst.endTime <= endTime
     );
-
     if (burstsInRange.length === 0) {
       return {
         total: 0,
@@ -144,41 +127,22 @@ const NeuralResults = ({
         interBurstInterval: { average: 0, median: 0 },
       };
     }
-
-    // Calculate durations
     const durations = burstsInRange.map((burst) => burst.duration);
-    const avgDuration =
-      durations.reduce((sum, d) => sum + d, 0) / durations.length;
-    const sortedDurations = [...durations].sort((a, b) => a - b);
-    const medianDuration =
-      sortedDurations.length % 2 === 0
-        ? (sortedDurations[sortedDurations.length / 2 - 1] +
-            sortedDurations[sortedDurations.length / 2]) /
-          2
-        : sortedDurations[Math.floor(sortedDurations.length / 2)];
+    const avgDuration = durations.reduce((s, v) => s + v, 0) / durations.length;
+    const medianDuration = median([...durations].sort((a, b) => a - b));
 
-    // Calculate inter-burst intervals
     const interBurstIntervals = [];
     for (let i = 1; i < burstsInRange.length; i++) {
       const interval =
         burstsInRange[i].startTime - burstsInRange[i - 1].endTime;
       if (interval > 0) interBurstIntervals.push(interval);
     }
-
-    let avgIBI = 0;
-    let medianIBI = 0;
-    if (interBurstIntervals.length > 0) {
-      avgIBI =
-        interBurstIntervals.reduce((sum, ibi) => sum + ibi, 0) /
-        interBurstIntervals.length;
-      const sortedIBIs = [...interBurstIntervals].sort((a, b) => a - b);
-      medianIBI =
-        sortedIBIs.length % 2 === 0
-          ? (sortedIBIs[sortedIBIs.length / 2 - 1] +
-              sortedIBIs[sortedIBIs.length / 2]) /
-            2
-          : sortedIBIs[Math.floor(sortedIBIs.length / 2)];
-    }
+    const avgIBI =
+      interBurstIntervals.length > 0
+        ? interBurstIntervals.reduce((s, v) => s + v, 0) /
+          interBurstIntervals.length
+        : 0;
+    const medianIBI = median([...interBurstIntervals].sort((a, b) => a - b));
 
     return {
       total: burstsInRange.length,
@@ -190,7 +154,6 @@ const NeuralResults = ({
   // Calculate metrics for each ROI
   const roiMetrics = React.useMemo(() => {
     if (!Array.isArray(roiList) || roiList.length === 0) return {};
-
     const metrics = {};
     roiList.forEach((roi, index) => {
       if (roi && roi.xMin !== undefined && roi.xMax !== undefined) {
@@ -200,35 +163,12 @@ const NeuralResults = ({
         const burstsInROI = burstResults.filter(
           (burst) => burst.startTime >= roi.xMin && burst.endTime <= roi.xMax
         );
-
-        // Check if ROI has any data
-        const hasData = spikesInROI.length > 0 || burstsInROI.length > 0;
-        if (!hasData) {
-          console.warn(
-            `ROI ${
-              index + 1
-            } contains no detected spikes or bursts. Try defining the ROI in a different time range.`
-          );
-        }
-
         metrics[`ROI ${index + 1}`] = {
-          spikeFrequency: calculateSpikeFrequency(
-            spikesInROI,
-            roi.xMin,
-            roi.xMax
-          ),
-          spikeAmplitude: calculateSpikeAmplitude(
-            spikesInROI,
-            roi.xMin,
-            roi.xMax
-          ),
+          spikeFrequency: calculateSpikeFrequency(spikesInROI, roi.xMin, roi.xMax),
+          spikeAmplitude: calculateSpikeAmplitude(spikesInROI, roi.xMin, roi.xMax),
           spikeWidth: calculateSpikeWidth(spikesInROI, roi.xMin, roi.xMax),
           spikeAUC: calculateSpikeAUC(spikesInROI, roi.xMin, roi.xMax),
-          maxSpikeSignal: calculateMaxSpikeSignal(
-            spikesInROI,
-            roi.xMin,
-            roi.xMax
-          ),
+          maxSpikeSignal: calculateMaxSpikeSignal(spikesInROI, roi.xMin, roi.xMax),
           burstMetrics: calculateBurstMetrics(burstsInROI, roi.xMin, roi.xMax),
         };
       }
@@ -249,413 +189,198 @@ const NeuralResults = ({
   };
 
   const MetricCard = ({ title, children }) => (
-    <Paper
-      elevation={2}
-      sx={{ p: 2, mb: 2, backgroundColor: "#333", color: "white" }}
-    >
-      <Typography variant="h6" gutterBottom sx={{ color: "#00bcd4" }}>
-        {title}
-      </Typography>
+    <Panel variant="dark" className="neural-result-card">
+      <h6 className="neural-result-card__title">{title}</h6>
       {children}
-    </Paper>
+    </Panel>
   );
 
   const MetricItem = ({ label, value, unit = "" }) => (
-    <Box sx={{ mb: 1 }}>
-      <Typography variant="body2" sx={{ color: "#ccc" }}>
-        {label}:{" "}
-        <span style={{ color: "#fff", fontWeight: "bold" }}>
-          {value}
-          {unit}
-        </span>
-      </Typography>
-    </Box>
+    <div className="neural-result-item">
+      {label}:{" "}
+      <span className="neural-result-item__value">
+        {value}
+        {unit}
+      </span>
+    </div>
   );
 
-  // Calculate overall metrics for all spikes (regardless of ROIs)
+  // Overall metrics — uses minMaxOf to find time bounds without
+  // spreading peakResults.map(...) into Math.min/max args (would blow
+  // the call stack on long recordings).
   const overallMetrics = React.useMemo(() => {
-    if (!Array.isArray(peakResults) || peakResults.length === 0) {
-      return null;
-    }
-
-    // Get the time range from the first and last spike
-    const times = peakResults.map((spike) => spike.time);
-    const startTime = Math.min(...times);
-    const endTime = Math.max(...times);
-
-    const burstMetrics = calculateBurstMetrics(
-      burstResults,
-      startTime,
-      endTime
+    if (!Array.isArray(peakResults) || peakResults.length === 0) return null;
+    const { min: startTime, max: endTime } = minMaxOf(
+      peakResults,
+      (s) => s.time
     );
-
     return {
       spikeFrequency: calculateSpikeFrequency(peakResults, startTime, endTime),
       spikeAmplitude: calculateSpikeAmplitude(peakResults, startTime, endTime),
       spikeWidth: calculateSpikeWidth(peakResults, startTime, endTime),
       spikeAUC: calculateSpikeAUC(peakResults, startTime, endTime),
       maxSpikeSignal: calculateMaxSpikeSignal(peakResults, startTime, endTime),
-      burstMetrics: burstMetrics,
+      burstMetrics: calculateBurstMetrics(burstResults, startTime, endTime),
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [peakResults, burstResults]);
 
   return (
-    <Box sx={{ p: 2, maxHeight: "600px", overflowY: "auto" }}>
-      <Typography variant="h6" color="white" gutterBottom>
+    <div className="neural-results">
+      <h6 className="neural-results__well-title">
         Analysis Results - {selectedWell?.key || "Unknown Well"}
-      </Typography>
+      </h6>
 
       {/* Overall Spike Detection Summary (All Data) */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h5" color="#ffeb3b" gutterBottom>
+      <section className="neural-results__section">
+        <h5 className="neural-results__section-title neural-results__section-title--overall">
           Overall Spike Detection (All Data)
-        </Typography>
+        </h5>
 
         {!overallMetrics ? (
-          <Paper
-            elevation={2}
-            sx={{ p: 2, backgroundColor: "#333", color: "white" }}
-          >
-            <Typography>No spikes detected</Typography>
-          </Paper>
+          <Panel variant="dark" className="neural-results__placeholder">
+            No spikes detected
+          </Panel>
         ) : (
           <Grid container spacing={2}>
-            {/* Spike Frequency */}
             <Grid item xs={12} md={6}>
               <MetricCard title="Spike Frequency">
-                <MetricItem
-                  label="Total Spikes"
-                  value={overallMetrics.spikeFrequency.total}
-                />
-                <MetricItem
-                  label="Average Frequency"
-                  value={formatNumber(overallMetrics.spikeFrequency.average)}
-                  unit=" Hz"
-                />
-                <MetricItem
-                  label="Spikes Per Second"
-                  value={formatNumber(
-                    overallMetrics.spikeFrequency.spikesPerSecond
-                  )}
-                  unit=" Hz"
-                />
+                <MetricItem label="Total Spikes" value={overallMetrics.spikeFrequency.total} />
+                <MetricItem label="Average Frequency" value={formatNumber(overallMetrics.spikeFrequency.average)} unit=" Hz" />
+                <MetricItem label="Spikes Per Second" value={formatNumber(overallMetrics.spikeFrequency.spikesPerSecond)} unit=" Hz" />
               </MetricCard>
             </Grid>
-
-            {/* Spike Amplitude */}
             <Grid item xs={12} md={6}>
               <MetricCard title="Spike Amplitude">
-                <MetricItem
-                  label="Average Amplitude"
-                  value={formatNumber(overallMetrics.spikeAmplitude.average)}
-                />
-                <MetricItem
-                  label="Median Amplitude"
-                  value={formatNumber(overallMetrics.spikeAmplitude.median)}
-                />
-                <MetricItem
-                  label="Min Amplitude"
-                  value={formatNumber(overallMetrics.spikeAmplitude.min)}
-                />
-                <MetricItem
-                  label="Max Amplitude"
-                  value={formatNumber(overallMetrics.spikeAmplitude.max)}
-                />
+                <MetricItem label="Average Amplitude" value={formatNumber(overallMetrics.spikeAmplitude.average)} />
+                <MetricItem label="Median Amplitude" value={formatNumber(overallMetrics.spikeAmplitude.median)} />
+                <MetricItem label="Min Amplitude" value={formatNumber(overallMetrics.spikeAmplitude.min)} />
+                <MetricItem label="Max Amplitude" value={formatNumber(overallMetrics.spikeAmplitude.max)} />
               </MetricCard>
             </Grid>
-
-            {/* Spike Width */}
             <Grid item xs={12} md={6}>
               <MetricCard title="Spike Width">
-                <MetricItem
-                  label="Average Width"
-                  value={formatNumber(overallMetrics.spikeWidth.average)}
-                  unit=" samples"
-                />
-                <MetricItem
-                  label="Median Width"
-                  value={formatNumber(overallMetrics.spikeWidth.median)}
-                  unit=" samples"
-                />
-                <MetricItem
-                  label="Min Width"
-                  value={formatNumber(overallMetrics.spikeWidth.min)}
-                  unit=" samples"
-                />
-                <MetricItem
-                  label="Max Width"
-                  value={formatNumber(overallMetrics.spikeWidth.max)}
-                  unit=" samples"
-                />
+                <MetricItem label="Average Width" value={formatNumber(overallMetrics.spikeWidth.average)} unit=" samples" />
+                <MetricItem label="Median Width" value={formatNumber(overallMetrics.spikeWidth.median)} unit=" samples" />
+                <MetricItem label="Min Width" value={formatNumber(overallMetrics.spikeWidth.min)} unit=" samples" />
+                <MetricItem label="Max Width" value={formatNumber(overallMetrics.spikeWidth.max)} unit=" samples" />
               </MetricCard>
             </Grid>
-
-            {/* Spike AUC */}
             <Grid item xs={12} md={6}>
               <MetricCard title="Spike AUC">
-                <MetricItem
-                  label="Average AUC"
-                  value={formatNumber(overallMetrics.spikeAUC.average)}
-                />
-                <MetricItem
-                  label="Median AUC"
-                  value={formatNumber(overallMetrics.spikeAUC.median)}
-                />
-                <MetricItem
-                  label="Min AUC"
-                  value={formatNumber(overallMetrics.spikeAUC.min)}
-                />
-                <MetricItem
-                  label="Max AUC"
-                  value={formatNumber(overallMetrics.spikeAUC.max)}
-                />
+                <MetricItem label="Average AUC" value={formatNumber(overallMetrics.spikeAUC.average)} />
+                <MetricItem label="Median AUC" value={formatNumber(overallMetrics.spikeAUC.median)} />
+                <MetricItem label="Min AUC" value={formatNumber(overallMetrics.spikeAUC.min)} />
+                <MetricItem label="Max AUC" value={formatNumber(overallMetrics.spikeAUC.max)} />
               </MetricCard>
             </Grid>
-
-            {/* Max Spike Signal */}
             <Grid item xs={12} md={6}>
               <MetricCard title="Max Spike Signal">
-                <MetricItem
-                  label="Max Spike Signal"
-                  value={formatNumber(overallMetrics.maxSpikeSignal)}
-                />
+                <MetricItem label="Max Spike Signal" value={formatNumber(overallMetrics.maxSpikeSignal)} />
               </MetricCard>
             </Grid>
 
-            {/* Burst Metrics (if any) */}
             {overallMetrics.burstMetrics.total > 0 && (
               <Grid item xs={12}>
                 <MetricCard title="Burst Metrics">
-                  <MetricItem
-                    label="Total Bursts"
-                    value={overallMetrics.burstMetrics.total}
-                  />
-                  <Divider sx={{ my: 2, backgroundColor: "#555" }} />
-                  <Typography
-                    variant="subtitle1"
-                    sx={{ color: "#00bcd4", mb: 1 }}
-                  >
-                    Burst Duration
-                  </Typography>
-                  <MetricItem
-                    label="Average Duration"
-                    value={formatNumber(
-                      overallMetrics.burstMetrics.duration.average
-                    )}
-                    unit=" ms"
-                  />
-                  <MetricItem
-                    label="Median Duration"
-                    value={formatNumber(
-                      overallMetrics.burstMetrics.duration.median
-                    )}
-                    unit=" ms"
-                  />
+                  <MetricItem label="Total Bursts" value={overallMetrics.burstMetrics.total} />
+                  <Divider className="neural-result-card__divider" />
+                  <h6 className="neural-result-card__subtitle">Burst Duration</h6>
+                  <MetricItem label="Average Duration" value={formatNumber(overallMetrics.burstMetrics.duration.average)} unit=" ms" />
+                  <MetricItem label="Median Duration" value={formatNumber(overallMetrics.burstMetrics.duration.median)} unit=" ms" />
 
-                  <Divider sx={{ my: 2, backgroundColor: "#555" }} />
-                  <Typography
-                    variant="subtitle1"
-                    sx={{ color: "#00bcd4", mb: 1 }}
-                  >
-                    Inter-Burst Interval
-                  </Typography>
-                  <MetricItem
-                    label="Average IBI"
-                    value={formatNumber(
-                      overallMetrics.burstMetrics.interBurstInterval.average
-                    )}
-                    unit=" ms"
-                  />
-                  <MetricItem
-                    label="Median IBI"
-                    value={formatNumber(
-                      overallMetrics.burstMetrics.interBurstInterval.median
-                    )}
-                    unit=" ms"
-                  />
+                  <Divider className="neural-result-card__divider" />
+                  <h6 className="neural-result-card__subtitle">Inter-Burst Interval</h6>
+                  <MetricItem label="Average IBI" value={formatNumber(overallMetrics.burstMetrics.interBurstInterval.average)} unit=" ms" />
+                  <MetricItem label="Median IBI" value={formatNumber(overallMetrics.burstMetrics.interBurstInterval.median)} unit=" ms" />
                 </MetricCard>
               </Grid>
             )}
           </Grid>
         )}
-      </Box>
+      </section>
 
       {/* ROI-Specific Metrics (if any ROIs defined) */}
       {Object.keys(roiMetrics).length > 0 && (
         <>
-          <Divider sx={{ my: 3, backgroundColor: "#555" }} />
-          <Typography variant="h5" color="#00bcd4" gutterBottom sx={{ mt: 3 }}>
-            ROI-Specific Analysis
-          </Typography>
+          <Divider className="neural-result-card__divider" />
+          <h5 className="neural-results__section-title">ROI-Specific Analysis</h5>
         </>
       )}
 
       {Object.entries(roiMetrics).map(([roiName, metrics]) => (
-        <Box key={roiName} sx={{ mb: 3 }}>
-          <Typography variant="h5" color="#00bcd4" gutterBottom>
-            {roiName}
-          </Typography>
+        <section key={roiName} className="neural-results__section">
+          <h5 className="neural-results__section-title">{roiName}</h5>
 
           <Grid container spacing={2}>
-            {/* Spike Frequency */}
             <Grid item xs={12} md={6}>
               <MetricCard title="Spike Frequency">
-                <MetricItem
-                  label="Total Spikes"
-                  value={metrics.spikeFrequency.total}
-                />
-                <MetricItem
-                  label="Average Frequency"
-                  value={formatNumber(metrics.spikeFrequency.average)}
-                  unit=" Hz"
-                />
-                <MetricItem
-                  label="Median Frequency"
-                  value={formatNumber(metrics.spikeFrequency.median)}
-                  unit=" Hz"
-                />
-                <Typography variant="body2" sx={{ color: "#ccc", mt: 1 }}>
+                <MetricItem label="Total Spikes" value={metrics.spikeFrequency.total} />
+                <MetricItem label="Average Frequency" value={formatNumber(metrics.spikeFrequency.average)} unit=" Hz" />
+                <MetricItem label="Median Frequency" value={formatNumber(metrics.spikeFrequency.median)} unit=" Hz" />
+                <div className="neural-result-card__caption">
                   Histogram: {formatHistogram(metrics.spikeFrequency.histogram)}
-                </Typography>
+                </div>
               </MetricCard>
             </Grid>
-
-            {/* Spike Amplitude */}
             <Grid item xs={12} md={6}>
               <MetricCard title="Spike Amplitude">
-                <MetricItem
-                  label="Average Amplitude"
-                  value={formatNumber(metrics.spikeAmplitude.average)}
-                />
-                <MetricItem
-                  label="Median Amplitude"
-                  value={formatNumber(metrics.spikeAmplitude.median)}
-                />
-                <MetricItem
-                  label="Min Amplitude"
-                  value={formatNumber(metrics.spikeAmplitude.min)}
-                />
-                <MetricItem
-                  label="Max Amplitude"
-                  value={formatNumber(metrics.spikeAmplitude.max)}
-                />
-                <Typography variant="body2" sx={{ color: "#ccc", mt: 1 }}>
+                <MetricItem label="Average Amplitude" value={formatNumber(metrics.spikeAmplitude.average)} />
+                <MetricItem label="Median Amplitude" value={formatNumber(metrics.spikeAmplitude.median)} />
+                <MetricItem label="Min Amplitude" value={formatNumber(metrics.spikeAmplitude.min)} />
+                <MetricItem label="Max Amplitude" value={formatNumber(metrics.spikeAmplitude.max)} />
+                <div className="neural-result-card__caption">
                   Histogram: {formatHistogram(metrics.spikeAmplitude.histogram)}
-                </Typography>
+                </div>
               </MetricCard>
             </Grid>
-
-            {/* Spike Width */}
             <Grid item xs={12} md={6}>
               <MetricCard title="Spike Width">
-                <MetricItem
-                  label="Average Width"
-                  value={formatNumber(metrics.spikeWidth.average)}
-                  unit=" samples"
-                />
-                <MetricItem
-                  label="Median Width"
-                  value={formatNumber(metrics.spikeWidth.median)}
-                  unit=" samples"
-                />
-                <Typography variant="body2" sx={{ color: "#ccc", mt: 1 }}>
+                <MetricItem label="Average Width" value={formatNumber(metrics.spikeWidth.average)} unit=" samples" />
+                <MetricItem label="Median Width" value={formatNumber(metrics.spikeWidth.median)} unit=" samples" />
+                <div className="neural-result-card__caption">
                   Histogram: {formatHistogram(metrics.spikeWidth.histogram)}
-                </Typography>
+                </div>
               </MetricCard>
             </Grid>
-
-            {/* Spike AUC */}
             <Grid item xs={12} md={6}>
               <MetricCard title="Spike AUC">
-                <MetricItem
-                  label="Average AUC"
-                  value={formatNumber(metrics.spikeAUC.average)}
-                />
-                <MetricItem
-                  label="Median AUC"
-                  value={formatNumber(metrics.spikeAUC.median)}
-                />
-                <Typography variant="body2" sx={{ color: "#ccc", mt: 1 }}>
+                <MetricItem label="Average AUC" value={formatNumber(metrics.spikeAUC.average)} />
+                <MetricItem label="Median AUC" value={formatNumber(metrics.spikeAUC.median)} />
+                <div className="neural-result-card__caption">
                   Histogram: {formatHistogram(metrics.spikeAUC.histogram)}
-                </Typography>
+                </div>
               </MetricCard>
             </Grid>
-
-            {/* Max Spike Signal */}
             <Grid item xs={12} md={6}>
               <MetricCard title="Max Spike Signal">
-                <MetricItem
-                  label="Max Spike Signal"
-                  value={formatNumber(metrics.maxSpikeSignal)}
-                />
+                <MetricItem label="Max Spike Signal" value={formatNumber(metrics.maxSpikeSignal)} />
               </MetricCard>
             </Grid>
-
-            {/* Burst Metrics */}
             <Grid item xs={12}>
               <MetricCard title="Burst Metrics">
-                <MetricItem
-                  label="Total Bursts"
-                  value={metrics.burstMetrics.total}
-                />
-                <Divider sx={{ my: 2, backgroundColor: "#555" }} />
-                <Typography
-                  variant="subtitle1"
-                  sx={{ color: "#00bcd4", mb: 1 }}
-                >
-                  Burst Duration
-                </Typography>
-                <MetricItem
-                  label="Average Duration"
-                  value={formatNumber(metrics.burstMetrics.duration.average)}
-                  unit=" ms"
-                />
-                <MetricItem
-                  label="Median Duration"
-                  value={formatNumber(metrics.burstMetrics.duration.median)}
-                  unit=" ms"
-                />
-                <Typography
-                  variant="body2"
-                  sx={{ color: "#ccc", mt: 1, mb: 2 }}
-                >
-                  Duration Histogram:{" "}
-                  {formatHistogram(metrics.burstMetrics.duration.histogram)}
-                </Typography>
+                <MetricItem label="Total Bursts" value={metrics.burstMetrics.total} />
+                <Divider className="neural-result-card__divider" />
+                <h6 className="neural-result-card__subtitle">Burst Duration</h6>
+                <MetricItem label="Average Duration" value={formatNumber(metrics.burstMetrics.duration.average)} unit=" ms" />
+                <MetricItem label="Median Duration" value={formatNumber(metrics.burstMetrics.duration.median)} unit=" ms" />
+                <div className="neural-result-card__caption">
+                  Duration Histogram: {formatHistogram(metrics.burstMetrics.duration.histogram)}
+                </div>
 
-                <Divider sx={{ my: 2, backgroundColor: "#555" }} />
-                <Typography
-                  variant="subtitle1"
-                  sx={{ color: "#00bcd4", mb: 1 }}
-                >
-                  Inter-Burst Interval
-                </Typography>
-                <MetricItem
-                  label="Average IBI"
-                  value={formatNumber(
-                    metrics.burstMetrics.interBurstInterval.average
-                  )}
-                  unit=" ms"
-                />
-                <MetricItem
-                  label="Median IBI"
-                  value={formatNumber(
-                    metrics.burstMetrics.interBurstInterval.median
-                  )}
-                  unit=" ms"
-                />
-                <Typography variant="body2" sx={{ color: "#ccc", mt: 1 }}>
-                  IBI Histogram:{" "}
-                  {formatHistogram(
-                    metrics.burstMetrics.interBurstInterval.histogram
-                  )}
-                </Typography>
+                <Divider className="neural-result-card__divider" />
+                <h6 className="neural-result-card__subtitle">Inter-Burst Interval</h6>
+                <MetricItem label="Average IBI" value={formatNumber(metrics.burstMetrics.interBurstInterval.average)} unit=" ms" />
+                <MetricItem label="Median IBI" value={formatNumber(metrics.burstMetrics.interBurstInterval.median)} unit=" ms" />
+                <div className="neural-result-card__caption">
+                  IBI Histogram: {formatHistogram(metrics.burstMetrics.interBurstInterval.histogram)}
+                </div>
               </MetricCard>
             </Grid>
           </Grid>
-        </Box>
+        </section>
       ))}
-    </Box>
+    </div>
   );
 };
 

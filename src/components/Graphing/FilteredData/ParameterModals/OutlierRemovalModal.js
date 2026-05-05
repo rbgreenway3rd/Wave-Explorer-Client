@@ -1,23 +1,7 @@
-import React, { useState, useRef, useEffect } from "react";
-import {
-  useSelectionContainer,
-  Box,
-  boxesIntersect,
-} from "@air/react-drag-to-select";
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  List,
-  ListItem,
-  ListItemText,
-  IconButton,
-} from "@mui/material";
+import React from "react";
+import { TextField } from "@mui/material";
+import { Button, Modal, Heading } from "../../../ui";
 
-import { Delete } from "@mui/icons-material";
 export const OutlierRemovalFilterModal = ({
   open,
   onClose,
@@ -28,9 +12,10 @@ export const OutlierRemovalFilterModal = ({
   onSave,
 }) => {
   return (
-    <Dialog open={open} onClose={onClose}>
-      <DialogTitle>Edit "half window" Parameter</DialogTitle>
-      <DialogContent>
+    <Modal open={open} onClose={onClose} maxWidth="xs" fullWidth>
+      <Modal.Header>Edit Outlier Removal Parameters</Modal.Header>
+      <Modal.Body>
+        <Heading level={4}>Half Window</Heading>
         <TextField
           autoFocus
           margin="dense"
@@ -39,26 +24,29 @@ export const OutlierRemovalFilterModal = ({
           fullWidth
           value={halfWindow}
           onChange={(e) => setHalfWindow(Number(e.target.value))}
-          inputProps={{ min: 1, max: 10 }} // Enforce allowed range
+          inputProps={{ min: 1, max: 10 }}
         />
-      </DialogContent>
-      <DialogTitle>Edit "threshold" Parameter</DialogTitle>
-      <DialogContent>
+        <Heading level={4} style={{ marginTop: "var(--space-3)" }}>
+          Threshold
+        </Heading>
         <TextField
-          autoFocus
           margin="dense"
           label="Threshold"
           type="number"
           fullWidth
           value={threshold}
           onChange={(e) => setThreshold(Number(e.target.value))}
-          inputProps={{ min: 1, max: 10 }} // Enforce allowed range
+          inputProps={{ min: 1, max: 10 }}
         />
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={onSave}>Confirm</Button>
-      </DialogActions>
-    </Dialog>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="ghost" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button variant="primary" onClick={onSave}>
+          Confirm
+        </Button>
+      </Modal.Footer>
+    </Modal>
   );
 };

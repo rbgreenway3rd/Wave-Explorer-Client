@@ -20,46 +20,13 @@ export const LargeGraph = forwardRef(
     const { wellArrays, overlayRawAndFiltered } = useContext(DataContext);
 
     const componentRef = useRef(null);
-
     const chartRef = useRef(null);
 
-    const [largeCanvasWidth, setLargeCanvasWidth] = useState(
-      window.innerWidth / 2.3
-      // window.innerWidth / 2.5
-    );
-    const [largeCanvasHeight, setLargeCanvasHeight] = useState(
-      window.innerHeight / 2.3
-      // window.innerHeight / 2.5
-    );
-    const [smallCanvasWidth, setSmallCanvasWidth] = useState(
-      window.innerWidth / 64.4
-      // window.innerWidth / 70
-    );
-    const [smallCanvasHeight, setSmallCanvasHeight] = useState(
-      window.innerHeight / 46
-      // window.innerHeight / 50
-    );
-
-    const handleResize = () => {
-      // setLargeCanvasWidth(window.innerWidth / 2.5);
-      // setLargeCanvasHeight(window.innerHeight / 2.5);
-      // setSmallCanvasWidth(window.innerWidth / 70);
-      // setSmallCanvasHeight(window.innerHeight / 50);
-      setLargeCanvasWidth(window.innerWidth / 2.3);
-      setLargeCanvasHeight(window.innerHeight / 2.3);
-      setSmallCanvasWidth(window.innerWidth / 64.4);
-      setSmallCanvasHeight(window.innerHeight / 46);
-    };
-
-    // Effect to listen to window resize events
-    useEffect(() => {
-      window.addEventListener("resize", handleResize);
-
-      // Cleanup event listener on component unmount
-      return () => {
-        window.removeEventListener("resize", handleResize);
-      };
-    }, []);
+    // Chart.js Line is sized by its parent when `responsive: true` +
+    // `maintainAspectRatio: false`. The wrapper below fills the chart
+    // panel; we don't pass explicit width/height props anymore (those
+    // were `window.innerWidth / 2.3` heuristics that mismatched the
+    // real container with the new symmetric grid).
 
     // Expose resetZoom function to parent via ref
     useImperativeHandle(ref, () => ({
@@ -100,20 +67,15 @@ export const LargeGraph = forwardRef(
     };
 
     return (
-      // <div ref={componentRef}>
-      <Line
-        key={JSON.stringify(rawGraphData)}
-        className="large-graph-canvas"
-        // data={rawGraphData}
-        data={combinedGraphData}
-        options={largeGraphConfig}
-        ref={chartRef}
-        width={largeCanvasWidth}
-        height={largeCanvasHeight}
-
-        // style={{ border: "solid 0.5em black" }}
-      />
-      // </div>
+      <div className="large-graph-wrapper" ref={componentRef}>
+        <Line
+          key={JSON.stringify(rawGraphData)}
+          className="large-graph-canvas"
+          data={combinedGraphData}
+          options={largeGraphConfig}
+          ref={chartRef}
+        />
+      </div>
     );
   }
 );

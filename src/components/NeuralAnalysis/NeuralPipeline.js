@@ -9,6 +9,7 @@ import {
   removeOutliers,
   readdOutliersAsSpikes,
 } from "./utilities/outlierRemoval";
+import { perf } from "./utilities/perfLogger";
 
 // --- Parameter Suggestion ---
 export function suggestProminence(signal, factor = 3) {
@@ -104,11 +105,29 @@ export function runNeuralAnalysisPipeline({
   params = {},
   analysis = {},
   noiseSuppressionActive = false,
+  cache = null,
 }) {
+  // memo(stage, keyParts, fn) — runs fn() and caches under (stage,key) when
+  // a cache is supplied; just runs fn() otherwise. Lets the same pipeline
+  // body work both for cached use (the runner's path) and for any caller
+  // that wants a one-shot uncached run.
+  const memo = cache
+    ? (stage, keyParts, fn) => cache.memo(stage, keyParts, fn)
+    : (_stage, _keyParts, fn) => fn();
+  const id = cache ? cache.idOf : () => "_";
+
+  perf.group("pipeline");
   // 1. Noise suppression (control subtraction)
-  let processed = suppressNoise(rawSignal, controlSignal, {
-    subtractControl: params.subtractControl,
-  });
+  let processed = memo(
+    "suppressNoise",
+    [id(rawSignal), id(controlSignal), params.subtractControl ? "1" : "0"],
+    () =>
+      perf.time("suppressNoise", () =>
+        suppressNoise(rawSignal, controlSignal, {
+          subtractControl: params.subtractControl,
+        })
+      )
+  );
 
   // 2. Apply trend flattening FIRST (before outlier removal)
   // This ensures outliers are detected on the flattened signal
@@ -116,18 +135,28 @@ export function runNeuralAnalysisPipeline({
 
   if (noiseSuppressionActive) {
     if (params.trendFlatteningEnabled) {
-      processed = trendFlattening(processed, {
-        windowSize: 200,
-        numMinimums: 50,
-      });
+      processed = memo(
+        "trendFlattening",
+        [id(processed)], // params (windowSize=200, numMinimums=50) are constants
+        () =>
+          perf.time("trendFlattening", () =>
+            trendFlattening(processed, {
+              windowSize: 200,
+              numMinimums: 50,
+            })
+          )
+      );
       processedForDetection = processed;
     }
 
     if (params.baselineCorrection) {
-      processed = baselineCorrected(
-        processed,
-        params.smoothingWindow || 200,
-        50
+      processed = memo(
+        "baselineCorrected",
+        [id(processed), params.smoothingWindow || 200],
+        () =>
+          perf.time("baselineCorrected", () =>
+            baselineCorrected(processed, params.smoothingWindow || 200, 50)
+          )
       );
       processedForDetection = processed;
     }
@@ -137,11 +166,22 @@ export function runNeuralAnalysisPipeline({
   let outlierSpikes = [];
 
   if (noiseSuppressionActive && params.handleOutliers) {
-    const outlierResult = removeOutliers(processedForDetection, {
-      percentile: params.outlierPercentile || 95,
-      multiplier: params.outlierMultiplier || 2.0,
-      slopeThreshold: 0.1,
-    });
+    const outlierResult = memo(
+      "removeOutliers",
+      [
+        id(processedForDetection),
+        params.outlierPercentile || 95,
+        params.outlierMultiplier || 2.0,
+      ],
+      () =>
+        perf.time("removeOutliers", () =>
+          removeOutliers(processedForDetection, {
+            percentile: params.outlierPercentile || 95,
+            multiplier: params.outlierMultiplier || 2.0,
+            slopeThreshold: 0.1,
+          })
+        )
+    );
     processedForDetection = outlierResult.cleanedSignal;
     outlierSpikes = outlierResult.outlierSpikes;
 
@@ -152,42 +192,82 @@ export function runNeuralAnalysisPipeline({
   // 4. Spike detection (on cleaned signal without outliers)
   let spikeResults = [];
   if (analysis.runSpikeDetection) {
-    spikeResults = detectSpikes(processedForDetection, {
-      prominence: params.spikeProminence,
-      window: params.spikeWindow,
-      minWidth: params.spikeMinWidth,
-      minDistance: params.spikeMinDistance,
-      minProminenceRatio: params.spikeMinProminenceRatio,
-      stdMultiplier: params.stdMultiplier,
-    });
+    spikeResults = memo(
+      "detectSpikes",
+      [
+        id(processedForDetection),
+        params.spikeProminence,
+        params.spikeWindow,
+        params.spikeMinWidth,
+        params.spikeMinDistance,
+        params.spikeMinProminenceRatio,
+        params.stdMultiplier,
+      ],
+      () =>
+        perf.time("detectSpikes", () =>
+          detectSpikes(processedForDetection, {
+            prominence: params.spikeProminence,
+            window: params.spikeWindow,
+            minWidth: params.spikeMinWidth,
+            minDistance: params.spikeMinDistance,
+            minProminenceRatio: params.spikeMinProminenceRatio,
+            stdMultiplier: params.stdMultiplier,
+          })
+        )
+    );
 
     // 5. Re-add outliers as spikes (if they were removed)
     if (params.handleOutliers && outlierSpikes.length > 0) {
-      spikeResults = readdOutliersAsSpikes(spikeResults, outlierSpikes);
+      spikeResults = memo(
+        "readdOutliers",
+        [id(spikeResults), id(outlierSpikes)],
+        () =>
+          perf.time("readdOutliers", () =>
+            readdOutliersAsSpikes(spikeResults, outlierSpikes)
+          )
+      );
     }
   }
 
   // 6. Burst detection
   let burstResults = [];
   if (analysis.runBurstDetection && spikeResults.length > 0) {
-    burstResults = detectBursts(spikeResults, {
-      maxInterSpikeInterval: params.maxInterSpikeInterval,
-      minSpikesPerBurst: params.minSpikesPerBurst,
-    });
+    burstResults = memo(
+      "detectBursts",
+      [
+        id(spikeResults),
+        params.maxInterSpikeInterval,
+        params.minSpikesPerBurst,
+      ],
+      () =>
+        perf.time("detectBursts", () =>
+          detectBursts(spikeResults, {
+            maxInterSpikeInterval: params.maxInterSpikeInterval,
+            minSpikesPerBurst: params.minSpikesPerBurst,
+          })
+        )
+    );
   }
 
   // 7. Metrics
-  const metrics = {
-    spikeFrequency: calculateSpikeFrequency(
-      spikeResults,
-      processed[0]?.x || 0,
-      processed[processed.length - 1]?.x || 1
-    ),
-    spikeAmplitude: calculateSpikeAmplitude(spikeResults),
-    spikeWidth: calculateSpikeWidth(spikeResults),
-    spikeAUC: calculateSpikeAUC(spikeResults),
-    burstMetrics: calculateBurstMetrics(burstResults),
-  };
+  const metrics = memo(
+    "metrics",
+    [id(spikeResults), id(burstResults), id(processed)],
+    () =>
+      perf.time("metrics", () => ({
+        spikeFrequency: calculateSpikeFrequency(
+          spikeResults,
+          processed[0]?.x || 0,
+          processed[processed.length - 1]?.x || 1
+        ),
+        spikeAmplitude: calculateSpikeAmplitude(spikeResults),
+        spikeWidth: calculateSpikeWidth(spikeResults),
+        spikeAUC: calculateSpikeAUC(spikeResults),
+        burstMetrics: calculateBurstMetrics(burstResults),
+      }))
+  );
+
+  perf.flushGroup();
 
   // Return the processed signal for display
   // Outliers have been removed from detection but will be marked as spikes

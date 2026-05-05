@@ -5,6 +5,7 @@ import { AnalysisContext } from "../../AnalysisProvider";
 import { Line } from "react-chartjs-2";
 import DotWaveLoader from "../../../../assets/animations/DotWaveLoader";
 import Tooltip from "@mui/material/Tooltip";
+import { ToggleGroup } from "../../../ui";
 import "../../styles/WellSelector.css";
 import { findBaseline } from "../../utilities/FindBaseline";
 import { calculateMedianSignal } from "../../utilities/CalculateMedianSignal";
@@ -366,30 +367,19 @@ export const WellSelector = () => {
 
   return (
     <>
-      <div style={{ display: "flex" }}>
-        <button
-          className="grid-mode-button"
-          style={{
-            width: showMedianGrid ? "50%" : "100%",
-            backgroundColor: showMedianGrid ? "gray" : "white",
-            textDecoration: showMedianGrid ? "none" : "underline",
-          }}
-          onClick={() => setShowMedianGrid(false)}
-        >
-          Original
-        </button>
-        <button
-          className="grid-mode-button"
-          style={{
-            width: showMedianGrid ? "100%" : "50%",
-            backgroundColor: showMedianGrid ? "white" : "gray",
-            textDecoration: showMedianGrid ? "underline" : "none",
-          }}
-          onClick={() => setShowMedianGrid(true)}
-        >
-          Median
-        </button>
-      </div>
+      <ToggleGroup
+        className="well-selector__mode-toggle"
+        size="sm"
+        value={showMedianGrid ? "median" : "original"}
+        onChange={(_, v) => {
+          if (v) setShowMedianGrid(v === "median");
+        }}
+        options={[
+          { value: "original", label: "Original" },
+          { value: "median", label: "Median" },
+        ]}
+        aria-label="grid display mode"
+      />
       <div
         className="well-grid"
         style={{

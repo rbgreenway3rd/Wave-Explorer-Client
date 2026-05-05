@@ -1,59 +1,51 @@
 import React, { useEffect, useState, useContext } from "react";
 import { DataContext } from "../../../../providers/DataProvider";
-import { NeuralContext } from "../../NeuralProvider";
+import {
+  useNeuralSelection,
+  useNeuralSettings,
+} from "../../NeuralProvider";
 import { Line } from "react-chartjs-2";
 import Tooltip from "@mui/material/Tooltip";
 import "../../styles/WellSelector.css";
-import { findBaseline } from "../../../CardiacAnalysis/utilities/FindBaseline";
-import { calculateMedianSignal } from "../../../CardiacAnalysis/utilities/CalculateMedianSignal";
-import { applyMedianFilter } from "../../../CardiacAnalysis/utilities/MedianFilter";
-import { calculatePeakProminence } from "../../../CardiacAnalysis/utilities/CalculatePeakProminence";
-import { calculateWindowWidth } from "../../../CardiacAnalysis/utilities/CalculateWindowWidth";
-import { findPeaks } from "../../../CardiacAnalysis/utilities/PeakFinder";
 
-const NeuralWellSelector = ({
-  noiseSuppressionActive = false,
-  controlWell,
-  setControlWell,
-  selectingControl = false,
-  setSelectingControl = () => {},
-}) => {
-  const { project, wellArrays, rowLabels, extractedIndicatorTimes } =
-    useContext(DataContext);
-  const { selectedWell, setSelectedWell, peakResults, setPeakResults } =
-    useContext(NeuralContext);
-  const [isRenderingComplete, setIsRenderingComplete] = useState(false);
-  const [showMedianGrid, setShowMedianGrid] = useState(false);
-  const [filteredMedianData, setFilteredMedianData] = useState({});
+/**
+ * NeuralWellSelector — well grid in the right column of the Neural
+ * modal. Reads selection + control-well state directly from
+ * NeuralSelectionContext and the noise-suppression flag from
+ * NeuralSettingsContext, so the modal passes no props.
+ */
+const NeuralWellSelector = () => {
+  const { project, wellArrays } = useContext(DataContext);
+  const {
+    selectedWell,
+    setSelectedWell,
+    controlWell,
+    setControlWell,
+    selectingControl,
+    setSelectingControl,
+  } = useNeuralSelection();
+  const { noiseSuppressionActive } = useNeuralSettings();
   const [globalYMin, setGlobalYMin] = useState(null);
   const [globalYMax, setGlobalYMax] = useState(null);
-  // selectingControl and setSelectingControl are now passed as props from parent
 
   // Extracted plate and experiment data from the project
   const plate = project?.plate[0] || [];
 
-  // State for grid and cell dimensions, accounting for button areas
-  const [availableWidth, setAvailableWidth] = useState(window.innerWidth / 2.3);
-  const [availableHeight, setAvailableHeight] = useState(
-    window.innerHeight / 2.3
-  );
-
+  // Grid dimensions — TODO(Tier E): replace window-fraction math with the
+  // useContainerSize hook so the well grid resizes with its container
+  // instead of the viewport.
+  const availableWidth = window.innerWidth / 2.3;
+  const availableHeight = window.innerHeight / 2.3;
   const cellWidth = availableWidth / plate.numberOfColumns;
   const cellHeight = availableHeight / plate.numberOfRows;
 
+  // Selecting a new well changes selectedWell, which causes
+  // NeuralResultsContext's pipeline useMemo to re-run with the new
+  // signal — the previous well's spike results are replaced atomically
+  // in the same render. No manual clearing required.
   const handleSelectWell = (well) => {
-    setPeakResults([]);
     setSelectedWell(well);
   };
-
-  useEffect(() => {
-    if (wellArrays.length > 0) {
-      const timeout = setTimeout(() => {
-        setIsRenderingComplete(true);
-      }, 1500);
-      return () => clearTimeout(timeout);
-    }
-  }, [wellArrays]);
 
   const getChartData = (well) => {
     const ind = well.indicators[0];
@@ -76,18 +68,6 @@ const NeuralWellSelector = ({
       ],
     };
   };
-
-  const getFilteredMedianData = (well) => ({
-    datasets: [
-      {
-        label: "Processed Data",
-        data: filteredMedianData[well.id] || [],
-        borderColor: "rgb(255, 217, 1)",
-        borderWidth: 1,
-        fill: false,
-      },
-    ],
-  });
 
   // find max and min y values across all wells for consistent y-axis scaling
   useEffect(() => {

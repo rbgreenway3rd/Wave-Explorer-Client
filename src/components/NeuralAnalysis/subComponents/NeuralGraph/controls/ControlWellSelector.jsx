@@ -1,201 +1,99 @@
 import React from "react";
-import { Box, Typography, Paper } from "@mui/material";
-import { controlsTheme, createSxProps } from "../styles/controlsTheme";
-import "./ControlWellSelector.css";
+import { Panel, Button } from "../../../../ui";
+import { useNeuralSelection } from "../../../NeuralProvider";
+import "./NeuralControlPanel.css";
 
 /**
- * ControlWellSelector
- * Component for selecting a control well for noise suppression
+ * ControlWellSelector — picks a control well for noise suppression.
+ * Reads selection state from NeuralSelectionContext directly. The only
+ * prop is `disabled`, since whether the control should be active is
+ * driven by the parent's noise-suppression toggle (not selection state).
  *
- * Features:
- * - Select control well button (3 states: selecting, selected, not selected)
- * - Clear control well by clicking when already selected
- * - Display control well and target well information
- * - Visual feedback for selection mode
- * - Professional scientific styling
+ * Buttons use the Button primitive (variants: secondary / danger) plus
+ * two state-modifier classes (`--selecting` / `--selected`) that
+ * override the variant's color tokens for the dark-theme info-cyan and
+ * success-green visual states. Replaces ~50 lines of hand-rolled
+ * <button>/CSS that didn't share size/font/focus-ring conventions with
+ * the rest of the modal's actions.
  */
-const ControlWellSelector = ({
-  controlWell,
-  setControlWell,
-  selectingControl,
-  setSelectingControl,
-  selectedWell,
-  disabled = false,
-}) => {
+const ControlWellSelector = ({ disabled = false }) => {
+  const {
+    selectedWell,
+    controlWell,
+    setControlWell,
+    selectingControl,
+    setSelectingControl,
+  } = useNeuralSelection();
+
   const handleButtonClick = () => {
     if (disabled || controlWell) return;
-
-    // Toggle selection mode (only when no control well is selected)
     setSelectingControl(!selectingControl);
   };
 
+  const stateClass = selectingControl
+    ? "neural-control-well-button--selecting"
+    : controlWell
+    ? "neural-control-well-button--selected"
+    : "";
+
   return (
-    <Paper
-      className="control-well-selector-container"
-      elevation={2}
-      sx={{
-        ...createSxProps(),
-        backgroundColor: controlsTheme.colors.paper,
-        padding: `${controlsTheme.spacing.md}px`,
-        borderRadius: `${controlsTheme.borderRadius.lg}px`,
-
-        marginBottom: `${controlsTheme.spacing.md}px`,
-        marginTop: `${controlsTheme.spacing.md}px`,
-        marginLeft: `${controlsTheme.spacing.md}px`,
-        border: `0.125rem solid ${controlsTheme.colors.border}`,
-        opacity: disabled ? 0.5 : 1,
-        pointerEvents: disabled ? "none" : "auto",
-        display: "flex",
-        flexDirection: "column",
-      }}
+    <Panel
+      variant="dark"
+      className={
+        "neural-control-panel control-well-selector-container" +
+        (disabled ? " neural-control-panel--inert" : "")
+      }
     >
-      {/* Section Header */}
-      <Typography
-        variant="subtitle2"
-        sx={{
-          color: controlsTheme.colors.text,
-          fontWeight: controlsTheme.typography.fontWeight.bold,
-          fontSize: `${controlsTheme.typography.fontSize.md}px`,
-          marginBottom: `${controlsTheme.spacing.sm}px`,
-          textTransform: "uppercase",
-          letterSpacing: "0.03125rem",
-        }}
+      <div className="neural-control-panel__header">
+        <h4 className="neural-control-panel__title">Control Well Selection</h4>
+      </div>
+
+      <Button
+        variant="secondary"
+        block
+        className={`neural-control-well-button ${stateClass}`.trim()}
+        onClick={handleButtonClick}
+        disabled={disabled || (!selectingControl && !!controlWell)}
       >
-        Control Well Selection
-      </Typography>
+        {selectingControl
+          ? "Click a well to set as Control"
+          : controlWell
+          ? `Control: ${controlWell.key}`
+          : "Select Control Well"}
+      </Button>
 
-      {/* Control Well Selector Button */}
-      <Box sx={{ marginTop: `${controlsTheme.spacing.sm}px` }}>
-        <button
-          className={
-            selectingControl
-              ? "control-well-button control-well-button-active"
-              : "control-well-button"
-          }
-          onClick={handleButtonClick}
+      {controlWell && !selectingControl && (
+        <Button
+          variant="danger"
+          block
+          size="sm"
+          className="neural-control-well-reset"
+          onClick={() => setControlWell(null)}
           disabled={disabled}
-          style={{
-            width: "100%",
-            padding: `${controlsTheme.spacing.sm}px ${controlsTheme.spacing.md}px`,
-            backgroundColor: selectingControl
-              ? controlsTheme.colors.secondary
-              : controlWell
-              ? controlsTheme.colors.successBg
-              : controlsTheme.colors.backgroundLight,
-            color: selectingControl
-              ? controlsTheme.colors.text
-              : controlWell
-              ? controlsTheme.colors.successDark
-              : controlsTheme.colors.text,
-            border: `0.125rem solid ${
-              selectingControl
-                ? controlsTheme.colors.secondary
-                : controlWell
-                ? controlsTheme.colors.success
-                : controlsTheme.colors.border
-            }`,
-            borderRadius: `${controlsTheme.borderRadius.md}px`,
-            fontSize: `${controlsTheme.typography.fontSize.lg}px`,
-            fontWeight: controlsTheme.typography.fontWeight.semiBold,
-            cursor: disabled
-              ? "not-allowed"
-              : controlWell
-              ? "default"
-              : "pointer",
-            transition: `all ${controlsTheme.transitions.normal} ${controlsTheme.transitions.ease}`,
-            boxShadow: controlsTheme.shadows.sm,
-          }}
         >
-          {selectingControl
-            ? "Click a well to set as Control"
-            : controlWell
-            ? `Control: ${controlWell.key}`
-            : "Select Control Well"}
-        </button>
+          Reset Control Well
+        </Button>
+      )}
 
-        {/* Reset Control Well Button (shown when control well is selected) */}
-        {controlWell && !selectingControl && (
-          <button
-            className="reset-control-well-button"
-            onClick={() => {
-              setControlWell(null);
-              console.log("[ControlWellSelector] Control well reset");
-            }}
-            disabled={disabled}
-            style={{
-              width: "100%",
-              marginTop: `${controlsTheme.spacing.sm}px`,
-              padding: `${controlsTheme.spacing.sm}px ${controlsTheme.spacing.md}px`,
-              backgroundColor: controlsTheme.colors.dangerBg,
-              color: controlsTheme.colors.danger,
-              border: `0.125rem solid ${controlsTheme.colors.danger}`,
-              borderRadius: `${controlsTheme.borderRadius.md}px`,
-              fontSize: `${controlsTheme.typography.fontSize.sm}px`,
-              fontWeight: controlsTheme.typography.fontWeight.semiBold,
-              cursor: disabled ? "not-allowed" : "pointer",
-              transition: `all ${controlsTheme.transitions.normal} ${controlsTheme.transitions.ease}`,
-              boxShadow: controlsTheme.shadows.sm,
-            }}
-          >
-            Reset Control Well
-          </button>
-        )}
-      </Box>
-
-      {/* Control Well Information Display */}
       {controlWell && (
-        <Box
-          className="control-well-info-box"
-          sx={{
-            marginTop: "auto",
-            padding: `${controlsTheme.spacing.sm}px ${controlsTheme.spacing.md}px`,
-            backgroundColor: controlsTheme.colors.backgroundDark,
-            borderRadius: `${controlsTheme.borderRadius.md}px`,
-            border: `0.0625rem solid ${controlsTheme.colors.border}`,
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <Typography
-            sx={{
-              color: controlsTheme.colors.text,
-              fontSize: `${controlsTheme.typography.fontSize.md}px`,
-              fontWeight: controlsTheme.typography.fontWeight.medium,
-              marginBottom: `${controlsTheme.spacing.xs}px`,
-            }}
-          >
+        <div className="neural-control-well-info">
+          <p>
             Control Well:{" "}
-            <span
-              style={{
-                color: controlsTheme.colors.secondary,
-                fontWeight: controlsTheme.typography.fontWeight.semiBold,
-              }}
-            >
+            <span className="neural-control-well-info__control-key">
               {controlWell.key}
             </span>
-          </Typography>
+          </p>
           {selectedWell && (
-            <Typography
-              sx={{
-                color: controlsTheme.colors.text,
-                fontSize: `${controlsTheme.typography.fontSize.md}px`,
-                fontWeight: controlsTheme.typography.fontWeight.medium,
-              }}
-            >
+            <p>
               Subtracting from:{" "}
-              <span
-                style={{
-                  color: controlsTheme.colors.primary,
-                  fontWeight: controlsTheme.typography.fontWeight.semiBold,
-                }}
-              >
+              <span className="neural-control-well-info__target-key">
                 {selectedWell.key}
               </span>
-            </Typography>
+            </p>
           )}
-        </Box>
+        </div>
       )}
-    </Paper>
+    </Panel>
   );
 };
 

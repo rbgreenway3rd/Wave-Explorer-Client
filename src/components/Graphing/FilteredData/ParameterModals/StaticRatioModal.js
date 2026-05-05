@@ -1,23 +1,6 @@
-import React, { useState, useRef, useEffect } from "react";
-import {
-  useSelectionContainer,
-  Box,
-  boxesIntersect,
-} from "@air/react-drag-to-select";
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  List,
-  ListItem,
-  ListItemText,
-  IconButton,
-} from "@mui/material";
-
-import { Delete } from "@mui/icons-material";
+import React from "react";
+import { TextField } from "@mui/material";
+import { Button, Modal } from "../../../ui";
 
 export const StaticRatioModal = ({
   open,
@@ -29,9 +12,9 @@ export const StaticRatioModal = ({
   onSave,
 }) => {
   return (
-    <Dialog open={open} onClose={onClose}>
-      <DialogTitle>Edit Static Ratio Filter Parameters</DialogTitle>
-      <DialogContent>
+    <Modal open={open} onClose={onClose} maxWidth="xs" fullWidth>
+      <Modal.Header>Edit Static Ratio Filter Parameters</Modal.Header>
+      <Modal.Body>
         <TextField
           autoFocus
           margin="dense"
@@ -49,11 +32,15 @@ export const StaticRatioModal = ({
           value={endValue}
           onChange={(e) => setEndValue(Number(e.target.value))}
         />
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={onSave}>Confirm</Button>
-      </DialogActions>
-    </Dialog>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="ghost" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button variant="primary" onClick={onSave}>
+          Confirm
+        </Button>
+      </Modal.Footer>
+    </Modal>
   );
 };

@@ -1,22 +1,47 @@
 import React, { useState } from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
   FormGroup,
   FormControlLabel,
   Checkbox,
-  Typography,
-  Box,
   Divider,
 } from "@mui/material";
+import { Modal, Button } from "../ui";
 import { GenerateNeuralCSV } from "./NeuralReport";
+import "./ReportModal.css";
+
+const REPORT_OPTIONS = [
+  {
+    key: "includeProcessedSignal",
+    title: "Processed Signal",
+    caption: "Time-series data after all processing steps",
+  },
+  {
+    key: "includeSpikeData",
+    title: "Spike Data",
+    caption: "Detailed information for each detected spike",
+  },
+  {
+    key: "includeOverallMetrics",
+    title: "Overall Metrics",
+    caption: "Summary statistics for spike frequency, amplitude, width, etc.",
+  },
+  {
+    key: "includeBurstData",
+    title: "Burst Data",
+    caption: "Details of detected burst events",
+  },
+  {
+    key: "includeBurstMetrics",
+    title: "Burst Metrics",
+    caption: "Summary statistics for burst duration and intervals",
+  },
+  // ROI Analysis is appended dynamically below — its caption depends on
+  // roiList length and the option is disabled when no ROIs are defined.
+];
 
 /**
- * NeuralReportModal
- * Modal dialog for configuring and generating neural analysis CSV reports
+ * NeuralReportModal — single-well CSV export. User picks which sections
+ * to include, then download triggers via a synthesized `<a download>`.
  */
 const NeuralReportModal = ({
   open,
@@ -31,7 +56,6 @@ const NeuralReportModal = ({
   roiList,
   processingParams,
 }) => {
-  // State for CSV generation options
   const [options, setOptions] = useState({
     includeProcessedSignal: true,
     includeSpikeData: true,
@@ -41,18 +65,12 @@ const NeuralReportModal = ({
     includeROIAnalysis: true,
   });
 
-  // Handle checkbox changes
-  const handleOptionChange = (optionName) => (event) => {
-    setOptions({
-      ...options,
-      [optionName]: event.target.checked,
-    });
+  const handleOptionChange = (key) => (event) => {
+    setOptions({ ...options, [key]: event.target.checked });
   };
 
-  // Handle generate report
   const handleGenerate = () => {
     try {
-      // Generate CSV with selected options
       const csv = GenerateNeuralCSV(
         project,
         selectedWell,
@@ -65,27 +83,20 @@ const NeuralReportModal = ({
         processingParams,
         options
       );
-
-      // Create download
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-
-      // Generate filename with timestamp and well name
       const timestamp = new Date()
         .toISOString()
         .replace(/[:.]/g, "-")
         .slice(0, 19);
       const wellName = selectedWell?.key || selectedWell?.label || "unknown";
       link.download = `Neural_Analysis_${wellName}_${timestamp}.csv`;
-
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-
-      // Close modal and show success message
       onClose();
       alert("Neural analysis report generated successfully!");
     } catch (error) {
@@ -94,222 +105,89 @@ const NeuralReportModal = ({
     }
   };
 
-  // Handle cancel
-  const handleCancel = () => {
-    onClose();
-  };
+  const hasROIs = roiList && roiList.length > 0;
+  const roiCaption = hasROIs
+    ? `Per-ROI spike/burst data and metrics (${roiList.length} ROI${
+        roiList.length > 1 ? "s" : ""
+      })`
+    : "No ROIs defined";
 
   return (
-    <Dialog
+    <Modal
       open={open}
       onClose={onClose}
       maxWidth="sm"
       fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 2,
-          boxShadow: 3,
-        },
-      }}
+      className="report-modal"
+      style={{ "--report-modal-accent": "var(--color-success)" }}
     >
-      <DialogTitle
-        sx={{
-          backgroundColor: "#4caf50",
-          color: "white",
-          fontWeight: "bold",
-          fontSize: "1.25rem",
-        }}
-      >
-        Generate Neural Analysis Report
-      </DialogTitle>
-
-      <DialogContent sx={{ pt: 3, pb: 2 }}>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+      <Modal.Header>Generate Neural Analysis Report</Modal.Header>
+      <Modal.Body>
+        <p className="report-modal__intro">
           Select which sections to include in the CSV report:
-        </Typography>
+        </p>
 
-        <Divider sx={{ mb: 2 }} />
+        <Divider style={{ marginBottom: "var(--space-3)" }} />
 
-        <FormGroup>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={options.includeProcessedSignal}
-                onChange={handleOptionChange("includeProcessedSignal")}
-                color="success"
-              />
-            }
-            label={
-              <Box>
-                <Typography variant="body1" fontWeight="medium">
-                  Processed Signal
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Time-series data after all processing steps
-                </Typography>
-              </Box>
-            }
-            sx={{ mb: 1.5 }}
-          />
+        <FormGroup className="report-modal__option-list">
+          {REPORT_OPTIONS.map(({ key, title, caption }) => (
+            <FormControlLabel
+              key={key}
+              control={
+                <Checkbox
+                  checked={options[key]}
+                  onChange={handleOptionChange(key)}
+                  color="success"
+                />
+              }
+              label={
+                <div>
+                  <div className="report-modal__option-title">{title}</div>
+                  <span className="report-modal__option-caption">{caption}</span>
+                </div>
+              }
+            />
+          ))}
 
           <FormControlLabel
-            control={
-              <Checkbox
-                checked={options.includeSpikeData}
-                onChange={handleOptionChange("includeSpikeData")}
-                color="success"
-              />
-            }
-            label={
-              <Box>
-                <Typography variant="body1" fontWeight="medium">
-                  Spike Data
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Detailed information for each detected spike
-                </Typography>
-              </Box>
-            }
-            sx={{ mb: 1.5 }}
-          />
-
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={options.includeOverallMetrics}
-                onChange={handleOptionChange("includeOverallMetrics")}
-                color="success"
-              />
-            }
-            label={
-              <Box>
-                <Typography variant="body1" fontWeight="medium">
-                  Overall Metrics
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Summary statistics for spike frequency, amplitude, width, etc.
-                </Typography>
-              </Box>
-            }
-            sx={{ mb: 1.5 }}
-          />
-
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={options.includeBurstData}
-                onChange={handleOptionChange("includeBurstData")}
-                color="success"
-              />
-            }
-            label={
-              <Box>
-                <Typography variant="body1" fontWeight="medium">
-                  Burst Data
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Details of detected burst events
-                </Typography>
-              </Box>
-            }
-            sx={{ mb: 1.5 }}
-          />
-
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={options.includeBurstMetrics}
-                onChange={handleOptionChange("includeBurstMetrics")}
-                color="success"
-              />
-            }
-            label={
-              <Box>
-                <Typography variant="body1" fontWeight="medium">
-                  Burst Metrics
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Summary statistics for burst duration and intervals
-                </Typography>
-              </Box>
-            }
-            sx={{ mb: 1.5 }}
-          />
-
-          <FormControlLabel
+            className={hasROIs ? "" : "report-modal__option--disabled"}
             control={
               <Checkbox
                 checked={options.includeROIAnalysis}
                 onChange={handleOptionChange("includeROIAnalysis")}
                 color="success"
-                disabled={!roiList || roiList.length === 0}
+                disabled={!hasROIs}
               />
             }
             label={
-              <Box>
-                <Typography variant="body1" fontWeight="medium">
-                  ROI Analysis
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {roiList && roiList.length > 0
-                    ? `Per-ROI spike/burst data and metrics (${
-                        roiList.length
-                      } ROI${roiList.length > 1 ? "s" : ""})`
-                    : "No ROIs defined"}
-                </Typography>
-              </Box>
+              <div>
+                <div className="report-modal__option-title">ROI Analysis</div>
+                <span className="report-modal__option-caption">{roiCaption}</span>
+              </div>
             }
-            sx={{ mb: 1.5 }}
           />
         </FormGroup>
 
-        <Divider sx={{ mt: 2, mb: 2 }} />
+        <Divider style={{ marginTop: "var(--space-3)" }} />
+      </Modal.Body>
 
-        {/* <Box sx={{ backgroundColor: "#f5f5f5", p: 2, borderRadius: 1 }}>
-          <Typography variant="body2" fontWeight="medium" gutterBottom>
-            Report Information:
-          </Typography>
-          <Typography variant="caption" display="block" color="text.secondary">
-            Well: {selectedWell?.key || selectedWell?.label || "N/A"}
-          </Typography>
-          <Typography variant="caption" display="block" color="text.secondary">
-            Spikes Detected: {peakResults?.length || 0}
-          </Typography>
-          <Typography variant="caption" display="block" color="text.secondary">
-            Bursts Detected: {burstResults?.length || 0}
-          </Typography>
-          <Typography variant="caption" display="block" color="text.secondary">
-            ROIs Defined: {roiList?.length || 0}
-          </Typography>
-        </Box> */}
-      </DialogContent>
-
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button
-          onClick={handleCancel}
-          color="inherit"
-          sx={{
-            fontWeight: "medium",
-          }}
-        >
+      <Modal.Footer>
+        <Button variant="ghost" onClick={onClose}>
           Cancel
         </Button>
         <Button
+          variant="primary"
           onClick={handleGenerate}
-          variant="contained"
-          color="success"
-          sx={{
-            fontWeight: "bold",
-            backgroundColor: "#4caf50",
-            "&:hover": {
-              backgroundColor: "#45a049",
-            },
+          style={{
+            backgroundImage: "none",
+            backgroundColor: "var(--color-success)",
+            borderColor: "var(--color-success)",
           }}
         >
           Generate Report
         </Button>
-      </DialogActions>
-    </Dialog>
+      </Modal.Footer>
+    </Modal>
   );
 };
 
