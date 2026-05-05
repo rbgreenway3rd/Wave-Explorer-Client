@@ -15,7 +15,7 @@ const baseParams = {
   subtractControl: false,
   trendFlatteningEnabled: true,
   baselineCorrection: false,
-  filterBaseline: false,
+  smoothingEnabled: false,
   smoothingWindow: 5,
   handleOutliers: true,
   outlierPercentile: 95,

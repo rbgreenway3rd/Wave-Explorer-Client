@@ -1,4 +1,5 @@
 import { detectBursts } from "./burstDetection.js";
+import { perf } from "./perfLogger.js";
 
 // ---- Signal statistics cache --------------------------------------------
 // Per-detection on the same `data` array, the median, MAD, baseline
@@ -25,7 +26,7 @@ function computeSignalStats(data) {
   }
   const signalRange = globalMax - globalMin;
 
-  // Median (and MAD-based robust std)
+  // Median (and MAD-based robust std on the data itself)
   const medianY = allYValues.slice().sort((a, b) => a - b)[Math.floor(n / 2)];
   const absDevs = allYValues.map((y) => Math.abs(y - medianY));
   const medianAbsDev = absDevs.slice().sort((a, b) => a - b)[Math.floor(n / 2)];
@@ -52,6 +53,86 @@ function computeSignalStats(data) {
   };
   signalStatsCache.set(data, stats);
   return stats;
+}
+
+// ---- Local windowed robust σ -------------------------------------------
+// Block-wise MAD-derived σ for non-stationary noise. The signal is split
+// into non-overlapping blocks of `windowSize` samples; per-block σ is
+// computed on the residual (data − reference), or the data itself if no
+// reference is supplied. Each sample inherits its block's σ.
+//
+// Why block-wise rather than truly rolling: a rolling sorted-window MAD
+// requires double-rolling-sort (one for median, one for |x − median|),
+// which is fiddly and only marginally more accurate. Block-wise is O(n)
+// with `windowSize`-dominated constants and is enough to capture local
+// noise variation across long recordings.
+export function computeLocalRobustStd(data, reference, windowSize) {
+  const n = data.length;
+  if (n === 0 || !windowSize || windowSize < 2) return new Float64Array(0);
+  const refValid =
+    reference &&
+    Array.isArray(reference) &&
+    reference.length === n;
+  const numBlocks = Math.max(1, Math.ceil(n / windowSize));
+  const blockStds = new Float64Array(numBlocks);
+
+  for (let b = 0; b < numBlocks; b++) {
+    const start = b * windowSize;
+    const end = Math.min(start + windowSize, n);
+    const w = end - start;
+    if (w < 2) {
+      blockStds[b] = 0;
+      continue;
+    }
+    const block = new Array(w);
+    for (let i = 0; i < w; i++) {
+      const refY = refValid ? reference[start + i].y : 0;
+      block[i] = data[start + i].y - refY;
+    }
+    const sorted = block.slice().sort((a, b) => a - b);
+    const med = sorted[Math.floor(w / 2)];
+    const absDevs = block.map((v) => Math.abs(v - med));
+    absDevs.sort((a, b) => a - b);
+    const mad = absDevs[Math.floor(w / 2)];
+    blockStds[b] = mad / 0.6745;
+  }
+
+  // Expand to per-sample.
+  const out = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    const b = Math.min(numBlocks - 1, Math.floor(i / windowSize));
+    out[i] = blockStds[b];
+  }
+  return out;
+}
+
+// ---- Residual-based robust σ -------------------------------------------
+// MAD-derived σ on (data − reference). The residual IS the noise, so its
+// σ is the right denominator for a "× σ" noise-floor threshold. Without
+// this, σ comes from the smoothed `data` directly — which shrinks as
+// smoothing strengthens, making the slider's units increasingly detached
+// from the actual noise prominence.
+//
+// Returns the data-only robustStd when `reference` is null/undefined or
+// length-mismatched.
+export function computeResidualRobustStd(data, reference) {
+  if (
+    !reference ||
+    !Array.isArray(reference) ||
+    reference.length !== data.length
+  ) {
+    return computeSignalStats(data).robustStd;
+  }
+  const n = data.length;
+  if (n === 0) return 0;
+  const residuals = new Array(n);
+  for (let i = 0; i < n; i++) {
+    residuals[i] = data[i].y - reference[i].y;
+  }
+  const medianRes = residuals.slice().sort((a, b) => a - b)[Math.floor(n / 2)];
+  const absDevs = residuals.map((r) => Math.abs(r - medianRes));
+  const medianAbsDev = absDevs.slice().sort((a, b) => a - b)[Math.floor(n / 2)];
+  return medianAbsDev / 0.6745;
 }
 
 // Class to encapsulate a detected neural spike (like Cardiac Peak)
@@ -250,18 +331,50 @@ function findTrueSpikes(
   minWidth = 5,
   minDistance = 10,
   minProminenceRatio = 0.01,
-  robustStd = 0, // New param (robust noise estimate)
-  stdMultiplier = 1.5 // New: tunable multiplier
+  robustStd = 0, // robust noise estimate (global)
+  stdMultiplier = 1.5, // gates whole-detection k-means cutoff
+  noiseFloorMultiplier = 0, // per-peak floor; 0 = disabled
+  localStds = null // optional Float64Array — when present, per-peak σ is localStds[peak.index]
 ) {
   if (!Array.isArray(peaks) || peaks.length < 2) {
     const filtered = peaks.filter((p) => p.width >= minWidth);
     return filtered;
   }
 
+  perf.count(`spikeFilter.input=${peaks.length}`);
+
   // Extract prominences
   let prominences = peaks.map((p) =>
     Math.min(p.prominences.leftProminence, p.prominences.rightProminence)
   );
+
+  // Per-peak noise-floor pre-filter: discard any peak whose minimum
+  // prominence is below `noiseFloorMultiplier × σ`. σ is the local
+  // windowed σ at the peak's index when `localStds` is provided
+  // (adapts to non-stationary noise), otherwise the global robustStd.
+  // Runs *before* k-means so the cluster split sees only above-floor
+  // peaks — prevents the noise tail from blurring the lower cluster up
+  // into the signal cluster. When the multiplier is 0 (default), this
+  // is a no-op.
+  if (noiseFloorMultiplier > 0) {
+    const keptPeaks = [];
+    const keptProms = [];
+    for (let i = 0; i < peaks.length; i++) {
+      const sigma = localStds ? localStds[peaks[i].index] : robustStd;
+      const floor = noiseFloorMultiplier * sigma;
+      if (prominences[i] >= floor) {
+        keptPeaks.push(peaks[i]);
+        keptProms.push(prominences[i]);
+      }
+    }
+    if (keptPeaks.length < 2) {
+      perf.count(`spikeFilter.afterNoiseFloor=${keptPeaks.length}`);
+      return keptPeaks.filter((p) => p.width >= minWidth);
+    }
+    peaks = keptPeaks;
+    prominences = keptProms;
+  }
+  perf.count(`spikeFilter.afterNoiseFloor=${peaks.length}`);
 
   // Cluster prominences into 2 groups
   let { centroids, assignments } = kMeans(prominences, 2);
@@ -285,11 +398,12 @@ function findTrueSpikes(
 
   // Filter peaks: keep ONLY those in the top cluster (signal) with sufficient width
   // This explicitly removes ALL peaks in the lower cluster (noise)
-  let filteredPeaks = peaks.filter((p, idx) => {
-    const inTopCluster = assignments[idx] === topCluster;
-    const hasMinWidth = p.width >= minWidth;
-    return inTopCluster && hasMinWidth;
-  });
+  const afterKMeans = peaks.filter(
+    (_p, idx) => assignments[idx] === topCluster
+  );
+  perf.count(`spikeFilter.afterKMeans=${afterKMeans.length}`);
+  let filteredPeaks = afterKMeans.filter((p) => p.width >= minWidth);
+  perf.count(`spikeFilter.afterWidth=${filteredPeaks.length}`);
 
   // Apply prominence ratio filter for symmetry
   if (minProminenceRatio > 0) {
@@ -300,6 +414,7 @@ function findTrueSpikes(
       return ratio >= minProminenceRatio;
     });
   }
+  perf.count(`spikeFilter.afterSymmetry=${filteredPeaks.length}`);
 
   // Apply distance filter: remove peaks too close to others
   if (minDistance > 0 && filteredPeaks.length > 1) {
@@ -315,6 +430,7 @@ function findTrueSpikes(
     }
     filteredPeaks = result;
   }
+  perf.count(`spikeFilter.afterDistance=${filteredPeaks.length}`);
 
   return filteredPeaks;
 }
@@ -340,15 +456,25 @@ export function detectSpikes(data, options = {}) {
   const minDistance = options.minDistance ?? 10;
   const minProminenceRatio = options.minProminenceRatio ?? 10;
   const stdMultiplier = options.stdMultiplier ?? 3; // Used for cluster separation check (not individual peak filtering)
+  const noiseFloorMultiplier = options.noiseFloorMultiplier ?? 0; // Per-peak noise floor; 0 = disabled
+  const noiseReference = options.noiseReference ?? null; // Pre-smoothing signal for residual-based σ
+  const localStds = options.localStds ?? null; // Optional per-sample Float64Array of σ — adapts to non-stationary noise
 
   // Signal-derived statistics (cached per data-array identity — see
   // computeSignalStats above).
   const {
     globalMax,
-    robustStd,
     finalBaselineThreshold,
     fallbackThreshold,
   } = computeSignalStats(data);
+
+  // Pick the σ used by the noise-floor check. When a `noiseReference` is
+  // supplied (the pre-smoothing signal), σ is computed from the residual
+  // (data − reference) — i.e. the actual noise. Otherwise fall back to σ
+  // of the data itself. Both are MAD-derived (robust to spikes).
+  const robustStd = noiseReference
+    ? computeResidualRobustStd(data, noiseReference)
+    : computeSignalStats(data).robustStd;
 
   // Auto-set prominence if 'auto'
   if (prominence === "auto") {
@@ -479,7 +605,9 @@ export function detectSpikes(data, options = {}) {
     minDistance,
     minProminenceRatio,
     robustStd,
-    stdMultiplier
+    stdMultiplier,
+    noiseFloorMultiplier,
+    localStds
   );
 
   return finalSpikes;

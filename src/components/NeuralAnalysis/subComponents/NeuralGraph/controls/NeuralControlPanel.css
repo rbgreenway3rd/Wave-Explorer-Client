@@ -42,9 +42,51 @@
 /* Chart-controls bar cards share a baseline height so sparse panels
  * (Decimation) match dense ones (Report). Right-column cards (Burst,
  * Outlier, Spike sliders) intentionally NOT scoped here — they stack
- * vertically in a different container and don't need the floor. */
-.neural-chart-controls > .neural-control-panel {
-  min-height: 14rem;
+ * vertically in a different container and don't need the floor.
+ *
+ * Tighter padding + header margin + lower min-height than the default
+ * panel chrome — chart-controls cards live in a wide horizontal bar
+ * where vertical compactness matters more than padding generosity.
+ * The grid's `align-items: stretch` (parent) plus this min-height
+ * floor still keeps every card the same height and width.
+ */
+.neural-chart-controls > .neural-control-panel.ui-panel.ui-panel--dark {
+  padding: var(--space-1) var(--space-2);
+  min-height: 7rem;
+}
+
+.neural-chart-controls > .neural-control-panel .neural-control-panel__header {
+  margin-bottom: var(--space-1);
+}
+
+/* Buttons inside chart-controls cards are constrained by the narrow grid
+ * column. Default Button has `white-space: nowrap` + `font-size-sm` +
+ * generous padding which causes long labels (e.g. "Generate Single-Well
+ * Report") to overflow. Scoped overrides:
+ *   - Allow text to wrap onto a second line if needed.
+ *   - Slightly smaller font + tighter padding to match the compact card.
+ *   - Smaller startIcon/endIcon so they don't dominate the row.
+ *   - `min-width: 0` to defeat MUI's default 64px min-width which
+ *     prevents block buttons from shrinking inside narrow flex/grid
+ *     children. */
+.neural-chart-controls .ui-button.MuiButton-root {
+  white-space: normal;
+  font-size: var(--font-size-xs);
+  line-height: 1.2;
+  padding: var(--space-1) var(--space-2);
+  min-width: 0;
+  text-align: center;
+}
+
+.neural-chart-controls .ui-button .MuiButton-startIcon,
+.neural-chart-controls .ui-button .MuiButton-endIcon {
+  margin-right: var(--space-1);
+  margin-left: 0;
+}
+
+.neural-chart-controls .ui-button .MuiButton-startIcon > *:first-of-type,
+.neural-chart-controls .ui-button .MuiButton-endIcon > *:first-of-type {
+  font-size: 0.95rem;
 }
 
 /* Disabled state — softer, drained accent + reduced opacity. Replaces
@@ -179,16 +221,21 @@
 .neural-control-panel__methods {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 0;
 }
 
 .neural-control-panel__methods .MuiFormControlLabel-root {
   margin: 0;
-  padding: var(--space-1) var(--space-2);
+  padding: 0 var(--space-1);
   background-color: transparent;
   border-bottom: none;
   text-transform: none;
 }
+
+/* Switches inside chart-controls panels use MUI's `size="small"` variant
+ * (40×24 root, 16×16 thumb). No additional CSS sizing here — let MUI's
+ * own size="small" rules win to avoid breaking the thumb-vs-track
+ * geometry. */
 
 .neural-control-panel__methods .MuiFormControlLabel-label {
   color: var(--color-neural-text);
@@ -247,6 +294,67 @@
 
 .neural-decimation-samples .MuiRadio-root.Mui-checked {
   color: var(--neural-control-accent, var(--color-primary));
+}
+
+/* ---- Savitzky-Golay window picker ----
+ * Same dark-strip styling as the decimation samples but stacked
+ * vertically: label on its own row, radio row beneath. The chart-
+ * controls grid column is too narrow to fit "Window:" + 3 radios on a
+ * single line without wrapping inconsistently, so we lay them out
+ * column-first. */
+
+.neural-sg-window-strip {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-neural-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-neural-bg-dark);
+}
+
+.neural-sg-window-strip .neural-sg-window-strip__label.MuiFormLabel-root {
+  color: var(--color-neural-text);
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+}
+
+/* Force the radio group to a single non-wrapping horizontal row. MUI's
+ * `row` prop sets flex-direction but the radios can still wrap if the
+ * container is narrow — explicit nowrap keeps "5 7 9" on one line. */
+.neural-sg-window-strip__group.MuiFormGroup-root {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: var(--space-2);
+}
+
+.neural-sg-window-strip .MuiFormControlLabel-root {
+  margin: 0;
+  padding: 0;
+}
+
+.neural-sg-window-strip .MuiFormControlLabel-label {
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-neural-text);
+}
+
+/* Tighten radio padding — MUI default is 9px, which dominates the row
+ * height even with size="small". 2px keeps the dot easy to click. */
+.neural-sg-window-strip .MuiRadio-root {
+  color: var(--color-neural-text-secondary);
+  padding: 2px;
+}
+
+.neural-sg-window-strip .MuiRadio-root.Mui-checked {
+  color: var(--neural-control-accent, var(--color-primary));
+}
+
+.neural-sg-window-strip .MuiFormControlLabel-root.Mui-disabled .MuiFormControlLabel-label {
+  color: var(--color-neural-text-disabled);
 }
 
 .neural-decimation-samples .MuiFormControlLabel-root.Mui-disabled .MuiFormControlLabel-label,
@@ -410,4 +518,41 @@
 .neural-control-well-info__target-key {
   color: var(--color-primary);
   font-weight: var(--font-weight-bold);
+}
+
+/* ---- Advanced disclosure (native <details>) ---- */
+
+.neural-control-panel__advanced {
+  margin-top: var(--space-2);
+  border-top: 1px solid var(--color-neural-border);
+  padding-top: var(--space-2);
+}
+
+.neural-control-panel__advanced > summary {
+  cursor: pointer;
+  list-style: none;
+  color: var(--color-neural-text-secondary);
+  font-family: var(--font-family);
+  font-size: 0.7rem;
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: var(--space-1) 0;
+}
+
+.neural-control-panel__advanced > summary::-webkit-details-marker { display: none; }
+
+.neural-control-panel__advanced > summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: var(--space-1);
+  transition: transform var(--transition-base);
+}
+
+.neural-control-panel__advanced[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.neural-control-panel__advanced > .neural-control-panel__field {
+  margin-top: var(--space-2);
 }

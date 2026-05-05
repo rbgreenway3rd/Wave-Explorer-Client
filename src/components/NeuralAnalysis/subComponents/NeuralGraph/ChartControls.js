@@ -91,14 +91,15 @@ const ChartControls = ({ resetZoom }) => {
     minSpikesPerBurst: settings.minSpikesPerBurst,
   };
 
-  // ControlWellSelector is meaningful only when both noise suppression
-  // is on AND the user has chosen to subtract a control signal.
+  // ControlWellSelector is meaningful when noise suppression is on.
+  // The "Subtract Control" toggle now lives INSIDE the selector, so
+  // we no longer gate the panel on it (gating on a switch the panel
+  // itself owns would lock the user out of turning it back on).
   // Rendered always (so the bar's column count stays stable) but
-  // disabled when either upstream toggle is off — its `disabled` prop
-  // also applies the `.neural-control-panel--inert` class so the whole
+  // disabled when noise suppression is off — its `disabled` prop also
+  // applies the `.neural-control-panel--inert` class so the whole
   // card dims out without layout shift.
-  const controlWellDisabled =
-    !settings.noiseSuppressionActive || !settings.subtractControl;
+  const controlWellDisabled = !settings.noiseSuppressionActive;
 
   return (
     <>

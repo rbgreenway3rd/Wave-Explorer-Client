@@ -59,7 +59,7 @@ const ReportGenerationControls = ({
               disabled={isSingleWellDisabled}
               className="single-well-report-button"
             >
-              Generate Single-Well Report
+              Single-Well CSV
             </Button>
           </span>
         </Tooltip>
@@ -74,7 +74,7 @@ const ReportGenerationControls = ({
               disabled={isFullPlateDisabled}
               className="full-plate-report-button"
             >
-              Generate Full-Plate Report
+              Full-Plate CSV
             </Button>
           </span>
         </Tooltip>

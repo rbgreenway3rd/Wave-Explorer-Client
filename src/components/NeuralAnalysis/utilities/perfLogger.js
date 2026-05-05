@@ -1,30 +1,33 @@
 /**
  * perfLogger — lightweight per-stage timing + event counting for the
  * Neural Analysis modal. Activated by appending `?perfMode=1` to the
- * page URL; otherwise every helper is a no-op so we can leave the
- * instrumentation in place permanently.
+ * page URL on the main thread; otherwise every helper is a no-op so we
+ * can leave the instrumentation in place permanently.
+ *
+ * Worker context: a worker has no `window` and its `self.location` is
+ * the worker URL (not the parent page's), so the URL gate can't decide
+ * by itself. The runner reads its perf state on the main thread and
+ * passes the flag through with each pipeline message; the worker calls
+ * `perf.setEnabled(flag)` before running the pipeline. After that,
+ * worker-side `perf.time(...)` calls log to the parent's console
+ * exactly like main-thread calls.
  *
  * Usage:
  *
  *   import { perf } from "./perfLogger";
  *
- *   // Time a synchronous block:
  *   const out = perf.time("trendFlattening", () => trendFlattening(sig));
- *
- *   // Count an event:
  *   perf.count("slider.spikeProminence");
  *
- *   // Group a related set of timings under one label, then flush:
- *   perf.group("pipeline");
- *   const r1 = perf.time("suppressNoise", ...);
- *   const r2 = perf.time("trendFlattening", ...);
- *   perf.flushGroup();   // logs a single line summarizing this group
- *
- * Gated on URL param so production builds incur ~zero cost.
+ *   // Worker entry — call once per message before running pipeline:
+ *   perf.setEnabled(message.perfMode === true);
  */
 
-const ENABLED =
+// Auto-detect on module load (main thread only): respect ?perfMode=1.
+// Workers always start disabled; the runner toggles them on per message.
+let enabled =
   typeof window !== "undefined" &&
+  typeof window.location !== "undefined" &&
   /[?&]perfMode=1(?:&|$)/.test(window.location.search);
 
 const counts = new Map();
@@ -67,7 +70,7 @@ function timeSync(label, fn) {
   return result;
 }
 
-function group(label) {
+function groupStart(label) {
   activeGroupLabel = label;
   activeGroupTimings = [];
 }
@@ -90,23 +93,32 @@ function flushGroup() {
   activeGroupTimings = null;
 }
 
-const noop = () => {};
-const noopTime = (_label, fn) => fn();
-
-export const perf = ENABLED
-  ? {
-      enabled: true,
-      time: timeSync,
-      count: logCount,
-      group,
-      flushGroup,
-    }
-  : {
-      enabled: false,
-      time: noopTime,
-      count: noop,
-      group: noop,
-      flushGroup: noop,
-    };
+// Stable object whose methods check the current `enabled` flag at call
+// time. Replaces the previous "two-frozen-objects" approach so worker
+// callers can flip the flag at runtime via setEnabled().
+export const perf = {
+  get enabled() {
+    return enabled;
+  },
+  setEnabled(value) {
+    enabled = !!value;
+  },
+  time(label, fn) {
+    if (!enabled) return fn();
+    return timeSync(label, fn);
+  },
+  count(label) {
+    if (!enabled) return;
+    logCount(label);
+  },
+  group(label) {
+    if (!enabled) return;
+    groupStart(label);
+  },
+  flushGroup() {
+    if (!enabled) return;
+    flushGroup();
+  },
+};
 
 export default perf;

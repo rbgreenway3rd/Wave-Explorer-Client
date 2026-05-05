@@ -178,7 +178,17 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       [peakResults]
     );
 
-    // Update chart data imperatively to preserve zoom state
+    // Update chart data imperatively to preserve zoom state.
+    //
+    // `chartData` is in the deps because the Chart component only mounts
+    // when chartData is truthy (see render below). On the first pipeline
+    // result, the initializer effect above transitions chartData
+    // null → set; the Chart then mounts on the next render. We need to
+    // re-fire this effect at that point so it finds neuralGraphRef.current
+    // populated and can write the full datasets (including spike scatter).
+    // Without `chartData` here, the first set of spikes never gets
+    // imperatively applied — the chart shows the basic Neural Data line
+    // from chartData but no spikes until the user adjusts a slider.
     useEffect(() => {
       const chart = neuralGraphRef.current;
       if (!chart || !processedSignal || processedSignal.length === 0) return;
@@ -226,7 +236,7 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       // Mutate chart data imperatively without triggering re-render
       chart.data.datasets = newDatasets;
       perf.time("chart.update (data)", () => chart.update("none"));
-    }, [processedSignal, noiseSuppressionActive, chartPoints, peakScatter, baseScatter]);
+    }, [processedSignal, noiseSuppressionActive, chartPoints, peakScatter, baseScatter, chartData]);
 
     // Memoize chartOptions - recalculate when processedSignal changes to update axis ranges
     // Initialize with pan/zoom enabled based on initial props
