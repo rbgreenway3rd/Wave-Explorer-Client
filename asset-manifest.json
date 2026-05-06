@@ -1,23 +1,25 @@
 {
   "files": {
-    "main.css": "./static/css/main.e4787a9f.css",
-    "main.js": "./static/js/main.95dd6d80.js",
-    "static/js/205.1536786e.chunk.js": "./static/js/205.1536786e.chunk.js",
+    "main.css": "./static/css/main.5711e2c1.css",
+    "main.js": "./static/js/main.df54ea9b.js",
+    "static/js/205.37154704.chunk.js": "./static/js/205.37154704.chunk.js",
+    "static/js/63.ca08d334.chunk.js": "./static/js/63.ca08d334.chunk.js",
     "static/js/72.8bcafafa.chunk.js": "./static/js/72.8bcafafa.chunk.js",
+    "static/js/345.6d8fb6db.chunk.js": "./static/js/345.6d8fb6db.chunk.js",
     "static/js/787.9e9f4ffd.chunk.js": "./static/js/787.9e9f4ffd.chunk.js",
     "static/media/WaveFront.png": "./static/media/WaveFront.4d3dfd6cfe86bff49ad5.png",
-    "static/media/WaveGuideIcon.ico": "./static/media/WaveGuideIcon.cd737634105590d4fd8c.ico",
-    "static/media/WaveFrontLogo.webp": "./static/media/WaveFrontLogo.e0cd0878e902aa8ab513.webp",
     "static/media/WaveGuideLogo.webp": "./static/media/WaveGuideLogo.0fba101da78db2310933.webp",
     "index.html": "./index.html",
-    "main.e4787a9f.css.map": "./static/css/main.e4787a9f.css.map",
-    "main.95dd6d80.js.map": "./static/js/main.95dd6d80.js.map",
-    "205.1536786e.chunk.js.map": "./static/js/205.1536786e.chunk.js.map",
+    "main.5711e2c1.css.map": "./static/css/main.5711e2c1.css.map",
+    "main.df54ea9b.js.map": "./static/js/main.df54ea9b.js.map",
+    "205.37154704.chunk.js.map": "./static/js/205.37154704.chunk.js.map",
+    "63.ca08d334.chunk.js.map": "./static/js/63.ca08d334.chunk.js.map",
     "72.8bcafafa.chunk.js.map": "./static/js/72.8bcafafa.chunk.js.map",
+    "345.6d8fb6db.chunk.js.map": "./static/js/345.6d8fb6db.chunk.js.map",
     "787.9e9f4ffd.chunk.js.map": "./static/js/787.9e9f4ffd.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.e4787a9f.css",
-    "static/js/main.95dd6d80.js"
+    "static/css/main.5711e2c1.css",
+    "static/js/main.df54ea9b.js"
   ]
 }
