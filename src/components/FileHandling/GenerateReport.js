@@ -1,12 +1,4 @@
-import {
-  linearRegression,
-  calculateSlope,
-  calculateRange,
-  getAllValues,
-  getAllSlopes,
-  getAllRanges,
-} from "../Graphing/Metrics/MetricsUtilities";
-import * as d3 from "d3";
+import { readWellXyInRange } from "../../utilities/filterPack";
 import {
   Smoothing_Filter,
   StaticRatio_Filter,
@@ -14,6 +6,65 @@ import {
   Derivative_Filter,
   OutlierRemoval_Filter,
 } from "../Graphing/FilteredData/FilterModels";
+
+// ---- typed-array-aware accessors for the per-time-point CSV dump --------
+// Walk the same priority chain readWellXyInRange uses, but indexed (the dump
+// emits row i for all wells, not a time-range slice). Empty string for
+// missing values so a sparse well doesn't break the row.
+function readFilteredYAt(ind, i) {
+  if (ind && ind.filteredYs && ind.filteredYs.length > i) return ind.filteredYs[i];
+  if (ind && Array.isArray(ind.filteredData) && ind.filteredData[i]) return ind.filteredData[i].y;
+  if (ind && ind.rawYs && ind.rawYs.length > i) return ind.rawYs[i];
+  if (ind && Array.isArray(ind.rawData) && ind.rawData[i]) return ind.rawData[i].y;
+  return "";
+}
+
+function readRawYAt(ind, i) {
+  if (ind && ind.rawYs && ind.rawYs.length > i) return ind.rawYs[i];
+  if (ind && Array.isArray(ind.rawData) && ind.rawData[i]) return ind.rawData[i].y;
+  return "";
+}
+
+// ---- metric computations on typed-array slices --------------------------
+function minFromYs(ys) {
+  if (!ys || ys.length === 0) return 0;
+  let m = Infinity;
+  for (let i = 0; i < ys.length; i++) if (ys[i] < m) m = ys[i];
+  return m === Infinity ? 0 : m;
+}
+
+function maxFromYs(ys) {
+  if (!ys || ys.length === 0) return 0;
+  let m = -Infinity;
+  for (let i = 0; i < ys.length; i++) if (ys[i] > m) m = ys[i];
+  return m === -Infinity ? 0 : m;
+}
+
+function rangeFromYs(ys) {
+  if (!ys || ys.length === 0) return 0;
+  return maxFromYs(ys) - minFromYs(ys);
+}
+
+function slopeFromXsYs(xs, ys) {
+  const n = ys ? ys.length : 0;
+  if (n === 0) return 0;
+  let xsum = 0;
+  let ysum = 0;
+  for (let i = 0; i < n; i++) {
+    xsum += xs[i];
+    ysum += ys[i];
+  }
+  const xmean = xsum / n;
+  const ymean = ysum / n;
+  let num = 0;
+  let denom = 0;
+  for (let i = 0; i < n; i++) {
+    const dx = xs[i] - xmean;
+    num += dx * (ys[i] - ymean);
+    denom += dx * dx;
+  }
+  return denom === 0 ? 0 : num / denom;
+}
 
 export const GenerateCSV = (
   project,
@@ -149,9 +200,11 @@ export const GenerateCSV = (
             // Start with converted time for the row
             const row = [timeInMilliseconds];
 
-            // Add the rawData value for each well at the current time index
+            // Add the rawData value for each well at the current time index.
+            // Walk the typed-array-first priority chain so Phase C wells
+            // (with rawXs/rawYs but empty rawData) still emit a value.
             experiment.wells.forEach((well) => {
-              row.push(well.indicators[indicatorIndex].rawData[i].y);
+              row.push(readRawYAt(well.indicators[indicatorIndex], i));
             });
 
             indicatorData.push(row.join(","));
@@ -208,7 +261,7 @@ export const GenerateCSV = (
               experiment.wells[0].indicators[indicatorIndex].time[i];
             const row = [timeInMilliseconds];
             experiment.wells.forEach((well) => {
-              row.push(well.indicators[indicatorIndex].filteredData[i].y);
+              row.push(readFilteredYAt(well.indicators[indicatorIndex], i));
             });
             indicatorData.push(row.join(","));
           }
@@ -217,30 +270,52 @@ export const GenerateCSV = (
           indicatorData.push("</FILTERED_DATA>");
         }
 
-        console.log("Saved Metrics:", savedMetrics);
-        savedMetrics.forEach((metric) => {
-          console.log("Metric:", metric);
-        });
-
         // Saved Metrics section
         if (includeSavedMetrics && savedMetrics.length > 0) {
           // Add <METRICS> header to indicate the start of the metrics section
           indicatorData.push("<METRICS>");
 
+          // Full trace x bounds for this indicator — used when a saved
+          // metric has no annotation range (range is null/null or older
+          // [0, 0] from before the time-domain fix). We compute it once
+          // per indicator from the first well's typed arrays / time
+          // array so the header label can show real times rather than
+          // "from 0 to 0".
+          const refInd = experiment.wells[0].indicators[indicatorIndex];
+          const fullXs =
+            (refInd.filteredXs && refInd.filteredXs.length > 0 && refInd.filteredXs) ||
+            (refInd.rawXs && refInd.rawXs.length > 0 && refInd.rawXs) ||
+            null;
+          const refTime = refInd.time;
+          const fallbackStartX = fullXs
+            ? fullXs[0]
+            : refTime && refTime.length > 0
+            ? refTime[0]
+            : null;
+          const fallbackEndX = fullXs
+            ? fullXs[fullXs.length - 1]
+            : refTime && refTime.length > 0
+            ? refTime[refTime.length - 1]
+            : null;
+
           savedMetrics.forEach((metric) => {
-            // Extract the range from the saved metric entry
-            const annotationRange = metric.range;
+            // Saved metric ranges are TIME values (snapped from the
+            // FilteredGraph drag interaction). Normalize at the call site:
+            // manual entry or older malformed metrics can be reversed, and
+            // readWellXyInRange returns the full signal when start >= end.
+            // Treat null/undefined endpoints as "no range" and fall back
+            // to the indicator's full trace bounds (so a metric saved
+            // with no annotation reports "from 0.15 to 3500" rather than
+            // "from 0 to 0" or "from null to null").
+            const r0 = metric.range?.[0];
+            const r1 = metric.range?.[1];
+            const a = r0 != null ? Number(r0) : NaN;
+            const b = r1 != null ? Number(r1) : NaN;
+            const hasRange = Number.isFinite(a) && Number.isFinite(b);
+            const startX = hasRange ? Math.min(a, b) : fallbackStartX;
+            const endX = hasRange ? Math.max(a, b) : fallbackEndX;
 
-            // Convert annotation range indices to corresponding time values in milliseconds
-            const timeArray =
-              experiment.wells[0].indicators[indicatorIndex].time;
-            // const startTime = timeArray[annotationRange[0]] / 1000; // Start time in ms
-            // const endTime = timeArray[annotationRange[1]] / 1000; // End time in ms
-            const startTime = timeArray[annotationRange[0]]; // Start time in ms
-            const endTime = timeArray[annotationRange[1]]; // End time in ms
-
-            // Update the metricHeader to use time values
-            const metricHeader = `${metric.metricType} (Time: from ${startTime} to ${endTime})`;
+            const metricHeader = `${metric.metricType} (Time: from ${startX} to ${endX})`;
 
             // Add header for this metric type, including well labels row
             indicatorData.push(`<${metricHeader}>`);
@@ -249,41 +324,18 @@ export const GenerateCSV = (
 
             // Calculate the metric value for each well over the annotation range
             const metricValues = experiment.wells.map((well) => {
-              let heatmapData =
-                well.indicators[indicatorIndex]?.filteredData || [];
-              // Only include filteredData within the annotationRange if it's set and valid
-              const isValidRange =
-                Array.isArray(annotationRange) &&
-                annotationRange.length === 2 &&
-                typeof annotationRange[0] === "number" &&
-                typeof annotationRange[1] === "number" &&
-                annotationRange[0] !== null &&
-                annotationRange[1] !== null &&
-                annotationRange[0] >= 0 &&
-                annotationRange[1] >= 0 &&
-                annotationRange[0] < heatmapData.length &&
-                annotationRange[1] < heatmapData.length;
-              if (isValidRange) {
-                heatmapData = heatmapData.filter(
-                  (_, i) => i >= annotationRange[0] && i <= annotationRange[1]
-                );
-              }
-              // Calculate all metrics on the filtered data (matches Heatmap.js logic)
-              const maxYValue =
-                heatmapData.length > 0 ? d3.max(heatmapData, (d) => d.y) : 0;
-              const minYValue =
-                heatmapData.length > 0 ? d3.min(heatmapData, (d) => d.y) : 0;
+              const ind = well.indicators[indicatorIndex];
+              const { xs, ys } = readWellXyInRange(ind, startX, endX);
               if (metric.metricType === "Slope") {
-                return calculateSlope(heatmapData).toFixed(5);
+                return slopeFromXsYs(xs, ys).toFixed(5);
               } else if (metric.metricType === "Range") {
-                return calculateRange(heatmapData).toFixed(5);
+                return rangeFromYs(ys).toFixed(5);
               } else if (metric.metricType === "Max") {
-                return maxYValue.toFixed(5);
+                return maxFromYs(ys).toFixed(5);
               } else if (metric.metricType === "Min") {
-                return minYValue.toFixed(5);
-              } else {
-                return ""; // Handler for unsupported metric types
+                return minFromYs(ys).toFixed(5);
               }
+              return ""; // Handler for unsupported metric types
             });
 
             // Add a single row of metric values

@@ -380,6 +380,74 @@ function filteredXyInRange(indicator, startX, endX) {
   return empty;
 }
 
+function _sliceTypedByTime(xs, ys, startX, endX) {
+  const empty = { xs: new Float64Array(0), ys: new Float64Array(0) };
+  if (!xs || !ys || xs.length !== ys.length || xs.length === 0) return empty;
+  if (startX == null || endX == null || isNaN(startX) || isNaN(endX) || startX >= endX) {
+    return { xs, ys };
+  }
+  let startIdx = -1;
+  let endIdx = -1;
+  for (let i = 0; i < xs.length; i++) {
+    const x = xs[i];
+    if (startIdx === -1 && x >= startX) startIdx = i;
+    if (x <= endX) endIdx = i;
+  }
+  if (startIdx === -1 || endIdx < startIdx) return empty;
+  return {
+    xs: xs.subarray(startIdx, endIdx + 1),
+    ys: ys.subarray(startIdx, endIdx + 1),
+  };
+}
+
+function _slicePointsByTime(fd, startX, endX) {
+  const empty = { xs: new Float64Array(0), ys: new Float64Array(0) };
+  if (!Array.isArray(fd) || fd.length === 0) return empty;
+  const filtered =
+    startX == null || endX == null || isNaN(startX) || isNaN(endX) || startX >= endX
+      ? fd
+      : fd.filter((p) => p && p.x >= startX && p.x <= endX);
+  const n = filtered.length;
+  const xsOut = new Float64Array(n);
+  const ysOut = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    xsOut[i] = filtered[i].x;
+    ysOut[i] = filtered[i].y;
+  }
+  return { xs: xsOut, ys: ysOut };
+}
+
+// Read an indicator's xy values in [startX, endX], walking a typed-array-first
+// priority chain so consumers (report output, all-wells metric aggregation)
+// stay robust across Phase C (typed arrays), pre-filter loads (raw only), and
+// legacy {x,y}[] paths (BatchProcessing, older callers):
+//
+//   1. filteredXs/filteredYs   — typed, post-filter
+//   2. rawXs/rawYs             — typed, no filters applied yet
+//   3. filteredData {x,y}[]    — legacy / BatchProcessing path
+//   4. rawData     {x,y}[]     — legacy fallback
+//
+// Returns Float64Array views (subarrays) without copying when the source is
+// typed. Reversed ranges (startX >= endX) yield the full signal — normalize
+// at the call site with Math.min/Math.max if that isn't what you want.
+function readWellXyInRange(indicator, startX, endX) {
+  const empty = { xs: new Float64Array(0), ys: new Float64Array(0) };
+  if (!indicator) return empty;
+  if (indicator.filteredXs && indicator.filteredYs && indicator.filteredXs.length > 0) {
+    return _sliceTypedByTime(indicator.filteredXs, indicator.filteredYs, startX, endX);
+  }
+  if (indicator.rawXs && indicator.rawYs && indicator.rawXs.length > 0) {
+    return _sliceTypedByTime(indicator.rawXs, indicator.rawYs, startX, endX);
+  }
+  if (Array.isArray(indicator.filteredData) && indicator.filteredData.length > 0) {
+    return _slicePointsByTime(indicator.filteredData, startX, endX);
+  }
+  if (Array.isArray(indicator.rawData) && indicator.rawData.length > 0) {
+    return _slicePointsByTime(indicator.rawData, startX, endX);
+  }
+  return empty;
+}
+
 const _exports = {
   seedFilteredDataFromRaw,
   packWellsToTypedArrays,
@@ -396,6 +464,7 @@ const _exports = {
   filteredXsView,
   filteredLength,
   filteredXyInRange,
+  readWellXyInRange,
 };
 
 if (typeof module !== "undefined" && module.exports) {

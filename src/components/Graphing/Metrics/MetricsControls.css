@@ -18,6 +18,35 @@
   flex-direction: column;
 }
 
+/* Compact radios for the Indicator + Metric pickers — the panel is narrow
+ * and the rows here previously took 2x the vertical space of everything
+ * else. Trim the radio circle, kill the row gap, drop the label to xs. */
+.metrics__management .MuiFormLabel-root {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: 0;
+  padding: 0;
+  line-height: 1.1;
+}
+
+.metrics__management .MuiRadio-root {
+  padding: 2px;
+}
+
+.metrics__management .MuiRadio-root .MuiSvgIcon-root {
+  font-size: 0.85rem;
+}
+
+.metrics__management .MuiFormControlLabel-root {
+  margin: 0;
+  gap: 2px;
+}
+
+.metrics__management .MuiFormControlLabel-label {
+  font-size: var(--font-size-xs);
+  line-height: 1.1;
+}
+
 /* Save Metric pinned to the top of the column (under the absolute layout
  * inherited from the previous version). The primitive Button takes its
  * usual padding via .ui-button.MuiButton-root.
@@ -31,7 +60,16 @@
 .saved-metrics-list-container {
   display: flex;
   flex-direction: column;
-  flex-grow: 1;
+  /* Flexible band between the management controls and the spin boxes:
+   *   - basis 5em so the heading + ~2 rows are always visible
+   *   - grow to absorb spare panel height up to max-height (12em),
+   *     then stop so the spin boxes + Clear Range can't be pushed
+   *     past the panel border on tall viewports
+   *   - shrink down to min-height on tight viewports
+   */
+  flex: 1 1 5em;
+  min-height: 5em;
+  max-height: 14em;
   overflow: hidden;
   position: relative;
 }
@@ -40,51 +78,60 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
   padding: 0 var(--space-1);
+  margin-bottom: 2px;
 }
 
+/* Recessed list well — matches the filter list pattern in
+ * FilterControls.css (recessed bg + subtle shadow + bordered frame).
+ */
 .saved-metrics-list {
-  flex-grow: 1;
+  flex: 1 1 auto;
+  /* Cap the inner scroll viewport so a long list scrolls inside its
+   * frame rather than expanding the section past the panel border.
+   * The section also has its own max-height as a belt-and-braces guard. */
+  max-height: 12em;
+  min-height: 0;
   overflow-y: auto;
   margin: 0 var(--space-1) var(--space-1);
-  border: 1px solid var(--color-bg-canvas);
-  border-top: none;
-  background-color: var(--color-bg-canvas);
-  /* Default max-height for smaller displays. */
-  max-height: 4em;
-}
-
-@media (min-height: 660px) {
-  .saved-metrics-list { max-height: 8em; }
-}
-
-@media (min-height: 1100px) {
-  .saved-metrics-list { max-height: 16em; }
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-recessed);
+  box-shadow: var(--shadow-sm) inset;
 }
 
 .saved-metrics-list__empty {
   padding: var(--space-2);
 }
 
-/* Each saved metric — clean recessed list row. Default state is flat
- * with a hairline bottom divider; hover lifts to the soft primary tint;
- * active state pins the primary tint with a left-edge accent bar.
- * Replaces the previous heavy 3-stop blue gradient + multi-inset shadow.
- */
+/* Each saved metric — compact row with a tinted chip (metric type), the
+ * x-range, and a subtle delete button. Hover lifts the row, active state
+ * pins it with a left-edge accent bar. */
 .saved-metric {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: var(--space-1) var(--space-2);
+  gap: var(--space-2);
+  min-height: 1.9em;
+  padding: 2px var(--space-1) 2px var(--space-2);
   cursor: pointer;
-  border-bottom: 1px solid var(--color-bg-recessed);
+  border-bottom: 1px solid var(--color-border);
   border-left: 3px solid transparent;
   background-color: transparent;
   transition: background-color var(--transition-fast),
               border-color var(--transition-fast);
+  user-select: none;
+}
+
+.saved-metric:last-child {
+  border-bottom: none;
+}
+
+.saved-metric:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 .saved-metric:hover:not(.saved-metric--active) {
-  background-color: var(--color-primary-soft);
+  background-color: var(--color-bg-canvas);
 }
 
 .saved-metric--active {
@@ -92,13 +139,70 @@
   border-left-color: var(--color-primary);
 }
 
-.saved-metric__label {
+/* Metric-type chip — small tinted badge on the left, color-coded per
+ * metric type so the user can scan saved metrics at a glance.  */
+.saved-metric__chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.5em;
+  padding: 2px 7px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  flex-shrink: 0;
+}
+
+.saved-metric__chip--max {
+  background-color: var(--color-success-soft);
+  color: var(--color-success-dark);
+}
+.saved-metric__chip--min {
+  background-color: var(--color-info-soft);
+  color: var(--color-info-dark);
+}
+.saved-metric__chip--slope {
+  background-color: var(--color-warning-soft);
+  color: var(--color-warning-dark);
+}
+.saved-metric__chip--range {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary-deep);
+}
+
+.saved-metric__range {
   flex: 1 1 auto;
-  padding-left: var(--space-2);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.saved-metric--active .saved-metric__range {
+  color: var(--color-text);
+}
+
+.saved-metric__delete.MuiIconButton-root {
+  padding: 2px;
+  flex-shrink: 0;
+  /* Keep it understated by default — only fully recolor on hover so
+   * the row doesn't read as "delete me" at first glance. */
+  opacity: 0.55;
+}
+
+.saved-metric__delete.MuiIconButton-root:hover {
+  opacity: 1;
+  background-color: var(--color-danger-soft);
 }
 
 .saved-metric__delete .MuiSvgIcon-root {
   color: var(--color-danger);
+  font-size: 0.95rem;
 }
 
 .saved-metrics-list::-webkit-scrollbar { width: 8px; }
@@ -124,20 +228,52 @@
 
 /* --- Spinboxes (Start / End) --- */
 
+/* flex-shrink: 0 here AND on Clear Range below is the other half of the
+ * "section can't bully the bottom controls past the panel border" fix:
+ * even if the section were to try to grow past its max-height, these
+ * rows refuse to shrink so they stay visible and clickable. */
 .metrics-controls__spinbox-row {
   display: flex;
   align-items: center;
   gap: var(--space-1);
   padding: 0 var(--space-1);
+  flex-shrink: 0;
 }
 
 .metrics-controls__spinbox.MuiTextField-root {
   flex: 1 1 auto;
 }
 
+/* Compact field — shrink the floating label, the input padding, and the
+ * font so two spin boxes + Clear Range fit comfortably below the saved
+ * metrics list in a tight panel. */
+.metrics-controls__spinbox .MuiInputLabel-root {
+  font-size: var(--font-size-xs);
+  transform: translate(10px, 6px) scale(1);
+}
+.metrics-controls__spinbox .MuiInputLabel-root.MuiInputLabel-shrink {
+  transform: translate(10px, -7px) scale(0.85);
+}
+
+.metrics-controls__spinbox .MuiOutlinedInput-input {
+  padding: 4px 6px;
+  font-size: var(--font-size-sm);
+  height: 1.25em;
+}
+
 .metrics-controls__spinbox-arrows {
   display: flex;
   flex-direction: column;
+}
+
+.metrics-controls__spinbox-arrows .MuiIconButton-root {
+  padding: 0;
+  height: 14px;
+  width: 18px;
+}
+
+.metrics-controls__spinbox-arrows .MuiSvgIcon-root {
+  font-size: 0.9rem;
 }
 
 /* --- Clear Range action button --- */

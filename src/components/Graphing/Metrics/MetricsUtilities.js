@@ -85,6 +85,17 @@
 
 // MetricsUtilities.js
 import * as d3 from "d3";
+import { readWellXyInRange } from "../../../utilities/filterPack";
+
+// Normalize a {start, end} time range so consumers don't accidentally invert
+// it. readWellXyInRange treats reversed ranges as "no range" and returns the
+// full signal, which is silently wrong for aggregate metrics.
+function normalizedRange(annotationRange) {
+  const a = annotationRange ? annotationRange.start : null;
+  const b = annotationRange ? annotationRange.end : null;
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return { startX: null, endX: null };
+  return { startX: Math.min(a, b), endX: Math.max(a, b) };
+}
 
 // Existing API kept for callers that already work with {x,y}[] arrays.
 export const linearRegression = (data) => {
@@ -120,39 +131,6 @@ export const calculateRange = (heatmapData) => {
 };
 
 // ---- typed-array-aware helpers ----------------------------------------
-// Reads filtered xs/ys for an indicator without forcing a {x,y}[] build.
-// Original semantics filtered by index — preserved here.
-function indicatorXsYs(indicator) {
-  if (!indicator) return null;
-  if (indicator.filteredXs && indicator.filteredYs) {
-    return { xs: indicator.filteredXs, ys: indicator.filteredYs };
-  }
-  const fd = indicator.filteredData;
-  if (Array.isArray(fd) && fd.length > 0) {
-    const n = fd.length;
-    const xs = new Float64Array(n);
-    const ys = new Float64Array(n);
-    for (let i = 0; i < n; i++) {
-      xs[i] = fd[i].x;
-      ys[i] = fd[i].y;
-    }
-    return { xs, ys };
-  }
-  return null;
-}
-
-function applyIndexRange(xs, ys, annotationRange) {
-  if (annotationRange.start == null || annotationRange.end == null) {
-    return { xs, ys };
-  }
-  const start = Math.max(0, Math.floor(annotationRange.start));
-  const end = Math.min(ys.length - 1, Math.floor(annotationRange.end));
-  if (end < start) return { xs: new Float64Array(0), ys: new Float64Array(0) };
-  return {
-    xs: xs.subarray ? xs.subarray(start, end + 1) : xs.slice(start, end + 1),
-    ys: ys.subarray ? ys.subarray(start, end + 1) : ys.slice(start, end + 1),
-  };
-}
 
 function slopeFromXsYs(xs, ys) {
   const n = ys.length;
@@ -188,42 +166,40 @@ function rangeFromYs(ys) {
   return maxY - minY;
 }
 
+// annotationRange is {start, end} in time-domain x values (matching the
+// {xMin, xMax} stored by FilteredGraph). Walks the same typed-array-first
+// priority chain as the CSV report so the heatmap's color scale stays
+// consistent with its draw pass and with the exported metric values.
 export const getAllValues = (wellArrays, annotationRange, metricIndicator) => {
+  const { startX, endX } = normalizedRange(annotationRange);
   // Preserve the flat-array contract callers rely on (d3.extent, etc.).
   const out = [];
   for (let w = 0; w < wellArrays.length; w++) {
-    const xy = indicatorXsYs(wellArrays[w].indicators?.[metricIndicator]);
-    if (!xy) continue;
-    const { ys } = applyIndexRange(xy.xs, xy.ys, annotationRange);
+    const ind = wellArrays[w].indicators?.[metricIndicator];
+    const { ys } = readWellXyInRange(ind, startX, endX);
     for (let i = 0; i < ys.length; i++) out.push(ys[i]);
   }
   return out;
 };
 
 export const getAllSlopes = (wellArrays, annotationRange, metricIndicator) => {
+  const { startX, endX } = normalizedRange(annotationRange);
   const out = new Array(wellArrays.length);
   for (let w = 0; w < wellArrays.length; w++) {
-    const xy = indicatorXsYs(wellArrays[w].indicators?.[metricIndicator]);
-    if (!xy) {
-      out[w] = 0;
-      continue;
-    }
-    const { xs, ys } = applyIndexRange(xy.xs, xy.ys, annotationRange);
-    out[w] = slopeFromXsYs(xs, ys);
+    const ind = wellArrays[w].indicators?.[metricIndicator];
+    const { xs, ys } = readWellXyInRange(ind, startX, endX);
+    out[w] = ys.length > 0 ? slopeFromXsYs(xs, ys) : 0;
   }
   return out;
 };
 
 export const getAllRanges = (wellArrays, annotationRange, metricIndicator) => {
+  const { startX, endX } = normalizedRange(annotationRange);
   const out = new Array(wellArrays.length);
   for (let w = 0; w < wellArrays.length; w++) {
-    const xy = indicatorXsYs(wellArrays[w].indicators?.[metricIndicator]);
-    if (!xy) {
-      out[w] = 0;
-      continue;
-    }
-    const { ys } = applyIndexRange(xy.xs, xy.ys, annotationRange);
-    out[w] = rangeFromYs(ys);
+    const ind = wellArrays[w].indicators?.[metricIndicator];
+    const { ys } = readWellXyInRange(ind, startX, endX);
+    out[w] = ys.length > 0 ? rangeFromYs(ys) : 0;
   }
   return out;
 };

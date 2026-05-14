@@ -7,7 +7,6 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import { DataContext } from "../../../providers/DataProvider";
 import {
   FormControl,
-  ListItem,
   Radio,
   RadioGroup,
   FormControlLabel,
@@ -36,10 +35,10 @@ export const MetricsControls = ({
   const [activeMetricId, setActiveMetricId] = useState(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [activeMetricAnnotations, setActiveMetricAnnotations] = useState(null);
-  const [spinBoxStart, setSpinBoxStart] = useState(0);
-  const [spinBoxEnd, setSpinBoxEnd] = useState(0);
 
-  // Local state for manual input
+  // Controlled text inputs for the Start / End spin boxes. Kept as strings
+  // so the user can type intermediate values ("1.", "-") without the input
+  // fighting them. Committed to annotations on blur / Enter.
   const [rangeStartInput, setRangeStartInput] = useState("");
   const [rangeEndInput, setRangeEndInput] = useState("");
 
@@ -51,12 +50,29 @@ export const MetricsControls = ({
   };
 
   const handleSaveMetric = () => {
+    const a = annotations[0] ? Number(annotations[0].xMin) : null;
+    const b = annotations[0] ? Number(annotations[0].xMax) : null;
+    let range;
+    if (Number.isFinite(a) && Number.isFinite(b)) {
+      range = [Math.min(a, b), Math.max(a, b)];
+    } else if (
+      (Array.isArray(currentIndicatorTimes) ||
+        ArrayBuffer.isView(currentIndicatorTimes)) &&
+      currentIndicatorTimes.length > 0
+    ) {
+      // No annotation — save the full time range so the saved metric is
+      // self-descriptive in the list and in any downstream report.
+      range = [
+        currentIndicatorTimes[0],
+        currentIndicatorTimes[currentIndicatorTimes.length - 1],
+      ];
+    } else {
+      range = [null, null];
+    }
     const newMetric = {
       id: savedMetrics.length + 1,
       metricType: selectedMetricType,
-      range: annotations[0]
-        ? [annotations[0].xMin, annotations[0].xMax]
-        : [null, null],
+      range,
     };
     setSavedMetrics((prev) => [...prev, newMetric]);
   };
@@ -94,6 +110,9 @@ export const MetricsControls = ({
     setAnnotationRangeEnd(null);
     setAnnotations([]);
     setActiveMetricId(null);
+    // After clearing, the sync effect repopulates the inputs with the
+    // full time range so the user can see what "no range" actually means
+    // (a metric saved now will run across the entire trace).
   };
 
   const handleIndicatorChange = (e) => {
@@ -111,9 +130,15 @@ export const MetricsControls = ({
     }
   }, [annotations, activeMetricAnnotations]);
 
+  // Indicator times can be either a plain Array (TXT load) or a Float64Array
+  // (DAT load via the extractor worker — see DataProvider.js:472-499). All
+  // checks below need to accept both.
+  const isNumericSeq = (t) =>
+    (Array.isArray(t) || ArrayBuffer.isView(t)) && t.length > 0;
+
   // Helper to get the correct indicator times array
   const getCurrentIndicatorTimes = () => {
-    if (Array.isArray(extractedIndicatorTimes)) {
+    if (isNumericSeq(extractedIndicatorTimes)) {
       return extractedIndicatorTimes;
     } else if (
       extractedIndicatorTimes &&
@@ -135,49 +160,49 @@ export const MetricsControls = ({
   const sliderMax =
     currentIndicatorTimes[currentIndicatorTimes.length - 1] ?? 100;
 
-  // Sync spin boxes with annotation state, showing time values instead of index
+  // Sync spin-box inputs from annotation state. annotations[0].xMin/xMax are
+  // time values (snapped by FilteredGraph during drag) — bind them straight
+  // to the text inputs. Without this the inputs only reflect typed values
+  // and never update after a mouse drag. When no annotation is set, default
+  // the inputs to the full trace range so the user can see what "no range"
+  // resolves to (saved metrics in that state run across the whole trace).
   useEffect(() => {
-    if (
-      annotations &&
-      annotations[0] &&
-      Array.isArray(currentIndicatorTimes) &&
-      currentIndicatorTimes.length > 0
-    ) {
+    if (annotations && annotations[0]) {
       if (typeof annotations[0].xMin === "number") {
-        const idx = annotations[0].xMin;
-        setSpinBoxStart(currentIndicatorTimes[idx] ?? 0);
+        setRangeStartInput(String(annotations[0].xMin));
       }
       if (typeof annotations[0].xMax === "number") {
-        const idx = annotations[0].xMax;
-        setSpinBoxEnd(currentIndicatorTimes[idx] ?? 0);
+        setRangeEndInput(String(annotations[0].xMax));
       }
+      return;
+    }
+    if (isNumericSeq(currentIndicatorTimes)) {
+      setRangeStartInput(String(currentIndicatorTimes[0]));
+      setRangeEndInput(
+        String(currentIndicatorTimes[currentIndicatorTimes.length - 1])
+      );
+    } else {
+      setRangeStartInput("");
+      setRangeEndInput("");
     }
   }, [annotations, currentIndicatorTimes]);
 
   // ---- Helpers shared by Start/End spin-box handlers ------------------
 
   const snapToClosestIndex = (val) => {
-    if (
-      !Array.isArray(currentIndicatorTimes) ||
-      currentIndicatorTimes.length === 0 ||
-      isNaN(val)
-    ) {
+    if (!isNumericSeq(currentIndicatorTimes) || isNaN(val)) {
       return null;
     }
-    let newIdx = currentIndicatorTimes.findIndex((t) => t === val);
-    if (newIdx === -1) {
-      let closestIdx = 0;
-      let minDiff = Math.abs(currentIndicatorTimes[0] - val);
-      for (let i = 1; i < currentIndicatorTimes.length; i++) {
-        const diff = Math.abs(currentIndicatorTimes[i] - val);
-        if (diff < minDiff) {
-          minDiff = diff;
-          closestIdx = i;
-        }
+    let closestIdx = 0;
+    let minDiff = Math.abs(currentIndicatorTimes[0] - val);
+    for (let i = 1; i < currentIndicatorTimes.length; i++) {
+      const diff = Math.abs(currentIndicatorTimes[i] - val);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIdx = i;
       }
-      newIdx = closestIdx;
     }
-    return { idx: newIdx, value: currentIndicatorTimes[newIdx] };
+    return { idx: closestIdx, value: currentIndicatorTimes[closestIdx] };
   };
 
   const updateAnnotationField = (field, value) => {
@@ -192,10 +217,17 @@ export const MetricsControls = ({
         borderColor: ann.borderColor ?? "rgba(0, 255, 0, 1)",
         borderWidth: ann.borderWidth ?? 2,
       };
-      // Mirror the missing endpoint when only one is set, matching the
-      // pre-restyle behavior.
-      if (field === "xMin" && typeof next.xMax !== "number") next.xMax = value;
-      if (field === "xMax" && typeof next.xMin !== "number") next.xMin = value;
+      // If only one endpoint is set, anchor the other to the trace bounds so
+      // the box has a visible width instead of collapsing to zero. Don't
+      // normalize xMin > xMax here — keep the writer steady so typing Start
+      // > End doesn't visibly swap the inputs on the next sync. Consumers
+      // (report, heatmap, save) normalize at read/save time.
+      if (field === "xMin" && typeof next.xMax !== "number") {
+        next.xMax = currentIndicatorTimes[currentIndicatorTimes.length - 1] ?? value;
+      }
+      if (field === "xMax" && typeof next.xMin !== "number") {
+        next.xMin = currentIndicatorTimes[0] ?? value;
+      }
       return [next];
     });
   };
@@ -216,22 +248,24 @@ export const MetricsControls = ({
 
   const stepBy = (field, delta) => {
     if (
-      !Array.isArray(currentIndicatorTimes) ||
-      currentIndicatorTimes.length === 0 ||
+      !isNumericSeq(currentIndicatorTimes) ||
       !annotations?.[0] ||
       typeof annotations[0][field] !== "number"
     ) {
       return;
     }
-    const idx = annotations[0][field];
-    const newIdx =
-      delta > 0
-        ? Math.min(idx + delta, currentIndicatorTimes.length - 1)
-        : Math.max(idx + delta, 0);
-    if (newIdx === idx) return;
-    if (field === "xMin") setAnnotationRangeStart(newIdx);
-    else setAnnotationRangeEnd(newIdx);
-    updateAnnotationField(field, newIdx);
+    // annotations[0][field] is a time value, not an index. Convert to an
+    // index via the snap helper, step by delta indices, then write the new
+    // *time* back so the annotation contract stays time-domain everywhere.
+    const snap = snapToClosestIndex(annotations[0][field]);
+    if (!snap) return;
+    const lastIdx = currentIndicatorTimes.length - 1;
+    const newIdx = Math.min(lastIdx, Math.max(0, snap.idx + delta));
+    if (newIdx === snap.idx) return;
+    const newTime = currentIndicatorTimes[newIdx];
+    if (field === "xMin") setAnnotationRangeStart(newTime);
+    else setAnnotationRangeEnd(newTime);
+    updateAnnotationField(field, newTime);
   };
 
   const renderSpinbox = ({ label, value, onChange, onCommit, field }) => (
@@ -332,31 +366,62 @@ export const MetricsControls = ({
         <FormLabel className="saved-metrics-list__heading">Saved Metrics:</FormLabel>
         <div className="saved-metrics-list">
           {savedMetrics.length > 0 ? (
-            savedMetrics.map((metric) => (
-              <ListItem
-                className={`saved-metric ${
-                  metric.id === activeMetricId ? "saved-metric--active" : ""
-                }`}
-                key={metric.id}
-                onClick={() => handleSelectMetric(metric)}
-              >
-                <Text size="sm" className="saved-metric__label">
-                  {metric.metricType === "Range" ? "Max-Min" : metric.metricType}
-                </Text>
-                <IconButton
-                  variant="subtle"
-                  size="sm"
-                  className="saved-metric__delete"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteMetric(metric.id);
-                  }}
-                  aria-label={`delete metric ${metric.metricType}`}
+            savedMetrics.map((metric) => {
+              const label =
+                metric.metricType === "Range" ? "Max-Min" : metric.metricType;
+              const chipMod = `saved-metric__chip--${metric.metricType.toLowerCase()}`;
+              const [r0, r1] = metric.range || [];
+              // Older saved metrics may carry [null, null] for "full range".
+              // Fall back to the currently loaded indicator's first/last
+              // time so the row still shows a meaningful range.
+              const hasRange =
+                Number.isFinite(r0) && Number.isFinite(r1);
+              const fallbackR0 =
+                isNumericSeq(currentIndicatorTimes)
+                  ? currentIndicatorTimes[0]
+                  : null;
+              const fallbackR1 =
+                isNumericSeq(currentIndicatorTimes)
+                  ? currentIndicatorTimes[currentIndicatorTimes.length - 1]
+                  : null;
+              const lo = hasRange ? r0 : fallbackR0;
+              const hi = hasRange ? r1 : fallbackR1;
+              const rangeText =
+                Number.isFinite(lo) && Number.isFinite(hi)
+                  ? `${lo.toFixed(2)}–${hi.toFixed(2)}`
+                  : "—";
+              return (
+                <div
+                  className={`saved-metric ${
+                    metric.id === activeMetricId ? "saved-metric--active" : ""
+                  }`}
+                  key={metric.id}
+                  onClick={() => handleSelectMetric(metric)}
+                  role="button"
+                  tabIndex={0}
                 >
-                  <DeleteForeverTwoToneIcon fontSize="inherit" />
-                </IconButton>
-              </ListItem>
-            ))
+                  <span
+                    className={`saved-metric__chip ${chipMod}`}
+                    aria-hidden="true"
+                  >
+                    {label}
+                  </span>
+                  <span className="saved-metric__range">{rangeText}</span>
+                  <IconButton
+                    variant="subtle"
+                    size="sm"
+                    className="saved-metric__delete"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteMetric(metric.id);
+                    }}
+                    aria-label={`delete metric ${metric.metricType}`}
+                  >
+                    <DeleteForeverTwoToneIcon fontSize="inherit" />
+                  </IconButton>
+                </div>
+              );
+            })
           ) : (
             <Text size="xs" tone="muted" align="center" className="saved-metrics-list__empty">
               No Saved Metrics
