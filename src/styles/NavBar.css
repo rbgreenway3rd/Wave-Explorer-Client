@@ -38,7 +38,8 @@
 }
 
 .logo {
-  margin: 0.15em 0 0 0;
+  /* margin: 0.15em 0 0 -0.5em; */
+  margin: 0.15em 0 0 -0.25em;
 }
 
 /* Toolbar-style bordered icon buttons (Batch / Cardiac / Neural). Used
@@ -53,10 +54,10 @@
   color: var(--color-text);
   box-shadow: var(--shadow-sm);
   transition: background-color var(--transition-fast),
-              border-color var(--transition-fast),
-              color var(--transition-fast),
-              box-shadow var(--transition-fast),
-              transform var(--transition-fast);
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .navbar__action-button.MuiIconButton-root:hover:not(.Mui-disabled) {
@@ -101,12 +102,12 @@
   background-color: var(--color-bg-canvas);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-sm),
-              inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
   color: var(--color-text);
   transition: background-color var(--transition-fast),
-              border-color var(--transition-fast),
-              box-shadow var(--transition-fast),
-              transform var(--transition-fast);
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .nav-pill-button.MuiIconButton-root:hover {
@@ -114,7 +115,7 @@
   border-color: var(--color-primary);
   color: var(--color-primary);
   box-shadow: var(--shadow-md),
-              inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .nav-pill-button.MuiIconButton-root:active:not(.Mui-disabled) {
