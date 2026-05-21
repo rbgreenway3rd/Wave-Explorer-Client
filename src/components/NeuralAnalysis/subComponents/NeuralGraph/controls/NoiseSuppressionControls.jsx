@@ -44,11 +44,11 @@ const NoiseSuppressionControls = () => {
 
   const tfWindow = useDraftSlider(
     trendFlatteningWindow,
-    setTrendFlatteningWindow
+    setTrendFlatteningWindow,
   );
   const tfMin = useDraftSlider(
     trendFlatteningMinimums,
-    setTrendFlatteningMinimums
+    setTrendFlatteningMinimums,
   );
   // numMinimums must remain ≤ window — clamp on commit.
   const handleTfMinCommit = (e, v) => {

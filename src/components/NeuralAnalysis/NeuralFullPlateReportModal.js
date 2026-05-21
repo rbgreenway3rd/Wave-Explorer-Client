@@ -3,10 +3,15 @@ import {
   FormGroup,
   FormControlLabel,
   Checkbox,
-  Divider,
   LinearProgress,
   CircularProgress,
+  FormControl,
+  FormLabel,
+  Radio,
+  RadioGroup,
+  Tooltip,
 } from "@mui/material";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { Modal, Button } from "../ui";
 import { GenerateFullPlateReport } from "./NeuralFullPlateReport";
 import "./ReportModal.css";
@@ -60,6 +65,10 @@ const NeuralFullPlateReportModal = ({
     includeBurstData: false,
     includeBurstMetrics: false,
     includeROIAnalysis: true,
+    // "auto" preserves the pre-existing per-well auto-suggestion behavior.
+    // "defined" uses the user's current Prominence / Window slider values
+    // for every well in the plate.
+    parameterMode: "auto",
   });
 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -184,64 +193,151 @@ const NeuralFullPlateReportModal = ({
               comprehensive CSV report.
             </p>
 
-            <Divider style={{ marginBottom: "var(--space-3)" }} />
+            <section className="report-modal__section">
+              <h6 className="report-modal__section-title">Include in Report</h6>
+              <FormGroup className="report-modal__option-list">
+                {PLATE_OPTIONS.map(({ key, title, caption }) => (
+                  <FormControlLabel
+                    key={key}
+                    control={
+                      <Checkbox
+                        checked={options[key]}
+                        onChange={handleOptionChange(key)}
+                        color="primary"
+                      />
+                    }
+                    label={
+                      <div>
+                        <div className="report-modal__option-title">
+                          {title}
+                        </div>
+                        <span className="report-modal__option-caption">
+                          {caption}
+                        </span>
+                      </div>
+                    }
+                  />
+                ))}
 
-            <FormGroup className="report-modal__option-list">
-              {PLATE_OPTIONS.map(({ key, title, caption }) => (
                 <FormControlLabel
-                  key={key}
+                  className={hasROIs ? "" : "report-modal__option--disabled"}
                   control={
                     <Checkbox
-                      checked={options[key]}
-                      onChange={handleOptionChange(key)}
+                      checked={options.includeROIAnalysis}
+                      onChange={handleOptionChange("includeROIAnalysis")}
                       color="primary"
+                      disabled={!hasROIs}
                     />
                   }
                   label={
                     <div>
-                      <div className="report-modal__option-title">{title}</div>
+                      <div className="report-modal__option-title">
+                        ROI Analysis
+                      </div>
                       <span className="report-modal__option-caption">
-                        {caption}
+                        {roiCaption}
                       </span>
                     </div>
                   }
                 />
-              ))}
+              </FormGroup>
+            </section>
 
-              <FormControlLabel
-                className={hasROIs ? "" : "report-modal__option--disabled"}
-                control={
-                  <Checkbox
-                    checked={options.includeROIAnalysis}
-                    onChange={handleOptionChange("includeROIAnalysis")}
-                    color="primary"
-                    disabled={!hasROIs}
+            <section className="report-modal__section">
+              <FormControl component="fieldset">
+                <FormLabel
+                  component="legend"
+                  className="report-modal__section-title"
+                >
+                  Parameters
+                </FormLabel>
+                <RadioGroup
+                  value={options.parameterMode}
+                  onChange={(e) =>
+                    setOptions({ ...options, parameterMode: e.target.value })
+                  }
+                >
+                  <FormControlLabel
+                    value="defined"
+                    control={<Radio color="primary" />}
+                    label={
+                      <div>
+                        <div className="report-modal__option-title">
+                          Use my defined parameters
+                          <Tooltip
+                            arrow
+                            title={
+                              <div style={{ lineHeight: 1.4 }}>
+                                <div style={{ marginBottom: 4 }}>
+                                  Use the slider values from the chart
+                                  controls for every well, instead of
+                                  recomputing per-well auto-suggestions:
+                                </div>
+                                <ul style={{ margin: 0, paddingLeft: 18 }}>
+                                  <li>
+                                    <b>Prominence</b> — your current Spike
+                                    Prominence slider value
+                                  </li>
+                                  <li>
+                                    <b>Window</b> — your current Window Width
+                                    slider value
+                                  </li>
+                                </ul>
+                                <div style={{ marginTop: 4 }}>
+                                  All other spike-detection parameters (Min
+                                  Width, Min Distance, Cluster Separation,
+                                  Noise Floor, Symmetry, Noise Window) always
+                                  use your slider values regardless of this
+                                  setting.
+                                </div>
+                              </div>
+                            }
+                          >
+                            <InfoOutlinedIcon
+                              className="report-modal__info-icon"
+                              fontSize="small"
+                            />
+                          </Tooltip>
+                        </div>
+                        <span className="report-modal__option-caption">
+                          Apply your current Prominence and Window slider
+                          values to every well
+                        </span>
+                      </div>
+                    }
                   />
-                }
-                label={
-                  <div>
-                    <div className="report-modal__option-title">ROI Analysis</div>
-                    <span className="report-modal__option-caption">
-                      {roiCaption}
-                    </span>
-                  </div>
-                }
-              />
-            </FormGroup>
+                  <FormControlLabel
+                    value="auto"
+                    control={<Radio color="primary" />}
+                    label={
+                      <div>
+                        <div className="report-modal__option-title">
+                          Use auto-calculated defaults
+                        </div>
+                        <span className="report-modal__option-caption">
+                          Compute Prominence and Window automatically for each
+                          well from its raw signal
+                        </span>
+                      </div>
+                    }
+                  />
+                </RadioGroup>
+              </FormControl>
+            </section>
 
-            <Divider style={{ marginTop: "var(--space-3)" }} />
-
-            <div className="report-modal__info">
-              <h6 className="report-modal__info-title">Processing Information:</h6>
+            <section className="report-modal__section report-modal__section--info">
+              <h6 className="report-modal__section-title">
+                Processing Information
+              </h6>
               <span className="report-modal__info-line">
                 This will analyze all wells with the current processing
                 parameters.
               </span>
               <span className="report-modal__info-line">
-                Processing time will depend on the number of wells and selected
-                options.
+                Processing time will depend on the number of wells and
+                selected options.
               </span>
-            </div>
+            </section>
           </>
         ) : (
           <div className="report-modal__progress">

@@ -49,7 +49,61 @@
   display: grid;
   grid-template-columns: 5fr 2fr;
   grid-template-rows: 1fr;
-  height: 100%;
+  /* `flex: 1 1 auto; min-height: 0;` lets this row shrink correctly
+   * inside its flex-column parent (.modal-content). The previous
+   * `height: 100%` could over-grow past the parent and squeeze the
+   * NeuralResults strip below the fold. */
+  flex: 1 1 auto;
+  min-height: 0;
   width: 100%;
   gap: var(--space-3);
+}
+
+/* Close out the bottom of the info-block column with the same 1px
+ * black line that frames the Selected Well row, so the whole header
+ * column reads as a single bounded card. Made a flex-column so the
+ * report-actions block at the bottom can grow into the remaining
+ * vertical space (the parent .modal-header stretches us to match the
+ * ChartControls grid height beside us). */
+.neural-analysis-modal .modal-header-item-container {
+  border-bottom: 1px solid black;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tighten the default browser margins on the heading elements stacked
+ * inside the modal-header-item-container so the column reads as a tight
+ * info block, not a loose list of headings. */
+.neural-analysis-modal .modal-header-item-container > h2,
+.neural-analysis-modal .modal-header-item-container > h3,
+.neural-analysis-modal .modal-header-item-container > h5 {
+  margin-top: 0;
+  margin-bottom: var(--space-1);
+}
+
+/* Centered underlined label sitting above the two report-action buttons. */
+.neural-analysis-modal__report-actions-label {
+  display: block;
+  font-family: var(--font-family);
+  font-size: 1.125rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  text-decoration: underline;
+  text-align: center;
+  margin-top: var(--space-1);
+  margin-bottom: var(--space-1);
+}
+
+/* Report-action buttons stacked vertically and centered under the
+ * Generate Report label. `flex: 1` lets this block consume the
+ * remaining vertical space in the flex-column parent, and
+ * `justify-content: center` centers the buttons between the
+ * Generate Report label above and the parent's bottom border below. */
+.neural-analysis-modal__report-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: var(--space-2);
 }

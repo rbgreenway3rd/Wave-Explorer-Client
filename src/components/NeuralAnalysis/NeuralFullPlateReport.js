@@ -4,7 +4,10 @@
  * Each well gets optimized spike detection parameters
  */
 
-import { detectSpikes } from "./utilities/detectSpikes";
+import {
+  detectSpikes,
+  computeLocalRobustStd,
+} from "./utilities/detectSpikes";
 import { detectBursts } from "./utilities/burstDetection";
 import {
   trendFlattening,
@@ -297,7 +300,12 @@ export function GenerateFullPlateReport(
     includeBurstData = true,
     includeBurstMetrics = true,
     includeROIAnalysis = false,
+    // "auto" (default) recomputes per-well via suggestProminence/Window —
+    // legacy behavior. "defined" uses the user's slider values from
+    // processingParams for every well in the plate.
+    parameterMode = "auto",
   } = options;
+  const useDefinedSpikeParams = parameterMode === "defined";
 
   // Check if any non-ROI sections are requested
   const includeWellSections =
@@ -374,6 +382,9 @@ export function GenerateFullPlateReport(
   const plateParamLines = [
     "<PLATE_PARAMETERS>",
     `TotalWellsInReport,${wells.length}`,
+    `ParameterMode,${
+      useDefinedSpikeParams ? "user-defined" : "per-well auto"
+    }`,
   ];
 
   if (processingParams) {
@@ -381,6 +392,7 @@ export function GenerateFullPlateReport(
       `NoiseSuppressionActive,${
         processingParams.noiseSuppressionActive ?? "N/A"
       }`,
+      `SmoothingEnabled,${processingParams.smoothingEnabled ?? "N/A"}`,
       `SmoothingWindow,${processingParams.smoothingWindow ?? "N/A"}`,
       `BaselineCorrection,${processingParams.baselineCorrection ?? "N/A"}`,
       `TrendFlatteningEnabled,${
@@ -391,6 +403,21 @@ export function GenerateFullPlateReport(
       `OutlierMultiplier,${processingParams.outlierMultiplier ?? "N/A"}`,
       `SpikeMinWidth,${processingParams.spikeMinWidth ?? "N/A"}`,
       `SpikeMinDistance,${processingParams.spikeMinDistance ?? "N/A"}`,
+      `SpikeMinProminenceRatio,${
+        processingParams.spikeMinProminenceRatio ?? "N/A"
+      }`,
+      `StdMultiplier,${processingParams.stdMultiplier ?? "N/A"}`,
+      `NoiseFloorMultiplier,${
+        processingParams.noiseFloorMultiplier ?? "N/A"
+      }`,
+      `NoiseWindowSize,${processingParams.noiseWindowSize ?? "N/A"}`,
+      `ActivityThresholdEnabled,${
+        processingParams.activityThresholdEnabled ?? "N/A"
+      }`,
+      `ActivityThresholdRatio,${
+        processingParams.activityThresholdRatio ?? "N/A"
+      }`,
+      `ShowBursts,${processingParams.showBursts ?? "N/A"}`,
       `MaxInterSpikeInterval,${
         processingParams.maxInterSpikeInterval ?? "N/A"
       }`,
@@ -440,12 +467,23 @@ export function GenerateFullPlateReport(
       // CALCULATE OPTIMAL PARAMETERS (on RAW signal, like NeuralPipeline)
       // ========================================
 
-      // Calculate optimal parameters for THIS well using RAW signal (before preprocessing)
-      const optimalProminence = suggestProminence(rawSignal, 0.5);
-      const optimalWindow = suggestWindow(rawSignal, optimalProminence, 5);
+      // Resolve per-well prominence/window. Defaults to per-well auto-
+      // suggestions from the raw signal; switches to the user's slider
+      // values when the dialog's Parameters radio is set to "defined".
+      let prominenceForWell;
+      let windowForWell;
+      if (useDefinedSpikeParams) {
+        prominenceForWell = processingParams.spikeProminence;
+        windowForWell = processingParams.spikeWindow;
+      } else {
+        prominenceForWell = suggestProminence(rawSignal, 0.5);
+        windowForWell = suggestWindow(rawSignal, prominenceForWell, 5);
+      }
 
       console.log(
-        `[GenerateFullPlateReport] Well ${wellKey}: prominence=${optimalProminence}, window=${optimalWindow} (calculated on RAW signal)`
+        `[GenerateFullPlateReport] Well ${wellKey}: prominence=${prominenceForWell}, window=${windowForWell} (source: ${
+          useDefinedSpikeParams ? "user-defined" : "per-well auto"
+        })`
       );
 
       // ========================================
@@ -515,8 +553,11 @@ export function GenerateFullPlateReport(
           [
             "<WELL_PARAMETERS>",
             `WellID,${wellKey}`,
-            `OptimalProminence,${optimalProminence}`,
-            `OptimalWindow,${optimalWindow}`,
+            `Prominence,${prominenceForWell}`,
+            `Window,${windowForWell}`,
+            `ParameterSource,${
+              useDefinedSpikeParams ? "user-defined" : "per-well auto"
+            }`,
             "</WELL_PARAMETERS>",
           ].join("\n")
         );
@@ -526,12 +567,29 @@ export function GenerateFullPlateReport(
       // SPIKE DETECTION (on processed signal)
       // ========================================
 
+      // If the user enabled non-stationary noise σ (noiseWindowSize > 0),
+      // pre-compute per-sample local σ here — the same block-wise MAD
+      // estimator the main pipeline uses. detectSpikes' noise-floor gate
+      // then reads from this array instead of the global robustStd.
+      //
+      // Reference is null because the full-plate path doesn't apply SG
+      // smoothing — there's no residual to compute σ from, so the
+      // estimator falls back to σ-from-data.
+      const noiseWindowSize = processingParams.noiseWindowSize ?? 0;
+      const localStds =
+        noiseWindowSize > 0
+          ? computeLocalRobustStd(processedForDetection, null, noiseWindowSize)
+          : null;
+
       const spikeDetectionParams = {
-        prominence: optimalProminence,
-        window: optimalWindow,
-        minWidth: processingParams.spikeMinWidth || 5,
-        minDistance: processingParams.spikeMinDistance || 0,
-        minProminenceRatio: 0.01,
+        prominence: prominenceForWell,
+        window: windowForWell,
+        minWidth: processingParams.spikeMinWidth ?? 5,
+        minDistance: processingParams.spikeMinDistance ?? 0,
+        minProminenceRatio: processingParams.spikeMinProminenceRatio ?? 0.01,
+        stdMultiplier: processingParams.stdMultiplier ?? 1,
+        noiseFloorMultiplier: processingParams.noiseFloorMultiplier ?? 0,
+        localStds,
       };
 
       console.log(
@@ -552,6 +610,38 @@ export function GenerateFullPlateReport(
           `[GenerateFullPlateReport] Well ${wellKey}: Re-added ${outlierSpikes.length} outliers as spikes, total: ${spikes.length}`
         );
       }
+
+      // Activity Threshold — drop peaks whose apex Y falls below
+      // ratio * this well's Y range. Same rule as the modal pipeline.
+      if (processingParams.activityThresholdEnabled && spikes.length > 0) {
+        let yMin = Infinity;
+        let yMax = -Infinity;
+        for (let i = 0; i < processedSignal.length; i++) {
+          const y = processedSignal[i].y;
+          if (y < yMin) yMin = y;
+          if (y > yMax) yMax = y;
+        }
+        if (isFinite(yMin) && isFinite(yMax) && yMax > yMin) {
+          const absoluteThreshold =
+            yMin +
+            (processingParams.activityThresholdRatio ?? 0.5) * (yMax - yMin);
+          const before = spikes.length;
+          spikes = spikes.filter((sp) => {
+            const apexY =
+              sp.peakCoords?.y ??
+              sp.points?.[sp.peakIdx - sp.startIdx]?.y;
+            return apexY == null || apexY >= absoluteThreshold;
+          });
+          console.log(
+            `[GenerateFullPlateReport] Well ${wellKey}: Activity threshold filtered ${
+              before - spikes.length
+            } sub-threshold spikes (abs ${absoluteThreshold.toFixed(2)}, ratio ${(
+              processingParams.activityThresholdRatio ?? 0.5
+            ).toFixed(2)})`
+          );
+        }
+      }
+
       console.log(
         `[GenerateFullPlateReport] Well ${wellKey}: spikes array:`,
         spikes
@@ -690,8 +780,8 @@ export function GenerateFullPlateReport(
       // Store well data for horizontal spike data section
       allWellsData.push({
         wellKey,
-        optimalProminence,
-        optimalWindow,
+        prominence: prominenceForWell,
+        window: windowForWell,
         spikes,
       });
 

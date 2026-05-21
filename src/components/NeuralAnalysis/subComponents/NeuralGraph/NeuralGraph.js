@@ -43,6 +43,9 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       decimationEnabled,
       decimationSamples,
       showBursts,
+      activityThresholdRatio,
+      activityThresholdEnabled,
+      setActivityThresholdRatio,
     } = useNeuralSettings();
     const {
       defineROI,
@@ -80,23 +83,28 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
     // signal. Compute y-max plus x-min/x-max in a single pass; the scales
     // config below reuses these.
     let localMaxY;
+    let localMinY;
     let localMinX;
     let localMaxX;
     if (processedSignal && processedSignal.length > 0) {
       let yMax = -Infinity;
+      let yMin = Infinity;
       let xMin = Infinity;
       let xMax = -Infinity;
       for (let i = 0; i < processedSignal.length; i++) {
         const pt = processedSignal[i];
         if (pt.y > yMax) yMax = pt.y;
+        if (pt.y < yMin) yMin = pt.y;
         if (pt.x < xMin) xMin = pt.x;
         if (pt.x > xMax) xMax = pt.x;
       }
       localMaxY = isFinite(yMax) ? yMax : globalMaxY;
+      localMinY = isFinite(yMin) ? yMin : 0;
       localMinX = isFinite(xMin) ? xMin : undefined;
       localMaxX = isFinite(xMax) ? xMax : undefined;
     } else {
       localMaxY = globalMaxY;
+      localMinY = 0;
       localMinX = undefined;
       localMaxX = undefined;
     }
@@ -116,7 +124,15 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       []
     );
 
-    // Initialize chart data once when well is selected
+    // Initialize chart data once when a well is selected and the
+    // pipeline produces its first result. Builds the *complete* initial
+    // datasets list — line + spike scatter + bases + outliers — so the
+    // chart is created already containing the spike markers. Without
+    // this, the chart would mount with only the line, and the
+    // imperative-update effect below would have to add spike scatter
+    // after react-chartjs-2 has finished syncing its own data.datasets
+    // effect; that race meant the very first detection result wouldn't
+    // render until the user nudged a slider.
     useEffect(() => {
       if (
         !processedSignal ||
@@ -127,22 +143,83 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
         return;
       }
 
-      // Only set initial chart data if it doesn't exist
       if (!chartData) {
-        const chartPoints = processedSignal.map((pt) => ({ x: pt.x, y: pt.y }));
-        setChartData({
-          datasets: [
-            {
-              label: "Neural Data",
-              data: chartPoints,
-              borderColor: "rgb(0, 200, 255)",
-              borderWidth: 1.5,
-              fill: false,
-            },
-          ],
+        const initialChartPoints = processedSignal.map((pt) => ({
+          x: pt.x,
+          y: pt.y,
+        }));
+        const initialBaseScatter =
+          Array.isArray(peakResults) && peakResults.length > 0
+            ? peakResults.flatMap((pk) => [
+                { x: pk.leftBaseCoords.x, y: pk.leftBaseCoords.y },
+                { x: pk.rightBaseCoords.x, y: pk.rightBaseCoords.y },
+              ])
+            : [];
+        const initialPeakScatter =
+          Array.isArray(peakResults) && peakResults.length > 0
+            ? peakResults
+                .filter((pk) => !pk.isOutlier)
+                .map((pk) => ({ x: pk.peakCoords.x, y: pk.peakCoords.y }))
+            : [];
+        const initialOutlierScatter =
+          Array.isArray(peakResults) && peakResults.length > 0
+            ? peakResults
+                .filter((pk) => pk.isOutlier)
+                .map((pk) => ({ x: pk.peakCoords.x, y: pk.peakCoords.y }))
+            : [];
+
+        const datasets = [];
+        if (initialBaseScatter.length > 0) {
+          datasets.push({
+            type: "scatter",
+            label: "Spike Bases",
+            data: initialBaseScatter,
+            pointBackgroundColor: "#ffffffff",
+            pointBorderColor: "#fff",
+            pointRadius: 4,
+            showLine: false,
+            borderWidth: 0,
+          });
+        }
+        datasets.push({
+          label: noiseSuppressionActive
+            ? "Noise Suppressed Data"
+            : "Neural Data",
+          data: initialChartPoints,
+          borderColor: noiseSuppressionActive
+            ? "#00bcd4"
+            : "rgb(0, 200, 255)",
+          borderWidth: 1.5,
+          fill: false,
         });
+        if (initialPeakScatter.length > 0) {
+          datasets.push({
+            type: "scatter",
+            label: "Detected Spikes",
+            data: initialPeakScatter,
+            pointBackgroundColor: "#ff1744",
+            pointBorderColor: "#fff",
+            pointRadius: 5,
+            showLine: false,
+            borderWidth: 0,
+          });
+        }
+        if (initialOutlierScatter.length > 0) {
+          datasets.push({
+            type: "scatter",
+            label: "Outlier Spikes",
+            data: initialOutlierScatter,
+            pointBackgroundColor: "rgba(255, 152, 0, 0)",
+            pointBorderColor: "#ff9800",
+            pointRadius: 6,
+            pointStyle: "circle",
+            showLine: false,
+            borderWidth: 2,
+          });
+        }
+        setChartData({ datasets });
       }
-    }, [processedSignal, chartData]);
+    }, [processedSignal, chartData, peakResults, noiseSuppressionActive]);
 
     // Memoized chart-data projections. Each useMemo skips its allocation
     // when its single source of truth is reference-stable across renders
@@ -157,13 +234,25 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
           : [],
       [processedSignal]
     );
+    // Ordinary spikes — regular detection result. Drawn as solid red dots.
     const peakScatter = useMemo(
       () =>
         Array.isArray(peakResults) && peakResults.length > 0
-          ? peakResults.map((pk) => ({
-              x: pk.peakCoords.x,
-              y: pk.peakCoords.y,
-            }))
+          ? peakResults
+              .filter((pk) => !pk.isOutlier)
+              .map((pk) => ({ x: pk.peakCoords.x, y: pk.peakCoords.y }))
+          : [],
+      [peakResults]
+    );
+    // Outlier spikes — re-added by the outlier-removal stage with
+    // isOutlier:true. Drawn as orange hollow rings so the Outlier
+    // Handling sliders have a visible effect on the chart.
+    const outlierScatter = useMemo(
+      () =>
+        Array.isArray(peakResults) && peakResults.length > 0
+          ? peakResults
+              .filter((pk) => pk.isOutlier)
+              .map((pk) => ({ x: pk.peakCoords.x, y: pk.peakCoords.y }))
           : [],
       [peakResults]
     );
@@ -231,12 +320,27 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
               },
             ]
           : []),
+        ...(outlierScatter.length > 0
+          ? [
+              {
+                type: "scatter",
+                label: "Outlier Spikes",
+                data: outlierScatter,
+                pointBackgroundColor: "rgba(255, 152, 0, 0)",
+                pointBorderColor: "#ff9800",
+                pointRadius: 6,
+                pointStyle: "circle",
+                showLine: false,
+                borderWidth: 2,
+              },
+            ]
+          : []),
       ];
 
       // Mutate chart data imperatively without triggering re-render
       chart.data.datasets = newDatasets;
       perf.time("chart.update (data)", () => chart.update("none"));
-    }, [processedSignal, noiseSuppressionActive, chartPoints, peakScatter, baseScatter, chartData]);
+    }, [processedSignal, noiseSuppressionActive, chartPoints, peakScatter, outlierScatter, baseScatter, chartData]);
 
     // Memoize chartOptions - recalculate when processedSignal changes to update axis ranges
     // Initialize with pan/zoom enabled based on initial props
@@ -482,6 +586,35 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
         allRoiAnnotations[`roiCurrent`] = roiAnnotation;
       }
 
+      // Activity Threshold line — horizontal floor positioned at the
+      // ratio (0–1) of the well's Y range. Drawn only when the user has
+      // enabled the threshold from its control panel.
+      if (
+        activityThresholdEnabled &&
+        isFinite(localMinY) &&
+        isFinite(localMaxY) &&
+        localMaxY > localMinY
+      ) {
+        const absoluteThreshold =
+          localMinY + activityThresholdRatio * (localMaxY - localMinY);
+        allRoiAnnotations.activityThreshold = {
+          type: "line",
+          yMin: absoluteThreshold,
+          yMax: absoluteThreshold,
+          borderColor: "#fbc02d",
+          borderWidth: 2,
+          borderDash: [6, 4],
+          label: {
+            display: true,
+            content: `≥ ${Math.round(activityThresholdRatio * 100)}%`,
+            position: "end",
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            color: "#fbc02d",
+            font: { size: 10 },
+          },
+        };
+      }
+
       // Mutate annotations in place
       chart.options.plugins.annotation.annotations = allRoiAnnotations;
       perf.time("chart.update (annotations)", () => chart.update("none"));
@@ -492,6 +625,9 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       roiAnnotation,
       roiColors,
       localMaxY,
+      localMinY,
+      activityThresholdEnabled,
+      activityThresholdRatio,
     ]);
 
     // Mouse event handlers for ROI selection (only active if defineROI is true and currentRoiIndex is set)
@@ -587,6 +723,86 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       }
     };
 
+    // Pointer-event dispatcher. ROI mode wins when active; otherwise we
+    // hit-test the Activity Threshold line and start a drag if the
+    // cursor lands within ~8px of it. Using pointer events (not mouse
+    // events) lets us call setPointerCapture so a drag that escapes the
+    // canvas still commits cleanly.
+    const isDraggingThresholdRef = useRef(false);
+    const draftRatioRef = useRef(activityThresholdRatio);
+
+    const handlePointerDown = (event) => {
+      if (defineROI) {
+        handleMouseDown(event);
+        return;
+      }
+      if (!activityThresholdEnabled) return;
+      const chart = neuralGraphRef.current;
+      if (!chart || !isFinite(localMinY) || !isFinite(localMaxY)) return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      const py = event.clientY - rect.top;
+      const absT =
+        localMinY + activityThresholdRatio * (localMaxY - localMinY);
+      const linePy = chart.scales.y.getPixelForValue(absT);
+      if (Math.abs(py - linePy) < 8) {
+        isDraggingThresholdRef.current = true;
+        draftRatioRef.current = activityThresholdRatio;
+        try {
+          event.currentTarget.setPointerCapture(event.pointerId);
+        } catch (_e) {
+          // setPointerCapture can throw if the pointer has already
+          // moved; harmless — the drag still works via the React
+          // pointermove handler below.
+        }
+        event.preventDefault();
+      }
+    };
+
+    const handlePointerMove = (event) => {
+      if (defineROI) {
+        handleMouseMove(event);
+        return;
+      }
+      if (!isDraggingThresholdRef.current) return;
+      const chart = neuralGraphRef.current;
+      if (!chart || !isFinite(localMinY) || !isFinite(localMaxY)) return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      const py = event.clientY - rect.top;
+      const absT = chart.scales.y.getValueForPixel(py);
+      const range = localMaxY - localMinY;
+      const rawRatio = range > 0 ? (absT - localMinY) / range : 0.5;
+      const ratio = Math.max(0, Math.min(1, rawRatio));
+      draftRatioRef.current = ratio;
+      // Live-update the line annotation imperatively. Avoid calling
+      // setActivityThresholdRatio during drag — committing on pointerup
+      // means the pipeline only re-runs once, after release.
+      const ann = chart.options?.plugins?.annotation?.annotations;
+      if (ann?.activityThreshold) {
+        const newAbs = localMinY + ratio * range;
+        ann.activityThreshold.yMin = newAbs;
+        ann.activityThreshold.yMax = newAbs;
+        if (ann.activityThreshold.label) {
+          ann.activityThreshold.label.content = `≥ ${Math.round(ratio * 100)}%`;
+        }
+        chart.update("none");
+      }
+    };
+
+    const handlePointerUp = (event) => {
+      if (defineROI) {
+        handleMouseUp(event);
+        return;
+      }
+      if (!isDraggingThresholdRef.current) return;
+      isDraggingThresholdRef.current = false;
+      try {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      } catch (_e) {
+        // ignore — capture may have already been released
+      }
+      setActivityThresholdRatio(draftRatioRef.current);
+    };
+
     useImperativeHandle(ref, () => ({
       resetZoom() {
         if (neuralGraphRef.current) {
@@ -608,9 +824,10 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
               width: "100%",
               border: "0.1em solid rgb(100, 100, 100)",
             }}
-            onMouseDown={defineROI ? handleMouseDown : undefined}
-            onMouseMove={defineROI ? handleMouseMove : undefined}
-            onMouseUp={defineROI ? handleMouseUp : undefined}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
           />
         ) : (
           <p className="no-well-selected">

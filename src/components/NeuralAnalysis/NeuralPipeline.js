@@ -282,6 +282,40 @@ export function runNeuralAnalysisPipeline({
           )
       );
     }
+
+    // 5b. Activity Threshold — drop peaks whose apex Y falls below the
+    // user-defined line. Ratio (0–1) is mapped to absolute Y using the
+    // *rendered* processed signal's Y range (the variable named
+    // `processed` here, which is what the modal also renders as
+    // processedSignal) so the filter and the chart line agree exactly.
+    if (params.activityThresholdEnabled && spikeResults.length > 0) {
+      spikeResults = memo(
+        "activityThreshold",
+        [
+          id(spikeResults),
+          id(processed),
+          params.activityThresholdRatio,
+        ],
+        () =>
+          perf.time("activityThreshold", () => {
+            let yMin = Infinity;
+            let yMax = -Infinity;
+            for (let i = 0; i < processed.length; i++) {
+              const y = processed[i].y;
+              if (y < yMin) yMin = y;
+              if (y > yMax) yMax = y;
+            }
+            if (!isFinite(yMin) || !isFinite(yMax) || yMax === yMin) {
+              return spikeResults; // degenerate signal; nothing to filter against
+            }
+            const absoluteThreshold =
+              yMin + params.activityThresholdRatio * (yMax - yMin);
+            return spikeResults.filter(
+              (pk) => pk.peakCoords.y >= absoluteThreshold
+            );
+          })
+      );
+    }
   }
 
   // 6. Burst detection

@@ -3,7 +3,6 @@ import {
   FormGroup,
   FormControlLabel,
   Checkbox,
-  Divider,
 } from "@mui/material";
 import { Modal, Button } from "../ui";
 import { GenerateNeuralCSV } from "./NeuralReport";
@@ -127,48 +126,51 @@ const NeuralReportModal = ({
           Select which sections to include in the CSV report:
         </p>
 
-        <Divider style={{ marginBottom: "var(--space-3)" }} />
+        <section className="report-modal__section">
+          <h6 className="report-modal__section-title">Include in Report</h6>
+          <FormGroup className="report-modal__option-list">
+            {REPORT_OPTIONS.map(({ key, title, caption }) => (
+              <FormControlLabel
+                key={key}
+                control={
+                  <Checkbox
+                    checked={options[key]}
+                    onChange={handleOptionChange(key)}
+                    color="success"
+                  />
+                }
+                label={
+                  <div>
+                    <div className="report-modal__option-title">{title}</div>
+                    <span className="report-modal__option-caption">
+                      {caption}
+                    </span>
+                  </div>
+                }
+              />
+            ))}
 
-        <FormGroup className="report-modal__option-list">
-          {REPORT_OPTIONS.map(({ key, title, caption }) => (
             <FormControlLabel
-              key={key}
+              className={hasROIs ? "" : "report-modal__option--disabled"}
               control={
                 <Checkbox
-                  checked={options[key]}
-                  onChange={handleOptionChange(key)}
+                  checked={options.includeROIAnalysis}
+                  onChange={handleOptionChange("includeROIAnalysis")}
                   color="success"
+                  disabled={!hasROIs}
                 />
               }
               label={
                 <div>
-                  <div className="report-modal__option-title">{title}</div>
-                  <span className="report-modal__option-caption">{caption}</span>
+                  <div className="report-modal__option-title">ROI Analysis</div>
+                  <span className="report-modal__option-caption">
+                    {roiCaption}
+                  </span>
                 </div>
               }
             />
-          ))}
-
-          <FormControlLabel
-            className={hasROIs ? "" : "report-modal__option--disabled"}
-            control={
-              <Checkbox
-                checked={options.includeROIAnalysis}
-                onChange={handleOptionChange("includeROIAnalysis")}
-                color="success"
-                disabled={!hasROIs}
-              />
-            }
-            label={
-              <div>
-                <div className="report-modal__option-title">ROI Analysis</div>
-                <span className="report-modal__option-caption">{roiCaption}</span>
-              </div>
-            }
-          />
-        </FormGroup>
-
-        <Divider style={{ marginTop: "var(--space-3)" }} />
+          </FormGroup>
+        </section>
       </Modal.Body>
 
       <Modal.Footer>

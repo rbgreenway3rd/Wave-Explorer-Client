@@ -43,7 +43,6 @@ export const NeuralSettingsProvider = ({ children }) => {
   // ---- Spike detection params --------------------------------------------
   const [spikeProminence, setSpikeProminence] = useState(1);
   const [spikeWindow, setSpikeWindow] = useState(20);
-  const [spikeThreshold, setSpikeThreshold] = useState(0);
   const [spikeMinDistance, setSpikeMinDistance] = useState(0);
   const [stdMultiplier, setStdMultiplier] = useState(1.0);
   const [noiseFloorMultiplier, setNoiseFloorMultiplier] = useState(0);
@@ -55,6 +54,14 @@ export const NeuralSettingsProvider = ({ children }) => {
   // 0 = use global σ (current behavior). > 0 = block-wise local σ at that
   // window size; lets the per-peak floor adapt to non-stationary noise.
   const [noiseWindowSize, setNoiseWindowSize] = useState(0);
+  // Activity Threshold — a horizontal "floor" drawn on the chart. When
+  // enabled, peaks whose apex Y is below the line are filtered out before
+  // burst detection and metrics. Stored as a ratio (0–1) of each well's
+  // processed-signal Y range so the line stays in range when switching
+  // wells with different amplitudes.
+  const [activityThresholdRatio, setActivityThresholdRatio] = useState(0.5);
+  const [activityThresholdEnabled, setActivityThresholdEnabled] =
+    useState(false);
   // Tracks the well key the user has overridden spike params for. When
   // the selected well changes, the override no longer applies and the
   // effective values fall back to the auto-suggestion (computed in
@@ -121,8 +128,6 @@ export const NeuralSettingsProvider = ({ children }) => {
       setSpikeProminence,
       spikeWindow,
       setSpikeWindow,
-      spikeThreshold,
-      setSpikeThreshold,
       spikeMinDistance,
       setSpikeMinDistance,
       stdMultiplier,
@@ -135,6 +140,10 @@ export const NeuralSettingsProvider = ({ children }) => {
       setSpikeMinProminenceRatio,
       noiseWindowSize,
       setNoiseWindowSize,
+      activityThresholdRatio,
+      setActivityThresholdRatio,
+      activityThresholdEnabled,
+      setActivityThresholdEnabled,
       spikeParamsOverrideForWellKey,
       handleSpikeProminenceChange,
       handleSpikeWindowChange,
@@ -186,13 +195,14 @@ export const NeuralSettingsProvider = ({ children }) => {
     [
       spikeProminence,
       spikeWindow,
-      spikeThreshold,
       spikeMinDistance,
       stdMultiplier,
       noiseFloorMultiplier,
       spikeMinWidth,
       spikeMinProminenceRatio,
       noiseWindowSize,
+      activityThresholdRatio,
+      activityThresholdEnabled,
       spikeParamsOverrideForWellKey,
       handleSpikeProminenceChange,
       handleSpikeWindowChange,

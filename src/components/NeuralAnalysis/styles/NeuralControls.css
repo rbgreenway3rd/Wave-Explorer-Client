@@ -5,7 +5,7 @@
     /* Main container for neural analysis control components */
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 8px;
     /* Consistent spacing between control sections */
     /* padding: 16px; */
     padding-top: 8px;
@@ -20,7 +20,51 @@
     /* Placeholder for spike detection parameters */
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
+}
+
+/* "Advanced Tweakables" disclosure section. Wraps the Outlier / Burst /
+ * Spike Detection controls; collapsed by default so the primary view
+ * (well selector + Activity Threshold) is uncluttered. Pattern mirrors
+ * the in-panel <details> used by NoiseSuppressionControls. */
+.neural-controls__advanced {
+    display: block;
+    margin-top: var(--space-2);
+}
+
+.neural-controls__advanced > summary {
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    font-family: var(--font-family);
+    font-size: 0.75rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: var(--space-2) var(--space-3);
+    background-color: var(--color-bg-recessed);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+}
+
+.neural-controls__advanced > summary::-webkit-details-marker {
+    display: none;
+}
+
+.neural-controls__advanced > summary::before {
+    content: "▸";
+    display: inline-block;
+    margin-right: var(--space-2);
+    transition: transform var(--transition-base);
+}
+
+.neural-controls__advanced[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+.neural-controls__advanced > *:not(summary) {
+    margin-top: var(--space-2);
 }
 
 /* Show bursts toggle row */

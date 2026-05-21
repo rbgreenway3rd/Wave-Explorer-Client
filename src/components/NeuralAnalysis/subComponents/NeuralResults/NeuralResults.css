@@ -5,7 +5,11 @@
 
 .neural-results {
   padding: var(--space-3);
-  max-height: 600px;
+  /* 35vh caps the panel at ~378px on a 1080p screen so the rest of the
+   * modal interior (header, info block, chart, controls) all fit
+   * without page-level scroll. Internal overflow-y scroll lets the
+   * content beyond the cap remain reachable. */
+  max-height: 35vh;
   overflow-y: auto;
 }
 

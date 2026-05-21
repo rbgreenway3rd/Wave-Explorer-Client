@@ -360,7 +360,10 @@ function findTrueSpikes(
     const keptPeaks = [];
     const keptProms = [];
     for (let i = 0; i < peaks.length; i++) {
-      const sigma = localStds ? localStds[peaks[i].index] : robustStd;
+      const sigma =
+        localStds && localStds.length > 0
+          ? localStds[peaks[i].index]
+          : robustStd;
       const floor = noiseFloorMultiplier * sigma;
       if (prominences[i] >= floor) {
         keptPeaks.push(peaks[i]);

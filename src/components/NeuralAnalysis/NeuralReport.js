@@ -365,6 +365,9 @@ export const GenerateNeuralCSV = (
       }`
     );
     csvLines.push(
+      `SmoothingEnabled,${processingParams.smoothingEnabled ?? "N/A"}`
+    );
+    csvLines.push(
       `SmoothingWindow,${processingParams.smoothingWindow ?? "N/A"}`
     );
     csvLines.push(
@@ -380,6 +383,15 @@ export const GenerateNeuralCSV = (
       }`
     );
     csvLines.push(
+      `HandleOutliers,${processingParams.handleOutliers ?? "N/A"}`
+    );
+    csvLines.push(
+      `OutlierPercentile,${processingParams.outlierPercentile ?? "N/A"}`
+    );
+    csvLines.push(
+      `OutlierMultiplier,${processingParams.outlierMultiplier ?? "N/A"}`
+    );
+    csvLines.push(
       `SpikeProminence,${processingParams.spikeProminence ?? "N/A"}`
     );
     csvLines.push(`SpikeWindow,${processingParams.spikeWindow ?? "N/A"}`);
@@ -387,6 +399,31 @@ export const GenerateNeuralCSV = (
     csvLines.push(
       `SpikeMinDistance,${processingParams.spikeMinDistance ?? "N/A"}`
     );
+    csvLines.push(
+      `SpikeMinProminenceRatio,${
+        processingParams.spikeMinProminenceRatio ?? "N/A"
+      }`
+    );
+    csvLines.push(
+      `StdMultiplier,${processingParams.stdMultiplier ?? "N/A"}`
+    );
+    csvLines.push(
+      `NoiseFloorMultiplier,${processingParams.noiseFloorMultiplier ?? "N/A"}`
+    );
+    csvLines.push(
+      `NoiseWindowSize,${processingParams.noiseWindowSize ?? "N/A"}`
+    );
+    csvLines.push(
+      `ActivityThresholdEnabled,${
+        processingParams.activityThresholdEnabled ?? "N/A"
+      }`
+    );
+    csvLines.push(
+      `ActivityThresholdRatio,${
+        processingParams.activityThresholdRatio ?? "N/A"
+      }`
+    );
+    csvLines.push(`ShowBursts,${processingParams.showBursts ?? "N/A"}`);
     csvLines.push(
       `MaxInterSpikeInterval,${processingParams.maxInterSpikeInterval ?? "N/A"}`
     );

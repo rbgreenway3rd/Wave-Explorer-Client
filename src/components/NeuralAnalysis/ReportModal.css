@@ -20,15 +20,72 @@
   margin: 0 0 var(--space-3) 0;
 }
 
+/* Section wrapper — each logical group (option list, parameters, info)
+ * lives in one of these. A consistent top-border + vertical padding gives
+ * predictable separation so sections don't visually bleed into each
+ * other. The first section in the body has no top border. */
+.report-modal__section {
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.report-modal__section:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.report-modal__section-title {
+  font-family: var(--font-family);
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 var(--space-2) 0;
+  padding: 0;
+  line-height: 1.2;
+}
+
+/* The MUI FormLabel used for the Parameters radio-group title needs the
+ * same look as the other section titles, not MUI's default focus/hover
+ * coloring. */
+.report-modal__section-title.MuiFormLabel-root,
+.report-modal__section-title.MuiFormLabel-root.Mui-focused {
+  color: var(--color-text-muted);
+}
+
+/* The Parameters section uses <FormControl component="fieldset"> for
+ * a11y. Browsers give <fieldset> default padding (~12px) and a border,
+ * which would indent the radios relative to the checkboxes in adjacent
+ * sections and break the per-row title alignment. Reset all of that —
+ * the section's own styling provides the visual grouping. Same for the
+ * <legend> default padding so the section title sits at the same X. */
+.report-modal__section fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.report-modal__section legend {
+  padding: 0;
+}
+
 .report-modal__option-list.MuiFormGroup-root {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
 }
 
-/* Each option row is `<FormControlLabel>` wrapping a Checkbox + a label
- * block (title + caption). Override the legacy MuiFormControlLabel
+/* Each option row is `<FormControlLabel>` wrapping a Checkbox/Radio + a
+ * label block (title + caption). Override the legacy MuiFormControlLabel
  * uppercase/gray-bg hack — the report modal uses light card styling.
+ *
+ * `align-items: center` keeps the control's icon vertically centered with
+ * the title text. With `flex-start` (the previous setting) the title sat
+ * ~12px above the control's icon because the control has its own 9px
+ * internal padding — they looked misaligned even though both were
+ * pinned to the row's top.
  */
 .report-modal .MuiFormControlLabel-root {
   margin: 0;
@@ -36,12 +93,34 @@
   background-color: transparent;
   border-bottom: none;
   text-transform: none;
-  align-items: flex-start;
+  align-items: center;
+  /* Use flex `gap` for the control-to-label spacing instead of leaving it
+   * to MUI's per-component defaults. This is the source of truth for the
+   * horizontal gap between every Checkbox/Radio and its title. */
+  gap: var(--space-2);
+}
+
+/* Lock every Checkbox/Radio in the report modal to identical outer
+ * dimensions so the FormControlLabel's label always begins at the same
+ * X coordinate, regardless of the control type. MUI's Checkbox and
+ * Radio have the same defaults (24px icon + 9px padding all around), but
+ * any emotion-generated override or color="primary"/="success" wrapping
+ * could in theory drift them apart — this nails them down. */
+.report-modal .MuiFormControlLabel-root .MuiCheckbox-root,
+.report-modal .MuiFormControlLabel-root .MuiRadio-root {
+  width: 42px;
+  height: 42px;
+  padding: 9px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  flex-grow: 0;
 }
 
 .report-modal .MuiFormControlLabel-root .MuiFormControlLabel-label {
   font-family: var(--font-family);
   text-transform: none;
+  margin: 0;
+  padding: 0;
 }
 
 .report-modal__option-title {
@@ -66,20 +145,26 @@
   color: var(--color-text-muted);
 }
 
-/* Info / details panel below the option list. */
-.report-modal__info {
-  background-color: var(--report-modal-info-bg, var(--color-bg-recessed));
-  padding: var(--space-3);
-  border-radius: var(--radius-sm);
-  margin-top: var(--space-2);
-  font-family: var(--font-family);
+/* Inline tooltip-trigger icon next to an option title. Flows with the
+ * text on a single baseline so it doesn't push the title's line-height
+ * up and misalign the row's radio/checkbox. */
+.report-modal__info-icon.MuiSvgIcon-root {
+  font-size: 1rem;
+  vertical-align: middle;
+  margin-left: 4px;
+  color: var(--color-text-muted);
+  cursor: help;
 }
 
-.report-modal__info-title {
-  font-size: 0.875rem;
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text);
-  margin: 0 0 var(--space-1) 0;
+/* Section variant for the soft-colored Processing Information panel.
+ * Has a tinted background instead of a top border, but keeps the same
+ * section-title typography for consistency. Doubled class for specificity
+ * over the base .report-modal__section rules. */
+.report-modal__section.report-modal__section--info {
+  background-color: var(--report-modal-info-bg, var(--color-bg-recessed));
+  border-top: none;
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
 }
 
 .report-modal__info-line {
