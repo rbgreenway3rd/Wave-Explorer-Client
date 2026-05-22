@@ -1,14 +1,11 @@
 /* ChartControls.css — top control bar in the Neural Analysis modal.
  *
- * Layout: CSS grid with 6 equal-fr columns. Replaces the prior flex
- * row whose per-card `min/max-width: 15rem/20rem` made widths drift
- * with content and gaps drift with `justify-content: space-evenly`.
- * Grid + repeat(6, 1fr) gives true equal widths, uniform gaps, and
- * trivial row-symmetry — every card is exactly the same shape.
- *
- * One slot is always present for `<ControlWellSelector>` (rendered
- * `--inert` when noise suppression is off) so the column count is
- * stable; toggling never reflows the bar.
+ * Layout: CSS grid with 3 equal-fr columns for the visible control
+ * cards (Activity Threshold, Pan/Zoom, ROI) plus an auto-sized trailing
+ * slot for the "Advanced" trigger button. Replaces the prior 6-column
+ * grid (Control Well / Noise Suppression / Activity Threshold /
+ * Pan/Zoom / ROI / Decimation) — the three hidden cards moved into
+ * AdvancedDrawer.
  *
  * Reads as a section of the modal body, not a tray bolted on top:
  * no outer frame, transparent bg, subtle inset top-edge shadow for
@@ -17,7 +14,7 @@
 
 .neural-chart-controls {
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
     align-items: stretch;
     box-sizing: border-box;
     width: 100%;
@@ -26,6 +23,23 @@
     background-color: transparent;
     border: none;
     box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.08);
+}
+
+/* Trailing slot for the Advanced trigger. align-self: center keeps the
+ * button vertically centered against the taller control cards on the
+ * row. */
+.neural-chart-controls__advanced-trigger {
+    align-self: center;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.neural-chart-controls__advanced-chevron {
+    transition: transform var(--transition-base);
+}
+
+.neural-chart-controls__advanced-chevron--open {
+    transform: rotate(180deg);
 }
 
 /* Legacy divider class — no longer rendered after the JSX cleanup

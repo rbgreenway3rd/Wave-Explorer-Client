@@ -241,6 +241,32 @@ export function runNeuralAnalysisPipeline({
           )
         : null;
 
+    // Baseline override for peak bases — when the user has enabled the
+    // chart's Baseline Threshold line, peak width and AUC are computed
+    // relative to where the signal crosses that absolute Y value, not
+    // the lowest local minimum near each peak.
+    //
+    // Compute the absolute Y once from the rendered signal's range so
+    // it matches the on-chart line exactly. Done outside the memo so
+    // the cache key can be a simple primitive (`baselineY`) rather
+    // than dragging the whole signal in.
+    let baselineY = null;
+    if (
+      params.baselineThresholdEnabled &&
+      typeof params.baselineThresholdRatio === "number"
+    ) {
+      let yMin = Infinity;
+      let yMax = -Infinity;
+      for (let i = 0; i < processed.length; i++) {
+        const y = processed[i].y;
+        if (y < yMin) yMin = y;
+        if (y > yMax) yMax = y;
+      }
+      if (isFinite(yMin) && isFinite(yMax) && yMax > yMin) {
+        baselineY = yMin + params.baselineThresholdRatio * (yMax - yMin);
+      }
+    }
+
     spikeResults = memo(
       "detectSpikes",
       [
@@ -254,6 +280,7 @@ export function runNeuralAnalysisPipeline({
         params.spikeMinProminenceRatio,
         params.stdMultiplier,
         params.noiseFloorMultiplier,
+        baselineY,
       ],
       () =>
         perf.time("detectSpikes", () =>
@@ -267,6 +294,8 @@ export function runNeuralAnalysisPipeline({
             noiseFloorMultiplier: params.noiseFloorMultiplier,
             noiseReference: preSmoothingSignal,
             localStds,
+            useBaselineForBases: baselineY !== null,
+            baselineY: baselineY ?? undefined,
           })
         )
     );

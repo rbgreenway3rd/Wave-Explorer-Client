@@ -72,7 +72,7 @@
 
 .neural-analysis-modal .modal-body {
   display: grid;
-  grid-template-columns: 5fr 2fr;
+  grid-template-columns: 5fr 1.6fr;
   /* `minmax(0, 1fr)` (not bare `1fr`) keeps the row explicitly
    * shrinkable below content size — necessary so the right column
    * scrolls internally when Advanced expands, rather than pushing the
@@ -88,6 +88,16 @@
   width: 100%;
   gap: var(--space-3);
   overflow: hidden;
+}
+
+/* When the AdvancedDrawer is open it sits between the chart top bar
+ * and the chart row, claiming roughly 240px of vertical space. Bump
+ * the chrome variable so the chart row shrinks rather than overflowing
+ * past the viewport. The class lives on the modal root and is owned
+ * by NeuralAnalysisModal's `advancedOpen` state, so it comes off when
+ * the user closes the drawer or the modal. */
+.neural-analysis-modal--drawer-open {
+  --neural-modal-chrome-above-graph: 560px;
 }
 
 /* Both grid items need explicit min sizes so they shrink to their grid

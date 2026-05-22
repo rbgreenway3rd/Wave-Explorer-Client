@@ -5,6 +5,7 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import NeuralResults from "./subComponents/NeuralResults/NeuralResults";
 import ChartControls from "./subComponents/NeuralGraph/ChartControls";
+import AdvancedDrawer from "./subComponents/NeuralGraph/AdvancedDrawer";
 import NeuralWellSelector from "./subComponents/WellSelection/NeuralWellSelector";
 import NeuralGraph from "./subComponents/NeuralGraph/NeuralGraph";
 import NeuralReportModal from "./NeuralReportModal";
@@ -20,7 +21,6 @@ import { DataContext } from "../../providers/DataProvider";
 import { Chart } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
 import { Modal, IconButton, Heading, Button } from "../ui";
-import NoiseFilterControls from "./subComponents/NeuralGraph/NeuralControls";
 
 Chart.register(zoomPlugin);
 
@@ -51,6 +51,13 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
       neuralGraphRef.current.resetZoom();
     }
   };
+
+  // ---- Advanced drawer state ----------------------------------------------
+  // Owned here (not inside ChartControls) so the modal can toggle a body-
+  // level class that shrinks the chart-row height while the drawer is
+  // open. Starts collapsed every time the modal opens.
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const toggleAdvanced = () => setAdvancedOpen((v) => !v);
 
   // ---- Report-generation state + handlers ---------------------------------
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -99,6 +106,8 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
     noiseWindowSize: settings.noiseWindowSize,
     activityThresholdEnabled: settings.activityThresholdEnabled,
     activityThresholdRatio: settings.activityThresholdRatio,
+    baselineThresholdEnabled: settings.baselineThresholdEnabled,
+    baselineThresholdRatio: settings.baselineThresholdRatio,
     showBursts: settings.showBursts,
     maxInterSpikeInterval: settings.maxInterSpikeInterval,
     minSpikesPerBurst: settings.minSpikesPerBurst,
@@ -109,7 +118,10 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
       open={open}
       onClose={null}
       fullScreen
-      className="neural-analysis-modal"
+      className={
+        "neural-analysis-modal" +
+        (advancedOpen ? " neural-analysis-modal--drawer-open" : "")
+      }
     >
       <Modal.Header className="neural-analysis-modal__header">
         <Heading level={2}>Neural Analysis</Heading>
@@ -189,15 +201,19 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
                 </Tooltip>
               </div>
             </div>
-            <ChartControls resetZoom={resetZoom} />
+            <ChartControls
+              resetZoom={resetZoom}
+              advancedOpen={advancedOpen}
+              onToggleAdvanced={toggleAdvanced}
+            />
           </div>
+          <AdvancedDrawer open={advancedOpen} />
           <div className="modal-body">
             <section className="controls-and-graph">
               <NeuralGraph className="neural-graph" ref={neuralGraphRef} />
             </section>
             <section className="selector-and-average-graph">
               <NeuralWellSelector />
-              <NoiseFilterControls />
             </section>
           </div>
           <NeuralResults />

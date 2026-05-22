@@ -413,6 +413,37 @@ export const GenerateNeuralCSV = (
     csvLines.push(
       `NoiseWindowSize,${processingParams.noiseWindowSize ?? "N/A"}`
     );
+    // Threshold lines — emit both the ratio (0–1) and the absolute Y
+    // value the ratio maps to on this well's processed signal. The
+    // ratio alone is meaningless without the Y range; the absolute Y
+    // is what the user actually saw on the chart.
+    let _csvSigYMin = null;
+    let _csvSigYMax = null;
+    if (Array.isArray(processedSignal) && processedSignal.length > 0) {
+      let yMin = Infinity;
+      let yMax = -Infinity;
+      for (let i = 0; i < processedSignal.length; i++) {
+        const y = processedSignal[i].y;
+        if (y < yMin) yMin = y;
+        if (y > yMax) yMax = y;
+      }
+      if (isFinite(yMin) && isFinite(yMax)) {
+        _csvSigYMin = yMin;
+        _csvSigYMax = yMax;
+      }
+    }
+    const ratioToY = (r) => {
+      if (
+        typeof r !== "number" ||
+        !isFinite(r) ||
+        _csvSigYMin === null ||
+        _csvSigYMax === null
+      ) {
+        return "N/A";
+      }
+      return _csvSigYMin + r * (_csvSigYMax - _csvSigYMin);
+    };
+
     csvLines.push(
       `ActivityThresholdEnabled,${
         processingParams.activityThresholdEnabled ?? "N/A"
@@ -422,6 +453,22 @@ export const GenerateNeuralCSV = (
       `ActivityThresholdRatio,${
         processingParams.activityThresholdRatio ?? "N/A"
       }`
+    );
+    csvLines.push(
+      `ActivityThresholdY,${ratioToY(processingParams.activityThresholdRatio)}`
+    );
+    csvLines.push(
+      `BaselineThresholdEnabled,${
+        processingParams.baselineThresholdEnabled ?? "N/A"
+      }`
+    );
+    csvLines.push(
+      `BaselineThresholdRatio,${
+        processingParams.baselineThresholdRatio ?? "N/A"
+      }`
+    );
+    csvLines.push(
+      `BaselineThresholdY,${ratioToY(processingParams.baselineThresholdRatio)}`
     );
     csvLines.push(`ShowBursts,${processingParams.showBursts ?? "N/A"}`);
     csvLines.push(

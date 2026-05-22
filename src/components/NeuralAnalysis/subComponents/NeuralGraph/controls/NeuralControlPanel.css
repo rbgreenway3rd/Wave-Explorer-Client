@@ -226,6 +226,29 @@
  * header patterns. They're consolidated into the canonical
  * `__header > __title` pattern above; consumers were migrated. */
 
+/* ---- Threshold panel sections (Activity + Baseline) -------------
+ * The Thresholds panel stacks two sibling sections in one card. The
+ * second section gets a top border so the two threshold blocks read
+ * as related but distinct (one filter, one base-detection override).
+ */
+.neural-threshold-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.neural-threshold-section--bordered {
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-neural-border);
+}
+
+.neural-threshold-section__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 /* ---- Method-switch row (Trend Flattening, Subtract Control, etc.) — */
 
 .neural-control-panel__methods {
@@ -234,12 +257,23 @@
   gap: 0;
 }
 
-.neural-control-panel__methods .MuiFormControlLabel-root {
-  margin: 0;
-  padding: 0 var(--space-1);
+/* Panel-wide reset for the legacy MuiFormControlLabel theme override
+ * (gray pill bg + uppercase + borderBottom set in StyleProvider.js).
+ * Without this, stray FormControlLabels inside a panel — the ones
+ * rendered directly under the panel root (Activity Threshold's Enable
+ * switch, Control Well's Subtract toggle, PanZoom's mode toggles)
+ * carry the legacy "pill" background, which reads as a full-width gray
+ * strip inside a dark Neural card. Scoped to .neural-control-panel so
+ * legacy un-migrated screens keep their original look. */
+.neural-control-panel .MuiFormControlLabel-root {
   background-color: transparent;
   border-bottom: none;
   text-transform: none;
+}
+
+.neural-control-panel__methods .MuiFormControlLabel-root {
+  margin: 0;
+  padding: 0 var(--space-1);
 }
 
 /* Switches inside chart-controls panels use MUI's `size="small"` variant

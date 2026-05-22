@@ -62,6 +62,19 @@ export const NeuralSettingsProvider = ({ children }) => {
   const [activityThresholdRatio, setActivityThresholdRatio] = useState(0.5);
   const [activityThresholdEnabled, setActivityThresholdEnabled] =
     useState(false);
+  // Baseline Threshold — a second horizontal line. When enabled, it
+  // overrides per-peak base detection so peak width and AUC are
+  // measured between the line's intercepts with the signal on either
+  // side of each peak (per client request from the Neural modal UI
+  // review). Stored as a ratio (0–1) of each well's Y range so the
+  // line stays in range across well switches with different amplitudes,
+  // mirroring activityThresholdRatio above. Default ratio 0.1 reads as
+  // "near the bottom of the signal range"; NeuralGraph seeds a more
+  // accurate noise-median value the first time the toggle is flipped
+  // on for a given well (see baselineSeededWellRef there).
+  const [baselineThresholdRatio, setBaselineThresholdRatio] = useState(0.1);
+  const [baselineThresholdEnabled, setBaselineThresholdEnabled] =
+    useState(false);
   // Tracks the well key the user has overridden spike params for. When
   // the selected well changes, the override no longer applies and the
   // effective values fall back to the auto-suggestion (computed in
@@ -88,12 +101,16 @@ export const NeuralSettingsProvider = ({ children }) => {
   }, []);
 
   // ---- Noise / smoothing / baseline --------------------------------------
-  const [noiseSuppressionActive, setNoiseSuppressionActive] = useState(true);
+  // `noiseSuppressionActive` is derived from the two method switches
+  // (see the value object below). The redundant master "Enable" toggle
+  // and its setter were removed — turning both methods off already
+  // disables the pipeline.
   // Savitzky-Golay smoothing — high-frequency noise reducer applied
   // after trend-flattening but before outlier removal. `smoothingWindow`
-  // is the SG window (5/7/9), order 2.
+  // is the SG window (5/7/9), order 2. Default 9 per client feedback —
+  // resolves bursts containing two peaks better than 5/7.
   const [smoothingEnabled, setSmoothingEnabled] = useState(true);
-  const [smoothingWindow, setSmoothingWindow] = useState(5);
+  const [smoothingWindow, setSmoothingWindow] = useState(9);
   const [subtractControl, setSubtractControl] = useState(false);
   const [baselineCorrection, setBaselineCorrection] = useState(false);
   const [trendFlatteningEnabled, setTrendFlatteningEnabled] = useState(true);
@@ -121,6 +138,12 @@ export const NeuralSettingsProvider = ({ children }) => {
   const [findPeaksWindowWidth, setFindPeaksWindowWidth] = useState(10);
   const [peakProminence, setPeakProminence] = useState(1);
 
+  // Derived: noise suppression is "active" when at least one method is
+  // running. Kept in the public context shape because several consumers
+  // (ChartControls Control Well gating, NeuralGraph dataset label, CSV
+  // metadata) still read the boolean directly.
+  const noiseSuppressionActive = !!trendFlatteningEnabled || !!smoothingEnabled;
+
   const value = useMemo(
     () => ({
       // spike
@@ -144,13 +167,16 @@ export const NeuralSettingsProvider = ({ children }) => {
       setActivityThresholdRatio,
       activityThresholdEnabled,
       setActivityThresholdEnabled,
+      baselineThresholdRatio,
+      setBaselineThresholdRatio,
+      baselineThresholdEnabled,
+      setBaselineThresholdEnabled,
       spikeParamsOverrideForWellKey,
       handleSpikeProminenceChange,
       handleSpikeWindowChange,
       handleResetSpikeParams,
       // noise / smoothing
       noiseSuppressionActive,
-      setNoiseSuppressionActive,
       smoothingEnabled,
       setSmoothingEnabled,
       smoothingWindow,
@@ -203,6 +229,8 @@ export const NeuralSettingsProvider = ({ children }) => {
       noiseWindowSize,
       activityThresholdRatio,
       activityThresholdEnabled,
+      baselineThresholdRatio,
+      baselineThresholdEnabled,
       spikeParamsOverrideForWellKey,
       handleSpikeProminenceChange,
       handleSpikeWindowChange,

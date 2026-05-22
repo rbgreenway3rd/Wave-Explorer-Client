@@ -417,6 +417,15 @@ export function GenerateFullPlateReport(
       `ActivityThresholdRatio,${
         processingParams.activityThresholdRatio ?? "N/A"
       }`,
+      // Absolute Y is per-well (depends on each well's signal range) so
+      // the full-plate header carries only the ratio — the per-well CSV
+      // ([NeuralReport.js]) has the Y value alongside.
+      `BaselineThresholdEnabled,${
+        processingParams.baselineThresholdEnabled ?? "N/A"
+      }`,
+      `BaselineThresholdRatio,${
+        processingParams.baselineThresholdRatio ?? "N/A"
+      }`,
       `ShowBursts,${processingParams.showBursts ?? "N/A"}`,
       `MaxInterSpikeInterval,${
         processingParams.maxInterSpikeInterval ?? "N/A"

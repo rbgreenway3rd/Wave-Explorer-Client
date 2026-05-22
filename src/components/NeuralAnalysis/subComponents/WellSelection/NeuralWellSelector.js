@@ -145,7 +145,6 @@ const NeuralWellSelector = () => {
 
   return (
     <>
-      {/* Control well selection button moved to NoiseFilterControls */}
       <div
         className="well-grid"
         style={{

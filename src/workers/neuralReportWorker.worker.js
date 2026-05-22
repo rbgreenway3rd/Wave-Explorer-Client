@@ -325,13 +325,39 @@ function processSingleWell(
       ].join("\n")
     );
 
-    // Spike detection
+    // Spike detection. When the user has the chart's Baseline Threshold
+    // line enabled, override per-peak base detection so the full-plate
+    // CSV's reported widths/AUCs match what the live single-well preview
+    // shows. Per-well absolute Y is derived from this well's processed
+    // signal range.
+    let perWellBaselineY = null;
+    if (
+      processingParams.baselineThresholdEnabled &&
+      typeof processingParams.baselineThresholdRatio === "number" &&
+      Array.isArray(processedSignal) &&
+      processedSignal.length > 0
+    ) {
+      let yMin = Infinity;
+      let yMax = -Infinity;
+      for (let i = 0; i < processedSignal.length; i++) {
+        const y = processedSignal[i].y;
+        if (y < yMin) yMin = y;
+        if (y > yMax) yMax = y;
+      }
+      if (isFinite(yMin) && isFinite(yMax) && yMax > yMin) {
+        perWellBaselineY =
+          yMin + processingParams.baselineThresholdRatio * (yMax - yMin);
+      }
+    }
+
     const spikeDetectionParams = {
       prominence: optimalProminence,
       window: optimalWindow,
       minWidth: processingParams.spikeMinWidth || 5,
       minDistance: processingParams.spikeMinDistance || 0,
       minProminenceRatio: 0.01,
+      useBaselineForBases: perWellBaselineY !== null,
+      baselineY: perWellBaselineY ?? undefined,
     };
 
     const spikes = detectSpikes(processedSignal, spikeDetectionParams);

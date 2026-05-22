@@ -28,35 +28,9 @@
     margin-top: 2px;
 }
 
-/* ---- "Create ROI from Time Range" card ---- */
-
-.roi-create-card {
-    margin-bottom: 4px;
-    padding: 4px;
-    background-color: #424242;
-    border: 1px solid #555;
-    border-radius: 0;
-}
-
-.roi-create-card__heading.MuiTypography-root {
-    display: block;
-    color: #fff;
-    font-size: 10px;
-    font-weight: 600;
-    margin-bottom: 2px;
-}
-
-.roi-create-card__row {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    flex-wrap: wrap;
-}
-
 /* ---- Shared TextField appearance (Neural-scoped) ----
- * Replaces 6 identical 17-line `sx={{ ... }}` blocks across the ROI rows
- * and the Create-ROI form. Two bg variants: --paper for the create
- * form, default `backgroundLight` for the per-row inputs.
+ * Used by both the per-row Edit ROI inputs and the inline-entry inputs
+ * on the active "Define ROI N+1" row.
  */
 .neural-text-field.MuiTextField-root {
     width: 7rem;
@@ -65,10 +39,6 @@
 .neural-text-field .MuiInputBase-root {
     background-color: #424242;
     font-size: 10px;
-}
-
-.neural-text-field--paper .MuiInputBase-root {
-    background-color: #252525;
 }
 
 .neural-text-field .MuiInputBase-input {
@@ -181,41 +151,9 @@
     transform: scale(1);
 }
 
-/* ---- "Create ROI" submit button ---- */
-
-.roi-create-button {
-    padding: 2px 4px;
-    border-radius: 0;
-    font-size: 10px;
-    font-weight: 600;
-    min-width: 6.25rem;
-    color: #fff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
-    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.roi-create-button:disabled {
-    background-color: #424242;
-    border: 2px solid #555;
-    cursor: not-allowed;
-    opacity: 0.5;
-}
-
-.roi-create-button:not(:disabled) {
-    background-color: #4caf50;
-    border: 2px solid #4caf50;
-    cursor: pointer;
-}
-
-.roi-create-button:not(:disabled):hover {
-    transform: translateY(-2px);
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
-}
-
 /* ---- Accessibility ---- */
 .roi-button:focus-visible,
-.roi-delete-button:focus-visible,
-.roi-create-button:focus-visible {
+.roi-delete-button:focus-visible {
     outline: 2px solid #2196f3;
     outline-offset: 2px;
 }

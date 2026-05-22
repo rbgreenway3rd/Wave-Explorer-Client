@@ -1,48 +1,53 @@
 import "../../styles/ChartControls.css";
 
 import React from "react";
+import TuneIcon from "@mui/icons-material/Tune";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
-import NoiseSuppressionControls from "./controls/NoiseSuppressionControls";
-import ControlWellSelector from "./controls/ControlWellSelector";
 import ROIControls from "./controls/ROIControls";
 import PanZoomControls from "./controls/PanZoomControls";
-import DecimationControls from "./controls/DecimationControls";
 import ActivityThresholdControls from "./controls/ActivityThresholdControls";
-
-import { useNeuralSettings } from "../../NeuralProvider";
+import { Button } from "../../../ui";
 
 /**
- * ChartControls — top control bar above the Neural Graph. A thin layout
- * shell: each child control panel self-subscribes to the relevant
- * context. ChartControls passes only `resetZoom` (an imperative ref
- * handle into NeuralGraph) down to PanZoomControls.
+ * ChartControls — top control bar above the Neural Graph. Pared down to
+ * the three controls the client wants in immediate reach (Activity
+ * Threshold, Pan/Zoom, ROI) plus the Advanced trigger that opens the
+ * AdvancedDrawer underneath the bar. Everything else (Noise Suppression,
+ * Control Well, Decimation, Outlier/Burst/Spike Tweakables) lives in
+ * the drawer.
  *
- * Report-generation buttons + their state + the report modals
- * themselves live on `NeuralAnalysisModal` now (in the modal header,
- * below the Selected Well section); this bar is purely chart-control
- * panels.
+ * Each child control panel still self-subscribes to its relevant
+ * context; ChartControls passes only `resetZoom` (an imperative ref
+ * handle into NeuralGraph) down to PanZoomControls.
  */
-const ChartControls = ({ resetZoom }) => {
-  const settings = useNeuralSettings();
-
-  // ControlWellSelector is meaningful when noise suppression is on.
-  // The "Subtract Control" toggle now lives INSIDE the selector, so
-  // we no longer gate the panel on it (gating on a switch the panel
-  // itself owns would lock the user out of turning it back on).
-  // Rendered always (so the bar's column count stays stable) but
-  // disabled when noise suppression is off — its `disabled` prop also
-  // applies the `.neural-control-panel--inert` class so the whole
-  // card dims out without layout shift.
-  const controlWellDisabled = !settings.noiseSuppressionActive;
-
+const ChartControls = ({ resetZoom, advancedOpen, onToggleAdvanced }) => {
   return (
     <div className="neural-chart-controls">
-      <ControlWellSelector disabled={controlWellDisabled} />
-      <NoiseSuppressionControls />
       <ActivityThresholdControls />
       <PanZoomControls resetZoom={resetZoom} />
       <ROIControls />
-      <DecimationControls />
+      <div className="neural-chart-controls__advanced-trigger">
+        <Button
+          variant={advancedOpen ? "primary" : "secondary"}
+          size="sm"
+          startIcon={<TuneIcon />}
+          endIcon={
+            <ExpandMoreIcon
+              className={
+                "neural-chart-controls__advanced-chevron" +
+                (advancedOpen
+                  ? " neural-chart-controls__advanced-chevron--open"
+                  : "")
+              }
+            />
+          }
+          onClick={onToggleAdvanced}
+          aria-expanded={advancedOpen}
+        >
+          Advanced
+        </Button>
+      </div>
     </div>
   );
 };

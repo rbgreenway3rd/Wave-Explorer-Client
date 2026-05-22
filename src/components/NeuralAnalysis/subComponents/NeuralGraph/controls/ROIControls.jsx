@@ -33,10 +33,17 @@ const ROIControls = () => {
   const [editingTimes, setEditingTimes] = useState({});
   // Local state for editing ROI durations (temporary values while typing)
   const [editingDurations, setEditingDurations] = useState({});
-  // State for creating new ROI from time inputs
-  const [newRoiStart, setNewRoiStart] = useState("");
-  const [newRoiEnd, setNewRoiEnd] = useState("");
-  const [newRoiDuration, setNewRoiDuration] = useState("");
+  // Inline-entry state for the active "Define ROI N+1" row — users can
+  // commit a new ROI by typing Start + (End or Duration) and pressing
+  // Enter / blurring, without needing to click-and-drag the chart.
+  const [pendingNewStart, setPendingNewStart] = useState("");
+  const [pendingNewEnd, setPendingNewEnd] = useState("");
+  const [pendingNewDuration, setPendingNewDuration] = useState("");
+
+  // Maximum number of ROIs we let the user define. Per client feedback:
+  // "I'd be surprised if anyone ever used more than 4 ROI." Capping at
+  // 6 keeps the UI bounded without being annoyingly tight.
+  const MAX_ROIS = 6;
 
   // Convert extractedIndicatorTimes to array if it's an object
   const timeArray = React.useMemo(() => {
@@ -211,80 +218,78 @@ const ROIControls = () => {
     return "";
   };
 
-  // Create new ROI from time inputs
-  const handleCreateRoiFromTimes = () => {
-    const startTime = parseFloat(newRoiStart);
-    let endTime = parseFloat(newRoiEnd);
-    const duration = parseFloat(newRoiDuration);
+  // Commit the in-progress "Define ROI N+1" row into a real ROI.
+  // Accepts either (Start + End) or (Start + Duration). Returns true on
+  // success so keydown handlers can decide whether to blur after Enter.
+  const commitPendingNewRoi = () => {
+    const startTime = parseFloat(pendingNewStart);
+    let endTime = parseFloat(pendingNewEnd);
+    const duration = parseFloat(pendingNewDuration);
 
-    // If duration is provided but end time is not, calculate end time from duration
     if (
       !isNaN(startTime) &&
       !isNaN(duration) &&
       duration > 0 &&
-      (isNaN(endTime) || newRoiEnd === "")
+      (isNaN(endTime) || pendingNewEnd === "")
     ) {
       endTime = startTime + duration;
     }
 
-    // Validate inputs
-    if (isNaN(startTime) || isNaN(endTime)) {
-      alert(
-        "Please enter valid numbers for start time and either end time or duration"
-      );
-      return;
-    }
-
-    if (startTime >= endTime) {
-      alert("Start time must be less than end time");
-      return;
-    }
-
-    // Create new ROI with time range (yMin and yMax will be set by the graph)
-    const newRoi = {
-      xMin: startTime,
-      xMax: endTime,
-      yMin: null, // Will be set by graph's y-axis range
-      yMax: null, // Will be set by graph's y-axis range
-    };
-
-    // Add to ROI list
-    const updatedRois = [...roiList, newRoi];
-    setRoiList && setRoiList(updatedRois);
-
-    // Clear inputs
-    setNewRoiStart("");
-    setNewRoiEnd("");
-    setNewRoiDuration("");
-  };
-
-  // Check if create button should be enabled
-  const isCreateButtonEnabled = () => {
-    const startTime = parseFloat(newRoiStart);
-    const endTime = parseFloat(newRoiEnd);
-    const duration = parseFloat(newRoiDuration);
-
-    // Valid if we have start time and either (end time OR duration)
-    const hasEndTime = !isNaN(endTime) && newRoiEnd !== "";
-    const hasDuration =
-      !isNaN(duration) && duration > 0 && newRoiDuration !== "";
-
-    if (newRoiStart === "" || isNaN(startTime)) {
+    if (isNaN(startTime) || isNaN(endTime) || startTime >= endTime) {
       return false;
     }
 
-    if (hasEndTime) {
-      return startTime < endTime;
-    }
+    const newRoi = {
+      xMin: startTime,
+      xMax: endTime,
+      yMin: null,
+      yMax: null,
+    };
 
+    setRoiList && setRoiList([...roiList, newRoi]);
+    setPendingNewStart("");
+    setPendingNewEnd("");
+    setPendingNewDuration("");
+    setCurrentRoiIndex && setCurrentRoiIndex(null);
+    setPendingRoiIndex(null);
+    return true;
+  };
+
+  const canCommitPendingNewRoi = () => {
+    const startTime = parseFloat(pendingNewStart);
+    if (pendingNewStart === "" || isNaN(startTime)) return false;
+
+    const endTime = parseFloat(pendingNewEnd);
+    const duration = parseFloat(pendingNewDuration);
+    const hasEndTime = !isNaN(endTime) && pendingNewEnd !== "";
+    const hasDuration =
+      !isNaN(duration) && duration > 0 && pendingNewDuration !== "";
+
+    if (hasEndTime) return startTime < endTime;
     return hasDuration;
+  };
+
+  // Inline-entry handlers for the active "Define ROI N+1" row. Mirror
+  // the per-row commit-on-blur / commit-on-Enter UX used by existing
+  // ROI rows.
+  const handlePendingNewKeyDown = (e) => {
+    if (e.key === "Enter" && canCommitPendingNewRoi()) {
+      const committed = commitPendingNewRoi();
+      if (committed) e.target.blur();
+    }
   };
 
   const renderRoiButtons = () => {
     const buttons = [];
     const numRois = roiList.length;
 
-    for (let i = 0; i <= numRois; i++) {
+    // Cap at MAX_ROIS — the next "Define" row only renders when we
+    // haven't hit the cap. Existing ROIs beyond the cap (e.g. loaded
+    // from an older session) keep rendering so the user can delete
+    // them, but no new slot is offered.
+    const lastIdx = Math.min(numRois, MAX_ROIS - 1);
+
+    for (let i = 0; i <= lastIdx; i++) {
       const isDefined = i < numRois;
       const isActive = pendingRoiIndex === i;
       const label = isDefined ? `Edit ROI ${i + 1}` : `Define ROI ${i + 1}`;
@@ -378,6 +383,54 @@ const ROIControls = () => {
               />
             </Box>
           )}
+
+          {/* Inline-entry inputs for the pending "Define ROI N+1" row:
+            * users can commit a new ROI by typing Start + (End or
+            * Duration) and pressing Enter / Tab. The click-and-drag
+            * chart flow still works in parallel. */}
+          {!isDefined && isActive && (
+            <Box className="roi-row__inputs">
+              <TextField
+                className="neural-text-field"
+                label="Start Time"
+                type="number"
+                size="small"
+                value={pendingNewStart}
+                onChange={(e) => setPendingNewStart(e.target.value)}
+                onBlur={() => {
+                  if (canCommitPendingNewRoi()) commitPendingNewRoi();
+                }}
+                onKeyDown={handlePendingNewKeyDown}
+                inputProps={{ step: 0.1, min: 0 }}
+              />
+              <TextField
+                className="neural-text-field"
+                label="End Time"
+                type="number"
+                size="small"
+                value={pendingNewEnd}
+                onChange={(e) => setPendingNewEnd(e.target.value)}
+                onBlur={() => {
+                  if (canCommitPendingNewRoi()) commitPendingNewRoi();
+                }}
+                onKeyDown={handlePendingNewKeyDown}
+                inputProps={{ step: 0.1, min: 0 }}
+              />
+              <TextField
+                className="neural-text-field"
+                label="Duration"
+                type="number"
+                size="small"
+                value={pendingNewDuration}
+                onChange={(e) => setPendingNewDuration(e.target.value)}
+                onBlur={() => {
+                  if (canCommitPendingNewRoi()) commitPendingNewRoi();
+                }}
+                onKeyDown={handlePendingNewKeyDown}
+                inputProps={{ step: 0.1, min: 0.01 }}
+              />
+            </Box>
+          )}
         </Box>
       );
     }
@@ -402,65 +455,6 @@ const ROIControls = () => {
           : "Available time range: No data loaded"}
       </Typography>
 
-      {/* Create ROI from Time Inputs */}
-      <Box className="roi-create-card">
-        <Typography variant="caption" className="roi-create-card__heading">
-          Create ROI from Time Range
-        </Typography>
-        <Box className="roi-create-card__row">
-          <TextField
-            className="neural-text-field neural-text-field--paper"
-            label="Start Time"
-            type="number"
-            size="small"
-            value={newRoiStart}
-            onChange={(e) => setNewRoiStart(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && isCreateButtonEnabled()) {
-                handleCreateRoiFromTimes();
-              }
-            }}
-            inputProps={{ step: 0.1, min: 0 }}
-          />
-          <TextField
-            className="neural-text-field neural-text-field--paper"
-            label="Duration"
-            type="number"
-            size="small"
-            value={newRoiDuration}
-            onChange={(e) => setNewRoiDuration(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && isCreateButtonEnabled()) {
-                handleCreateRoiFromTimes();
-              }
-            }}
-            inputProps={{ step: 0.1, min: 0.01 }}
-          />
-          <TextField
-            className="neural-text-field neural-text-field--paper"
-            label="End Time"
-            type="number"
-            size="small"
-            value={newRoiEnd}
-            onChange={(e) => setNewRoiEnd(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && isCreateButtonEnabled()) {
-                handleCreateRoiFromTimes();
-              }
-            }}
-            inputProps={{ step: 0.1, min: 0 }}
-          />
-
-          <button
-            className="roi-create-button"
-            onClick={handleCreateRoiFromTimes}
-            disabled={!isCreateButtonEnabled()}
-          >
-            Create ROI
-          </button>
-        </Box>
-      </Box>
-
       <Box className="roi-row-list">{renderRoiButtons()}</Box>
 
       {pendingRoiIndex !== null && (
@@ -468,7 +462,9 @@ const ROIControls = () => {
           variant="caption"
           className="roi-section-helper roi-section-helper--pending"
         >
-          Click and drag on the chart to define ROI {pendingRoiIndex + 1}
+          {pendingRoiIndex < roiList.length
+            ? `Click and drag on the chart to redefine ROI ${pendingRoiIndex + 1}`
+            : `Click and drag on the chart, or type Start + End (or Duration), to define ROI ${pendingRoiIndex + 1}`}
         </Typography>
       )}
     </Panel>

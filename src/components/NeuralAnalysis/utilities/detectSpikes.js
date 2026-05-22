@@ -50,9 +50,19 @@ function computeSignalStats(data) {
     robustStd,
     finalBaselineThreshold,
     fallbackThreshold,
+    medianY,
   };
   signalStatsCache.set(data, stats);
   return stats;
+}
+
+// Public accessor for code outside detectSpikes that needs the signal
+// median — e.g. the Baseline Threshold control seeds itself at the
+// noise median when first enabled. Reuses the WeakMap cache so the
+// cost of repeat calls during slider drags collapses to a lookup.
+export function getSignalMedianY(data) {
+  if (!Array.isArray(data) || data.length === 0) return null;
+  return computeSignalStats(data).medianY;
 }
 
 // ---- Local windowed robust σ -------------------------------------------
@@ -316,6 +326,56 @@ function findBases(data, peakIdx, searchRange, baselineThreshold) {
 }
 
 /**
+ * Find left and right bases by intersecting the signal with a fixed
+ * horizontal baseline Y value. Used by the user-controlled Baseline
+ * Threshold line: when enabled, peak bases are the first sample on
+ * either side of the peak where the signal *crosses* the baseline,
+ * rather than the lowest local minimum (default findBases behavior).
+ * This is what the client wants for measuring peak width + AUC.
+ *
+ * If the peak apex is at or below the baseline, the baseline misses
+ * the peak entirely — in that case fall back to the peak index for
+ * both bases so the peak still records (width 0, AUC 0) instead of
+ * silently dropping out of the result set.
+ *
+ * @param {{x: number, y: number}[]} data - The signal data
+ * @param {number} peakIdx - Index of the peak
+ * @param {number} searchRange - Maximum range to search for crossings
+ * @param {number} baselineY - Absolute Y value of the baseline line
+ * @returns {{leftBaseIdx: number, rightBaseIdx: number}}
+ */
+function findBasesAtBaseline(data, peakIdx, searchRange, baselineY) {
+  let leftBaseIdx = peakIdx;
+  let rightBaseIdx = peakIdx;
+
+  const peakY = data[peakIdx].y;
+  if (!(peakY > baselineY)) {
+    // Peak doesn't rise above the baseline; degenerate width 0.
+    return { leftBaseIdx, rightBaseIdx };
+  }
+
+  // Walk left: first sample at or below baseline becomes the left base.
+  const leftLimit = Math.max(0, peakIdx - searchRange);
+  for (let j = peakIdx - 1; j >= leftLimit; j--) {
+    if (data[j].y <= baselineY) {
+      leftBaseIdx = j;
+      break;
+    }
+  }
+
+  // Walk right: first sample at or below baseline becomes the right base.
+  const rightLimit = Math.min(data.length - 1, peakIdx + searchRange);
+  for (let j = peakIdx + 1; j <= rightLimit; j++) {
+    if (data[j].y <= baselineY) {
+      rightBaseIdx = j;
+      break;
+    }
+  }
+
+  return { leftBaseIdx, rightBaseIdx };
+}
+
+/**
  * Filter true spikes using k-means clustering on prominence.
  *
  * Parameters are passed down from detectSpikes() for consistent configuration.
@@ -462,6 +522,12 @@ export function detectSpikes(data, options = {}) {
   const noiseFloorMultiplier = options.noiseFloorMultiplier ?? 0; // Per-peak noise floor; 0 = disabled
   const noiseReference = options.noiseReference ?? null; // Pre-smoothing signal for residual-based σ
   const localStds = options.localStds ?? null; // Optional per-sample Float64Array of σ — adapts to non-stationary noise
+  // Baseline override: when the user enables the Baseline Threshold
+  // line on the chart, `baselineY` is the absolute Y value of that
+  // line and `useBaselineForBases` is true. Bases become the signal's
+  // crossings with that line rather than the lowest local minima.
+  const useBaselineForBases = options.useBaselineForBases === true;
+  const baselineY = options.baselineY;
 
   // Signal-derived statistics (cached per data-array identity — see
   // computeSignalStats above).
@@ -511,32 +577,52 @@ export function detectSpikes(data, options = {}) {
   // Compute bases ONCE per peak (was previously computed twice — first
   // for prominence filtering, then again to build the NeuralPeak in the
   // second pass). Cache here is per-detection, keyed on peakIdx.
+  //
+  // Two modes:
+  //   1) `useBaselineForBases` true: bases are the signal's crossings
+  //      with the user-controlled Baseline Threshold line. No fallback
+  //      ladder — the user picked the Y, we honor it.
+  //   2) Default: bases are the lowest local minimum near the peak,
+  //      respecting one of three baseline-cap fallbacks
+  //      (finalBaselineThreshold → fallbackThreshold → globalMax).
   const baseCache = new Map();
+  const baselineMode =
+    useBaselineForBases && typeof baselineY === "number" && isFinite(baselineY);
   function basesFor(peakIdx) {
     let cached = baseCache.get(peakIdx);
     if (cached !== undefined) return cached;
     const searchRange = wlen ? Math.floor(wlen / 2) : data.length;
-    let { leftBaseIdx, rightBaseIdx } = findBases(
-      data,
-      peakIdx,
-      searchRange,
-      finalBaselineThreshold
-    );
-    if (leftBaseIdx === peakIdx || rightBaseIdx === peakIdx) {
+    let leftBaseIdx, rightBaseIdx;
+    if (baselineMode) {
+      ({ leftBaseIdx, rightBaseIdx } = findBasesAtBaseline(
+        data,
+        peakIdx,
+        searchRange,
+        baselineY
+      ));
+    } else {
       ({ leftBaseIdx, rightBaseIdx } = findBases(
         data,
         peakIdx,
         searchRange,
-        fallbackThreshold
+        finalBaselineThreshold
       ));
-    }
-    if (leftBaseIdx === peakIdx || rightBaseIdx === peakIdx) {
-      ({ leftBaseIdx, rightBaseIdx } = findBases(
-        data,
-        peakIdx,
-        searchRange,
-        globalMax
-      ));
+      if (leftBaseIdx === peakIdx || rightBaseIdx === peakIdx) {
+        ({ leftBaseIdx, rightBaseIdx } = findBases(
+          data,
+          peakIdx,
+          searchRange,
+          fallbackThreshold
+        ));
+      }
+      if (leftBaseIdx === peakIdx || rightBaseIdx === peakIdx) {
+        ({ leftBaseIdx, rightBaseIdx } = findBases(
+          data,
+          peakIdx,
+          searchRange,
+          globalMax
+        ));
+      }
     }
     cached = { leftBaseIdx, rightBaseIdx };
     baseCache.set(peakIdx, cached);

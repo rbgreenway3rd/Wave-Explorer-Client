@@ -13,9 +13,10 @@ import { useDraftSlider } from "../../../utilities/useDraftSlider";
 import "./NeuralControlPanel.css";
 
 /**
- * NoiseSuppressionControls — section header + a master Switch for the
- * suppression pipeline + per-method switches (Trend Flattening,
- * Savitzky-Golay smoothing). The "Subtract Control Well Signature"
+ * NoiseSuppressionControls — section header + per-method switches
+ * (Trend Flattening, Savitzky-Golay smoothing). The redundant master
+ * "Enable" toggle was removed — turning both method switches off
+ * already disables the pipeline. The "Subtract Control Well Signature"
  * toggle lives in ControlWellSelector now (co-located with the control-
  * well selection it depends on).
  *
@@ -28,8 +29,6 @@ const SG_WINDOW_OPTIONS = [5, 7, 9];
 
 const NoiseSuppressionControls = () => {
   const {
-    noiseSuppressionActive,
-    setNoiseSuppressionActive,
     trendFlatteningEnabled,
     setTrendFlatteningEnabled,
     smoothingEnabled,
@@ -66,27 +65,13 @@ const NoiseSuppressionControls = () => {
       </div>
 
       <div className="neural-control-panel__methods">
-        {/* Master toggle */}
-        <FormControlLabel
-          style={{ "--neural-method-accent": "var(--color-primary)" }}
-          control={
-            <Switch
-              size="small"
-              checked={noiseSuppressionActive}
-              onChange={(_, checked) => setNoiseSuppressionActive(checked)}
-            />
-          }
-          label={noiseSuppressionActive ? "Enabled" : "Disabled"}
-        />
-
-        {/* Method switches */}
+        {/* Method switches — turning both off disables the pipeline. */}
         <FormControlLabel
           style={{ "--neural-method-accent": "var(--color-primary)" }}
           control={
             <Switch
               size="small"
               checked={!!trendFlatteningEnabled}
-              disabled={!noiseSuppressionActive}
               onChange={(_, checked) => {
                 if (typeof setTrendFlatteningEnabled === "function") {
                   setTrendFlatteningEnabled(checked);
@@ -103,7 +88,6 @@ const NoiseSuppressionControls = () => {
             <Switch
               size="small"
               checked={!!smoothingEnabled}
-              disabled={!noiseSuppressionActive}
               onChange={(_, checked) => setSmoothingEnabled(checked)}
             />
           }
@@ -127,7 +111,7 @@ const NoiseSuppressionControls = () => {
               value={w}
               control={<Radio size="small" />}
               label={w}
-              disabled={!smoothingEnabled || !noiseSuppressionActive}
+              disabled={!smoothingEnabled}
             />
           ))}
         </RadioGroup>
@@ -151,7 +135,7 @@ const NoiseSuppressionControls = () => {
             min={50}
             max={500}
             step={10}
-            disabled={!noiseSuppressionActive || !trendFlatteningEnabled}
+            disabled={!trendFlatteningEnabled}
             marks={[
               { value: 50, label: "50" },
               { value: 200, label: "200" },
@@ -176,7 +160,7 @@ const NoiseSuppressionControls = () => {
             min={5}
             max={100}
             step={1}
-            disabled={!noiseSuppressionActive || !trendFlatteningEnabled}
+            disabled={!trendFlatteningEnabled}
             marks={[
               { value: 5, label: "5" },
               { value: 50, label: "50" },

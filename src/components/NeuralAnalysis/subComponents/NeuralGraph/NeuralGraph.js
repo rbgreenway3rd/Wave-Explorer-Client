@@ -17,6 +17,7 @@ import {
 } from "../../NeuralProvider";
 import { DataContext } from "../../../../providers/DataProvider";
 import { perf } from "../../utilities/perfLogger";
+import { getSignalMedianY } from "../../utilities/detectSpikes";
 import { Chart, registerables, Tooltip } from "chart.js";
 import annotationPlugin from "chartjs-plugin-annotation";
 import zoomPlugin from "chartjs-plugin-zoom";
@@ -46,6 +47,9 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       activityThresholdRatio,
       activityThresholdEnabled,
       setActivityThresholdRatio,
+      baselineThresholdRatio,
+      baselineThresholdEnabled,
+      setBaselineThresholdRatio,
     } = useNeuralSettings();
     const {
       defineROI,
@@ -80,34 +84,51 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
 
     // Explicit loop instead of Math.{min,max}(...arr.map(...)) — spread
     // into a function call blows V8's argument limit on a 250K-point
-    // signal. Compute y-max plus x-min/x-max in a single pass; the scales
-    // config below reuses these.
+    // signal. The y-extents feed the Activity Threshold ratio→Y
+    // conversion. Computed inline (not memoized) because the y range
+    // does change every time the pipeline produces a new signal and the
+    // ratio→Y conversion needs to follow that.
     let localMaxY;
     let localMinY;
-    let localMinX;
-    let localMaxX;
     if (processedSignal && processedSignal.length > 0) {
       let yMax = -Infinity;
       let yMin = Infinity;
-      let xMin = Infinity;
-      let xMax = -Infinity;
       for (let i = 0; i < processedSignal.length; i++) {
         const pt = processedSignal[i];
         if (pt.y > yMax) yMax = pt.y;
         if (pt.y < yMin) yMin = pt.y;
-        if (pt.x < xMin) xMin = pt.x;
-        if (pt.x > xMax) xMax = pt.x;
       }
       localMaxY = isFinite(yMax) ? yMax : globalMaxY;
       localMinY = isFinite(yMin) ? yMin : 0;
-      localMinX = isFinite(xMin) ? xMin : undefined;
-      localMaxX = isFinite(xMax) ? xMax : undefined;
     } else {
       localMaxY = globalMaxY;
       localMinY = 0;
-      localMinX = undefined;
-      localMaxX = undefined;
     }
+
+    // X extents — memoized on processedSignal reference. Critical: even
+    // when the user toggles noise suppression and the pipeline produces
+    // a new processedSignal *reference*, the x values themselves are
+    // unchanged (same time samples, only y values differ). chartOptions
+    // below depends on these primitives, not on processedSignal, so its
+    // memo skips the recompute when noise suppression toggles. That's
+    // what keeps the x-axis bounds (and the user's zoom state) stable
+    // across pipeline updates.
+    const { localMinX, localMaxX } = useMemo(() => {
+      if (!processedSignal || processedSignal.length === 0) {
+        return { localMinX: undefined, localMaxX: undefined };
+      }
+      let xMin = Infinity;
+      let xMax = -Infinity;
+      for (let i = 0; i < processedSignal.length; i++) {
+        const x = processedSignal[i].x;
+        if (x < xMin) xMin = x;
+        if (x > xMax) xMax = x;
+      }
+      return {
+        localMinX: isFinite(xMin) ? xMin : undefined,
+        localMaxX: isFinite(xMax) ? xMax : undefined,
+      };
+    }, [processedSignal]);
 
     // Color palette for unique ROI colors (memoized to prevent dependency changes)
     const roiColors = useMemo(
@@ -415,7 +436,15 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
         scales: {
           x: {
             type: "linear",
-            grace: 10,
+            // Explicit bounds so chart.js doesn't scan all 250K points
+            // to auto-fit on each options update, and so `grace` is
+            // suppressed (no empty space on either side of the curve).
+            // The chartOptions useMemo below depends on these primitives
+            // (not on `processedSignal`), so the options object only
+            // rebuilds when the bounds actually change — i.e. when the
+            // user switches wells — not when noise suppression toggles
+            // re-runs the pipeline on the same time samples. That's how
+            // the user's zoom state survives across pipeline updates.
             min: localMinX,
             max: localMaxX,
             ticks: {
@@ -482,14 +511,16 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
         },
       }),
       // Intentional: the dynamic options (decimation, pan/zoom, events,
-      // initialPanZoomEnabled, localMinX/MaxX) are mutated in place on
-      // chart.options by the effect below. Including them in the deps
-      // here would cause useMemo to recompute the entire options object,
-      // which would force chart.js to re-create the chart instance and
-      // lose the user's current zoom/pan state. Recompute only when the
-      // signal axes actually shift (i.e. when processedSignal changes).
+      // initialPanZoomEnabled) are mutated in place on chart.options by
+      // the effect below. Including them in the deps here would cause
+      // useMemo to recompute the entire options object, which would
+      // force chart.js to re-create the chart instance and lose the
+      // user's current zoom/pan state. Recompute only when the signal's
+      // x extents actually shift — which is when the user changes wells,
+      // not when noise suppression / SG window / decimation toggles
+      // re-run the pipeline on the same time samples.
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [processedSignal]
+      [localMinX, localMaxX]
     );
 
     // Mutate chart options in place when controls change (preserves zoom)
@@ -599,12 +630,9 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       // Activity Threshold line — horizontal floor positioned at the
       // ratio (0–1) of the well's Y range. Drawn only when the user has
       // enabled the threshold from its control panel.
-      if (
-        activityThresholdEnabled &&
-        isFinite(localMinY) &&
-        isFinite(localMaxY) &&
-        localMaxY > localMinY
-      ) {
+      const yRangeValid =
+        isFinite(localMinY) && isFinite(localMaxY) && localMaxY > localMinY;
+      if (activityThresholdEnabled && yRangeValid) {
         const absoluteThreshold =
           localMinY + activityThresholdRatio * (localMaxY - localMinY);
         allRoiAnnotations.activityThreshold = {
@@ -625,6 +653,31 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
         };
       }
 
+      // Baseline Threshold line — same drag mechanics as Activity, but
+      // its Y value also feeds peak base detection (see findBases'
+      // baseline mode in detectSpikes). Different color/dash so the two
+      // lines are distinguishable when both are enabled.
+      if (baselineThresholdEnabled && yRangeValid) {
+        const absBaseline =
+          localMinY + baselineThresholdRatio * (localMaxY - localMinY);
+        allRoiAnnotations.baselineThreshold = {
+          type: "line",
+          yMin: absBaseline,
+          yMax: absBaseline,
+          borderColor: "#80deea",
+          borderWidth: 2,
+          borderDash: [2, 3],
+          label: {
+            display: true,
+            content: `baseline ${Math.round(baselineThresholdRatio * 100)}%`,
+            position: "start",
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            color: "#80deea",
+            font: { size: 10 },
+          },
+        };
+      }
+
       // Mutate annotations in place
       chart.options.plugins.annotation.annotations = allRoiAnnotations;
       perf.time("chart.update (annotations)", () => chart.update("none"));
@@ -638,6 +691,8 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       localMinY,
       activityThresholdEnabled,
       activityThresholdRatio,
+      baselineThresholdEnabled,
+      baselineThresholdRatio,
     ]);
 
     // Mouse event handlers for ROI selection (only active if defineROI is true and currentRoiIndex is set)
@@ -734,38 +789,115 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
     };
 
     // Pointer-event dispatcher. ROI mode wins when active; otherwise we
-    // hit-test the Activity Threshold line and start a drag if the
+    // hit-test each enabled threshold line and start a drag if the
     // cursor lands within ~8px of it. Using pointer events (not mouse
     // events) lets us call setPointerCapture so a drag that escapes the
     // canvas still commits cleanly.
+    //
+    // `activeDragRef` holds the descriptor of whichever line the user
+    // grabbed, or null. The pan-zoom plugin reads it via `onPanStart` /
+    // `onZoomStart` to cancel its own gesture during a threshold drag.
+    const activeDragRef = useRef(null);
+
+    // Seed the Baseline Threshold ratio from the well's noise median
+    // the first time the user enables it for a given well. Without
+    // this, the line lands wherever the previous well left it (or at
+    // the initial 0.1 default), which can be visually nonsense on a
+    // well whose noise floor sits far from that point. Tracked by well
+    // key so re-enabling on the same well keeps the user's last drag,
+    // but switching wells re-seeds on the next enable.
+    const baselineSeededWellRef = useRef({ wellKey: null, seeded: false });
+    useEffect(() => {
+      const wellKey = selectedWell?.key ?? null;
+      if (baselineSeededWellRef.current.wellKey !== wellKey) {
+        baselineSeededWellRef.current = { wellKey, seeded: false };
+      }
+      if (!baselineThresholdEnabled) return;
+      if (baselineSeededWellRef.current.seeded) return;
+      if (!processedSignal || processedSignal.length === 0) return;
+      if (!isFinite(localMinY) || !isFinite(localMaxY) || localMaxY <= localMinY) {
+        return;
+      }
+      const median = getSignalMedianY(processedSignal);
+      if (median === null || !isFinite(median)) return;
+      const range = localMaxY - localMinY;
+      const ratio = Math.max(0, Math.min(1, (median - localMinY) / range));
+      setBaselineThresholdRatio(ratio);
+      baselineSeededWellRef.current.seeded = true;
+    }, [
+      baselineThresholdEnabled,
+      selectedWell?.key,
+      processedSignal,
+      localMinY,
+      localMaxY,
+      setBaselineThresholdRatio,
+    ]);
+
+    // Drag descriptors — one per threshold line. Each describes the
+    // annotation it targets and the setter that commits the final ratio
+    // on pointerup. Centralizing here keeps the down/move/up handlers
+    // generic so adding more horizontal-line controls in the future is
+    // just another descriptor.
+    const thresholdDrags = [
+      activityThresholdEnabled && {
+        key: "activity",
+        annotationKey: "activityThreshold",
+        ratio: activityThresholdRatio,
+        commit: setActivityThresholdRatio,
+        label: (r) => `≥ ${Math.round(r * 100)}%`,
+      },
+      baselineThresholdEnabled && {
+        key: "baseline",
+        annotationKey: "baselineThreshold",
+        ratio: baselineThresholdRatio,
+        commit: setBaselineThresholdRatio,
+        label: (r) => `baseline ${Math.round(r * 100)}%`,
+      },
+    ].filter(Boolean);
+
+    // Back-compat: the chartOptions pan/zoom guards (onPanStart /
+    // onZoomStart) reference `isDraggingThresholdRef` from before the
+    // second line existed. Keep the ref name and have it mirror the
+    // generic activeDragRef so the existing guards still work.
     const isDraggingThresholdRef = useRef(false);
-    const draftRatioRef = useRef(activityThresholdRatio);
+    const draftRatioRef = useRef(0);
 
     const handlePointerDown = (event) => {
       if (defineROI) {
         handleMouseDown(event);
         return;
       }
-      if (!activityThresholdEnabled) return;
+      if (thresholdDrags.length === 0) return;
       const chart = neuralGraphRef.current;
       if (!chart || !isFinite(localMinY) || !isFinite(localMaxY)) return;
       const rect = event.currentTarget.getBoundingClientRect();
       const py = event.clientY - rect.top;
-      const absT =
-        localMinY + activityThresholdRatio * (localMaxY - localMinY);
-      const linePy = chart.scales.y.getPixelForValue(absT);
-      if (Math.abs(py - linePy) < 8) {
-        isDraggingThresholdRef.current = true;
-        draftRatioRef.current = activityThresholdRatio;
-        try {
-          event.currentTarget.setPointerCapture(event.pointerId);
-        } catch (_e) {
-          // setPointerCapture can throw if the pointer has already
-          // moved; harmless — the drag still works via the React
-          // pointermove handler below.
+      // Hit-test each enabled line; closest within 8 px wins so the two
+      // lines don't both grab the same gesture if they're stacked.
+      const range = localMaxY - localMinY;
+      let best = null;
+      let bestDist = 8;
+      for (const drag of thresholdDrags) {
+        const absT = localMinY + drag.ratio * range;
+        const linePy = chart.scales.y.getPixelForValue(absT);
+        const dist = Math.abs(py - linePy);
+        if (dist < bestDist) {
+          best = drag;
+          bestDist = dist;
         }
-        event.preventDefault();
       }
+      if (!best) return;
+      activeDragRef.current = best;
+      isDraggingThresholdRef.current = true;
+      draftRatioRef.current = best.ratio;
+      try {
+        event.currentTarget.setPointerCapture(event.pointerId);
+      } catch (_e) {
+        // setPointerCapture can throw if the pointer has already
+        // moved; harmless — the drag still works via the React
+        // pointermove handler below.
+      }
+      event.preventDefault();
     };
 
     const handlePointerMove = (event) => {
@@ -773,7 +905,8 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
         handleMouseMove(event);
         return;
       }
-      if (!isDraggingThresholdRef.current) return;
+      const drag = activeDragRef.current;
+      if (!drag) return;
       const chart = neuralGraphRef.current;
       if (!chart || !isFinite(localMinY) || !isFinite(localMaxY)) return;
       const rect = event.currentTarget.getBoundingClientRect();
@@ -783,17 +916,16 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       const rawRatio = range > 0 ? (absT - localMinY) / range : 0.5;
       const ratio = Math.max(0, Math.min(1, rawRatio));
       draftRatioRef.current = ratio;
-      // Live-update the line annotation imperatively. Avoid calling
-      // setActivityThresholdRatio during drag — committing on pointerup
-      // means the pipeline only re-runs once, after release.
+      // Live-update the line annotation imperatively. Avoid calling the
+      // committer during drag — committing on pointerup means the
+      // pipeline only re-runs once, after release.
       const ann = chart.options?.plugins?.annotation?.annotations;
-      if (ann?.activityThreshold) {
+      const a = ann?.[drag.annotationKey];
+      if (a) {
         const newAbs = localMinY + ratio * range;
-        ann.activityThreshold.yMin = newAbs;
-        ann.activityThreshold.yMax = newAbs;
-        if (ann.activityThreshold.label) {
-          ann.activityThreshold.label.content = `≥ ${Math.round(ratio * 100)}%`;
-        }
+        a.yMin = newAbs;
+        a.yMax = newAbs;
+        if (a.label) a.label.content = drag.label(ratio);
         chart.update("none");
       }
     };
@@ -803,14 +935,16 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
         handleMouseUp(event);
         return;
       }
-      if (!isDraggingThresholdRef.current) return;
+      const drag = activeDragRef.current;
+      if (!drag) return;
+      activeDragRef.current = null;
       isDraggingThresholdRef.current = false;
       try {
         event.currentTarget.releasePointerCapture(event.pointerId);
       } catch (_e) {
         // ignore — capture may have already been released
       }
-      setActivityThresholdRatio(draftRatioRef.current);
+      drag.commit(draftRatioRef.current);
     };
 
     useImperativeHandle(ref, () => ({

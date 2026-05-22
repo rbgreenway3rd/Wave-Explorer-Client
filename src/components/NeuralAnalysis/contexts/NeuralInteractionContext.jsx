@@ -8,15 +8,19 @@ import React, {
 
 /**
  * NeuralInteractionContext — owns the chart-interaction state that's
- * mutually exclusive (ROI definition vs pan/zoom mode) plus the ROI list
- * itself.
+ * mutually exclusive (ROI definition vs pan/zoom mode vs neither) plus
+ * the ROI list itself.
  *
  * Replaces the four-boolean tangle in the original modal:
  *   defineROI + enablePanZoom + zoomState + panState
  * with a single `interactionMode` enum + independent `zoom` / `pan`
  * toggles. Callers can read either the legacy-shaped derived booleans
  * (defineROI, enablePanZoom) for compatibility or the canonical
- * `interactionMode === 'roi' | 'pan-zoom'` directly.
+ * `interactionMode === 'none' | 'roi' | 'pan-zoom'` directly.
+ *
+ * Default mode is 'none' so the chart loads with no interactive
+ * affordances active — users opt in to Pan/Zoom or ROI from the
+ * top-bar controls.
  */
 
 export const NeuralInteractionContext = createContext(null);
@@ -32,9 +36,13 @@ export const useNeuralInteraction = () => {
 };
 
 export const NeuralInteractionProvider = ({ children }) => {
-  // 'pan-zoom' is the default working mode; 'roi' switches the chart into
-  // click-drag ROI definition.
-  const [interactionMode, setInteractionMode] = useState("pan-zoom");
+  // 'none' is the default — chart loads with no interactive mode active.
+  // 'pan-zoom' enables pan/zoom; 'roi' enables click-drag ROI definition.
+  // The two interactive modes are mutually exclusive; turning either off
+  // returns to 'none' rather than auto-flipping to the other.
+  const [interactionMode, setInteractionMode] = useState("none");
+  // Sub-toggles for zoom vs pan within pan-zoom mode. Defaulted true so
+  // that enabling pan-zoom mode immediately gives the user both gestures.
   const [zoomState, setZoomState] = useState(true);
   const [panState, setPanState] = useState(true);
 
@@ -44,12 +52,15 @@ export const NeuralInteractionProvider = ({ children }) => {
 
   // Legacy-shaped setters used by the existing controls. These collapse
   // the four-boolean API onto the enum so we can migrate consumers
-  // incrementally without changing call sites.
+  // incrementally without changing call sites. Turning either off returns
+  // to 'none' (not the other mode) so the chart can be in an idle state.
   const setDefineROI = useCallback((value) => {
-    setInteractionMode(value ? "roi" : "pan-zoom");
+    setInteractionMode((prev) => (value ? "roi" : prev === "roi" ? "none" : prev));
   }, []);
   const setEnablePanZoom = useCallback((value) => {
-    setInteractionMode(value ? "pan-zoom" : "roi");
+    setInteractionMode((prev) =>
+      value ? "pan-zoom" : prev === "pan-zoom" ? "none" : prev,
+    );
   }, []);
 
   const value = useMemo(() => {

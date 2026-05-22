@@ -1,0 +1,96 @@
+/* AdvancedDrawer — collapsible region between the chart top bar and
+ * the chart itself, hosting noise / control-well / decimation cards
+ * plus the Advanced Tweakables disclosure.
+ *
+ * The drawer's open/closed state is owned by NeuralAnalysisModal, which
+ * also toggles a `.neural-analysis-modal--drawer-open` class on the
+ * modal root so the chart-row height shrinks by the drawer's height
+ * (see NeuralAnalysisModal.css — `--neural-modal-chrome-above-graph`).
+ */
+
+.neural-advanced-drawer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    width: 100%;
+    padding: var(--space-3) var(--space-3) var(--space-2);
+    background-color: var(--color-bg-recessed);
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    box-sizing: border-box;
+}
+
+/* Primary row: Noise Suppression / Control Well / Decimation, equal
+ * widths. Mirrors the top bar's grid so cards land on a predictable
+ * column rhythm. */
+.neural-advanced-drawer__primary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-3);
+    align-items: stretch;
+}
+
+/* Advanced Tweakables disclosure — same visual treatment as the old
+ * right-column .neural-controls__advanced (sticky uppercase summary,
+ * recessed bg, rotating chevron) so the affordance reads as
+ * "even-more-advanced" within the already-advanced drawer. */
+.neural-advanced-drawer__tweakables {
+    display: block;
+}
+
+.neural-advanced-drawer__tweakables > summary {
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    font-family: var(--font-family);
+    font-size: 0.75rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: var(--space-2) var(--space-3);
+    background-color: var(--color-bg-control);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+}
+
+.neural-advanced-drawer__tweakables > summary::-webkit-details-marker {
+    display: none;
+}
+
+.neural-advanced-drawer__tweakables > summary::before {
+    content: "▸";
+    display: inline-block;
+    margin-right: var(--space-2);
+    transition: transform var(--transition-base);
+}
+
+.neural-advanced-drawer__tweakables[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+.neural-advanced-drawer__tweakables-row {
+    display: flex;
+    flex-direction: row;
+    gap: var(--space-3);
+    align-items: flex-start;
+    justify-content: center;
+    flex-wrap: nowrap;
+    width: 100%;
+    margin-top: var(--space-2);
+}
+
+.neural-advanced-drawer__tweakables-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    align-items: center;
+}
+
+.neural-advanced-drawer__tweakables-spikes {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+}
