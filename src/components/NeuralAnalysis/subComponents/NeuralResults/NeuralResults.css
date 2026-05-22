@@ -5,12 +5,11 @@
 
 .neural-results {
   padding: var(--space-3);
-  /* 35vh caps the panel at ~378px on a 1080p screen so the rest of the
-   * modal interior (header, info block, chart, controls) all fit
-   * without page-level scroll. Internal overflow-y scroll lets the
-   * content beyond the cap remain reachable. */
-  max-height: 35vh;
-  overflow-y: auto;
+  /* No max-height — NeuralResults is intentionally below the viewport
+   * fold. The chart + controls block above this is height-anchored to
+   * the viewport; Modal.Body is the page-level scroll container, so
+   * this section renders at its natural content size and the user
+   * scrolls down to read it. */
 }
 
 .neural-results__well-title {

@@ -1,35 +1,41 @@
-/* NeuralControls.css */
-/* Container-level styles for NeuralControls component */
+/* NeuralControls.css
+ *
+ * Layout for the right-side neural-control region. After Activity
+ * Threshold moved to the top chart-controls bar, this region holds
+ * only the <details> "Advanced Tweakables" disclosure (Outlier /
+ * Burst / Spike Detection). Scoped to .neural-analysis-modal so the
+ * rules don't bleed to the Cardiac modal (which shares some class
+ * names).
+ */
 
-.neural-controls-container {
-    /* Main container for neural analysis control components */
+.neural-analysis-modal .neural-controls-container {
+    /* The scroll container — claims the remaining height of its parent
+     * flex column. When the user expands Advanced, this is what scrolls
+     * internally instead of inflating the grid row above. */
     display: flex;
     flex-direction: column;
     gap: 8px;
-    /* Consistent spacing between control sections */
-    /* padding: 16px; */
-    padding-top: 8px;
     width: 100%;
-    /* justify-items: center;
-    justify-content: center; */
-
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
 }
 
-/* Spike detection controls container */
+/* Spike detection controls inner container — same vertical-stack layout
+ * for the SpikeDetectionControls block. */
 .spike-detection-controls {
-    /* Placeholder for spike detection parameters */
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-/* "Advanced Tweakables" disclosure section. Wraps the Outlier / Burst /
- * Spike Detection controls; collapsed by default so the primary view
- * (well selector + Activity Threshold) is uncluttered. Pattern mirrors
- * the in-panel <details> used by NoiseSuppressionControls. */
+/* "Advanced Tweakables" disclosure. Pattern mirrors the in-panel
+ * <details> used by NoiseSuppressionControls. */
 .neural-controls__advanced {
     display: block;
-    margin-top: var(--space-2);
+    /* No margin-top — vertical spacing between AT and Advanced is owned
+     * by the section's flex `gap` (var(--space-2)). */
 }
 
 .neural-controls__advanced > summary {
@@ -46,6 +52,12 @@
     background-color: var(--color-bg-recessed);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
+    /* Stays visible at the top of the scroll container while the user
+     * scrolls through the expanded panels — easy to re-collapse without
+     * scrolling back to the top. */
+    position: sticky;
+    top: 0;
+    z-index: 1;
 }
 
 .neural-controls__advanced > summary::-webkit-details-marker {
@@ -67,16 +79,7 @@
     margin-top: var(--space-2);
 }
 
-/* Show bursts toggle row */
-.show-bursts-toggle-row {
-    /* Placeholder for burst detection toggle */
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    justify-content: center;
-}
-
-/* Detection controls row - side by side layout */
+/* Detection controls row — Outlier + Burst toggle/panel pairs side-by-side. */
 .detection-controls-row {
     display: flex;
     flex-direction: row;
@@ -87,31 +90,18 @@
     width: 100%;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .neural-controls-container {
-        padding: 12px;
-        gap: 12px;
-        /* Slightly tighter spacing on mobile */
-    }
-
-    .spike-detection-controls {
-        gap: 8px;
-    }
-
-    .detection-controls-row {
-        flex-direction: column;
-        gap: 12px;
-    }
+/* Show bursts toggle row (legacy class kept for any external consumer). */
+.show-bursts-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
 }
 
-/* 
- * Note: Individual control styling is now handled by the respective 
- * component CSS files in the controls/ directory:
- * - ROIControls.css (shared with ChartControls)
- * - SpikeDetectionControls.css (when implemented)
- * 
- * Legacy styles for spike detection buttons have been removed as they
- * should be replaced with properly styled MUI Button components using
- * the controlsTheme design system.
+/*
+ * Note: Individual control styling lives in each control panel's CSS
+ * file under controls/. The old mobile media-query rule that gave
+ * .neural-controls-container `padding: 12px` was removed — the
+ * container no longer carries any padding under the new flex+scroll
+ * layout, and the row reflows naturally on narrow widths.
  */

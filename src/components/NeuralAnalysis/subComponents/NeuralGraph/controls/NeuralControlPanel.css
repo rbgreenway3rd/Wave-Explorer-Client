@@ -55,11 +55,13 @@
   min-height: 7rem;
 }
 
-/* Right-column panels (Outlier / Burst / Spike Detection / Activity
- * Threshold) — tighter padding than the base rule to reclaim vertical
- * space in the modal. The chart-controls bar above is unaffected
- * because its variant is scoped to `.neural-chart-controls`. */
-.neural-controls-container .neural-control-panel.ui-panel.ui-panel--dark {
+/* Detection panels inside the Advanced Tweakables disclosure (Outlier /
+ * Burst / Spike Detection) — tighter padding than the base rule so the
+ * scroll container fits more before scrolling. Anchored on
+ * `.selector-and-average-graph` so it cleanly scopes to the right-side
+ * region; the chart-controls bar above already has its own (even
+ * tighter) padding via `.neural-chart-controls`. */
+.neural-analysis-modal .selector-and-average-graph .neural-control-panel.ui-panel.ui-panel--dark {
   padding: var(--space-2);
 }
 

@@ -387,11 +387,21 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
             pan: {
               enabled: initialPanZoomEnabled && panState,
               mode: initialPanZoomEnabled && panState ? "x" : false,
+              /* When the user grabs the Activity Threshold line, our
+               * onPointerDown handler sets `isDraggingThresholdRef`
+               * BEFORE the plugin's mousedown fires (pointer events
+               * dispatch before mouse events). onPanStart returning
+               * false here cancels the would-be pan so the chart
+               * doesn't slide out from under the cursor. */
+              onPanStart: () => !isDraggingThresholdRef.current,
             },
             zoom: {
               wheel: { enabled: initialPanZoomEnabled && zoomState },
               pinch: { enabled: initialPanZoomEnabled && zoomState },
               mode: initialPanZoomEnabled && zoomState ? "x" : false,
+              /* Same guard for drag-to-zoom — prevent a zoom-box from
+               * starting on the same gesture as a threshold drag. */
+              onZoomStart: () => !isDraggingThresholdRef.current,
             },
           },
         },

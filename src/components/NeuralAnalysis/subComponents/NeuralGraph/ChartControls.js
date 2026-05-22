@@ -7,6 +7,7 @@ import ControlWellSelector from "./controls/ControlWellSelector";
 import ROIControls from "./controls/ROIControls";
 import PanZoomControls from "./controls/PanZoomControls";
 import DecimationControls from "./controls/DecimationControls";
+import ActivityThresholdControls from "./controls/ActivityThresholdControls";
 
 import { useNeuralSettings } from "../../NeuralProvider";
 
@@ -38,6 +39,7 @@ const ChartControls = ({ resetZoom }) => {
     <div className="neural-chart-controls">
       <ControlWellSelector disabled={controlWellDisabled} />
       <NoiseSuppressionControls />
+      <ActivityThresholdControls />
       <PanZoomControls resetZoom={resetZoom} />
       <ROIControls />
       <DecimationControls />

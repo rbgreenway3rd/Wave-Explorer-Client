@@ -8,6 +8,19 @@
   background-color: var(--color-bg-control);
   border-radius: 0;
   box-shadow: none;
+  /* Paper is the viewport-sized outer surface. Make it a flex column
+   * so Modal.Header sits at its content size and Modal.Body claims the
+   * remaining vertical space — Modal.Body then becomes the page-level
+   * scroll container for the (off-viewport-bottom) NeuralResults
+   * section. Paper itself clips so no double scrollbars appear. */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.neural-analysis-modal .ui-modal__header {
+  /* Title bar — sits at the top, sized to its content. */
+  flex: 0 0 auto;
 }
 
 .neural-analysis-modal__header {
@@ -25,6 +38,14 @@
 
 .neural-analysis-modal__body {
   padding: var(--space-3) var(--space-4);
+  /* Page-level scroll container. Claims the height left over after
+   * Modal.Header. The chart+controls block above NeuralResults is
+   * height-anchored to the viewport (see .modal-body below), so it
+   * always fits without scrolling; NeuralResults sits at natural size
+   * below it and the user scrolls Modal.Body to reach it. */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* Page-level layout inside the modal body. Scoped under
@@ -37,6 +58,10 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  /* Normal block-flex flow (no bounding, no overflow clip). The chart
+   * row below is viewport-anchored via calc(), so it's the one that
+   * fits the visible region. Anything after it (NeuralResults) extends
+   * past the viewport bottom and Modal.Body provides the page scroll. */
 }
 
 .neural-analysis-modal .modal-header {
@@ -48,15 +73,39 @@
 .neural-analysis-modal .modal-body {
   display: grid;
   grid-template-columns: 5fr 2fr;
-  grid-template-rows: 1fr;
-  /* `flex: 1 1 auto; min-height: 0;` lets this row shrink correctly
-   * inside its flex-column parent (.modal-content). The previous
-   * `height: 100%` could over-grow past the parent and squeeze the
-   * NeuralResults strip below the fold. */
-  flex: 1 1 auto;
-  min-height: 0;
+  /* `minmax(0, 1fr)` (not bare `1fr`) keeps the row explicitly
+   * shrinkable below content size — necessary so the right column
+   * scrolls internally when Advanced expands, rather than pushing the
+   * row taller. */
+  grid-template-rows: minmax(0, 1fr);
+  /* Chart+controls row is anchored to the viewport (minus upper
+   * chrome). Tunable via --neural-modal-chrome-above-graph if the
+   * upper chrome height changes. min-height keeps the chart usable
+   * on short viewports; the user can still scroll the page to reach
+   * NeuralResults if needed. */
+  height: calc(100vh - var(--neural-modal-chrome-above-graph, 320px));
+  min-height: 360px;
   width: 100%;
   gap: var(--space-3);
+  overflow: hidden;
+}
+
+/* Both grid items need explicit min sizes so they shrink to their grid
+ * cell. Chart.js is `responsive: true; maintainAspectRatio: false` so
+ * the chart's parent in particular must be well-bounded. */
+.neural-analysis-modal .controls-and-graph,
+.neural-analysis-modal .selector-and-average-graph {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Right column flows as a vertical stack: well selector → pinned
+ * Activity Threshold region → scroll container holding Advanced. */
+.neural-analysis-modal .selector-and-average-graph {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 /* Close out the bottom of the info-block column with the same 1px
