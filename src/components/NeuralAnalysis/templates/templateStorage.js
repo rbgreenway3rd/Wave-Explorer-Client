@@ -136,3 +136,81 @@ export const deleteTemplate = (name) => {
 };
 
 export const templateExists = (name) => getTemplate((name || "").trim()) !== null;
+
+// ---- Disk export / import -----------------------------------------------
+//
+// File-based templates use the same on-disk shape as the localStorage
+// entries — a single self-contained object with `name`, `createdAt`,
+// `schemaVersion`, and `settings`. That way a file produced by Export
+// can be applied directly via applySettingsSnapshot(file.settings) or
+// re-saved into the browser store via saveTemplate(file.name,
+// file.settings) without any conversion.
+
+// Replace OS-invalid filename characters with `_`, collapse runs of
+// whitespace into single dashes. Keep the result printable.
+const sanitizeFilename = (name) =>
+  (name || "template")
+    .replace(/[\\/:*?"<>|]/g, "_")
+    .replace(/\s+/g, "-")
+    .trim() || "template";
+
+export const buildTemplatePayload = (name, settings) => ({
+  name: (name || "").trim(),
+  createdAt: new Date().toISOString(),
+  schemaVersion: CURRENT_SCHEMA_VERSION,
+  settings: sanitizeSettings(settings),
+});
+
+export const downloadTemplateFile = (template) => {
+  if (!template || !template.settings) {
+    throw new Error("Template has no settings to export");
+  }
+  const json = JSON.stringify(template, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${sanitizeFilename(template.name)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  // Defer revoke so the browser has time to start the download.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+};
+
+// Reads a file picked via <input type="file">. Returns a template
+// object in the same shape as `buildTemplatePayload`. Unknown keys in
+// `settings` are stripped via `sanitizeSettings`; missing top-level
+// fields are filled with sensible defaults (filename → name, now →
+// createdAt) so older or hand-edited files still load.
+export const importTemplateFromFile = async (file) => {
+  if (!file) throw new Error("No file provided");
+  const text = await file.text();
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch (_e) {
+    throw new Error("Invalid template file: not valid JSON");
+  }
+  if (!parsed || typeof parsed !== "object") {
+    throw new Error("Invalid template file: not a JSON object");
+  }
+  if (!parsed.settings || typeof parsed.settings !== "object") {
+    throw new Error("Invalid template file: missing 'settings' object");
+  }
+  const fallbackName = (file.name || "").replace(/\.json$/i, "") || "imported";
+  return {
+    name: typeof parsed.name === "string" && parsed.name.trim()
+      ? parsed.name.trim()
+      : fallbackName,
+    createdAt:
+      typeof parsed.createdAt === "string"
+        ? parsed.createdAt
+        : new Date().toISOString(),
+    schemaVersion:
+      typeof parsed.schemaVersion === "number"
+        ? parsed.schemaVersion
+        : CURRENT_SCHEMA_VERSION,
+    settings: sanitizeSettings(parsed.settings),
+  };
+};
