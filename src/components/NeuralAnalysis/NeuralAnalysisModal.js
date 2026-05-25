@@ -5,11 +5,12 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import NeuralResults from "./subComponents/NeuralResults/NeuralResults";
 import ChartControls from "./subComponents/NeuralGraph/ChartControls";
-import AdvancedDrawer from "./subComponents/NeuralGraph/AdvancedDrawer";
 import NeuralWellSelector from "./subComponents/WellSelection/NeuralWellSelector";
 import NeuralGraph from "./subComponents/NeuralGraph/NeuralGraph";
+import ChartLegend from "./subComponents/NeuralGraph/ChartLegend";
 import NeuralReportModal from "./NeuralReportModal";
 import NeuralFullPlateReportModal from "./NeuralFullPlateReportModal";
+import TemplateMenu from "./templates/TemplateMenu";
 import "../NeuralAnalysis/styles/NeuralAnalysisModal.css";
 import {
   useNeuralInteraction,
@@ -52,12 +53,12 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
     }
   };
 
-  // ---- Advanced drawer state ----------------------------------------------
+  // ---- Advanced Tweakables accordion state --------------------------------
   // Owned here (not inside ChartControls) so the modal can toggle a body-
-  // level class that shrinks the chart-row height while the drawer is
+  // level class that shrinks the chart-row height while a section is
   // open. Starts collapsed every time the modal opens.
-  const [advancedOpen, setAdvancedOpen] = useState(false);
-  const toggleAdvanced = () => setAdvancedOpen((v) => !v);
+  const [expandedTweakableSection, setExpandedTweakableSection] =
+    useState(null);
 
   // ---- Report-generation state + handlers ---------------------------------
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -118,10 +119,7 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
       open={open}
       onClose={null}
       fullScreen
-      className={
-        "neural-analysis-modal" +
-        (advancedOpen ? " neural-analysis-modal--drawer-open" : "")
-      }
+      className="neural-analysis-modal"
     >
       <Modal.Header className="neural-analysis-modal__header">
         <Heading level={2}>Neural Analysis</Heading>
@@ -199,24 +197,25 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
                     </Button>
                   </span>
                 </Tooltip>
+                <TemplateMenu />
               </div>
             </div>
             <ChartControls
               resetZoom={resetZoom}
-              advancedOpen={advancedOpen}
-              onToggleAdvanced={toggleAdvanced}
+              expandedTweakableSection={expandedTweakableSection}
+              onExpandedTweakableChange={setExpandedTweakableSection}
             />
           </div>
-          <AdvancedDrawer open={advancedOpen} />
           <div className="modal-body">
             <section className="controls-and-graph">
+              <ChartLegend />
               <NeuralGraph className="neural-graph" ref={neuralGraphRef} />
             </section>
             <section className="selector-and-average-graph">
               <NeuralWellSelector />
+              <NeuralResults />
             </section>
           </div>
-          <NeuralResults />
         </div>
       </Modal.Body>
 

@@ -1,82 +1,84 @@
 /* NeuralResults — read-only metric display panel inside the Neural
- * Analysis modal. Dark-theme cards in a responsive grid, with cyan
- * section accents and white-on-dark labels.
+ * Analysis modal. Now lives inside the right column under the well
+ * selector. The right column gives it a bounded flex height + applies
+ * `overflow-y: auto`, so this stylesheet just needs to size content
+ * compactly so a useful number of metric cards is visible before the
+ * user scrolls.
+ *
+ * All dimensions in rem/em so the layout scales with the user's
+ * browser font-size setting.
  */
 
 .neural-results {
-  padding: var(--space-3);
-  /* No max-height — NeuralResults is intentionally below the viewport
-   * fold. The chart + controls block above this is height-anchored to
-   * the viewport; Modal.Body is the page-level scroll container, so
-   * this section renders at its natural content size and the user
-   * scrolls down to read it. */
+  padding: 0.5rem;
+  min-height: 0;
 }
 
 .neural-results__well-title {
   color: var(--color-text-on-accent);
   font-family: var(--font-family);
-  font-size: 1rem;
+  font-size: 0.875rem;
   font-weight: var(--font-weight-bold);
-  margin: 0 0 var(--space-3) 0;
+  margin: 0 0 0.5rem 0;
 }
 
 .neural-results__section {
-  margin-bottom: var(--space-5);
+  margin-bottom: 0.75rem;
 }
 
 .neural-results__section-title {
   color: var(--color-info);
   font-family: var(--font-family);
-  font-size: 1.125rem;
+  font-size: 0.875rem;
   font-weight: var(--font-weight-bold);
-  margin: 0 0 var(--space-2) 0;
+  margin: 0 0 0.375rem 0;
 }
 
 .neural-results__section-title--overall {
   /* The "Overall Spike Detection" header gets a yellow accent — the only
-   * non-cyan section heading in the panel.
-   */
+   * non-cyan section heading in the panel. */
   color: #ffeb3b;
 }
 
 /* ---- Metric card — wraps a group of metric items ---- */
 
 .neural-result-card.ui-panel.ui-panel--dark {
-  padding: var(--space-3);
-  margin-bottom: var(--space-2);
+  padding: 0.5rem;
+  margin-bottom: 0.25rem;
   background-color: #333;
   color: var(--color-text-on-accent);
   border: 1px solid var(--color-neural-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
 }
 
 .neural-result-card__title {
   color: var(--color-info);
   font-family: var(--font-family);
-  font-size: 1rem;
+  font-size: 0.8125rem;
   font-weight: var(--font-weight-bold);
-  margin: 0 0 var(--space-2) 0;
+  margin: 0 0 0.25rem 0;
 }
 
 .neural-result-card__subtitle {
   color: var(--color-info);
   font-family: var(--font-family);
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: var(--font-weight-medium);
-  margin: var(--space-2) 0 var(--space-1) 0;
+  margin: 0.375rem 0 0.125rem 0;
 }
 
 .neural-result-card__divider.MuiDivider-root {
   background-color: var(--color-neural-border);
-  margin: var(--space-2) 0;
+  margin: 0.25rem 0;
 }
 
 /* ---- Metric item — single label/value row ---- */
 
 .neural-result-item {
-  margin-bottom: var(--space-1);
+  margin-bottom: 0.125rem;
   font-family: var(--font-family);
-  font-size: 0.8125rem;
+  font-size: 0.6875rem;
+  line-height: 1.25;
   color: #ccc;
 }
 
@@ -88,12 +90,35 @@
 .neural-result-card__caption {
   color: #ccc;
   font-family: var(--font-family);
-  font-size: 0.75rem;
-  margin-top: var(--space-1);
+  font-size: 0.625rem;
+  margin-top: 0.125rem;
+  word-break: break-word;
 }
 
 .neural-results__placeholder.ui-panel.ui-panel--dark {
-  padding: var(--space-3);
+  padding: 0.5rem;
   background-color: #333;
   color: var(--color-text-on-accent);
+  font-size: 0.75rem;
+}
+
+/* The Grid items inside the metric sections were originally sized
+ * `xs={12} md={6}` so cards rendered in two columns on a wide modal
+ * body. The right column here is too narrow for two columns of
+ * metric cards — force one-per-row regardless of breakpoint. */
+.neural-results .MuiGrid-grid-md-6 {
+  flex-basis: 100%;
+  max-width: 100%;
+}
+
+/* Tighter Grid spacing inside the narrow column. The MUI default of
+ * `spacing={2}` (= 1rem gaps) eats too much horizontal width and
+ * pushes cards into a sliver. */
+.neural-results .MuiGrid-container {
+  margin: 0;
+  width: 100%;
+}
+
+.neural-results .MuiGrid-item {
+  padding: 0.25rem 0 0 0;
 }

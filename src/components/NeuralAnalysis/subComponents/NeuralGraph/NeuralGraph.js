@@ -21,6 +21,16 @@ import { getSignalMedianY } from "../../utilities/detectSpikes";
 import { Chart, registerables, Tooltip } from "chart.js";
 import annotationPlugin from "chartjs-plugin-annotation";
 import zoomPlugin from "chartjs-plugin-zoom";
+import {
+  WAVE_STYLE,
+  PEAK_STYLE,
+  OUTLIER_PEAK_STYLE,
+  PEAK_BASE_STYLE,
+  BURST_STYLE,
+  ROI_PALETTE,
+  ACTIVITY_THRESHOLD_STYLE,
+  BASELINE_THRESHOLD_STYLE,
+} from "./chartStyles";
 
 Chart.register(...registerables, Tooltip, zoomPlugin, annotationPlugin);
 
@@ -105,6 +115,25 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       localMinY = 0;
     }
 
+    // Padded scale bounds — visual breathing room around the signal so
+    // peaks don't sit flush against the chart border. `chart.js`'s
+    // `grace` option is ignored when min/max are explicit (and they
+    // have to be explicit to stop the auto-fit during pan/zoom), so we
+    // pad manually. The raw localMin/Max values are still used for
+    // threshold-ratio math and peak detection — only the displayed
+    // scale gets padding.
+    const Y_SCALE_PAD = 0.05; // 5% headroom top and bottom
+    const X_SCALE_PAD = 0.01; // 1% gutter left and right
+    const yRange = localMaxY - localMinY;
+    const paddedYMin =
+      isFinite(localMinY) && yRange > 0
+        ? localMinY - yRange * Y_SCALE_PAD
+        : localMinY;
+    const paddedYMax =
+      isFinite(localMaxY) && yRange > 0
+        ? localMaxY + yRange * Y_SCALE_PAD
+        : localMaxY;
+
     // X extents — memoized on processedSignal reference. Critical: even
     // when the user toggles noise suppression and the pipeline produces
     // a new processedSignal *reference*, the x values themselves are
@@ -113,9 +142,14 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
     // memo skips the recompute when noise suppression toggles. That's
     // what keeps the x-axis bounds (and the user's zoom state) stable
     // across pipeline updates.
-    const { localMinX, localMaxX } = useMemo(() => {
+    const { localMinX, localMaxX, paddedXMin, paddedXMax } = useMemo(() => {
       if (!processedSignal || processedSignal.length === 0) {
-        return { localMinX: undefined, localMaxX: undefined };
+        return {
+          localMinX: undefined,
+          localMaxX: undefined,
+          paddedXMin: undefined,
+          paddedXMax: undefined,
+        };
       }
       let xMin = Infinity;
       let xMax = -Infinity;
@@ -124,26 +158,22 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
         if (x < xMin) xMin = x;
         if (x > xMax) xMax = x;
       }
+      const min = isFinite(xMin) ? xMin : undefined;
+      const max = isFinite(xMax) ? xMax : undefined;
+      const range = isFinite(min) && isFinite(max) ? max - min : 0;
+      const pad = range > 0 ? range * X_SCALE_PAD : 0;
       return {
-        localMinX: isFinite(xMin) ? xMin : undefined,
-        localMaxX: isFinite(xMax) ? xMax : undefined,
+        localMinX: min,
+        localMaxX: max,
+        paddedXMin: isFinite(min) ? min - pad : min,
+        paddedXMax: isFinite(max) ? max + pad : max,
       };
+      // X_SCALE_PAD is a module-scope-style constant defined above;
+      // intentionally not in deps.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [processedSignal]);
 
-    // Color palette for unique ROI colors (memoized to prevent dependency changes)
-    const roiColors = useMemo(
-      () => [
-        { bg: "rgba(0, 255, 0, 0.15)", border: "rgba(0, 255, 0, 0.7)" }, // green
-        { bg: "rgba(0, 0, 255, 0.12)", border: "rgba(0, 0, 255, 0.7)" }, // blue
-        { bg: "rgba(255, 0, 0, 0.12)", border: "rgba(255, 0, 0, 0.7)" }, // red
-        { bg: "rgba(255, 165, 0, 0.13)", border: "rgba(255, 165, 0, 0.7)" }, // orange
-        { bg: "rgba(128, 0, 128, 0.13)", border: "rgba(128, 0, 128, 0.7)" }, // purple
-        { bg: "rgba(0, 206, 209, 0.13)", border: "rgba(0, 206, 209, 0.7)" }, // teal
-        { bg: "rgba(255, 192, 203, 0.13)", border: "rgba(255, 192, 203, 0.7)" }, // pink
-        { bg: "rgba(255, 255, 0, 0.13)", border: "rgba(255, 255, 0, 0.7)" }, // yellow
-      ],
-      []
-    );
+    const roiColors = ROI_PALETTE;
 
     // Initialize chart data once when a well is selected and the
     // pipeline produces its first result. Builds the *complete* initial
@@ -195,11 +225,11 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
             type: "scatter",
             label: "Spike Bases",
             data: initialBaseScatter,
-            pointBackgroundColor: "#ffffffff",
-            pointBorderColor: "#fff",
-            pointRadius: 4,
+            pointBackgroundColor: PEAK_BASE_STYLE.fill,
+            pointBorderColor: PEAK_BASE_STYLE.border,
+            pointRadius: PEAK_BASE_STYLE.radius,
             showLine: false,
-            borderWidth: 0,
+            borderWidth: PEAK_BASE_STYLE.borderWidth,
           });
         }
         datasets.push({
@@ -208,9 +238,9 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
             : "Neural Data",
           data: initialChartPoints,
           borderColor: noiseSuppressionActive
-            ? "#00bcd4"
-            : "rgb(0, 200, 255)",
-          borderWidth: 1.5,
+            ? WAVE_STYLE.noiseSuppressedColor
+            : WAVE_STYLE.rawColor,
+          borderWidth: WAVE_STYLE.width,
           fill: false,
         });
         if (initialPeakScatter.length > 0) {
@@ -218,11 +248,11 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
             type: "scatter",
             label: "Detected Spikes",
             data: initialPeakScatter,
-            pointBackgroundColor: "#ff1744",
-            pointBorderColor: "#fff",
-            pointRadius: 5,
+            pointBackgroundColor: PEAK_STYLE.fill,
+            pointBorderColor: PEAK_STYLE.border,
+            pointRadius: PEAK_STYLE.radius,
             showLine: false,
-            borderWidth: 0,
+            borderWidth: PEAK_STYLE.borderWidth,
           });
         }
         if (initialOutlierScatter.length > 0) {
@@ -230,12 +260,12 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
             type: "scatter",
             label: "Outlier Spikes",
             data: initialOutlierScatter,
-            pointBackgroundColor: "rgba(255, 152, 0, 0)",
-            pointBorderColor: "#ff9800",
-            pointRadius: 6,
+            pointBackgroundColor: OUTLIER_PEAK_STYLE.fill,
+            pointBorderColor: OUTLIER_PEAK_STYLE.border,
+            pointRadius: OUTLIER_PEAK_STYLE.radius,
             pointStyle: "circle",
             showLine: false,
-            borderWidth: 2,
+            borderWidth: OUTLIER_PEAK_STYLE.borderWidth,
           });
         }
         setChartData({ datasets });
@@ -310,11 +340,11 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
                 type: "scatter",
                 label: "Spike Bases",
                 data: baseScatter,
-                pointBackgroundColor: "#ffffffff",
-                pointBorderColor: "#fff",
-                pointRadius: 4,
+                pointBackgroundColor: PEAK_BASE_STYLE.fill,
+                pointBorderColor: PEAK_BASE_STYLE.border,
+                pointRadius: PEAK_BASE_STYLE.radius,
                 showLine: false,
-                borderWidth: 0,
+                borderWidth: PEAK_BASE_STYLE.borderWidth,
               },
             ]
           : []),
@@ -323,8 +353,10 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
             ? "Noise Suppressed Data"
             : "Neural Data",
           data: chartPoints,
-          borderColor: noiseSuppressionActive ? "#00bcd4" : "rgb(0, 200, 255)",
-          borderWidth: 1.5,
+          borderColor: noiseSuppressionActive
+            ? WAVE_STYLE.noiseSuppressedColor
+            : WAVE_STYLE.rawColor,
+          borderWidth: WAVE_STYLE.width,
           fill: false,
         },
         ...(peakScatter.length > 0
@@ -333,11 +365,11 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
                 type: "scatter",
                 label: "Detected Spikes",
                 data: peakScatter,
-                pointBackgroundColor: "#ff1744",
-                pointBorderColor: "#fff",
-                pointRadius: 5,
+                pointBackgroundColor: PEAK_STYLE.fill,
+                pointBorderColor: PEAK_STYLE.border,
+                pointRadius: PEAK_STYLE.radius,
                 showLine: false,
-                borderWidth: 0,
+                borderWidth: PEAK_STYLE.borderWidth,
               },
             ]
           : []),
@@ -347,12 +379,12 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
                 type: "scatter",
                 label: "Outlier Spikes",
                 data: outlierScatter,
-                pointBackgroundColor: "rgba(255, 152, 0, 0)",
-                pointBorderColor: "#ff9800",
-                pointRadius: 6,
+                pointBackgroundColor: OUTLIER_PEAK_STYLE.fill,
+                pointBorderColor: OUTLIER_PEAK_STYLE.border,
+                pointRadius: OUTLIER_PEAK_STYLE.radius,
                 pointStyle: "circle",
                 showLine: false,
-                borderWidth: 2,
+                borderWidth: OUTLIER_PEAK_STYLE.borderWidth,
               },
             ]
           : []),
@@ -406,22 +438,28 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
               x: { minRange: 0 },
             },
             pan: {
-              enabled: initialPanZoomEnabled && panState,
-              mode: initialPanZoomEnabled && panState ? "x" : false,
-              /* When the user grabs the Activity Threshold line, our
-               * onPointerDown handler sets `isDraggingThresholdRef`
-               * BEFORE the plugin's mousedown fires (pointer events
-               * dispatch before mouse events). onPanStart returning
-               * false here cancels the would-be pan so the chart
-               * doesn't slide out from under the cursor. */
+              /* IMPORTANT: this must start `true` even when the user has
+               * pan/zoom mode off. chartjs-plugin-zoom v2 only installs
+               * the Hammer Pan recognizer inside `startHammer` if
+               * `pan.enabled` is truthy at chart-creation time. Once
+               * installed, the recognizer's `enable` callback (set by
+               * the plugin) reads `state.options.pan.enabled` live, so
+               * the mutation effect below can still gate runtime
+               * behavior by toggling this flag. Initialize to `false`
+               * and the recognizer is never registered, leaving pan
+               * permanently dead. The same logic applies to `pinch`
+               * below. */
+              enabled: true,
+              mode: "x",
               onPanStart: () => !isDraggingThresholdRef.current,
             },
             zoom: {
               wheel: { enabled: initialPanZoomEnabled && zoomState },
-              pinch: { enabled: initialPanZoomEnabled && zoomState },
-              mode: initialPanZoomEnabled && zoomState ? "x" : false,
-              /* Same guard for drag-to-zoom — prevent a zoom-box from
-               * starting on the same gesture as a threshold drag. */
+              /* Always-on at startup so Hammer registers the Pinch
+               * recognizer; runtime gating happens via the mutation
+               * effect mirroring the live state. */
+              pinch: { enabled: true },
+              mode: "x",
               onZoomStart: () => !isDraggingThresholdRef.current,
             },
           },
@@ -445,8 +483,8 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
             // user switches wells — not when noise suppression toggles
             // re-runs the pipeline on the same time samples. That's how
             // the user's zoom state survives across pipeline updates.
-            min: localMinX,
-            max: localMaxX,
+            min: paddedXMin,
+            max: paddedXMax,
             ticks: {
               display: true,
               color: "#666666",
@@ -472,6 +510,16 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
             },
           },
           y: {
+            // Explicit Y bounds are required to stop chart.js from
+            // auto-refitting the y axis during pan/zoom. Without these,
+            // when the user zooms in and the original max-Y sample
+            // leaves the viewport, chart.js shrinks the y range to fit
+            // only the visible samples — the scale visibly jumps. The
+            // mutation effect below keeps these bounds in sync with the
+            // currently displayed processedSignal so noise-suppression
+            // toggles still update them.
+            min: paddedYMin,
+            max: paddedYMax,
             ticks: {
               display: true,
               color: "#666666",
@@ -572,6 +620,22 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       decimationSamples,
     ]);
 
+    // Keep the y-axis bounds in sync with the current processedSignal
+    // without rebuilding chartOptions (which would recreate the chart
+    // and lose the user's pan/zoom state). The explicit bounds set in
+    // chartOptions only take effect at first creation; this effect
+    // applies any subsequent changes (well switch, noise-suppression
+    // toggle that shifts amplitude) via in-place mutation. Padded
+    // values are used so peaks don't sit flush against the top edge.
+    useEffect(() => {
+      const chart = neuralGraphRef.current;
+      if (!chart) return;
+      if (!isFinite(paddedYMin) || !isFinite(paddedYMax)) return;
+      chart.options.scales.y.min = paddedYMin;
+      chart.options.scales.y.max = paddedYMax;
+      chart.update("none");
+    }, [paddedYMin, paddedYMax]);
+
     // Mutate annotation options in place for ROI and burst visualizations
     useEffect(() => {
       const chart = neuralGraphRef.current;
@@ -615,9 +679,9 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
             type: "box",
             xMin: burst.startTime,
             xMax: burst.endTime,
-            backgroundColor: "rgba(255, 247, 0, 0.2)",
-            borderColor: "rgba(246, 255, 0, 0.5)",
-            borderWidth: 1,
+            backgroundColor: BURST_STYLE.fill,
+            borderColor: BURST_STYLE.border,
+            borderWidth: BURST_STYLE.borderWidth,
           };
         });
       }
@@ -639,15 +703,15 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
           type: "line",
           yMin: absoluteThreshold,
           yMax: absoluteThreshold,
-          borderColor: "#fbc02d",
-          borderWidth: 2,
-          borderDash: [6, 4],
+          borderColor: ACTIVITY_THRESHOLD_STYLE.color,
+          borderWidth: ACTIVITY_THRESHOLD_STYLE.width,
+          borderDash: ACTIVITY_THRESHOLD_STYLE.dash,
           label: {
             display: true,
             content: `≥ ${Math.round(activityThresholdRatio * 100)}%`,
             position: "end",
             backgroundColor: "rgba(0, 0, 0, 0.6)",
-            color: "#fbc02d",
+            color: ACTIVITY_THRESHOLD_STYLE.color,
             font: { size: 10 },
           },
         };
@@ -664,15 +728,15 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
           type: "line",
           yMin: absBaseline,
           yMax: absBaseline,
-          borderColor: "#80deea",
-          borderWidth: 2,
-          borderDash: [2, 3],
+          borderColor: BASELINE_THRESHOLD_STYLE.color,
+          borderWidth: BASELINE_THRESHOLD_STYLE.width,
+          borderDash: BASELINE_THRESHOLD_STYLE.dash,
           label: {
             display: true,
             content: `baseline ${Math.round(baselineThresholdRatio * 100)}%`,
             position: "start",
             backgroundColor: "rgba(0, 0, 0, 0.6)",
-            color: "#80deea",
+            color: BASELINE_THRESHOLD_STYLE.color,
             font: { size: 10 },
           },
         };
@@ -863,50 +927,63 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
     const draftRatioRef = useRef(0);
 
     const handlePointerDown = (event) => {
-      if (defineROI) {
-        handleMouseDown(event);
-        return;
-      }
-      if (thresholdDrags.length === 0) return;
+      // Threshold hit-test runs first, regardless of ROI mode. Threshold
+      // drag is vertical and ROI drag is horizontal, so they never
+      // genuinely conflict — but if defineROI short-circuits the handler
+      // (as it did originally), the user can never grab a threshold line
+      // while ROI mode is on. Hit-test gives threshold drag priority
+      // when the cursor is within ~8 px of a line; otherwise we fall
+      // through to ROI horizontal drag.
       const chart = neuralGraphRef.current;
-      if (!chart || !isFinite(localMinY) || !isFinite(localMaxY)) return;
-      const rect = event.currentTarget.getBoundingClientRect();
-      const py = event.clientY - rect.top;
-      // Hit-test each enabled line; closest within 8 px wins so the two
-      // lines don't both grab the same gesture if they're stacked.
-      const range = localMaxY - localMinY;
-      let best = null;
-      let bestDist = 8;
-      for (const drag of thresholdDrags) {
-        const absT = localMinY + drag.ratio * range;
-        const linePy = chart.scales.y.getPixelForValue(absT);
-        const dist = Math.abs(py - linePy);
-        if (dist < bestDist) {
-          best = drag;
-          bestDist = dist;
+      if (
+        thresholdDrags.length > 0 &&
+        chart &&
+        isFinite(localMinY) &&
+        isFinite(localMaxY)
+      ) {
+        const rect = event.currentTarget.getBoundingClientRect();
+        const py = event.clientY - rect.top;
+        const range = localMaxY - localMinY;
+        let best = null;
+        let bestDist = 8;
+        for (const drag of thresholdDrags) {
+          const absT = localMinY + drag.ratio * range;
+          const linePy = chart.scales.y.getPixelForValue(absT);
+          const dist = Math.abs(py - linePy);
+          if (dist < bestDist) {
+            best = drag;
+            bestDist = dist;
+          }
+        }
+        if (best) {
+          activeDragRef.current = best;
+          isDraggingThresholdRef.current = true;
+          draftRatioRef.current = best.ratio;
+          try {
+            event.currentTarget.setPointerCapture(event.pointerId);
+          } catch (_e) {
+            // setPointerCapture can throw if the pointer has already
+            // moved; harmless — the drag still works via the React
+            // pointermove handler below.
+          }
+          event.preventDefault();
+          return;
         }
       }
-      if (!best) return;
-      activeDragRef.current = best;
-      isDraggingThresholdRef.current = true;
-      draftRatioRef.current = best.ratio;
-      try {
-        event.currentTarget.setPointerCapture(event.pointerId);
-      } catch (_e) {
-        // setPointerCapture can throw if the pointer has already
-        // moved; harmless — the drag still works via the React
-        // pointermove handler below.
+      if (defineROI) {
+        handleMouseDown(event);
       }
-      event.preventDefault();
     };
 
     const handlePointerMove = (event) => {
-      if (defineROI) {
-        handleMouseMove(event);
+      // Threshold drag in flight always wins, even in ROI mode, so the
+      // user can drag a line vertically while the ROI tool is armed
+      // (ROI selection is horizontal — they don't truly conflict).
+      const drag = activeDragRef.current;
+      if (!drag) {
+        if (defineROI) handleMouseMove(event);
         return;
       }
-      const drag = activeDragRef.current;
-      if (!drag) return;
       const chart = neuralGraphRef.current;
       if (!chart || !isFinite(localMinY) || !isFinite(localMaxY)) return;
       const rect = event.currentTarget.getBoundingClientRect();
@@ -931,12 +1008,13 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
     };
 
     const handlePointerUp = (event) => {
-      if (defineROI) {
-        handleMouseUp(event);
+      // Matching symmetry with handlePointerDown / handlePointerMove:
+      // commit an in-flight threshold drag before deferring to ROI mode.
+      const drag = activeDragRef.current;
+      if (!drag) {
+        if (defineROI) handleMouseUp(event);
         return;
       }
-      const drag = activeDragRef.current;
-      if (!drag) return;
       activeDragRef.current = null;
       isDraggingThresholdRef.current = false;
       try {

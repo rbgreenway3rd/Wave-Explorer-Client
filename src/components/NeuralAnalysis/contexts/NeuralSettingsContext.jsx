@@ -6,6 +6,7 @@ import React, {
   useState,
 } from "react";
 import { useNeuralSelection } from "./NeuralSelectionContext";
+import { PERSISTABLE_KEYS } from "../templates/templateStorage";
 
 /**
  * NeuralSettingsContext — owns every analysis parameter the user can
@@ -144,6 +145,135 @@ export const NeuralSettingsProvider = ({ children }) => {
   // metadata) still read the boolean directly.
   const noiseSuppressionActive = !!trendFlatteningEnabled || !!smoothingEnabled;
 
+  // ---- Template snapshot bridge ------------------------------------------
+  // Persistable knob → live value map (built per render so the snapshot
+  // helper always reflects the latest state) and a parallel setter map.
+  // Splitting them keeps the apply path simple: iterate the incoming
+  // snapshot's keys, call the matching setter, ignore unknowns. Missing
+  // keys are left as-is so older templates don't clobber newer knobs.
+  const settingValueMap = {
+    spikeProminence,
+    spikeWindow,
+    spikeMinDistance,
+    stdMultiplier,
+    noiseFloorMultiplier,
+    spikeMinWidth,
+    spikeMinProminenceRatio,
+    noiseWindowSize,
+    activityThresholdRatio,
+    activityThresholdEnabled,
+    baselineThresholdRatio,
+    baselineThresholdEnabled,
+    smoothingEnabled,
+    smoothingWindow,
+    subtractControl,
+    baselineCorrection,
+    trendFlatteningEnabled,
+    trendFlatteningWindow,
+    trendFlatteningMinimums,
+    decimationEnabled,
+    decimationSamples,
+    handleOutliers,
+    outlierPercentile,
+    outlierMultiplier,
+    showBursts,
+    maxInterSpikeInterval,
+    minSpikesPerBurst,
+    useAdjustedBases,
+    findPeaksWindowWidth,
+    peakProminence,
+  };
+  // useState setters are stable across renders, so this map is too.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const settingSetterMap = useMemo(
+    () => ({
+      spikeProminence: setSpikeProminence,
+      spikeWindow: setSpikeWindow,
+      spikeMinDistance: setSpikeMinDistance,
+      stdMultiplier: setStdMultiplier,
+      noiseFloorMultiplier: setNoiseFloorMultiplier,
+      spikeMinWidth: setSpikeMinWidth,
+      spikeMinProminenceRatio: setSpikeMinProminenceRatio,
+      noiseWindowSize: setNoiseWindowSize,
+      activityThresholdRatio: setActivityThresholdRatio,
+      activityThresholdEnabled: setActivityThresholdEnabled,
+      baselineThresholdRatio: setBaselineThresholdRatio,
+      baselineThresholdEnabled: setBaselineThresholdEnabled,
+      smoothingEnabled: setSmoothingEnabled,
+      smoothingWindow: setSmoothingWindow,
+      subtractControl: setSubtractControl,
+      baselineCorrection: setBaselineCorrection,
+      trendFlatteningEnabled: setTrendFlatteningEnabled,
+      trendFlatteningWindow: setTrendFlatteningWindow,
+      trendFlatteningMinimums: setTrendFlatteningMinimums,
+      decimationEnabled: setDecimationEnabled,
+      decimationSamples: setDecimationSamples,
+      handleOutliers: setHandleOutliers,
+      outlierPercentile: setOutlierPercentile,
+      outlierMultiplier: setOutlierMultiplier,
+      showBursts: setShowBursts,
+      maxInterSpikeInterval: setMaxInterSpikeInterval,
+      minSpikesPerBurst: setMinSpikesPerBurst,
+      useAdjustedBases: setUseAdjustedBases,
+      findPeaksWindowWidth: setFindPeaksWindowWidth,
+      peakProminence: setPeakProminence,
+    }),
+    []
+  );
+
+  const getSettingsSnapshot = useCallback(() => {
+    const snap = {};
+    for (const k of PERSISTABLE_KEYS) {
+      if (k in settingValueMap) snap[k] = settingValueMap[k];
+    }
+    return snap;
+    // settingValueMap is rebuilt every render but its values are the live
+    // state — relying on closure capture per render is intentional.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    spikeProminence,
+    spikeWindow,
+    spikeMinDistance,
+    stdMultiplier,
+    noiseFloorMultiplier,
+    spikeMinWidth,
+    spikeMinProminenceRatio,
+    noiseWindowSize,
+    activityThresholdRatio,
+    activityThresholdEnabled,
+    baselineThresholdRatio,
+    baselineThresholdEnabled,
+    smoothingEnabled,
+    smoothingWindow,
+    subtractControl,
+    baselineCorrection,
+    trendFlatteningEnabled,
+    trendFlatteningWindow,
+    trendFlatteningMinimums,
+    decimationEnabled,
+    decimationSamples,
+    handleOutliers,
+    outlierPercentile,
+    outlierMultiplier,
+    showBursts,
+    maxInterSpikeInterval,
+    minSpikesPerBurst,
+    useAdjustedBases,
+    findPeaksWindowWidth,
+    peakProminence,
+  ]);
+
+  const applySettingsSnapshot = useCallback(
+    (snapshot) => {
+      if (!snapshot || typeof snapshot !== "object") return;
+      for (const key of Object.keys(snapshot)) {
+        const setter = settingSetterMap[key];
+        if (setter) setter(snapshot[key]);
+      }
+    },
+    [settingSetterMap]
+  );
+
   const value = useMemo(
     () => ({
       // spike
@@ -217,6 +347,9 @@ export const NeuralSettingsProvider = ({ children }) => {
       setFindPeaksWindowWidth,
       peakProminence,
       setPeakProminence,
+      // template snapshot bridge
+      getSettingsSnapshot,
+      applySettingsSnapshot,
     }),
     [
       spikeProminence,
@@ -254,6 +387,8 @@ export const NeuralSettingsProvider = ({ children }) => {
       useAdjustedBases,
       findPeaksWindowWidth,
       peakProminence,
+      getSettingsSnapshot,
+      applySettingsSnapshot,
     ]
   );
 

@@ -4,28 +4,37 @@
  * in JSX since they're driven by controlsTheme.colors.roi[i].
  */
 
-/* ---- Section headings + helper text (Neural-scoped) ---- */
+/* ---- Section headings + helper text (Neural-scoped) ----
+ *
+ * The .roi-section-heading rule is retained as dead-code-safe styling
+ * in case any consumer still applies the class; the live ROI title
+ * uses the shared `.neural-control-panel__header > .neural-control-
+ * panel__title` pattern instead so the chart-controls bar's
+ * "collapse to title only when a section is expanded" rule keeps the
+ * ROI title visible (it targets `.neural-control-panel__header`).
+ *
+ * Sizes in rem so they scale with the user's browser font-size. */
 
 .roi-section-heading.MuiTypography-root {
     color: #fff;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 700;
     margin-bottom: 0;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.03125rem;
 }
 
 .roi-section-helper.MuiTypography-root {
     display: block;
     color: #fff;
-    font-size: 10px;
-    margin-bottom: 2px;
+    font-size: 0.625rem;
+    margin-bottom: 0.125rem;
 }
 
 .roi-section-helper--pending.MuiTypography-root {
     color: #00bcd4;
     font-style: italic;
-    margin-top: 2px;
+    margin-top: 0.125rem;
 }
 
 /* ---- Shared TextField appearance (Neural-scoped) ----

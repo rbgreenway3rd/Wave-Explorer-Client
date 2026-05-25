@@ -443,9 +443,9 @@ const ROIControls = () => {
       variant="dark"
       className="neural-control-panel roi-controls-container"
     >
-      <Typography variant="subtitle2" className="roi-section-heading">
-        Regions of Interest
-      </Typography>
+      <div className="neural-control-panel__header">
+        <h4 className="neural-control-panel__title">Regions of Interest</h4>
+      </div>
 
       <Typography variant="caption" className="roi-section-helper">
         {timeArray && timeArray.length > 0

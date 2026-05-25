@@ -13,17 +13,16 @@ import { useDraftSlider } from "../../../utilities/useDraftSlider";
 import "./NeuralControlPanel.css";
 
 /**
- * NoiseSuppressionControls — section header + per-method switches
- * (Trend Flattening, Savitzky-Golay smoothing). The redundant master
- * "Enable" toggle was removed — turning both method switches off
- * already disables the pipeline. The "Subtract Control Well Signature"
- * toggle lives in ControlWellSelector now (co-located with the control-
- * well selection it depends on).
+ * NoiseSuppressionControls — per-method switches (Trend Flattening,
+ * Savitzky-Golay smoothing) plus the SG window radio and the trend-
+ * flattening Baseline Window / Baseline Minimums sliders. The latter
+ * two are surfaced directly (no nested disclosure) so they're tunable
+ * in one place alongside the method switches.
  *
- * SG smoothing is the high-frequency noise reducer; trend flattening
- * tracks the low-frequency baseline. Both can run together. The
- * Advanced disclosure exposes the trend-flattening window + numMinimums
- * sliders, which were hardcoded (200 / 50) before this panel.
+ * The redundant master "Enable" toggle was removed — turning both
+ * method switches off already disables the pipeline. The "Subtract
+ * Control Well Signature" toggle lives in ControlWellSelector now
+ * (co-located with the control-well selection it depends on).
  */
 const SG_WINDOW_OPTIONS = [5, 7, 9];
 
@@ -43,11 +42,11 @@ const NoiseSuppressionControls = () => {
 
   const tfWindow = useDraftSlider(
     trendFlatteningWindow,
-    setTrendFlatteningWindow,
+    setTrendFlatteningWindow
   );
   const tfMin = useDraftSlider(
     trendFlatteningMinimums,
-    setTrendFlatteningMinimums,
+    setTrendFlatteningMinimums
   );
   // numMinimums must remain ≤ window — clamp on commit.
   const handleTfMinCommit = (e, v) => {
@@ -117,58 +116,55 @@ const NoiseSuppressionControls = () => {
         </RadioGroup>
       </div>
 
-      <details className="neural-control-panel__advanced">
-        <summary>Advanced</summary>
-        <div className="neural-control-panel__field">
-          <div className="neural-control-panel__field-header">
-            <span className="neural-control-panel__field-label">
-              Baseline Window
-            </span>
-            <span className="neural-control-panel__field-value">
-              {tfWindow.value}
-            </span>
-          </div>
-          <Slider
-            value={Number(tfWindow.value) || 0}
-            onChange={tfWindow.onChange}
-            onChangeCommitted={tfWindow.onChangeCommitted}
-            min={50}
-            max={500}
-            step={10}
-            disabled={!trendFlatteningEnabled}
-            marks={[
-              { value: 50, label: "50" },
-              { value: 200, label: "200" },
-              { value: 500, label: "500" },
-            ]}
-          />
+      <div className="neural-control-panel__field">
+        <div className="neural-control-panel__field-header">
+          <span className="neural-control-panel__field-label">
+            Baseline Window
+          </span>
+          <span className="neural-control-panel__field-value">
+            {tfWindow.value}
+          </span>
         </div>
+        <Slider
+          value={Number(tfWindow.value) || 0}
+          onChange={tfWindow.onChange}
+          onChangeCommitted={tfWindow.onChangeCommitted}
+          min={50}
+          max={500}
+          step={10}
+          disabled={!trendFlatteningEnabled}
+          marks={[
+            { value: 50, label: "50" },
+            { value: 200, label: "200" },
+            { value: 500, label: "500" },
+          ]}
+        />
+      </div>
 
-        <div className="neural-control-panel__field">
-          <div className="neural-control-panel__field-header">
-            <span className="neural-control-panel__field-label">
-              Baseline Minimums
-            </span>
-            <span className="neural-control-panel__field-value">
-              {tfMin.value}
-            </span>
-          </div>
-          <Slider
-            value={Number(tfMin.value) || 0}
-            onChange={tfMin.onChange}
-            onChangeCommitted={handleTfMinCommit}
-            min={5}
-            max={100}
-            step={1}
-            disabled={!trendFlatteningEnabled}
-            marks={[
-              { value: 5, label: "5" },
-              { value: 50, label: "50" },
-              { value: 100, label: "100" },
-            ]}
-          />
+      <div className="neural-control-panel__field">
+        <div className="neural-control-panel__field-header">
+          <span className="neural-control-panel__field-label">
+            Baseline Minimums
+          </span>
+          <span className="neural-control-panel__field-value">
+            {tfMin.value}
+          </span>
         </div>
-      </details>
+        <Slider
+          value={Number(tfMin.value) || 0}
+          onChange={tfMin.onChange}
+          onChangeCommitted={handleTfMinCommit}
+          min={5}
+          max={100}
+          step={1}
+          disabled={!trendFlatteningEnabled}
+          marks={[
+            { value: 5, label: "5" },
+            { value: 50, label: "50" },
+            { value: 100, label: "100" },
+          ]}
+        />
+      </div>
     </Panel>
   );
 };
