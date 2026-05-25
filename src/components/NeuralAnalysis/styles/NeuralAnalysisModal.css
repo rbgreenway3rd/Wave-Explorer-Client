@@ -90,15 +90,13 @@
   overflow: hidden;
 }
 
-/* When the AdvancedDrawer is open it sits between the chart top bar
- * and the chart row, claiming roughly 240px of vertical space. Bump
- * the chrome variable so the chart row shrinks rather than overflowing
- * past the viewport. The class lives on the modal root and is owned
- * by NeuralAnalysisModal's `advancedOpen` state, so it comes off when
- * the user closes the drawer or the modal. */
-.neural-analysis-modal--drawer-open {
-  --neural-modal-chrome-above-graph: 560px;
-}
+/* The Advanced Tweakables card caps its own height via
+ * ChartControls.css's `grid-template-rows: minmax(0, 14rem)` and
+ * scrolls section content internally, so opening a section no longer
+ * grows the bar or shrinks the chart row. The legacy
+ * `--tweakable-open` chrome bump that lived here is intentionally
+ * absent — chrome stays at its baseline value regardless of section
+ * state. */
 
 /* Both grid items need explicit min sizes so they shrink to their grid
  * cell. Chart.js is `responsive: true; maintainAspectRatio: false` so
@@ -110,12 +108,33 @@
   overflow: hidden;
 }
 
-/* Right column flows as a vertical stack: well selector → pinned
- * Activity Threshold region → scroll container holding Advanced. */
+/* Stack the legend above the chart canvas. The chart needs a
+ * dimensionally bounded cell because chart.js is `responsive: true;
+ * maintainAspectRatio: false`. Using grid (auto / 1fr) keeps the
+ * canvas filling the remaining height after the legend's natural
+ * height is taken. */
+.neural-analysis-modal .controls-and-graph {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+/* Right column is a vertical flex stack: NeuralWellSelector at natural
+ * height on top, NeuralResults below filling the rest with internal
+ * scrolling. `min-height: 0` is required on the column itself (and on
+ * NeuralResults — see NeuralResults.css) so the flex item can shrink
+ * below its content height, which is what lets the inner scroll
+ * activate instead of overflowing the modal. */
 .neural-analysis-modal .selector-and-average-graph {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  min-height: 0;
+}
+
+.neural-analysis-modal .selector-and-average-graph > .neural-results {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* Close out the bottom of the info-block column with the same 1px

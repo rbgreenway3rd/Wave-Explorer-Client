@@ -565,39 +565,6 @@
   font-weight: var(--font-weight-bold);
 }
 
-/* ---- Advanced disclosure (native <details>) ---- */
-
-.neural-control-panel__advanced {
-  margin-top: var(--space-2);
-  border-top: 1px solid var(--color-neural-border);
-  padding-top: var(--space-2);
-}
-
-.neural-control-panel__advanced > summary {
-  cursor: pointer;
-  list-style: none;
-  color: var(--color-neural-text-secondary);
-  font-family: var(--font-family);
-  font-size: 0.7rem;
-  font-weight: var(--font-weight-medium);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: var(--space-1) 0;
-}
-
-.neural-control-panel__advanced > summary::-webkit-details-marker { display: none; }
-
-.neural-control-panel__advanced > summary::before {
-  content: "▸";
-  display: inline-block;
-  margin-right: var(--space-1);
-  transition: transform var(--transition-base);
-}
-
-.neural-control-panel__advanced[open] > summary::before {
-  transform: rotate(90deg);
-}
-
-.neural-control-panel__advanced > .neural-control-panel__field {
-  margin-top: var(--space-2);
-}
+/* The per-card "Advanced" `<details>` block (formerly used inside
+ * NoiseSuppressionControls) is gone — those sliders moved to the
+ * unified Advanced Tweakables tab strip. CSS rules removed. */

@@ -1,20 +1,33 @@
 /* ChartControls.css — top control bar in the Neural Analysis modal.
  *
- * Layout: CSS grid with 3 equal-fr columns for the visible control
- * cards (Activity Threshold, Pan/Zoom, ROI) plus an auto-sized trailing
- * slot for the "Advanced" trigger button. Replaces the prior 6-column
- * grid (Control Well / Noise Suppression / Activity Threshold /
- * Pan/Zoom / ROI / Decimation) — the three hidden cards moved into
- * AdvancedDrawer.
+ * Default layout: CSS grid with 4 equal-fr columns (Activity Threshold,
+ * Pan/Zoom, ROI, Advanced Tweakables). `align-items: stretch` so every
+ * card fills the row's height — short cards no longer leave a vertical
+ * gap below their content.
  *
- * Reads as a section of the modal body, not a tray bolted on top:
- * no outer frame, transparent bg, subtle inset top-edge shadow for
- * the "recessed section" feel.
+ * Expanded layout (`--tweakable-open`): when the user opens a section
+ * inside the Advanced Tweakables card, the card grows *horizontally*
+ * to the right. The three neighbor cards shrink to title-only narrow
+ * columns; their interior controls are hidden by the rule near the
+ * bottom of this file. The card itself owns its left/right two-pane
+ * layout — see AdvancedTweakablesCard.css.
  */
 
 .neural-chart-controls {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+    /* Default layout (no section selected): three equal cells for the
+     * primary control cards, then the Advanced Tweakables card sized
+     * to its compact left rail (~140px). Without `auto`, the card
+     * would claim a full 1fr column and leave the right half of itself
+     * empty since no section content is rendered. */
+    grid-template-columns: 1fr 1fr 1fr auto;
+    /* Hard cap on row height. The bar must not grow when a section is
+     * opened in the Advanced Tweakables card — otherwise the chart
+     * shrinks and the user has to scroll to see it. Capping the row
+     * (not just the container) forces each grid item to be no taller
+     * than 14rem; tall section content scrolls *inside* the Advanced
+     * Tweakables card's right pane via its own overflow-y rule. */
+    grid-template-rows: minmax(0, 14rem);
     align-items: stretch;
     box-sizing: border-box;
     width: 100%;
@@ -25,21 +38,56 @@
     box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.08);
 }
 
-/* Trailing slot for the Advanced trigger. align-self: center keeps the
- * button vertically centered against the taller control cards on the
- * row. */
-.neural-chart-controls__advanced-trigger {
-    align-self: center;
-    display: flex;
-    justify-content: flex-end;
+/* Each card inside the bar clips its own overflow at its row-track
+ * boundary. The Advanced Tweakables card overrides this in its own
+ * stylesheet to scroll its right pane instead. */
+.neural-chart-controls > .neural-control-panel {
+    overflow: hidden;
 }
 
-.neural-chart-controls__advanced-chevron {
-    transition: transform var(--transition-base);
+.neural-chart-controls--tweakable-open {
+    /* Three narrow columns for the neighbors (sized to their title) +
+     * a wide last column that absorbs the rest. The `auto` max lets
+     * each neighbor column grow to whatever its title actually needs
+     * (which scales with the user's font-size), the `5rem` min keeps
+     * the column from collapsing if the title wraps to a 1-char line.
+     * Combined with the smaller font + text-wrap rule further below,
+     * titles like "Regions of Interest" fit cleanly without truncation. */
+    grid-template-columns:
+        minmax(5rem, auto)
+        minmax(5rem, auto)
+        minmax(5rem, auto)
+        minmax(0, 1fr);
 }
 
-.neural-chart-controls__advanced-chevron--open {
-    transform: rotate(180deg);
+/* Neighbor cards become title-only when the Advanced Tweakables card
+ * is expanded — hides their controls so a narrow column doesn't try
+ * to render a slider. The Advanced Tweakables card is exempt. */
+.neural-chart-controls--tweakable-open
+    > .neural-control-panel:not(.neural-advanced-tweakables-card) {
+    overflow: hidden;
+}
+
+.neural-chart-controls--tweakable-open
+    > .neural-control-panel:not(.neural-advanced-tweakables-card)
+    > *:not(.neural-control-panel__header) {
+    display: none;
+}
+
+/* Shrink the visible title in the collapsed neighbor cards and let it
+ * wrap. Without the explicit smaller font + `white-space: normal` /
+ * `word-break: break-word`, the default bold 0.75rem title for
+ * "Regions of Interest" would overflow a 5rem column and get clipped
+ * by the card's `overflow: hidden`. Sized in rem so it scales with
+ * the browser font-size setting. */
+.neural-chart-controls--tweakable-open
+    > .neural-control-panel:not(.neural-advanced-tweakables-card)
+    .neural-control-panel__title {
+    font-size: 0.625rem;
+    line-height: 1.15;
+    white-space: normal;
+    word-break: break-word;
+    text-align: center;
 }
 
 /* Legacy divider class — no longer rendered after the JSX cleanup

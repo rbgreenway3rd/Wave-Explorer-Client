@@ -1,0 +1,213 @@
+/* AdvancedTweakablesCard — fourth top-bar card. Two-pane horizontal
+ * layout: left rail (title + always-visible toggles + section selector
+ * grid) and right pane (selected section's controls; rendered only
+ * when a section is selected).
+ *
+ * Hard constraint: the parent chart-controls bar caps its own row at
+ * 14rem (see ChartControls.css `grid-template-rows`), so neither pane
+ * is allowed to push the card taller. The right pane scrolls
+ * internally for tall content. Left rail is *deliberately compact* so
+ * the right pane gets the rest of the card width for its sliders.
+ *
+ * Selectors here intentionally match the base `.neural-control-panel
+ * .ui-panel.ui-panel--dark` triple-class rule's specificity (or
+ * exceed it) so we can override its `flex-direction: column` and
+ * border styling — without that, the right pane drops *under* the
+ * left rail and only one slider fits.
+ *
+ * All dimensions in em/rem so the layout scales with the user's
+ * browser font-size setting.
+ */
+
+/* --- Card root ---------------------------------------------------- */
+
+.neural-advanced-tweakables-card.neural-control-panel.ui-panel.ui-panel--dark {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+    align-items: stretch;
+    min-height: 0;
+    overflow: hidden;
+    /* Tighter padding than the default panel; the bar's row cap of
+     * 14rem leaves little headroom for chrome. */
+    padding: 0.25rem 0.5rem;
+}
+
+/* --- Left rail ---------------------------------------------------- */
+
+.neural-advanced-tweakables-card__left {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    /* Fixed compact width so the right pane gets the rest of the
+     * card. ~8rem fits "Handle Outliers" toggle (stacked
+     * label-over-switch form) and 2-col "Spike Detection" buttons. */
+    width: 8rem;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Card title — compact so it doesn't eat vertical space in the rail. */
+.neural-advanced-tweakables-card__left .neural-control-panel__header {
+    margin-bottom: 0;
+}
+
+.neural-advanced-tweakables-card__left .neural-control-panel__title {
+    font-size: 0.75rem;
+    line-height: 1.1;
+}
+
+/* --- Toggles row -------------------------------------------------- */
+
+.neural-advanced-tweakables-card__toggles {
+    display: flex;
+    flex-direction: row;
+    gap: 0.25rem;
+    align-items: stretch;
+}
+
+/* Compact form for the two toggle panels (Handle Outliers, Show
+ * Bursts): label stacked *above* the switch instead of beside, so
+ * each toggle fits in a ~3.5rem column. Without this override, the
+ * default `.neural-toggle` is ~9rem wide. */
+.neural-advanced-tweakables-card__toggles
+    .neural-toggle.ui-panel.ui-panel--dark {
+    flex: 1 1 0;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.125rem;
+    padding: 0.125rem 0.25rem;
+}
+
+.neural-advanced-tweakables-card__toggles .neural-toggle__label {
+    font-size: 0.625rem;
+    line-height: 1.1;
+    text-align: center;
+    white-space: normal;
+}
+
+/* --- Section selector grid --------------------------------------- */
+
+.neural-advanced-tweakables-card__section-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.1875rem;
+}
+
+.neural-advanced-tweakables-card__section-button {
+    padding: 0.1875rem 0.25rem;
+    background: var(--color-bg-control);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    font-family: var(--font-family);
+    font-size: 0.625rem;
+    font-weight: var(--font-weight-medium);
+    line-height: 1.1;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color var(--transition-base),
+        border-color var(--transition-base);
+    /* Allow long labels ("Spike Detection") to wrap to two lines
+     * rather than overflowing. */
+    white-space: normal;
+    overflow-wrap: break-word;
+}
+
+.neural-advanced-tweakables-card__section-button:hover {
+    background-color: var(--color-bg-hover, rgba(255, 255, 255, 0.06));
+}
+
+.neural-advanced-tweakables-card__section-button--active {
+    background-color: var(--color-primary, #1976d2);
+    border-color: var(--color-primary, #1976d2);
+    color: #fff;
+}
+
+/* --- Right pane --------------------------------------------------- */
+
+/* Only present in DOM when a section is active. Fills the rest of the
+ * card's horizontal space; scrolls *internally* if the section's
+ * controls are taller than the card. */
+.neural-advanced-tweakables-card__right {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+    border-left: 1px solid var(--color-border);
+    padding-left: 0.5rem;
+}
+
+/* The section component renders its own Panel wrapper, which by
+ * default has its own padding and an accent border-left. Inside the
+ * right pane we strip both so the section's controls have maximum
+ * usable space. Specificity matches/exceeds the base panel rule. */
+.neural-advanced-tweakables-card__right
+    > .neural-control-panel.ui-panel.ui-panel--dark {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 0.75rem;
+    row-gap: 0.25rem;
+    align-content: start;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    /* Override base panel's min-height so the inner panel doesn't
+     * force the right pane taller than the card. */
+    min-height: 0;
+}
+
+/* Default: children of the inner panel (header, toggle rows, radio
+ * strips, etc.) span the full width. */
+.neural-advanced-tweakables-card__right
+    > .neural-control-panel.ui-panel.ui-panel--dark
+    > * {
+    grid-column: 1 / -1;
+}
+
+/* Slider fields each take one column → fields wrap into a 2-col
+ * layout, so eight Spike sliders fit in four rows instead of eight. */
+.neural-advanced-tweakables-card__right
+    > .neural-control-panel.ui-panel.ui-panel--dark
+    > .neural-control-panel__field {
+    grid-column: span 1;
+    min-width: 0;
+}
+
+/* Compact the section header inside the right pane (title + reset
+ * icon) so it doesn't claim a whole row of vertical space. */
+.neural-advanced-tweakables-card__right
+    > .neural-control-panel.ui-panel.ui-panel--dark
+    > .neural-control-panel__header {
+    margin-bottom: 0.125rem;
+}
+
+.neural-advanced-tweakables-card__right
+    > .neural-control-panel.ui-panel.ui-panel--dark
+    > .neural-control-panel__header
+    .neural-control-panel__title {
+    font-size: 0.75rem;
+    line-height: 1.2;
+}
+
+/* Compact the per-slider field: tighter label/value row, smaller mark
+ * labels under the track. Without this the field-header row plus
+ * mark labels alone eat ~3rem per slider. */
+.neural-advanced-tweakables-card__right .neural-control-panel__field-label,
+.neural-advanced-tweakables-card__right .neural-control-panel__field-value {
+    font-size: 0.625rem;
+    line-height: 1.1;
+}
+
+.neural-advanced-tweakables-card__right .MuiSlider-markLabel {
+    font-size: 0.5625rem;
+    line-height: 1;
+}
+
+.neural-advanced-tweakables-card__right .MuiSlider-root {
+    margin-top: 0.125rem;
+    margin-bottom: 0.125rem;
+}
