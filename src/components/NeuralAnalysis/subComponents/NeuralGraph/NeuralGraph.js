@@ -644,26 +644,24 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       // Build annotations object
       const allRoiAnnotations = {};
 
-      // Add ROI boxes from roiList
+      // Add ROI boxes from roiList. Y bounds always come from the
+      // chart's *current* y scale so the box spans the full visible
+      // height even after the user switches wells. Previously we
+      // honored `roi.yMin` / `roi.yMax` from the stored ROI object,
+      // but those values were captured at draw time from the original
+      // well's scale and never updated — switching wells left the box
+      // sized to the old well's amplitude range and no longer
+      // covering the new chart's full height.
       if (Array.isArray(roiList)) {
         roiList.forEach((roi, idx) => {
           if (roi && roi.xMin !== undefined && roi.xMax !== undefined) {
             const color = roiColors[idx % roiColors.length];
-            const yMin =
-              roi.yMin !== null && roi.yMin !== undefined
-                ? roi.yMin
-                : chart.scales.y.min;
-            const yMax =
-              roi.yMax !== null && roi.yMax !== undefined
-                ? roi.yMax
-                : chart.scales.y.max;
-
             allRoiAnnotations[`roi${idx + 1}`] = {
               type: "box",
               xMin: roi.xMin,
               xMax: roi.xMax,
-              yMin: yMin,
-              yMax: yMax,
+              yMin: chart.scales.y.min,
+              yMax: chart.scales.y.max,
               backgroundColor: color.bg,
               borderColor: color.border,
               borderWidth: 2,
