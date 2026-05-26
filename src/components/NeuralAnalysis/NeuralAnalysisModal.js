@@ -1,4 +1,4 @@
-import React, { useContext, useRef, useState } from "react";
+import React, { useContext, useMemo, useRef, useState } from "react";
 import { Tooltip } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import DescriptionIcon from "@mui/icons-material/Description";
@@ -84,35 +84,67 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
   const handleGenerateFullPlateReport = () => setFullPlateModalOpen(true);
 
   // Snapshot of processing params the report modals embed in their CSV
-  // headers. Built per-render from settings + effective spike params so a
-  // report generated right after a slider drag reflects the latest values.
-  const processingParams = {
-    noiseSuppressionActive: settings.noiseSuppressionActive,
-    smoothingEnabled: settings.smoothingEnabled,
-    smoothingWindow: settings.smoothingWindow,
-    subtractControl: settings.subtractControl,
-    controlWell,
-    baselineCorrection: settings.baselineCorrection,
-    trendFlatteningEnabled: settings.trendFlatteningEnabled,
-    handleOutliers: settings.handleOutliers,
-    outlierPercentile: settings.outlierPercentile,
-    outlierMultiplier: settings.outlierMultiplier,
-    spikeProminence: effectiveSpikeProminence,
-    spikeWindow: effectiveSpikeWindow,
-    spikeMinWidth: settings.spikeMinWidth,
-    spikeMinDistance: settings.spikeMinDistance,
-    spikeMinProminenceRatio: settings.spikeMinProminenceRatio,
-    stdMultiplier: settings.stdMultiplier,
-    noiseFloorMultiplier: settings.noiseFloorMultiplier,
-    noiseWindowSize: settings.noiseWindowSize,
-    activityThresholdEnabled: settings.activityThresholdEnabled,
-    activityThresholdRatio: settings.activityThresholdRatio,
-    baselineThresholdEnabled: settings.baselineThresholdEnabled,
-    baselineThresholdRatio: settings.baselineThresholdRatio,
-    showBursts: settings.showBursts,
-    maxInterSpikeInterval: settings.maxInterSpikeInterval,
-    minSpikesPerBurst: settings.minSpikesPerBurst,
-  };
+  // headers. Memoized so its identity is stable across renders that
+  // don't change any of the embedded values — without this wrap, every
+  // settings-context change rebuilt the object and propagated a new
+  // prop reference into both report modals (forcing them to re-render
+  // even when closed). Deps list mirrors the object's keys 1:1.
+  const processingParams = useMemo(
+    () => ({
+      noiseSuppressionActive: settings.noiseSuppressionActive,
+      smoothingEnabled: settings.smoothingEnabled,
+      smoothingWindow: settings.smoothingWindow,
+      subtractControl: settings.subtractControl,
+      controlWell,
+      baselineCorrection: settings.baselineCorrection,
+      trendFlatteningEnabled: settings.trendFlatteningEnabled,
+      handleOutliers: settings.handleOutliers,
+      outlierPercentile: settings.outlierPercentile,
+      outlierMultiplier: settings.outlierMultiplier,
+      spikeProminence: effectiveSpikeProminence,
+      spikeWindow: effectiveSpikeWindow,
+      spikeMinWidth: settings.spikeMinWidth,
+      spikeMinDistance: settings.spikeMinDistance,
+      spikeMinProminenceRatio: settings.spikeMinProminenceRatio,
+      stdMultiplier: settings.stdMultiplier,
+      noiseFloorMultiplier: settings.noiseFloorMultiplier,
+      noiseWindowSize: settings.noiseWindowSize,
+      activityThresholdEnabled: settings.activityThresholdEnabled,
+      activityThresholdRatio: settings.activityThresholdRatio,
+      baselineThresholdEnabled: settings.baselineThresholdEnabled,
+      baselineThresholdRatio: settings.baselineThresholdRatio,
+      showBursts: settings.showBursts,
+      maxInterSpikeInterval: settings.maxInterSpikeInterval,
+      minSpikesPerBurst: settings.minSpikesPerBurst,
+    }),
+    [
+      settings.noiseSuppressionActive,
+      settings.smoothingEnabled,
+      settings.smoothingWindow,
+      settings.subtractControl,
+      controlWell,
+      settings.baselineCorrection,
+      settings.trendFlatteningEnabled,
+      settings.handleOutliers,
+      settings.outlierPercentile,
+      settings.outlierMultiplier,
+      effectiveSpikeProminence,
+      effectiveSpikeWindow,
+      settings.spikeMinWidth,
+      settings.spikeMinDistance,
+      settings.spikeMinProminenceRatio,
+      settings.stdMultiplier,
+      settings.noiseFloorMultiplier,
+      settings.noiseWindowSize,
+      settings.activityThresholdEnabled,
+      settings.activityThresholdRatio,
+      settings.baselineThresholdEnabled,
+      settings.baselineThresholdRatio,
+      settings.showBursts,
+      settings.maxInterSpikeInterval,
+      settings.minSpikesPerBurst,
+    ]
+  );
 
   return (
     <Modal
@@ -145,12 +177,10 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
                 Protocol: {project?.protocol || "N/A"}
               </h5>
               <h5 className="modal-header-item">
-                Cell plate ID:{" "}
-                {project?.plate?.[0]?.assayPlateBarcode || "N/A"}
+                Plate ID 1: {project?.plate?.[0]?.assayPlateBarcode || "N/A"}
               </h5>
               <h5 className="modal-header-item">
-                Stimulus plate ID:{" "}
-                {project?.plate?.[0]?.addPlateBarcode || "N/A"}
+                Plate ID 2: {project?.plate?.[0]?.addPlateBarcode || "N/A"}
               </h5>
               {selectedWell ? (
                 <h2

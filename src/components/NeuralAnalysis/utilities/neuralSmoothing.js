@@ -84,39 +84,9 @@ export function baselineCorrected(signal, windowSize = 200, numMinimums = 50) {
   return out;
 }
 
-/**
- * Pure baseline smoothing (returns the estimated baseline, not subtracted)
- * @param {{x: number, y: number}[]} signal - The input signal
- * @param {number} windowSize - Window size for baseline estimation
- * @param {number} numMinimums - Number of minimums to use for median
- * @returns {{x: number, y: number}[]} Smoothed baseline only
- */
-export function baselineSmoothed(signal, windowSize = 100, numMinimums = 10) {
-  if (!Array.isArray(signal) || signal.length === 0) return [];
-  // Cap windowSize to avoid inefficiency on short signals
-  const effectiveWindowSize = Math.min(
-    windowSize,
-    Math.floor(signal.length / 2)
-  );
-  let baseline = [];
-  for (let j = 0; j < signal.length; j++) {
-    let startIdx = Math.max(0, j - Math.floor(effectiveWindowSize / 2));
-    let endIdx = Math.min(
-      signal.length - 1,
-      j + Math.floor(effectiveWindowSize / 2)
-    );
-    let currentWindow = signal.slice(startIdx, endIdx + 1);
-    let yValues = currentWindow.map((point) => point.y);
-    let sortedWindow = [...yValues].sort((a, b) => a - b);
-    let minPoints = sortedWindow.slice(
-      0,
-      Math.min(numMinimums, sortedWindow.length)
-    );
-    // Use median of minimums as baseline
-    let median =
-      minPoints.length > 0 ? minPoints[Math.floor(minPoints.length / 2)] : 0;
-    baseline.push(median);
-  }
-  // Return the smoothed baseline as a signal
-  return signal.map((val, idx) => ({ x: val.x, y: baseline[idx] }));
-}
+// The former `baselineSmoothed` helper (a per-sample slice-map-sort
+// baseline estimator) was removed in 2026-05 — it was exported but
+// had zero callers anywhere in the codebase. If a future feature
+// needs a non-subtracted baseline, build it on top of the
+// `rollingMinMedian` helper in `./rollingWindow` the same way
+// `baselineCorrected` does above.

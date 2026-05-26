@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useMemo, useState, useContext } from "react";
 import { DataContext } from "../../../../providers/DataProvider";
 import {
   useNeuralSelection,
@@ -97,51 +97,58 @@ const NeuralWellSelector = () => {
     setGlobalYMax(max);
   }, [wellArrays]);
 
-  const getChartOptions = () => ({
-    normalized: true,
-    maintainAspectRatio: false,
-    responsive: true,
-    devicePixelRatio: window.devicePixelRatio || 1,
-    spanGaps: false,
-    events: ["mousemove", "mouseout", "click", "touchstart", "touchmove"],
-    animation: { duration: 0 },
-    parsing: false,
-    plugins: {
-      legend: false,
-      decimation: {
-        enabled: true,
-        algorithm: "lttb",
-        samples: 40,
-        threshold: 80,
+  // Memoized so all ~96 mini-charts share one chart.js options object
+  // instead of receiving a fresh one on every parent re-render — which
+  // forced chart.js to diff and `chart.update()` each instance even
+  // when nothing changed about the options.
+  const chartOptions = useMemo(
+    () => ({
+      normalized: true,
+      maintainAspectRatio: false,
+      responsive: true,
+      devicePixelRatio: window.devicePixelRatio || 1,
+      spanGaps: false,
+      events: ["mousemove", "mouseout", "click", "touchstart", "touchmove"],
+      animation: { duration: 0 },
+      parsing: false,
+      plugins: {
+        legend: false,
+        decimation: {
+          enabled: true,
+          algorithm: "lttb",
+          samples: 40,
+          threshold: 80,
+        },
+        tooltip: {
+          enabled: false,
+          mode: "nearest",
+          intersect: false,
+        },
       },
-      tooltip: {
-        enabled: false,
-        mode: "nearest",
-        intersect: false,
+      elements: {
+        point: { radius: 0 },
+        line: { borderWidth: 1.5 },
       },
-    },
-    elements: {
-      point: { radius: 0 },
-      line: { borderWidth: 1.5 },
-    },
-    layout: {
-      autoPadding: false,
-      padding: { left: -30, bottom: -30 },
-    },
-    scales: {
-      x: {
-        type: "time",
-        ticks: { display: false },
-        grid: { display: false },
+      layout: {
+        autoPadding: false,
+        padding: { left: -30, bottom: -30 },
       },
-      y: {
-        ticks: { display: false },
-        grid: { display: false },
-        min: globalYMin,
-        max: globalYMax,
+      scales: {
+        x: {
+          type: "time",
+          ticks: { display: false },
+          grid: { display: false },
+        },
+        y: {
+          ticks: { display: false },
+          grid: { display: false },
+          min: globalYMin,
+          max: globalYMax,
+        },
       },
-    },
-  });
+    }),
+    [globalYMin, globalYMax]
+  );
 
   return (
     <>
@@ -202,7 +209,7 @@ const NeuralWellSelector = () => {
                     : ""
                 }`}
                 data={getChartData(well)}
-                options={getChartOptions()}
+                options={chartOptions}
                 style={{ width: "100%" }}
               />
             </div>

@@ -26,16 +26,27 @@ function computeSignalStats(data) {
   }
   const signalRange = globalMax - globalMin;
 
-  // Median (and MAD-based robust std on the data itself)
-  const medianY = allYValues.slice().sort((a, b) => a - b)[Math.floor(n / 2)];
-  const absDevs = allYValues.map((y) => Math.abs(y - medianY));
-  const medianAbsDev = absDevs.slice().sort((a, b) => a - b)[Math.floor(n / 2)];
+  // One sort, three statistics: median (n/2 index), 2nd-percentile
+  // baseline (n*0.02 index), and an absolute-deviation array we reuse
+  // to compute the MAD via a second sort. Previously this ran three
+  // independent sorts on copies of the same array — the dominant
+  // cost on 250k-point signals. Output values are bit-identical.
+  const sortedY = allYValues.slice().sort((a, b) => a - b);
+  const medianY = sortedY[Math.floor(n / 2)];
+  const percentileIndex = Math.floor(n * 0.02);
+  const baselineThreshold = sortedY[Math.max(0, percentileIndex)];
+
+  // MAD-based robust std. Still needs its own sort (absolute
+  // deviations are a different multiset), but we no longer re-slice
+  // `allYValues` just to sort it again — that copy was redundant.
+  const absDevs = new Array(n);
+  for (let i = 0; i < n; i++) {
+    absDevs[i] = Math.abs(allYValues[i] - medianY);
+  }
+  absDevs.sort((a, b) => a - b);
+  const medianAbsDev = absDevs[Math.floor(n / 2)];
   const robustStd = medianAbsDev / 0.6745;
 
-  // 2nd-percentile baseline + global-range fallback
-  const sortedY = [...allYValues].sort((a, b) => a - b);
-  const percentileIndex = Math.floor(sortedY.length * 0.02);
-  const baselineThreshold = sortedY[Math.max(0, percentileIndex)];
   const alternativeThreshold = globalMin + signalRange * 0.05;
   const finalBaselineThreshold = Math.min(
     baselineThreshold,

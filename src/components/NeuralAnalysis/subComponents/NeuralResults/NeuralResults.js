@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Grid, Divider } from "@mui/material";
 import { Panel } from "../../../ui";
 import {
@@ -31,6 +31,160 @@ function median(sortedAsc) {
     : sortedAsc[Math.floor(n / 2)];
 }
 
+// Pure calculator functions hoisted to module scope so they aren't
+// re-allocated on every render of <NeuralResults>. They close over
+// nothing — every dependency comes in via arguments — so this is
+// purely a memory/identity optimization with bit-identical output.
+
+const calculateSpikeFrequency = (spikes, startTime, endTime) => {
+  const spikesInRange = spikes.filter(
+    (spike) => spike.time >= startTime && spike.time <= endTime
+  );
+  const duration = endTime - startTime;
+  const total = spikesInRange.length;
+  const spikesPerSecond = duration > 0 ? total / (duration / 1000) : 0;
+  return {
+    total,
+    average: spikesPerSecond,
+    median: spikesPerSecond,
+    spikesPerSecond,
+  };
+};
+
+const calculateSpikeAmplitude = (spikes, startTime, endTime) => {
+  const spikesInRange = spikes.filter(
+    (spike) => spike.time >= startTime && spike.time <= endTime
+  );
+  if (spikesInRange.length === 0) {
+    return { average: 0, median: 0, min: 0, max: 0 };
+  }
+  const amplitudes = spikesInRange.map((spike) => spike.amplitude);
+  const average = amplitudes.reduce((s, v) => s + v, 0) / amplitudes.length;
+  const sorted = [...amplitudes].sort((a, b) => a - b);
+  const { min, max } = minMaxOf(amplitudes, (v) => v);
+  return { average, median: median(sorted), min, max };
+};
+
+const calculateSpikeWidth = (spikes, startTime, endTime) => {
+  const spikesInRange = spikes.filter(
+    (spike) =>
+      spike.time >= startTime &&
+      spike.time <= endTime &&
+      typeof spike.width === "number"
+  );
+  if (spikesInRange.length === 0) {
+    return { average: 0, median: 0, min: 0, max: 0 };
+  }
+  const widths = spikesInRange.map((spike) => spike.width);
+  const average = widths.reduce((s, v) => s + v, 0) / widths.length;
+  const sorted = [...widths].sort((a, b) => a - b);
+  const { min, max } = minMaxOf(widths, (v) => v);
+  return { average, median: median(sorted), min, max };
+};
+
+const calculateSpikeAUC = (spikes, startTime, endTime) => {
+  const spikesInRange = spikes.filter(
+    (spike) =>
+      spike.time >= startTime &&
+      spike.time <= endTime &&
+      typeof spike.auc === "number"
+  );
+  if (spikesInRange.length === 0) {
+    return { average: 0, median: 0, min: 0, max: 0 };
+  }
+  const aucs = spikesInRange.map((spike) => spike.auc);
+  const average = aucs.reduce((s, v) => s + v, 0) / aucs.length;
+  const sorted = [...aucs].sort((a, b) => a - b);
+  const { min, max } = minMaxOf(aucs, (v) => v);
+  return { average, median: median(sorted), min, max };
+};
+
+const calculateMaxSpikeSignal = (spikes, startTime, endTime) => {
+  const spikesInRange = spikes.filter(
+    (spike) => spike.time >= startTime && spike.time <= endTime
+  );
+  if (spikesInRange.length === 0) return 0;
+  const { max } = minMaxOf(spikesInRange, (s) => s.peakCoords.y);
+  return max;
+};
+
+const calculateBurstMetrics = (bursts, startTime, endTime) => {
+  if (!Array.isArray(bursts) || bursts.length === 0) {
+    return {
+      total: 0,
+      duration: { average: 0, median: 0 },
+      interBurstInterval: { average: 0, median: 0 },
+    };
+  }
+  const burstsInRange = bursts.filter(
+    (burst) => burst.startTime >= startTime && burst.endTime <= endTime
+  );
+  if (burstsInRange.length === 0) {
+    return {
+      total: 0,
+      duration: { average: 0, median: 0 },
+      interBurstInterval: { average: 0, median: 0 },
+    };
+  }
+  const durations = burstsInRange.map((burst) => burst.duration);
+  const avgDuration = durations.reduce((s, v) => s + v, 0) / durations.length;
+  const medianDuration = median([...durations].sort((a, b) => a - b));
+
+  const interBurstIntervals = [];
+  for (let i = 1; i < burstsInRange.length; i++) {
+    const interval =
+      burstsInRange[i].startTime - burstsInRange[i - 1].endTime;
+    if (interval > 0) interBurstIntervals.push(interval);
+  }
+  const avgIBI =
+    interBurstIntervals.length > 0
+      ? interBurstIntervals.reduce((s, v) => s + v, 0) /
+        interBurstIntervals.length
+      : 0;
+  const medianIBI = median([...interBurstIntervals].sort((a, b) => a - b));
+
+  return {
+    total: burstsInRange.length,
+    duration: { average: avgDuration, median: medianDuration },
+    interBurstInterval: { average: avgIBI, median: medianIBI },
+  };
+};
+
+const formatNumber = (num, decimals = 2) => {
+  if (typeof num !== "number" || isNaN(num)) return "0.00";
+  return num.toFixed(decimals);
+};
+
+const formatHistogram = (histogram) => {
+  if (!histogram || Object.keys(histogram).length === 0) return "No data";
+  return Object.entries(histogram)
+    .map(([bin, count]) => `${bin}: ${count}`)
+    .join(", ");
+};
+
+// MetricCard / MetricItem were previously declared *inside* the parent
+// component body — which makes React see a fresh component type on
+// every render and forces the entire subtree to unmount + remount
+// rather than just re-render. Hoisting them to module scope means each
+// renders as a stable type; React keeps the existing DOM nodes around
+// and only diffs props.
+const MetricCard = ({ title, children }) => (
+  <Panel variant="dark" className="neural-result-card">
+    <h6 className="neural-result-card__title">{title}</h6>
+    {children}
+  </Panel>
+);
+
+const MetricItem = ({ label, value, unit = "" }) => (
+  <div className="neural-result-item">
+    {label}:{" "}
+    <span className="neural-result-item__value">
+      {value}
+      {unit}
+    </span>
+  </div>
+);
+
 const NeuralResults = () => {
   const { selectedWell } = useNeuralSelection();
   const { roiList } = useNeuralInteraction();
@@ -38,122 +192,9 @@ const NeuralResults = () => {
   const peakResults = pipelineResults.spikeResults;
   const burstResults = pipelineResults.burstResults;
   const processedSignal = pipelineResults.processedSignal;
-  const calculateSpikeFrequency = (spikes, startTime, endTime) => {
-    const spikesInRange = spikes.filter(
-      (spike) => spike.time >= startTime && spike.time <= endTime
-    );
-    const duration = endTime - startTime;
-    const total = spikesInRange.length;
-    const spikesPerSecond = duration > 0 ? total / (duration / 1000) : 0;
-    return {
-      total,
-      average: spikesPerSecond,
-      median: spikesPerSecond,
-      spikesPerSecond,
-    };
-  };
-
-  const calculateSpikeAmplitude = (spikes, startTime, endTime) => {
-    const spikesInRange = spikes.filter(
-      (spike) => spike.time >= startTime && spike.time <= endTime
-    );
-    if (spikesInRange.length === 0) {
-      return { average: 0, median: 0, min: 0, max: 0 };
-    }
-    const amplitudes = spikesInRange.map((spike) => spike.amplitude);
-    const average = amplitudes.reduce((s, v) => s + v, 0) / amplitudes.length;
-    const sorted = [...amplitudes].sort((a, b) => a - b);
-    const { min, max } = minMaxOf(amplitudes, (v) => v);
-    return { average, median: median(sorted), min, max };
-  };
-
-  const calculateSpikeWidth = (spikes, startTime, endTime) => {
-    const spikesInRange = spikes.filter(
-      (spike) =>
-        spike.time >= startTime &&
-        spike.time <= endTime &&
-        typeof spike.width === "number"
-    );
-    if (spikesInRange.length === 0) {
-      return { average: 0, median: 0, min: 0, max: 0 };
-    }
-    const widths = spikesInRange.map((spike) => spike.width);
-    const average = widths.reduce((s, v) => s + v, 0) / widths.length;
-    const sorted = [...widths].sort((a, b) => a - b);
-    const { min, max } = minMaxOf(widths, (v) => v);
-    return { average, median: median(sorted), min, max };
-  };
-
-  const calculateSpikeAUC = (spikes, startTime, endTime) => {
-    const spikesInRange = spikes.filter(
-      (spike) =>
-        spike.time >= startTime &&
-        spike.time <= endTime &&
-        typeof spike.auc === "number"
-    );
-    if (spikesInRange.length === 0) {
-      return { average: 0, median: 0, min: 0, max: 0 };
-    }
-    const aucs = spikesInRange.map((spike) => spike.auc);
-    const average = aucs.reduce((s, v) => s + v, 0) / aucs.length;
-    const sorted = [...aucs].sort((a, b) => a - b);
-    const { min, max } = minMaxOf(aucs, (v) => v);
-    return { average, median: median(sorted), min, max };
-  };
-
-  const calculateMaxSpikeSignal = (spikes, startTime, endTime) => {
-    const spikesInRange = spikes.filter(
-      (spike) => spike.time >= startTime && spike.time <= endTime
-    );
-    if (spikesInRange.length === 0) return 0;
-    const { max } = minMaxOf(spikesInRange, (s) => s.peakCoords.y);
-    return max;
-  };
-
-  const calculateBurstMetrics = (bursts, startTime, endTime) => {
-    if (!Array.isArray(bursts) || bursts.length === 0) {
-      return {
-        total: 0,
-        duration: { average: 0, median: 0 },
-        interBurstInterval: { average: 0, median: 0 },
-      };
-    }
-    const burstsInRange = bursts.filter(
-      (burst) => burst.startTime >= startTime && burst.endTime <= endTime
-    );
-    if (burstsInRange.length === 0) {
-      return {
-        total: 0,
-        duration: { average: 0, median: 0 },
-        interBurstInterval: { average: 0, median: 0 },
-      };
-    }
-    const durations = burstsInRange.map((burst) => burst.duration);
-    const avgDuration = durations.reduce((s, v) => s + v, 0) / durations.length;
-    const medianDuration = median([...durations].sort((a, b) => a - b));
-
-    const interBurstIntervals = [];
-    for (let i = 1; i < burstsInRange.length; i++) {
-      const interval =
-        burstsInRange[i].startTime - burstsInRange[i - 1].endTime;
-      if (interval > 0) interBurstIntervals.push(interval);
-    }
-    const avgIBI =
-      interBurstIntervals.length > 0
-        ? interBurstIntervals.reduce((s, v) => s + v, 0) /
-          interBurstIntervals.length
-        : 0;
-    const medianIBI = median([...interBurstIntervals].sort((a, b) => a - b));
-
-    return {
-      total: burstsInRange.length,
-      duration: { average: avgDuration, median: medianDuration },
-      interBurstInterval: { average: avgIBI, median: medianIBI },
-    };
-  };
 
   // Calculate metrics for each ROI
-  const roiMetrics = React.useMemo(() => {
+  const roiMetrics = useMemo(() => {
     if (!Array.isArray(roiList) || roiList.length === 0) return {};
     const metrics = {};
     roiList.forEach((roi, index) => {
@@ -177,35 +218,6 @@ const NeuralResults = () => {
     return metrics;
   }, [peakResults, burstResults, roiList]);
 
-  const formatNumber = (num, decimals = 2) => {
-    if (typeof num !== "number" || isNaN(num)) return "0.00";
-    return num.toFixed(decimals);
-  };
-
-  const formatHistogram = (histogram) => {
-    if (!histogram || Object.keys(histogram).length === 0) return "No data";
-    return Object.entries(histogram)
-      .map(([bin, count]) => `${bin}: ${count}`)
-      .join(", ");
-  };
-
-  const MetricCard = ({ title, children }) => (
-    <Panel variant="dark" className="neural-result-card">
-      <h6 className="neural-result-card__title">{title}</h6>
-      {children}
-    </Panel>
-  );
-
-  const MetricItem = ({ label, value, unit = "" }) => (
-    <div className="neural-result-item">
-      {label}:{" "}
-      <span className="neural-result-item__value">
-        {value}
-        {unit}
-      </span>
-    </div>
-  );
-
   // Overall metrics use the recording's full time range as the
   // [startTime, endTime] window. Previously we derived these from
   // `minMaxOf(peakResults, s => s.time)` — i.e., the spread of
@@ -216,7 +228,7 @@ const NeuralResults = () => {
   // AUC / max-signal calculators use these bounds only as an
   // inclusive filter, so widening the window doesn't change those
   // metrics (every detected spike now qualifies, which is correct).
-  const overallMetrics = React.useMemo(() => {
+  const overallMetrics = useMemo(() => {
     if (!Array.isArray(peakResults) || peakResults.length === 0) return null;
     if (!Array.isArray(processedSignal) || processedSignal.length === 0) {
       return null;
@@ -231,7 +243,6 @@ const NeuralResults = () => {
       maxSpikeSignal: calculateMaxSpikeSignal(peakResults, startTime, endTime),
       burstMetrics: calculateBurstMetrics(burstResults, startTime, endTime),
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [peakResults, burstResults, processedSignal]);
 
   return (
