@@ -176,6 +176,16 @@ export class NeuralPeak {
 
     // Calculate AUC (Area Under Curve) using trapezoidal integration
     this.auc = this.calculateAUC();
+
+    // Default: a regular detected peak. Outliers re-injected by
+    // `readdOutliersAsSpikes` (outlierRemoval.js) explicitly overwrite
+    // this to `true`. Without an explicit default, regular peaks had
+    // `isOutlier === undefined` and the chart's `!pk.isOutlier` /
+    // `pk.isOutlier` filter pair relied on the truthy-vs-undefined
+    // cascade. Making the field explicitly false keeps the data shape
+    // honest and is a guardrail against future refactors that might
+    // tighten the filter to `=== true` / `=== false`.
+    this.isOutlier = false;
   }
 
   calculateAUC() {

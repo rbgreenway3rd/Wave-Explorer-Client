@@ -90,34 +90,36 @@ const AdvancedTweakablesCard = ({ expandedSection, onExpandedChange }) => {
     >
       <div className="neural-advanced-tweakables-card__left">
         <div className="neural-control-panel__header">
-          <h4 className="neural-control-panel__title">Advanced Tweakables</h4>
+          <h4 className="neural-control-panel__title">Advanced Settings</h4>
         </div>
 
-        <div className="neural-advanced-tweakables-card__toggles">
-          <HandleOutliersToggle />
-          <ShowBurstsToggle />
-        </div>
+        <div className="neural-advanced-tweakables-card__body">
+          <div className="neural-advanced-tweakables-card__section-list">
+            {SECTIONS.map(({ key, label }) => {
+              const active = expandedSection === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className={
+                    "neural-advanced-tweakables-card__section-button" +
+                    (active
+                      ? " neural-advanced-tweakables-card__section-button--active"
+                      : "")
+                  }
+                  onClick={() => handleSectionClick(key)}
+                  aria-pressed={active}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
 
-        <div className="neural-advanced-tweakables-card__section-list">
-          {SECTIONS.map(({ key, label }) => {
-            const active = expandedSection === key;
-            return (
-              <button
-                key={key}
-                type="button"
-                className={
-                  "neural-advanced-tweakables-card__section-button" +
-                  (active
-                    ? " neural-advanced-tweakables-card__section-button--active"
-                    : "")
-                }
-                onClick={() => handleSectionClick(key)}
-                aria-pressed={active}
-              >
-                {label}
-              </button>
-            );
-          })}
+          <div className="neural-advanced-tweakables-card__toggles">
+            <HandleOutliersToggle />
+            <ShowBurstsToggle />
+          </div>
         </div>
       </div>
 

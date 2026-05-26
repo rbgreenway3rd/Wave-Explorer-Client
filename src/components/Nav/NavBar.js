@@ -97,7 +97,7 @@ export const NavBar = ({ combinedComponentRef, profile, setProfile }) => {
                 </IconButton>
               </span>
             </Tooltip>
-            <Tooltip title="Neural Analysis" arrow>
+            <Tooltip title="Advanced Analysis" arrow>
               <span className="navbar__action-slot">
                 <IconButton
                   className="navbar__action-button neuralAnalysisButton"

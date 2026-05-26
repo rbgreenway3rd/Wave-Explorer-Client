@@ -15,12 +15,12 @@
 
 .neural-chart-controls {
     display: grid;
-    /* Default layout (no section selected): three equal cells for the
-     * primary control cards, then the Advanced Tweakables card sized
-     * to its compact left rail (~140px). Without `auto`, the card
-     * would claim a full 1fr column and leave the right half of itself
-     * empty since no section content is rendered. */
-    grid-template-columns: 1fr 1fr 1fr auto;
+    /* Default layout (no section selected): four equal cells. Per
+     * Dave's feedback, Chart Interaction and Advanced Settings should
+     * read as the same size so the row looks balanced. When closed,
+     * the Advanced Settings card's content occupies its compact 8rem
+     * left rail and the rest of its cell is dark panel background. */
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     /* Hard cap on row height. The bar must not grow when a section is
      * opened in the Advanced Tweakables card — otherwise the chart
      * shrinks and the user has to scroll to see it. Capping the row

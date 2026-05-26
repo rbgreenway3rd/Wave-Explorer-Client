@@ -39,25 +39,30 @@
 
 /* ---- Shared TextField appearance (Neural-scoped) ----
  * Used by both the per-row Edit ROI inputs and the inline-entry inputs
- * on the active "Define ROI N+1" row.
- */
+ * on the active "Define ROI N+1" row. The TextField flex-fills its
+ * column inside `.roi-row__inputs` so three of them split the ROI
+ * card's width equally — previously a hardcoded `width: 7rem` made
+ * three side-by-side fields overflow the (now narrow) ROI card and
+ * truncated the "Duration" label to "Dura". Sizes in rem so they
+ * scale with the user's browser font-size. */
 .neural-text-field.MuiTextField-root {
-    width: 7rem;
+    flex: 1 1 0;
+    min-width: 0;
 }
 
 .neural-text-field .MuiInputBase-root {
     background-color: #424242;
-    font-size: 10px;
+    font-size: 0.625rem;
 }
 
 .neural-text-field .MuiInputBase-input {
     color: #fff;
-    padding-left: 0.5rem;
-    padding-right: 0;
+    padding-left: 0.25rem;
+    padding-right: 0.125rem;
 }
 
 .neural-text-field .MuiInputLabel-root {
-    font-size: 10px;
+    font-size: 0.625rem;
     color: #fff;
 }
 
@@ -69,25 +74,31 @@
     gap: 0;
 }
 
+/* Each ROI row stacks vertically: button cell (Edit/Define button +
+ * delete ×) on top, three inputs flex-fill the row beneath it. Was
+ * `display: flex` with button + inputs side-by-side, but three 7rem
+ * inputs + the button no longer fit the narrower ROI card. */
 .roi-row {
     display: flex;
-    align-items: center;
-    margin-bottom: 2px;
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 0.25rem;
     width: 100%;
-    gap: 2px;
+    gap: 0.125rem;
 }
 
 .roi-row__button-cell {
-    display: inline-flex;
+    display: flex;
     align-items: center;
+    gap: 0.125rem;
 }
 
 .roi-row__inputs {
     display: flex;
     align-items: center;
-    gap: 2px;
-    flex: 1;
-    margin-top: 4px;
+    gap: 0.25rem;
+    width: 100%;
+    margin-top: 0.125rem;
 }
 
 /* ---- ROI button (Define / Edit) ---- */
@@ -95,11 +106,14 @@
 .roi-button {
     font-family: 'Roboto', 'Helvetica Neue', 'Arial', sans-serif;
     outline: none;
-    padding: 2px 4px;
+    padding: 0.125rem 0.25rem;
     border-radius: 0;
-    font-size: 10px;
+    font-size: 0.625rem;
     font-weight: 600;
-    min-width: 7.5rem;
+    /* Flex-fill the row instead of a hardcoded min-width; the row's
+     * width now drives the button so it scales with the card. */
+    flex: 1 1 0;
+    min-width: 0;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
     transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }

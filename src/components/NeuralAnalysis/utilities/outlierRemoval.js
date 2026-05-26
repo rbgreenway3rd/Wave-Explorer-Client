@@ -107,6 +107,19 @@ export function removeOutliers(signal, options = {}) {
     return { cleanedSignal: signal, outlierSpikes: [], removedIndices: [] };
   }
 
+  // Sanity cap: if more than half of detected peaks pass the outlier
+  // criteria, the percentile/multiplier configuration is mis-tuned
+  // for this signal (legitimate outliers should be a small minority,
+  // typically <5%). Excising "most" peaks turns the cleaned signal
+  // into a featureless trace, detectSpikes finds nothing on it, and
+  // every peak ends up rendered as an orange outlier ring with no
+  // red dots. Bail out: report no outliers and let detection run on
+  // the original signal instead.
+  const OUTLIER_RATIO_CAP = 0.5;
+  if (outlierPeakIndices.length > peaks.length * OUTLIER_RATIO_CAP) {
+    return { cleanedSignal: signal, outlierSpikes: [], removedIndices: [] };
+  }
+
   // For each outlier peak, find the complete spike structure
   const outlierSpikes = [];
   const allRemovedIndices = new Set();

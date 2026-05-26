@@ -37,6 +37,7 @@ const NeuralResults = () => {
   const { pipelineResults } = useNeuralResults();
   const peakResults = pipelineResults.spikeResults;
   const burstResults = pipelineResults.burstResults;
+  const processedSignal = pipelineResults.processedSignal;
   const calculateSpikeFrequency = (spikes, startTime, endTime) => {
     const spikesInRange = spikes.filter(
       (spike) => spike.time >= startTime && spike.time <= endTime
@@ -205,15 +206,23 @@ const NeuralResults = () => {
     </div>
   );
 
-  // Overall metrics — uses minMaxOf to find time bounds without
-  // spreading peakResults.map(...) into Math.min/max args (would blow
-  // the call stack on long recordings).
+  // Overall metrics use the recording's full time range as the
+  // [startTime, endTime] window. Previously we derived these from
+  // `minMaxOf(peakResults, s => s.time)` — i.e., the spread of
+  // detected spike times — which made the spike-frequency divisor
+  // wrong whenever spikes clustered in a small portion of the run
+  // (e.g., 55 spikes inside a 0.5 s burst of a 30 s recording
+  // reported 110 Hz instead of ~1.8 Hz). The amplitude / width /
+  // AUC / max-signal calculators use these bounds only as an
+  // inclusive filter, so widening the window doesn't change those
+  // metrics (every detected spike now qualifies, which is correct).
   const overallMetrics = React.useMemo(() => {
     if (!Array.isArray(peakResults) || peakResults.length === 0) return null;
-    const { min: startTime, max: endTime } = minMaxOf(
-      peakResults,
-      (s) => s.time
-    );
+    if (!Array.isArray(processedSignal) || processedSignal.length === 0) {
+      return null;
+    }
+    const startTime = processedSignal[0].x;
+    const endTime = processedSignal[processedSignal.length - 1].x;
     return {
       spikeFrequency: calculateSpikeFrequency(peakResults, startTime, endTime),
       spikeAmplitude: calculateSpikeAmplitude(peakResults, startTime, endTime),
@@ -223,7 +232,7 @@ const NeuralResults = () => {
       burstMetrics: calculateBurstMetrics(burstResults, startTime, endTime),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [peakResults, burstResults]);
+  }, [peakResults, burstResults, processedSignal]);
 
   return (
     <div className="neural-results">

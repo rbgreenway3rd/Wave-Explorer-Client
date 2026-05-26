@@ -21,7 +21,7 @@ import {
 import { DataContext } from "../../providers/DataProvider";
 import { Chart } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
-import { Modal, IconButton, Heading, Button } from "../ui";
+import { Modal, IconButton, Button } from "../ui";
 
 Chart.register(zoomPlugin);
 
@@ -122,7 +122,6 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
       className="neural-analysis-modal"
     >
       <Modal.Header className="neural-analysis-modal__header">
-        <Heading level={2}>Neural Analysis</Heading>
         <Tooltip title="Exit Neural Analysis" arrow>
           <IconButton
             variant="subtle"
@@ -143,13 +142,15 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
                 Project: {project?.title || "No Project"}
               </h3>
               <h5 className="modal-header-item">
-                Instrument: {project?.instrument || "N/A"}
-              </h5>
-              <h5 className="modal-header-item">
                 Protocol: {project?.protocol || "N/A"}
               </h5>
               <h5 className="modal-header-item">
-                Plate Barcode: {project?.plate?.[0]?.assayPlateBarcode || "N/A"}
+                Cell plate ID:{" "}
+                {project?.plate?.[0]?.assayPlateBarcode || "N/A"}
+              </h5>
+              <h5 className="modal-header-item">
+                Stimulus plate ID:{" "}
+                {project?.plate?.[0]?.addPlateBarcode || "N/A"}
               </h5>
               {selectedWell ? (
                 <h2

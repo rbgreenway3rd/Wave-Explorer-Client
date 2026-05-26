@@ -21,15 +21,15 @@ import {
 // the docs.
 const LEGEND_DESCRIPTIONS = {
   signal:
-    "Processed neural signal — after trend flattening and Savitzky-Golay smoothing if those are enabled in the Advanced drawer.",
+    "Processed neural signal — after trend flattening and Savitzky-Golay smoothing if those are enabled in Advanced Settings.",
   peaks:
     "Detected spike events on the cleaned signal. Each peak's amplitude, width, and area under the curve are recorded in the results table.",
   peakBases:
     "Left/right base points of each peak — the boundaries used to measure peak width and AUC. With Baseline Threshold enabled, these snap to where the signal crosses the baseline line.",
   outlierPeaks:
-    "Extreme transients flagged before spike detection (default: top 5% by prominence AND at least 2× the median). They're excised from the signal so they don't skew the detection threshold, then re-added so you can verify they aren't real signal. Tune from Advanced → Outlier controls.",
+    "Extreme transients flagged before spike detection (default: top 5% by prominence AND at least 2× the median). They're excised from the signal so they don't skew the detection threshold, then re-added so you can verify they aren't real signal. Tune from Advanced Settings → Outlier Sliders.",
   bursts:
-    "Groups of closely-spaced spikes meeting the burst criteria (minimum spikes per burst within a maximum inter-spike interval). Configure in the Advanced drawer.",
+    "Groups of closely-spaced spikes meeting the burst criteria (minimum spikes per burst within a maximum inter-spike interval). Configure in Advanced Settings → Burst Sliders.",
   roi: "Region of Interest — a user-defined time window for focused analysis. Metrics are reported separately for each ROI in the results table.",
   activityThreshold:
     "Horizontal cutoff — peaks whose apex falls below this line are filtered out before burst detection and metrics. Drag the line vertically on the chart to adjust.",
@@ -167,42 +167,11 @@ const ChartLegend = () => {
         alignItems: "center",
       }}
     >
+      {/* Order per Dave's spec: Signal → Activity Threshold → Baseline
+       * Threshold → Peaks → Peak Bases → Outlier Peaks → ROI → Bursts. */}
       <LegendItem label="Signal" description={LEGEND_DESCRIPTIONS.signal}>
         <LineSwatch color={waveColor} />
       </LegendItem>
-      <LegendItem label="Peaks" description={LEGEND_DESCRIPTIONS.peaks}>
-        <DotSwatch fill={PEAK_STYLE.fill} border={PEAK_STYLE.border} />
-      </LegendItem>
-      <LegendItem
-        label="Peak Bases"
-        description={LEGEND_DESCRIPTIONS.peakBases}
-      >
-        <DotSwatch
-          fill={PEAK_BASE_STYLE.fill}
-          border={PEAK_BASE_STYLE.border}
-        />
-      </LegendItem>
-      {handleOutliers && (
-        <LegendItem
-          label="Outlier Peaks"
-          description={LEGEND_DESCRIPTIONS.outlierPeaks}
-        >
-          <RingSwatch border={OUTLIER_PEAK_STYLE.border} />
-        </LegendItem>
-      )}
-      {showBursts && (
-        <LegendItem label="Bursts" description={LEGEND_DESCRIPTIONS.bursts}>
-          <BoxSwatch fill={BURST_STYLE.fill} border={BURST_STYLE.border} />
-        </LegendItem>
-      )}
-      {hasRoi && (
-        <LegendItem label="ROI" description={LEGEND_DESCRIPTIONS.roi}>
-          <BoxSwatch
-            fill={ROI_PALETTE[0].bg}
-            border={ROI_PALETTE[0].border}
-          />
-        </LegendItem>
-      )}
       {activityThresholdEnabled && (
         <LegendItem
           label="Activity Threshold"
@@ -223,6 +192,39 @@ const ChartLegend = () => {
             color={BASELINE_THRESHOLD_STYLE.color}
             dash={BASELINE_THRESHOLD_STYLE.dash}
           />
+        </LegendItem>
+      )}
+      <LegendItem label="Peaks" description={LEGEND_DESCRIPTIONS.peaks}>
+        <DotSwatch fill={PEAK_STYLE.fill} border={PEAK_STYLE.border} />
+      </LegendItem>
+      <LegendItem
+        label="Peak Bases"
+        description={LEGEND_DESCRIPTIONS.peakBases}
+      >
+        <DotSwatch
+          fill={PEAK_BASE_STYLE.fill}
+          border={PEAK_BASE_STYLE.border}
+        />
+      </LegendItem>
+      {handleOutliers && (
+        <LegendItem
+          label="Outlier Peaks"
+          description={LEGEND_DESCRIPTIONS.outlierPeaks}
+        >
+          <RingSwatch border={OUTLIER_PEAK_STYLE.border} />
+        </LegendItem>
+      )}
+      {hasRoi && (
+        <LegendItem label="ROI" description={LEGEND_DESCRIPTIONS.roi}>
+          <BoxSwatch
+            fill={ROI_PALETTE[0].bg}
+            border={ROI_PALETTE[0].border}
+          />
+        </LegendItem>
+      )}
+      {showBursts && (
+        <LegendItem label="Bursts" description={LEGEND_DESCRIPTIONS.bursts}>
+          <BoxSwatch fill={BURST_STYLE.fill} border={BURST_STYLE.border} />
         </LegendItem>
       )}
     </div>

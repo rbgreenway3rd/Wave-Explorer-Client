@@ -53,7 +53,10 @@ export const ACTIVITY_THRESHOLD_STYLE = {
 };
 
 export const BASELINE_THRESHOLD_STYLE = {
-  color: "#80deea",
+  // Magenta — picked deliberately to stand apart from the cyan signal
+  // and the gold activity threshold line, per Dave's feedback that
+  // the prior light-cyan #80deea looked too similar to the signal.
+  color: "#e91e63",
   width: 2,
   dash: [2, 3],
 };

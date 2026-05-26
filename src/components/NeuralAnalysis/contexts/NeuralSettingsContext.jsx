@@ -62,7 +62,7 @@ export const NeuralSettingsProvider = ({ children }) => {
   // wells with different amplitudes.
   const [activityThresholdRatio, setActivityThresholdRatio] = useState(0.5);
   const [activityThresholdEnabled, setActivityThresholdEnabled] =
-    useState(false);
+    useState(true);
   // Baseline Threshold — a second horizontal line. When enabled, it
   // overrides per-peak base detection so peak width and AUC are
   // measured between the line's intercepts with the signal on either
@@ -75,7 +75,7 @@ export const NeuralSettingsProvider = ({ children }) => {
   // on for a given well (see baselineSeededWellRef there).
   const [baselineThresholdRatio, setBaselineThresholdRatio] = useState(0.1);
   const [baselineThresholdEnabled, setBaselineThresholdEnabled] =
-    useState(false);
+    useState(true);
   // Tracks the well key the user has overridden spike params for. When
   // the selected well changes, the override no longer applies and the
   // effective values fall back to the auto-suggestion (computed in

@@ -27,17 +27,25 @@
 }
 
 .neural-results__section-title {
-  color: var(--color-info);
+  /* Pure black + heaviest available weight + a thin underline rule —
+   * the previous `#1a1a1a` at standard bold still read as soft on the
+   * gray modal background. This combination reads as a distinct
+   * section break the eye lands on. The "Overall" variant below
+   * keeps its amber accent so it stays distinguishable from the
+   * per-ROI sections. */
+  color: #000;
   font-family: var(--font-family);
-  font-size: 0.875rem;
-  font-weight: var(--font-weight-bold);
+  font-size: 0.9375rem;
+  font-weight: 800;
   margin: 0 0 0.375rem 0;
+  padding-bottom: 0.1875rem;
+  border-bottom: 0.0625rem solid #444;
 }
 
 .neural-results__section-title--overall {
-  /* The "Overall Spike Detection" header gets a yellow accent — the only
-   * non-cyan section heading in the panel. */
-  color: #ffeb3b;
+  /* The "Overall Spike Detection" header keeps a yellow accent to
+   * stand out from the per-ROI section titles. */
+  color: #b58900;
 }
 
 /* ---- Metric card — wraps a group of metric items ---- */
