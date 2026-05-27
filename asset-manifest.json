@@ -1,9 +1,9 @@
 {
   "files": {
     "main.css": "./static/css/main.522ab5b7.css",
-    "main.js": "./static/js/main.c0f5b222.js",
+    "main.js": "./static/js/main.28cbe529.js",
     "static/js/205.37154704.chunk.js": "./static/js/205.37154704.chunk.js",
-    "static/js/63.013ecb72.chunk.js": "./static/js/63.013ecb72.chunk.js",
+    "static/js/63.8e9470a7.chunk.js": "./static/js/63.8e9470a7.chunk.js",
     "static/js/72.8bcafafa.chunk.js": "./static/js/72.8bcafafa.chunk.js",
     "static/js/345.6d8fb6db.chunk.js": "./static/js/345.6d8fb6db.chunk.js",
     "static/js/787.9e9f4ffd.chunk.js": "./static/js/787.9e9f4ffd.chunk.js",
@@ -11,15 +11,15 @@
     "static/media/WaveGuideLogo.webp": "./static/media/WaveGuideLogo.0fba101da78db2310933.webp",
     "index.html": "./index.html",
     "main.522ab5b7.css.map": "./static/css/main.522ab5b7.css.map",
-    "main.c0f5b222.js.map": "./static/js/main.c0f5b222.js.map",
+    "main.28cbe529.js.map": "./static/js/main.28cbe529.js.map",
     "205.37154704.chunk.js.map": "./static/js/205.37154704.chunk.js.map",
-    "63.013ecb72.chunk.js.map": "./static/js/63.013ecb72.chunk.js.map",
+    "63.8e9470a7.chunk.js.map": "./static/js/63.8e9470a7.chunk.js.map",
     "72.8bcafafa.chunk.js.map": "./static/js/72.8bcafafa.chunk.js.map",
     "345.6d8fb6db.chunk.js.map": "./static/js/345.6d8fb6db.chunk.js.map",
     "787.9e9f4ffd.chunk.js.map": "./static/js/787.9e9f4ffd.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.522ab5b7.css",
-    "static/js/main.c0f5b222.js"
+    "static/js/main.28cbe529.js"
   ]
 }
