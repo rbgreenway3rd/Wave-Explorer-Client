@@ -8,6 +8,7 @@ import ChartControls from "./subComponents/NeuralGraph/ChartControls";
 import NeuralWellSelector from "./subComponents/WellSelection/NeuralWellSelector";
 import NeuralGraph from "./subComponents/NeuralGraph/NeuralGraph";
 import ChartLegend from "./subComponents/NeuralGraph/ChartLegend";
+import ChartDisplayToggles from "./subComponents/NeuralGraph/ChartDisplayToggles";
 import NeuralReportModal from "./NeuralReportModal";
 import NeuralFullPlateReportModal from "./NeuralFullPlateReportModal";
 import TemplateMenu from "./templates/TemplateMenu";
@@ -239,7 +240,25 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
           </div>
           <div className="modal-body">
             <section className="controls-and-graph">
-              <ChartLegend />
+              {/* Shared row above the chart: legend on the left,
+                * display toggles on the right. Background + border
+                * applied here so the two children render as one
+                * seamless strip. */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "stretch",
+                  background: "rgb(0, 0, 0)",
+                  borderTop: "0.1em solid rgb(100, 100, 100)",
+                  borderLeft: "0.1em solid rgb(100, 100, 100)",
+                  borderRight: "0.1em solid rgb(100, 100, 100)",
+                }}
+              >
+                <ChartLegend />
+                <ChartDisplayToggles />
+              </div>
               <NeuralGraph className="neural-graph" ref={neuralGraphRef} />
             </section>
             <section className="selector-and-average-graph">

@@ -32,7 +32,160 @@ import {
   BASELINE_THRESHOLD_STYLE,
 } from "./chartStyles";
 
-Chart.register(...registerables, Tooltip, zoomPlugin, annotationPlugin);
+// Cap on samples drawn along the top edge of each peak's AUC polygon.
+// Wide peaks (hundreds of samples between left and right base) were
+// making zoom/pan grind, because every redraw walked every sample and
+// did two scale lookups + a lineTo per sample. 28 samples per peak
+// preserves enough curve shape for the fill to look right while
+// bounding per-draw work to a constant per peak.
+const AUC_FILL_MAX_TOP_SAMPLES = 28;
+
+// Module-scope chart.js plugin: fills each peak's AUC region with a
+// semi-transparent color. Polygon top = (decimated) signal samples
+// from leftBaseIdx → rightBaseIdx with the apex sample always
+// included; polygon bottom = the two-level baseline used by
+// NeuralPeak.calculateAUC (left-base height on the left half,
+// right-base height on the right half, joined by a vertical step at
+// the peak apex). Visualization only — does not affect any computed
+// AUC value.
+//
+// Live state (enabled / peaks / signal) is attached directly to the
+// chart instance as `chart.$aucFill` rather than passed through
+// `chart.options.plugins.aucFill`. The options route forces chart.js
+// to resolve the plugin's config on every draw, and stuffing the
+// 250k-element processedSignal through that resolver added noticeable
+// per-frame overhead during zoom. A bare property on `chart` is read
+// with no extra work.
+const aucFillPlugin = {
+  id: "aucFill",
+  afterDatasetsDraw(chart) {
+    const state = chart && chart.$aucFill;
+    if (!state || !state.enabled) return;
+    const peaks = state.peaks;
+    const signal = state.signal;
+    if (!Array.isArray(peaks) || peaks.length === 0) return;
+    if (!Array.isArray(signal) || signal.length === 0) return;
+    const xScale = chart.scales && chart.scales.x;
+    const yScale = chart.scales && chart.scales.y;
+    const { ctx, chartArea } = chart;
+    if (!xScale || !yScale || !ctx || !chartArea) return;
+
+    ctx.save();
+    // Clip to the plot area so the polygons can't bleed into the axis
+    // gutters when the user pans/zooms.
+    ctx.beginPath();
+    ctx.rect(
+      chartArea.left,
+      chartArea.top,
+      chartArea.right - chartArea.left,
+      chartArea.bottom - chartArea.top
+    );
+    ctx.clip();
+
+    const signalLen = signal.length;
+    for (let i = 0; i < peaks.length; i++) {
+      const pk = peaks[i];
+      if (!pk) continue;
+      const lbIdx = pk.leftBaseIdx;
+      const rbIdx = pk.rightBaseIdx;
+      const apexIdx = pk.index;
+      if (
+        typeof lbIdx !== "number" ||
+        typeof rbIdx !== "number" ||
+        typeof apexIdx !== "number" ||
+        rbIdx <= lbIdx
+      ) {
+        continue;
+      }
+      const lbCoords = pk.leftBaseCoords;
+      const rbCoords = pk.rightBaseCoords;
+      const apexCoords = pk.peakCoords;
+      if (!lbCoords || !rbCoords || !apexCoords) continue;
+      const lbY = lbCoords.y;
+      const rbY = rbCoords.y;
+      const apexX = apexCoords.x;
+      if (
+        typeof lbY !== "number" ||
+        typeof rbY !== "number" ||
+        typeof apexX !== "number"
+      ) {
+        continue;
+      }
+      const lo = lbIdx < 0 ? 0 : lbIdx >= signalLen ? signalLen - 1 : lbIdx;
+      const hi = rbIdx < 0 ? 0 : rbIdx >= signalLen ? signalLen - 1 : rbIdx;
+      if (hi <= lo) continue;
+      const startPt = signal[lo];
+      if (!startPt) continue;
+
+      // Decimation: pick a stride so the loop touches at most
+      // AUC_FILL_MAX_TOP_SAMPLES samples between the bases. The apex
+      // sample and the last sample (hi) are always included, so the
+      // peak shape and the right-base endpoint stay anchored.
+      const span = hi - lo;
+      const stride =
+        span > AUC_FILL_MAX_TOP_SAMPLES
+          ? Math.ceil(span / AUC_FILL_MAX_TOP_SAMPLES)
+          : 1;
+
+      ctx.beginPath();
+      ctx.moveTo(
+        xScale.getPixelForValue(startPt.x),
+        yScale.getPixelForValue(startPt.y)
+      );
+      // Left half: stride samples up to (but not including) the apex.
+      for (let j = lo + stride; j < apexIdx; j += stride) {
+        const pt = signal[j];
+        if (!pt) continue;
+        ctx.lineTo(
+          xScale.getPixelForValue(pt.x),
+          yScale.getPixelForValue(pt.y)
+        );
+      }
+      // Apex always present so the curve actually peaks.
+      const apexPt = signal[apexIdx];
+      if (apexPt) {
+        ctx.lineTo(
+          xScale.getPixelForValue(apexPt.x),
+          yScale.getPixelForValue(apexPt.y)
+        );
+      }
+      // Right half: stride samples after the apex, stopping short of
+      // the endpoint so the explicit endpoint lineTo below isn't a
+      // duplicate.
+      for (let j = apexIdx + stride; j < hi; j += stride) {
+        const pt = signal[j];
+        if (!pt) continue;
+        ctx.lineTo(
+          xScale.getPixelForValue(pt.x),
+          yScale.getPixelForValue(pt.y)
+        );
+      }
+      const endPt = signal[hi];
+      if (endPt) {
+        ctx.lineTo(
+          xScale.getPixelForValue(endPt.x),
+          yScale.getPixelForValue(endPt.y)
+        );
+      }
+      // Bottom edge — two-level baseline mirroring how calculateAUC
+      // integrates: right-base height from apex → right base, vertical
+      // step at the apex x, then left-base height from apex → left
+      // base. closePath connects back to the moveTo point.
+      const apexPx = xScale.getPixelForValue(apexX);
+      ctx.lineTo(apexPx, yScale.getPixelForValue(rbY));
+      ctx.lineTo(apexPx, yScale.getPixelForValue(lbY));
+      ctx.closePath();
+
+      ctx.fillStyle = pk.isOutlier
+        ? "rgba(255, 165, 0, 0.32)" // semi-transparent orange
+        : "rgba(255, 80, 80, 0.32)"; // semi-transparent red
+      ctx.fill();
+    }
+    ctx.restore();
+  },
+};
+
+Chart.register(...registerables, Tooltip, zoomPlugin, annotationPlugin, aucFillPlugin);
 
 /**
  * NeuralGraph — chart.js Line wrapper. After Tier B reads everything from
@@ -60,6 +213,8 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       baselineThresholdRatio,
       baselineThresholdEnabled,
       setBaselineThresholdRatio,
+      showPeakBases,
+      markAUC,
     } = useNeuralSettings();
     const {
       defineROI,
@@ -220,7 +375,10 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
             : [];
 
         const datasets = [];
-        if (initialBaseScatter.length > 0) {
+        // Peak base markers are gated by the user-visible "Show Peak
+        // Bases" toggle (Chart Display Toggles strip). Default ON,
+        // but the user can hide them to declutter the chart.
+        if (showPeakBases && initialBaseScatter.length > 0) {
           datasets.push({
             type: "scatter",
             label: "Spike Bases",
@@ -270,7 +428,7 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
         }
         setChartData({ datasets });
       }
-    }, [processedSignal, chartData, peakResults, noiseSuppressionActive]);
+    }, [processedSignal, chartData, peakResults, noiseSuppressionActive, showPeakBases]);
 
     // Memoized chart-data projections. Each useMemo skips its allocation
     // when its single source of truth is reference-stable across renders
@@ -318,6 +476,24 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       [peakResults]
     );
 
+    // Attach the AUC-fill plugin's live state directly to the chart
+    // instance. The plugin reads from `chart.$aucFill` on every draw,
+    // so writing the bare object + calling `chart.update("none")` is
+    // enough to flip the fill on/off and refresh it. Going through
+    // `chart.options.plugins.aucFill` would route the 250k-element
+    // signal through chart.js's option resolver on every draw — same
+    // visual result, much more per-frame work during zoom.
+    useEffect(() => {
+      const chart = neuralGraphRef.current;
+      if (!chart) return;
+      chart.$aucFill = {
+        enabled: !!markAUC,
+        peaks: Array.isArray(peakResults) ? peakResults : [],
+        signal: Array.isArray(processedSignal) ? processedSignal : [],
+      };
+      chart.update("none");
+    }, [markAUC, peakResults, processedSignal]);
+
     // Update chart data imperatively to preserve zoom state.
     //
     // `chartData` is in the deps because the Chart component only mounts
@@ -334,7 +510,10 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       if (!chart || !processedSignal || processedSignal.length === 0) return;
 
       const newDatasets = [
-        ...(baseScatter.length > 0
+        // Peak base markers — gated by the "Show Peak Bases" toggle in
+        // the Chart Display Toggles strip. Default ON; turn off to
+        // declutter the chart when the user only cares about apexes.
+        ...(showPeakBases && baseScatter.length > 0
           ? [
               {
                 type: "scatter",
@@ -393,7 +572,7 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       // Mutate chart data imperatively without triggering re-render
       chart.data.datasets = newDatasets;
       perf.time("chart.update (data)", () => chart.update("none"));
-    }, [processedSignal, noiseSuppressionActive, chartPoints, peakScatter, outlierScatter, baseScatter, chartData]);
+    }, [processedSignal, noiseSuppressionActive, chartPoints, peakScatter, outlierScatter, baseScatter, chartData, showPeakBases]);
 
     // Memoize chartOptions - recalculate when processedSignal changes to update axis ranges
     // Initialize with pan/zoom enabled based on initial props

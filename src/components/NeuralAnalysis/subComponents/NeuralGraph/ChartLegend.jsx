@@ -160,11 +160,10 @@ const ChartLegend = () => {
         flexWrap: "wrap",
         gap: "8px 16px",
         padding: "6px 10px",
-        background: "rgb(0, 0, 0)",
-        borderTop: "0.1em solid rgb(100, 100, 100)",
-        borderLeft: "0.1em solid rgb(100, 100, 100)",
-        borderRight: "0.1em solid rgb(100, 100, 100)",
         alignItems: "center",
+        // Background + border are owned by the parent row container
+        // (which also holds ChartDisplayToggles) so the seam between
+        // the two doesn't double up styles.
       }}
     >
       {/* Order per Dave's spec: Signal → Activity Threshold → Baseline

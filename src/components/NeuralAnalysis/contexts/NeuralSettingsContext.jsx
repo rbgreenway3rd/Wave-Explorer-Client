@@ -134,6 +134,17 @@ export const NeuralSettingsProvider = ({ children }) => {
   const [maxInterSpikeInterval, setMaxInterSpikeInterval] = useState(50);
   const [minSpikesPerBurst, setMinSpikesPerBurst] = useState(3);
 
+  // ---- Display toggles (chart overlay) -----------------------------------
+  // showPeakBases: whether the white base markers (left/right base of
+  // each detected peak) are drawn on the chart. Default ON to preserve
+  // the prior behavior.
+  // markAUC: when ON, the AUC region of each peak is filled with a
+  // semi-transparent color on the chart (red for normal peaks, orange
+  // for outliers — matching the marker colors). Pure visualization;
+  // doesn't affect detection or metric values.
+  const [showPeakBases, setShowPeakBases] = useState(true);
+  const [markAUC, setMarkAUC] = useState(false);
+
   // ---- Legacy spike-display tweaks consumed only by NeuralGraph ----------
   const [useAdjustedBases, setUseAdjustedBases] = useState(false);
   const [findPeaksWindowWidth, setFindPeaksWindowWidth] = useState(10);
@@ -179,6 +190,8 @@ export const NeuralSettingsProvider = ({ children }) => {
     showBursts,
     maxInterSpikeInterval,
     minSpikesPerBurst,
+    showPeakBases,
+    markAUC,
     useAdjustedBases,
     findPeaksWindowWidth,
     peakProminence,
@@ -214,6 +227,8 @@ export const NeuralSettingsProvider = ({ children }) => {
       showBursts: setShowBursts,
       maxInterSpikeInterval: setMaxInterSpikeInterval,
       minSpikesPerBurst: setMinSpikesPerBurst,
+      showPeakBases: setShowPeakBases,
+      markAUC: setMarkAUC,
       useAdjustedBases: setUseAdjustedBases,
       findPeaksWindowWidth: setFindPeaksWindowWidth,
       peakProminence: setPeakProminence,
@@ -258,6 +273,8 @@ export const NeuralSettingsProvider = ({ children }) => {
     showBursts,
     maxInterSpikeInterval,
     minSpikesPerBurst,
+    showPeakBases,
+    markAUC,
     useAdjustedBases,
     findPeaksWindowWidth,
     peakProminence,
@@ -340,6 +357,11 @@ export const NeuralSettingsProvider = ({ children }) => {
       setMaxInterSpikeInterval,
       minSpikesPerBurst,
       setMinSpikesPerBurst,
+      // display toggles
+      showPeakBases,
+      setShowPeakBases,
+      markAUC,
+      setMarkAUC,
       // legacy
       useAdjustedBases,
       setUseAdjustedBases,
@@ -384,6 +406,8 @@ export const NeuralSettingsProvider = ({ children }) => {
       showBursts,
       maxInterSpikeInterval,
       minSpikesPerBurst,
+      showPeakBases,
+      markAUC,
       useAdjustedBases,
       findPeaksWindowWidth,
       peakProminence,
