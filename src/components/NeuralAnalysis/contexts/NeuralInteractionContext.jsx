@@ -36,11 +36,12 @@ export const useNeuralInteraction = () => {
 };
 
 export const NeuralInteractionProvider = ({ children }) => {
-  // 'none' is the default — chart loads with no interactive mode active.
-  // 'pan-zoom' enables pan/zoom; 'roi' enables click-drag ROI definition.
-  // The two interactive modes are mutually exclusive; turning either off
-  // returns to 'none' rather than auto-flipping to the other.
-  const [interactionMode, setInteractionMode] = useState("none");
+  // 'pan-zoom' is the default — most users want to drag/wheel-zoom the
+  // chart from the moment it loads. 'roi' enables click-drag ROI
+  // definition; 'none' disables both. The two interactive modes are
+  // mutually exclusive; turning either off returns to 'none' rather
+  // than auto-flipping to the other.
+  const [interactionMode, setInteractionMode] = useState("pan-zoom");
   // Sub-toggles for zoom vs pan within pan-zoom mode. Defaulted true so
   // that enabling pan-zoom mode immediately gives the user both gestures.
   const [zoomState, setZoomState] = useState(true);

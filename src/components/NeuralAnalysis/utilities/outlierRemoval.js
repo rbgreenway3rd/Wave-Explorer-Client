@@ -1,26 +1,62 @@
 /**
  * outlierRemoval.js
- * Identifies and removes complete outlier spikes from neural signals
- * An outlier spike includes the peak and surrounding points (ascent and descent)
+ * Identifies "outlier" spikes — peaks whose prominence is well above the
+ * typical spike in the signal. These are the user's biggest events and,
+ * after the 2026-05-26 pipeline restructure, are the ones we most want
+ * to measure correctly. The current production pipeline uses three
+ * exported helpers from this file:
+ *
+ *   - identifyOutlierSpikes(signal, options)
+ *       Runs the outlier-classification logic and returns
+ *       { outlierSpikes } — the merged spike-structure list. Used
+ *       before Savitzky-Golay smoothing so we know which sample
+ *       regions to protect from the smoother.
+ *
+ *   - preserveOutliersInSmoothed(smoothed, original, outlierSpikes)
+ *       Returns a copy of `smoothed` with each outlier spike's sample
+ *       region restored from `original`. Used immediately after the
+ *       smoothing pass so outlier amplitudes survive.
+ *
+ *   - flagOutliersOnDetectedPeaks(detectedSpikes, outlierSpikes)
+ *       Post-detection: walks the spike list and flips `isOutlier`
+ *       to true on peaks whose `index` matches an outlier's peakIdx.
+ *       Pure visual classification — every peak still has full
+ *       NeuralPeak metrics (AUC, width, amplitude) computed by
+ *       detectSpikes' regular code path.
+ *
+ * --- Deprecated (kept for tests; not on the production hot path) ---
+ *
+ *   - removeOutliers(signal, options) → { cleanedSignal, outlierSpikes,
+ *       removedIndices }: previously the only entry point; *excised*
+ *       outliers from the signal so detectSpikes never measured them.
+ *       Wraps identifyOutlierSpikes and builds the cleaned signal.
+ *       Existing tests still target this. New code should not call it.
+ *
+ *   - readdOutliersAsSpikes(spikes, outlierSpikes): previously
+ *       re-injected excised outliers as glue-on spike objects with
+ *       hardcoded metric values (auc: 0, width: spike.numPoints).
+ *       Obsolete now — outliers come from detectSpikes naturally.
  */
 
 /**
- * Remove outlier spikes from signal data
- * Identifies tall outliers and removes the complete spike structure (ascent, peak, descent)
+ * Identify outlier spikes (no excision).
  *
- * @param {Array<{x: number, y: number}>} signal - The input signal
- * @param {Object} options - Configuration options
- * @param {number} options.percentile - Percentile threshold (50-99, default: 95)
- * @param {number} options.multiplier - Multiplier for median prominence (0.5-5.0, default: 2.0)
- * @param {number} options.slopeThreshold - Minimum slope change to detect spike boundaries (default: 0.1)
- * @returns {Object} {cleanedSignal, outlierSpikes, removedIndices}
+ * Returns just the `outlierSpikes` array — each entry has `startIdx`,
+ * `peakIdx`, `endIdx`, `peakValue`, `points` (array of {index, x, y}),
+ * `numPoints`. Same shape `removeOutliers` produces.
+ *
+ * @param {Array<{x: number, y: number}>} signal
+ * @param {Object} options
+ * @param {number} options.percentile - 50-99, default 95
+ * @param {number} options.multiplier - 0.5-5.0, default 2.0
+ * @param {number} options.slopeThreshold - default 0.1
+ * @returns {{outlierSpikes: Array}}
  */
-export function removeOutliers(signal, options = {}) {
+export function identifyOutlierSpikes(signal, options = {}) {
   const { percentile = 95, multiplier = 2.0, slopeThreshold = 0.1 } = options;
 
   if (!Array.isArray(signal) || signal.length === 0) {
-    console.warn("removeOutliers: Invalid signal input");
-    return { cleanedSignal: signal, outlierSpikes: [], removedIndices: [] };
+    return { outlierSpikes: [] };
   }
 
   // Strategy: Find significant local maxima with high prominence
@@ -71,7 +107,7 @@ export function removeOutliers(signal, options = {}) {
   }
 
   if (peaks.length === 0) {
-    return { cleanedSignal: signal, outlierSpikes: [], removedIndices: [] };
+    return { outlierSpikes: [] };
   }
 
   // Sort peaks by prominence to find the top outliers
@@ -104,25 +140,24 @@ export function removeOutliers(signal, options = {}) {
   }
 
   if (outlierPeakIndices.length === 0) {
-    return { cleanedSignal: signal, outlierSpikes: [], removedIndices: [] };
+    return { outlierSpikes: [] };
   }
 
   // Sanity cap: if more than half of detected peaks pass the outlier
   // criteria, the percentile/multiplier configuration is mis-tuned
   // for this signal (legitimate outliers should be a small minority,
-  // typically <5%). Excising "most" peaks turns the cleaned signal
-  // into a featureless trace, detectSpikes finds nothing on it, and
-  // every peak ends up rendered as an orange outlier ring with no
-  // red dots. Bail out: report no outliers and let detection run on
-  // the original signal instead.
+  // typically <5%). Flagging "most" peaks as outliers would mean the
+  // SG-preservation step preserves nearly the entire signal — which
+  // defeats the purpose of smoothing — and the visual flag becomes
+  // meaningless. Bail out: report no outliers so the pipeline treats
+  // the signal uniformly.
   const OUTLIER_RATIO_CAP = 0.5;
   if (outlierPeakIndices.length > peaks.length * OUTLIER_RATIO_CAP) {
-    return { cleanedSignal: signal, outlierSpikes: [], removedIndices: [] };
+    return { outlierSpikes: [] };
   }
 
   // For each outlier peak, find the complete spike structure
   const outlierSpikes = [];
-  const allRemovedIndices = new Set();
 
   // Use baseline already calculated above
   const baseline = median;
@@ -135,11 +170,6 @@ export function removeOutliers(signal, options = {}) {
       slopeThreshold
     );
     outlierSpikes.push(spike);
-
-    // Mark all indices in this spike for removal
-    for (let i = spike.startIdx; i <= spike.endIdx; i++) {
-      allRemovedIndices.add(i);
-    }
   }
 
   // CRITICAL FIX: Merge overlapping spike structures
@@ -188,15 +218,94 @@ export function removeOutliers(signal, options = {}) {
     spike.numPoints = spike.points.length;
   }
 
-  // Create cleaned signal by filtering out removed indices
-  const cleanedSignal = signal.filter((_, idx) => !allRemovedIndices.has(idx));
-  const removedIndices = Array.from(allRemovedIndices).sort((a, b) => a - b);
+  return { outlierSpikes: mergedSpikes };
+}
 
-  return {
-    cleanedSignal: cleanedSignal,
-    outlierSpikes: mergedSpikes, // Return merged spikes instead of raw spikes
-    removedIndices: removedIndices,
-  };
+/**
+ * Return a copy of `smoothed` with each outlier spike's sample region
+ * restored from `original`. Whole spike region (startIdx → endIdx) is
+ * preserved, not just the apex — keeps both amplitude and width intact
+ * through Savitzky-Golay smoothing. One-sample discontinuity at the
+ * boundary between smoothed and preserved regions is intentional and
+ * acceptable.
+ *
+ * Both `smoothed` and `original` must be the same length and share
+ * x-axis indices (SG smoothing doesn't change array length).
+ *
+ * @param {Array<{x: number, y: number}>} smoothed
+ * @param {Array<{x: number, y: number}>} original
+ * @param {Array<{startIdx: number, endIdx: number}>} outlierSpikes
+ * @returns {Array<{x: number, y: number}>}
+ */
+export function preserveOutliersInSmoothed(smoothed, original, outlierSpikes) {
+  if (!outlierSpikes || outlierSpikes.length === 0) return smoothed;
+  if (!Array.isArray(smoothed) || !Array.isArray(original)) return smoothed;
+  const out = smoothed.slice();
+  for (const spike of outlierSpikes) {
+    const start = Math.max(0, spike.startIdx);
+    const end = Math.min(out.length - 1, spike.endIdx);
+    for (let i = start; i <= end; i++) {
+      out[i] = original[i];
+    }
+  }
+  return out;
+}
+
+/**
+ * Walk a list of detected spikes (NeuralPeak instances from
+ * detectSpikes) and set `isOutlier = true` on any whose `index`
+ * matches the `peakIdx` of an identified outlier. Mutates spike
+ * objects in place. Pure visual / classification flag — every spike's
+ * metric values (auc, width, amplitude) come from NeuralPeak's
+ * constructor and are not touched here.
+ *
+ * Peak indices match exactly because outlier identification ran on
+ * the pre-smoothing signal at sample indices, the SG-preservation
+ * step restored those same sample values into the smoothed signal,
+ * and detectSpikes finds local maxima at integer sample indices in
+ * that signal.
+ *
+ * @param {Array} detectedSpikes - NeuralPeak instances
+ * @param {Array<{peakIdx: number}>} outlierSpikes
+ * @returns {Array} the same `detectedSpikes` reference (mutated)
+ */
+export function flagOutliersOnDetectedPeaks(detectedSpikes, outlierSpikes) {
+  if (!outlierSpikes || outlierSpikes.length === 0) return detectedSpikes;
+  const outlierIndices = new Set(outlierSpikes.map((s) => s.peakIdx));
+  for (const spike of detectedSpikes) {
+    if (outlierIndices.has(spike.index)) {
+      spike.isOutlier = true;
+    }
+  }
+  return detectedSpikes;
+}
+
+/**
+ * @deprecated 2026-05-26 — production pipeline no longer calls this.
+ * Use `identifyOutlierSpikes` + `preserveOutliersInSmoothed` +
+ * `flagOutliersOnDetectedPeaks` instead so outliers stay in the
+ * signal for detectSpikes to measure properly. Kept here for the
+ * existing `outlierRoundTrip.test.js` to keep passing during the
+ * test-suite migration.
+ *
+ * Thin wrapper: identifies outliers, then builds a cleaned signal by
+ * excising every sample in any outlier's region.
+ */
+export function removeOutliers(signal, options = {}) {
+  if (!Array.isArray(signal) || signal.length === 0) {
+    return { cleanedSignal: signal, outlierSpikes: [], removedIndices: [] };
+  }
+  const { outlierSpikes } = identifyOutlierSpikes(signal, options);
+  if (outlierSpikes.length === 0) {
+    return { cleanedSignal: signal, outlierSpikes: [], removedIndices: [] };
+  }
+  const removed = new Set();
+  for (const spike of outlierSpikes) {
+    for (let i = spike.startIdx; i <= spike.endIdx; i++) removed.add(i);
+  }
+  const cleanedSignal = signal.filter((_, idx) => !removed.has(idx));
+  const removedIndices = Array.from(removed).sort((a, b) => a - b);
+  return { cleanedSignal, outlierSpikes, removedIndices };
 }
 
 /**
@@ -300,12 +409,17 @@ function detectSpikeStructure(signal, peakIdx, baseline, slopeThreshold) {
 }
 
 /**
- * Re-add outlier spikes back to the signal as spike markers
- * This is called after spike detection to mark outliers as spikes
+ * @deprecated 2026-05-26 — production pipeline no longer calls this.
+ * The previous "excise then re-add as glue-on" pattern is gone;
+ * outliers now go through detectSpikes like every other peak and
+ * carry real metrics computed by NeuralPeak. Kept here for the
+ * existing `outlierRoundTrip.test.js` to keep passing during the
+ * test-suite migration. AUC is the old hardcoded 0 — don't read
+ * AUC values from this function's output in any new code.
  *
  * @param {Array} spikes - Array of detected spikes (NeuralPeak objects)
- * @param {Array} outlierSpikes - Array of outlier spike structures from removeOutliers
- * @returns {Array} Combined array of regular spikes and outlier spikes
+ * @param {Array} outlierSpikes - Array of outlier spike structures
+ * @returns {Array} Combined array of regular spikes and outlier markers
  */
 export function readdOutliersAsSpikes(spikes, outlierSpikes) {
   if (!outlierSpikes || outlierSpikes.length === 0) {
@@ -318,6 +432,11 @@ export function readdOutliersAsSpikes(spikes, outlierSpikes) {
     const peakPoint = spike.points[peakPointIdx];
     const leftPoint = spike.points[0];
     const rightPoint = spike.points[spike.points.length - 1];
+
+    // (Deprecated path) `auc` stays 0 here — the production pipeline
+    // no longer relies on this function for AUC. Spikes that come
+    // through detectSpikes get real AUC values via NeuralPeak.
+    const auc = 0;
 
     // Create an object that matches NeuralPeak structure
     return {
@@ -334,7 +453,7 @@ export function readdOutliersAsSpikes(spikes, outlierSpikes) {
       time: peakPoint.x,
       amplitude: spike.peakValue,
       width: spike.numPoints,
-      auc: 0, // Not calculated for outliers
+      auc,
       isOutlier: true,
       outlierSpike: true,
     };

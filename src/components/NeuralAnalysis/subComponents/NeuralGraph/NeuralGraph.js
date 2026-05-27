@@ -428,7 +428,38 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
             threshold: 50,
           },
           tooltip: {
-            enabled: false,
+            // Hover-only tooltips on the scatter markers (peaks, outlier
+            // peaks, peak bases) — never on the 250k-point signal line.
+            // `mode: 'point'` with `intersect: true` is the lightest hit
+            // test (cursor must be directly over a rendered marker), so
+            // the line dataset's million-point distance scan is avoided.
+            // `filter` is a defense-in-depth: even if a point on the line
+            // happens to be the nearest, skip it.
+            enabled: true,
+            mode: "point",
+            intersect: true,
+            displayColors: false,
+            filter: (tooltipItem) =>
+              tooltipItem.dataset && tooltipItem.dataset.type === "scatter",
+            callbacks: {
+              title: (items) => {
+                if (!items || items.length === 0) return "";
+                const label = items[0].dataset && items[0].dataset.label;
+                // User-friendly singular names for the three marker
+                // datasets; fall back to the dataset label if anything
+                // else (e.g., a future scatter type) sneaks through.
+                if (label === "Detected Spikes") return "Peak";
+                if (label === "Outlier Spikes") return "Outlier Peak";
+                if (label === "Spike Bases") return "Peak Base";
+                return label || "";
+              },
+              label: (context) => {
+                const x = context.parsed && context.parsed.x;
+                const y = context.parsed && context.parsed.y;
+                if (typeof x !== "number" || typeof y !== "number") return "";
+                return `x: ${x.toFixed(2)}, y: ${y.toFixed(2)}`;
+              },
+            },
           },
           annotation: {
             annotations: {},

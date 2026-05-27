@@ -15,8 +15,8 @@ import {
 } from "./utilities/neuralSmoothing";
 import { suppressNoise } from "./utilities/noiseSuppression";
 import {
-  removeOutliers,
-  readdOutliersAsSpikes,
+  identifyOutlierSpikes,
+  flagOutliersOnDetectedPeaks,
 } from "./utilities/outlierRemoval";
 
 /**
@@ -536,23 +536,31 @@ export function GenerateFullPlateReport(
         `[GenerateFullPlateReport] Well ${wellKey}: Final processed signal length=${processedSignal.length}`
       );
 
-      // Step 3: Outlier removal (if enabled) - matches NeuralPipeline
-      let processedForDetection = processedSignal;
+      // Step 3: Identify outliers (no excision). Matches the modal
+      // pipeline's identify+preserve+flag pattern (NeuralPipeline.js).
+      // This report path doesn't apply Savitzky-Golay smoothing
+      // (only trendFlattening + baselineCorrected above), so there
+      // is no preservation step needed — outliers are simply tracked
+      // for later flagging on detectSpikes' output. detectSpikes
+      // itself receives the outlier index set so outliers bypass its
+      // k-means cluster filter (which would otherwise let the huge
+      // outliers dominate and force smaller real peaks into the
+      // "noise" cluster).
+      const processedForDetection = processedSignal;
       let outlierSpikes = [];
 
       if (
         processingParams.noiseSuppressionActive &&
         processingParams.handleOutliers
       ) {
-        const outlierResult = removeOutliers(processedForDetection, {
+        const outlierResult = identifyOutlierSpikes(processedForDetection, {
           percentile: processingParams.outlierPercentile || 95,
           multiplier: processingParams.outlierMultiplier || 2.0,
           slopeThreshold: 0.1,
         });
-        processedForDetection = outlierResult.cleanedSignal;
         outlierSpikes = outlierResult.outlierSpikes;
         console.log(
-          `[GenerateFullPlateReport] Well ${wellKey}: Removed ${outlierSpikes.length} outlier spikes`
+          `[GenerateFullPlateReport] Well ${wellKey}: Identified ${outlierSpikes.length} outlier spikes`
         );
       }
 
@@ -599,6 +607,11 @@ export function GenerateFullPlateReport(
         stdMultiplier: processingParams.stdMultiplier ?? 1,
         noiseFloorMultiplier: processingParams.noiseFloorMultiplier ?? 0,
         localStds,
+        // Match the modal pipeline: pass full outlier spike structures
+        // so detectSpikes can preserve their apexes through
+        // window-grouping + k-means AND drop noise wiggles inside each
+        // outlier's spike range.
+        outlierSpikes,
       };
 
       console.log(
@@ -609,14 +622,16 @@ export function GenerateFullPlateReport(
       let spikes = detectSpikes(processedForDetection, spikeDetectionParams);
 
       console.log(
-        `[GenerateFullPlateReport] Well ${wellKey}: Detected ${spikes.length} spikes (before re-adding outliers)`
+        `[GenerateFullPlateReport] Well ${wellKey}: Detected ${spikes.length} spikes`
       );
 
-      // Re-add outliers as spikes (if they were removed)
-      if (processingParams.handleOutliers && outlierSpikes.length > 0) {
-        spikes = readdOutliersAsSpikes(spikes, outlierSpikes);
+      // Flag detected peaks that match the identified outlier set.
+      // Pure visual classification flag (isOutlier=true) — every
+      // spike already has real auc/width/amplitude from NeuralPeak.
+      if (outlierSpikes.length > 0) {
+        spikes = flagOutliersOnDetectedPeaks(spikes, outlierSpikes);
         console.log(
-          `[GenerateFullPlateReport] Well ${wellKey}: Re-added ${outlierSpikes.length} outliers as spikes, total: ${spikes.length}`
+          `[GenerateFullPlateReport] Well ${wellKey}: Flagged outliers; total spikes: ${spikes.length}`
         );
       }
 

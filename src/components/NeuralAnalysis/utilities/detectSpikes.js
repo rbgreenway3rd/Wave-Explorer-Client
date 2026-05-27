@@ -415,7 +415,8 @@ function findTrueSpikes(
   robustStd = 0, // robust noise estimate (global)
   stdMultiplier = 1.5, // gates whole-detection k-means cutoff
   noiseFloorMultiplier = 0, // per-peak floor; 0 = disabled
-  localStds = null // optional Float64Array — when present, per-peak σ is localStds[peak.index]
+  localStds = null, // optional Float64Array — when present, per-peak σ is localStds[peak.index]
+  apexSet = null // Set<number> of outlier apex `index` values; peaks at these indices bypass the k-means cluster filter
 ) {
   if (!Array.isArray(peaks) || peaks.length < 2) {
     const filtered = peaks.filter((p) => p.width >= minWidth);
@@ -424,19 +425,34 @@ function findTrueSpikes(
 
   perf.count(`spikeFilter.input=${peaks.length}`);
 
-  // Extract prominences
-  let prominences = peaks.map((p) =>
+  // Partition into outliers vs. normal peaks. Outliers BYPASS the
+  // k-means cluster filter (huge outlier prominences would otherwise
+  // dominate the cluster split and force every smaller real peak into
+  // the "noise" cluster, which is then dropped). Outliers still go
+  // through minWidth / symmetry / distance / noise-floor filters
+  // along with the normal peaks below, so a 1-sample-wide artifact
+  // can't sneak in unfiltered.
+  let outlierPeaks = [];
+  let normalPeaks = peaks;
+  if (apexSet && apexSet.size > 0) {
+    outlierPeaks = peaks.filter((p) => apexSet.has(p.index));
+    normalPeaks = peaks.filter((p) => !apexSet.has(p.index));
+  }
+
+  // Extract prominences for the k-means input (normals only).
+  let prominences = normalPeaks.map((p) =>
     Math.min(p.prominences.leftProminence, p.prominences.rightProminence)
   );
+  // Reassigned below so the post-k-means filter chain uses the right
+  // `peaks` variable name. Names kept compatible with the existing
+  // code below the k-means block.
+  peaks = normalPeaks;
 
-  // Per-peak noise-floor pre-filter: discard any peak whose minimum
-  // prominence is below `noiseFloorMultiplier × σ`. σ is the local
-  // windowed σ at the peak's index when `localStds` is provided
-  // (adapts to non-stationary noise), otherwise the global robustStd.
-  // Runs *before* k-means so the cluster split sees only above-floor
-  // peaks — prevents the noise tail from blurring the lower cluster up
-  // into the signal cluster. When the multiplier is 0 (default), this
-  // is a no-op.
+  // Per-peak noise-floor pre-filter (normals only). σ is local-windowed
+  // when `localStds` is provided, otherwise the global robustStd.
+  // Outliers bypass this — they're by definition prominence outliers and
+  // shouldn't be rejected by a noise floor. When the multiplier is 0
+  // (default), this is a no-op.
   if (noiseFloorMultiplier > 0) {
     const keptPeaks = [];
     const keptProms = [];
@@ -451,42 +467,50 @@ function findTrueSpikes(
         keptProms.push(prominences[i]);
       }
     }
-    if (keptPeaks.length < 2) {
-      perf.count(`spikeFilter.afterNoiseFloor=${keptPeaks.length}`);
-      return keptPeaks.filter((p) => p.width >= minWidth);
-    }
     peaks = keptPeaks;
     prominences = keptProms;
   }
   perf.count(`spikeFilter.afterNoiseFloor=${peaks.length}`);
 
-  // Cluster prominences into 2 groups
-  let { centroids, assignments } = kMeans(prominences, 2);
+  // K-means cluster filter (normals only). Skipped when there are
+  // fewer than 2 normal peaks (k-means on a single point is undefined
+  // and would crash the call below). The cluster filter is also
+  // skipped if outliers exist *and* no normal peaks survived noise-
+  // floor — in that case the user just gets the outliers back.
+  let afterKMeans = peaks;
+  if (peaks.length >= 2) {
+    const { centroids, assignments } = kMeans(prominences, 2);
+    const topCluster = centroids[0] > centroids[1] ? 0 : 1;
+    const higherCentroid = Math.max(...centroids);
+    const lowerCentroid = Math.min(...centroids);
+    const clusterSeparation = higherCentroid - lowerCentroid;
+    const noiseThreshold = stdMultiplier * robustStd;
 
-  // Identify the cluster with higher average prominence
-  let topCluster = centroids[0] > centroids[1] ? 0 : 1;
-  let higherCentroid = Math.max(...centroids);
-  let lowerCentroid = Math.min(...centroids);
-  let clusterSeparation = higherCentroid - lowerCentroid;
-
-  let noiseThreshold = stdMultiplier * robustStd;
-
-  // NEW APPROACH: Use k-means clustering for separation, optionally apply threshold
-  // Only discard all peaks if BOTH clusters are below noise threshold (very noisy signal)
-  if (
-    higherCentroid < noiseThreshold &&
-    clusterSeparation < noiseThreshold * 0.5
-  ) {
-    return [];
+    // Bail-out: if both clusters are essentially noise (higher centroid
+    // below the noise threshold AND clusters poorly separated), drop
+    // all normal peaks. Outliers (bypassed) still survive below.
+    if (
+      higherCentroid < noiseThreshold &&
+      clusterSeparation < noiseThreshold * 0.5
+    ) {
+      afterKMeans = [];
+    } else {
+      // Keep only top-cluster peaks (the "signal" cluster).
+      afterKMeans = peaks.filter(
+        (_p, idx) => assignments[idx] === topCluster
+      );
+    }
   }
-
-  // Filter peaks: keep ONLY those in the top cluster (signal) with sufficient width
-  // This explicitly removes ALL peaks in the lower cluster (noise)
-  const afterKMeans = peaks.filter(
-    (_p, idx) => assignments[idx] === topCluster
-  );
   perf.count(`spikeFilter.afterKMeans=${afterKMeans.length}`);
-  let filteredPeaks = afterKMeans.filter((p) => p.width >= minWidth);
+
+  // Merge outliers back in. Outliers bypassed noise-floor + k-means but
+  // still go through width / symmetry / distance below alongside the
+  // surviving normals.
+  let filteredPeaks = outlierPeaks.length > 0
+    ? [...outlierPeaks, ...afterKMeans]
+    : afterKMeans;
+
+  filteredPeaks = filteredPeaks.filter((p) => p.width >= minWidth);
   perf.count(`spikeFilter.afterWidth=${filteredPeaks.length}`);
 
   // Apply prominence ratio filter for symmetry
@@ -549,6 +573,39 @@ export function detectSpikes(data, options = {}) {
   // crossings with that line rather than the lowest local minima.
   const useBaselineForBases = options.useBaselineForBases === true;
   const baselineY = options.baselineY;
+  // Outlier spike structures (Array of { startIdx, peakIdx, endIdx, ... })
+  // identified up-pipeline. Two derived index sets are used downstream:
+  //
+  //   apexSet  — just the `peakIdx` values. Used to give outliers
+  //              priority in window-grouping and to bypass the k-means
+  //              cluster filter in `findTrueSpikes`.
+  //   zoneSet  — every sample index covered by any outlier's spike
+  //              region (start → end inclusive). Used to *drop* normal
+  //              detectSpikes peaks whose index falls inside an outlier's
+  //              spike structure. These are not separate events; they're
+  //              noise wiggles on the outlier's own plateau. Suppressing
+  //              them by the spike's own start/end range (rather than by
+  //              `wlen/2` from the outlier apex) means the suppression
+  //              radius adapts to each spike's actual width, so it works
+  //              across varying spike shapes / sample rates / signal types
+  //              without parameter tuning.
+  const outlierSpikes = Array.isArray(options.outlierSpikes)
+    ? options.outlierSpikes
+    : null;
+  let apexSet = null;
+  let zoneSet = null;
+  if (outlierSpikes && outlierSpikes.length > 0) {
+    apexSet = new Set();
+    zoneSet = new Set();
+    for (const s of outlierSpikes) {
+      if (typeof s.peakIdx === "number") apexSet.add(s.peakIdx);
+      const a = typeof s.startIdx === "number" ? s.startIdx : null;
+      const b = typeof s.endIdx === "number" ? s.endIdx : null;
+      if (a !== null && b !== null) {
+        for (let k = a; k <= b; k++) zoneSet.add(k);
+      }
+    }
+  }
 
   // Signal-derived statistics (cached per data-array identity — see
   // computeSignalStats above).
@@ -615,12 +672,54 @@ export function detectSpikes(data, options = {}) {
     const searchRange = wlen ? Math.floor(wlen / 2) : data.length;
     let leftBaseIdx, rightBaseIdx;
     if (baselineMode) {
+      // Search the full signal, not just ±wlen/2 around the peak.
+      // Ca2+ spikes routinely span many tens of samples — far wider
+      // than the spike-window param — so the baseline crossings live
+      // well outside the local search window. Without unbounded
+      // search, `findBasesAtBaseline` returns degenerate
+      // peakIdx/peakIdx bases for every peak, which collapses peak
+      // width and AUC to 0 (regression introduced when
+      // baselineThresholdEnabled became default-on). The walks stop
+      // at the *nearest* crossing on each side, so widening the
+      // range doesn't risk crossing into a neighboring peak's
+      // territory — it just lets the search find the answer.
       ({ leftBaseIdx, rightBaseIdx } = findBasesAtBaseline(
         data,
         peakIdx,
-        searchRange,
+        data.length,
         baselineY
       ));
+      // Safety net: if baseline mode still can't place sensible
+      // bases (peak below the baseline line, or the signal never
+      // returns to baseline within the signal's reach), fall back
+      // to local-minima bases through the same three-step ladder
+      // used in non-baseline mode. Without this, the user can drag
+      // the baseline above the peaks and silently zero out every
+      // AUC reading.
+      if (leftBaseIdx === peakIdx || rightBaseIdx === peakIdx) {
+        ({ leftBaseIdx, rightBaseIdx } = findBases(
+          data,
+          peakIdx,
+          searchRange,
+          finalBaselineThreshold
+        ));
+        if (leftBaseIdx === peakIdx || rightBaseIdx === peakIdx) {
+          ({ leftBaseIdx, rightBaseIdx } = findBases(
+            data,
+            peakIdx,
+            searchRange,
+            fallbackThreshold
+          ));
+        }
+        if (leftBaseIdx === peakIdx || rightBaseIdx === peakIdx) {
+          ({ leftBaseIdx, rightBaseIdx } = findBases(
+            data,
+            peakIdx,
+            searchRange,
+            globalMax
+          ));
+        }
+      }
     } else {
       ({ leftBaseIdx, rightBaseIdx } = findBases(
         data,
@@ -661,29 +760,58 @@ export function detectSpikes(data, options = {}) {
     }
   }
 
+  // Outlier-zone pre-filter (runs before window-grouping). Drop any
+  // normal peak whose index falls inside an identified outlier's spike
+  // structure — those are noise wiggles on the same event's plateau,
+  // not separate events. The outlier apex itself is preserved (it's in
+  // both apexSet and zoneSet; the apex check keeps it). This uses each
+  // outlier's actual start/end range from `detectSpikeStructure`, so
+  // the suppression radius is set by the spike's true width and
+  // doesn't depend on the `wlen` param — works across signal types and
+  // sample rates without tuning.
+  let zoneFilteredPeakIndices = filteredPeakIndices;
+  if (zoneSet) {
+    zoneFilteredPeakIndices = filteredPeakIndices.filter(
+      (idx) => !zoneSet.has(idx) || apexSet.has(idx)
+    );
+  }
+
+  // Window-grouping pass: within a window of `wlen/2` samples, collapse
+  // adjacent peaks down to one representative. Outliers PARTICIPATE in
+  // grouping but get PRIORITY when present in a group — the outlier
+  // wins regardless of whether any normal peak in the same window
+  // happens to have a higher raw y value. When no outlier is in the
+  // group, the existing "highest-y" rule applies.
   let finalFilteredPeakIndices = [];
-  if (wlen && filteredPeakIndices.length > 1) {
+  if (wlen && zoneFilteredPeakIndices.length > 1) {
+    const hasApexSet = apexSet && apexSet.size > 0;
     let i = 0;
-    while (i < filteredPeakIndices.length) {
+    while (i < zoneFilteredPeakIndices.length) {
       let group = [];
-      let currentPeakIdx = filteredPeakIndices[i];
+      let currentPeakIdx = zoneFilteredPeakIndices[i];
       group.push(currentPeakIdx);
-      for (let j = i + 1; j < filteredPeakIndices.length; j++) {
-        if (filteredPeakIndices[j] <= currentPeakIdx + wlen / 2) {
-          group.push(filteredPeakIndices[j]);
+      for (let j = i + 1; j < zoneFilteredPeakIndices.length; j++) {
+        if (zoneFilteredPeakIndices[j] <= currentPeakIdx + wlen / 2) {
+          group.push(zoneFilteredPeakIndices[j]);
         } else {
           break;
         }
       }
-      let highestPeakIdx = group.reduce(
-        (maxIdx, idx) => (data[idx].y > data[maxIdx].y ? idx : maxIdx),
-        group[0]
-      );
-      finalFilteredPeakIndices.push(highestPeakIdx);
+      let chosenIdx;
+      if (hasApexSet) {
+        chosenIdx = group.find((idx) => apexSet.has(idx));
+      }
+      if (chosenIdx === undefined) {
+        chosenIdx = group.reduce(
+          (maxIdx, idx) => (data[idx].y > data[maxIdx].y ? idx : maxIdx),
+          group[0]
+        );
+      }
+      finalFilteredPeakIndices.push(chosenIdx);
       i += group.length;
     }
   } else {
-    finalFilteredPeakIndices = filteredPeakIndices;
+    finalFilteredPeakIndices = zoneFilteredPeakIndices;
   }
 
   let peaks = [];
@@ -717,7 +845,8 @@ export function detectSpikes(data, options = {}) {
     robustStd,
     stdMultiplier,
     noiseFloorMultiplier,
-    localStds
+    localStds,
+    apexSet
   );
 
   return finalSpikes;

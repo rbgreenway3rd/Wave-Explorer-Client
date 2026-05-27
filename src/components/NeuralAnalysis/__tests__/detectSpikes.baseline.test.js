@@ -85,7 +85,7 @@ describe("detectSpikes — Baseline Threshold override", () => {
     expect(highBase[0].auc).toBeLessThan(lowBase[0].auc);
   });
 
-  test("baseline above the peak apex produces degenerate width = 0", () => {
+  test("baseline above the peak apex falls back to local-minima bases", () => {
     const signal = makeSyntheticSignal({
       n: 800,
       noiseAmp: 0.02,
@@ -93,22 +93,26 @@ describe("detectSpikes — Baseline Threshold override", () => {
     });
 
     // baselineY = 50 sits above the 10-unit-tall gaussian, so the
-    // line never intersects above the peak; bases collapse to the
-    // peak index itself.
+    // baseline-crossing search never finds intercepts above the peak.
+    // Previously this collapsed bases to peakIdx (width 0, AUC 0).
+    // After the 2026-05-26 silent-zero fix, `basesFor` falls back to
+    // the standard non-baseline `findBases` ladder when baseline mode
+    // returns degenerate bases — so the user always gets real width /
+    // AUC measurements regardless of where they dragged the line.
     const peaks = detectSpikes(signal, {
       ...STD_OPTS,
       useBaselineForBases: true,
       baselineY: 50,
     });
 
-    // Detection may still return the peak (it's the local max) but
-    // its width should be 0 since the baseline override couldn't
-    // find crossings.
+    expect(peaks.length).toBeGreaterThan(0);
     for (const pk of peaks) {
-      expect(pk.width).toBe(0);
-      // AUC is integrated relative to leftBase / rightBase; when both
-      // collapse to the peak idx, the trapezoidal sum is empty.
-      expect(pk.auc).toBe(0);
+      // Width is rightBaseIdx - leftBaseIdx via the local-minima
+      // fallback — must be a positive number of samples.
+      expect(pk.width).toBeGreaterThan(0);
+      // AUC integrates over a non-empty interval and must be positive
+      // for a real (non-degenerate) peak.
+      expect(pk.auc).toBeGreaterThan(0);
     }
   });
 

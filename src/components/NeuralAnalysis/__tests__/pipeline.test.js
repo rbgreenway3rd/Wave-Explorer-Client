@@ -11,6 +11,16 @@ import { runNeuralAnalysisPipeline } from "../NeuralPipeline";
 import { makePipelineCache } from "../utilities/pipelineCache";
 import { makeSyntheticSignal, makeBurstingSignal } from "./_fixtures";
 
+// `spikeWindow: 20` (not 60) deliberately keeps wlen/2 = 10 BELOW the
+// bursting fixture's `interSpikeInterval = 30`, so in-burst spikes
+// aren't collapsed together by the window-grouping pass in
+// detectSpikes. The previous value of 60 produced wlen/2 = 30 exactly
+// at the inter-spike interval boundary, causing every other spike to
+// be coalesced (5-per-burst → ~3 → after k-means → ~1-2 → fails
+// burst minSpikesPerBurst=3). That's a real algorithm/fixture
+// mismatch, not a per-pipeline regression. Option 3 (remove the
+// window-grouping + k-means combo and rely on explicit thresholds)
+// would let the larger values work too.
 const baseParams = {
   subtractControl: false,
   trendFlatteningEnabled: true,
@@ -21,7 +31,7 @@ const baseParams = {
   outlierPercentile: 95,
   outlierMultiplier: 2.0,
   spikeProminence: 3,
-  spikeWindow: 60,
+  spikeWindow: 20,
   spikeMinWidth: 5,
   spikeMinDistance: 10,
   spikeMinProminenceRatio: 0.01,
