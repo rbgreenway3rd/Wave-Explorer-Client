@@ -22,10 +22,12 @@ import { suppressNoise } from "../components/NeuralAnalysis/utilities/noiseSuppr
 /**
  * Fast number formatting - replaces toFixed(4) for performance
  */
+// Per client request (Dave Weaver, 2026-05-27), all metric values
+// in reports round to the nearest integer.
 function formatMetric(num) {
-  if (num === 0) return "0.0000";
+  if (num === 0) return "0";
   if (num == null || isNaN(num)) return "N/A";
-  return (Math.round(num * 10000) / 10000).toString();
+  return Math.round(num).toString();
 }
 
 /**

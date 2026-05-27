@@ -4,30 +4,18 @@
  * Each well gets optimized spike detection parameters
  */
 
-import {
-  detectSpikes,
-  computeLocalRobustStd,
-} from "./utilities/detectSpikes";
-import { detectBursts } from "./utilities/burstDetection";
-import {
-  trendFlattening,
-  baselineCorrected,
-} from "./utilities/neuralSmoothing";
-import { suppressNoise } from "./utilities/noiseSuppression";
-import {
-  identifyOutlierSpikes,
-  flagOutliersOnDetectedPeaks,
-} from "./utilities/outlierRemoval";
+import { runNeuralAnalysisPipeline } from "./NeuralPipeline";
 
 /**
- * Fast number formatting - replaces toFixed(4) for performance
- * ~3x faster than toFixed() for metrics calculation
+ * Round to the nearest integer for CSV output. Per client request
+ * (Dave Weaver, 2026-05-27): "For your metrics, I think you can round
+ * all of them to the nearest integer." Returns "0" for zero, "N/A"
+ * for null/NaN, integer string otherwise.
  */
 function formatMetric(num) {
-  if (num === 0) return "0.0000";
+  if (num === 0) return "0";
   if (num == null || isNaN(num)) return "N/A";
-  // Use Math.round for faster formatting than toFixed()
-  return (Math.round(num * 10000) / 10000).toString();
+  return Math.round(num).toString();
 }
 
 /**
@@ -280,7 +268,7 @@ function suggestWindow(signal, prominence, num = 5) {
  * @param {Function} onProgress - Optional callback for progress updates (wellIndex, totalWells)
  * @returns {string} CSV formatted string
  */
-export function GenerateFullPlateReport(
+export async function GenerateFullPlateReport(
   project,
   wells,
   processingParams,
@@ -442,10 +430,18 @@ export function GenerateFullPlateReport(
   // ========================================
   const allWellsData = []; // Store all wells' processed data
 
-  wells.forEach((well, wellIndex) => {
+  for (let wellIndex = 0; wellIndex < wells.length; wellIndex++) {
+    const well = wells[wellIndex];
     if (onProgress) {
       onProgress(wellIndex + 1, wells.length);
     }
+    // Yield to the event loop so the progress popup can re-render
+    // and the browser stays responsive. Running 384 wells of
+    // detectSpikes + SG smoothing back-to-back on the main thread
+    // was freezing the tab for minutes. setTimeout(0) lets queued
+    // React state updates flush between wells; the overhead is a
+    // few ms per well which is negligible against the pipeline cost.
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     console.log(
       `[GenerateFullPlateReport] Processing well ${wellIndex + 1}/${
@@ -462,14 +458,24 @@ export function GenerateFullPlateReport(
     }
 
     try {
-      const rawSignal = well.indicators[0].filteredData;
+      // Build the {x,y}[] form on demand. Post-Phase C, wells store
+      // filtered data as typed arrays (`filteredXs` / `filteredYs`)
+      // and `filteredData` is empty until something asks for the
+      // point array. The modal triggers materialization for the
+      // *currently selected* well only; the other 383 wells in a
+      // 384-well plate sit at `filteredData = []`. Without calling
+      // `materializeFilteredData()` here, every well in the report
+      // would see an empty rawSignal → zero spikes detected → all-
+      // zero ROI metrics. (This was the root cause of the long
+      // "every well = 0" full-plate ROI bug.)
+      const ind = well.indicators[0];
+      const rawSignal =
+        typeof ind.materializeFilteredData === "function"
+          ? ind.materializeFilteredData()
+          : ind.filteredData || [];
 
       console.log(
         `[GenerateFullPlateReport] Well ${wellKey}: rawSignal length=${rawSignal.length}`
-      );
-      console.log(
-        `[GenerateFullPlateReport] Well ${wellKey}: First 5 signal points:`,
-        rawSignal.slice(0, 5)
       );
 
       // ========================================
@@ -496,73 +502,49 @@ export function GenerateFullPlateReport(
       );
 
       // ========================================
-      // SIGNAL PREPROCESSING (same order as NeuralPipeline)
+      // RUN THE SHARED PIPELINE
       // ========================================
-
-      // Step 1: Noise suppression (control subtraction) - ALWAYS runs like NeuralPipeline
-      // For batch processing, we don't have a control well, so pass empty array
-      let processedSignal = suppressNoise(rawSignal, [], {
-        subtractControl: processingParams.subtractControl || false,
+      // Delegate to runNeuralAnalysisPipeline — the exact same function
+      // the modal/worker uses. This guarantees the full-plate report
+      // produces results identical to what the user sees on screen for
+      // the currently-selected well, well by well across the plate.
+      // Previously the full-plate path reimplemented the preprocessing
+      // by hand and diverged from the canonical pipeline (missing SG
+      // smoothing, missing baseline-mode bases, missing residual-based
+      // σ for the noise-floor gate, etc.), which manifested as every
+      // well's ROI metrics coming out as zero because spike detection
+      // was producing different results than the modal.
+      const noiseSuppressionActive =
+        !!processingParams.trendFlatteningEnabled ||
+        !!processingParams.smoothingEnabled;
+      const pipelineResult = runNeuralAnalysisPipeline({
+        rawSignal,
+        controlSignal: [],
+        params: {
+          ...processingParams,
+          // Override prominence/window with the per-well-resolved
+          // values. In "defined" mode these are the user's slider
+          // values; in "auto" mode they're per-well auto-suggestions
+          // computed above.
+          spikeProminence: prominenceForWell,
+          spikeWindow: windowForWell,
+        },
+        analysis: {
+          runSpikeDetection: true,
+          // Always run burst detection in the report — the ROI burst
+          // metrics need it, and downstream consumers can ignore the
+          // burst list when they don't care.
+          runBurstDetection: true,
+        },
+        noiseSuppressionActive,
+        cache: null,
       });
+      const spikes = pipelineResult.spikeResults || [];
+      const bursts = pipelineResult.burstResults || [];
 
       console.log(
-        `[GenerateFullPlateReport] Well ${wellKey}: After suppressNoise, length=${processedSignal.length}`
+        `[GenerateFullPlateReport] Well ${wellKey}: Pipeline produced ${spikes.length} spikes, ${bursts.length} bursts`
       );
-
-      // Step 2: Apply smoothing and baseline correction (only if noiseSuppressionActive)
-      if (processingParams.noiseSuppressionActive) {
-        if (processingParams.trendFlatteningEnabled) {
-          processedSignal = trendFlattening(processedSignal, {
-            adaptiveBaseline: processingParams.baselineCorrection,
-            polynomialDegree: 2,
-          });
-          console.log(
-            `[GenerateFullPlateReport] Well ${wellKey}: Applied trendFlattening`
-          );
-        }
-
-        if (processingParams.baselineCorrection) {
-          processedSignal = baselineCorrected(
-            processedSignal,
-            processingParams.smoothingWindow || 200,
-            50
-          );
-          console.log(
-            `[GenerateFullPlateReport] Well ${wellKey}: Applied baselineCorrection`
-          );
-        }
-      }
-      console.log(
-        `[GenerateFullPlateReport] Well ${wellKey}: Final processed signal length=${processedSignal.length}`
-      );
-
-      // Step 3: Identify outliers (no excision). Matches the modal
-      // pipeline's identify+preserve+flag pattern (NeuralPipeline.js).
-      // This report path doesn't apply Savitzky-Golay smoothing
-      // (only trendFlattening + baselineCorrected above), so there
-      // is no preservation step needed — outliers are simply tracked
-      // for later flagging on detectSpikes' output. detectSpikes
-      // itself receives the outlier index set so outliers bypass its
-      // k-means cluster filter (which would otherwise let the huge
-      // outliers dominate and force smaller real peaks into the
-      // "noise" cluster).
-      const processedForDetection = processedSignal;
-      let outlierSpikes = [];
-
-      if (
-        processingParams.noiseSuppressionActive &&
-        processingParams.handleOutliers
-      ) {
-        const outlierResult = identifyOutlierSpikes(processedForDetection, {
-          percentile: processingParams.outlierPercentile || 95,
-          multiplier: processingParams.outlierMultiplier || 2.0,
-          slopeThreshold: 0.1,
-        });
-        outlierSpikes = outlierResult.outlierSpikes;
-        console.log(
-          `[GenerateFullPlateReport] Well ${wellKey}: Identified ${outlierSpikes.length} outlier spikes`
-        );
-      }
 
       // WELL PARAMETERS - unique to this well (only if non-ROI sections requested)
       if (includeWellSections) {
@@ -579,100 +561,6 @@ export function GenerateFullPlateReport(
           ].join("\n")
         );
       }
-
-      // ========================================
-      // SPIKE DETECTION (on processed signal)
-      // ========================================
-
-      // If the user enabled non-stationary noise σ (noiseWindowSize > 0),
-      // pre-compute per-sample local σ here — the same block-wise MAD
-      // estimator the main pipeline uses. detectSpikes' noise-floor gate
-      // then reads from this array instead of the global robustStd.
-      //
-      // Reference is null because the full-plate path doesn't apply SG
-      // smoothing — there's no residual to compute σ from, so the
-      // estimator falls back to σ-from-data.
-      const noiseWindowSize = processingParams.noiseWindowSize ?? 0;
-      const localStds =
-        noiseWindowSize > 0
-          ? computeLocalRobustStd(processedForDetection, null, noiseWindowSize)
-          : null;
-
-      const spikeDetectionParams = {
-        prominence: prominenceForWell,
-        window: windowForWell,
-        minWidth: processingParams.spikeMinWidth ?? 5,
-        minDistance: processingParams.spikeMinDistance ?? 0,
-        minProminenceRatio: processingParams.spikeMinProminenceRatio ?? 0.01,
-        stdMultiplier: processingParams.stdMultiplier ?? 1,
-        noiseFloorMultiplier: processingParams.noiseFloorMultiplier ?? 0,
-        localStds,
-        // Match the modal pipeline: pass full outlier spike structures
-        // so detectSpikes can preserve their apexes through
-        // window-grouping + k-means AND drop noise wiggles inside each
-        // outlier's spike range.
-        outlierSpikes,
-      };
-
-      console.log(
-        `[GenerateFullPlateReport] Well ${wellKey}: Calling detectSpikes with params:`,
-        spikeDetectionParams
-      );
-
-      let spikes = detectSpikes(processedForDetection, spikeDetectionParams);
-
-      console.log(
-        `[GenerateFullPlateReport] Well ${wellKey}: Detected ${spikes.length} spikes`
-      );
-
-      // Flag detected peaks that match the identified outlier set.
-      // Pure visual classification flag (isOutlier=true) — every
-      // spike already has real auc/width/amplitude from NeuralPeak.
-      if (outlierSpikes.length > 0) {
-        spikes = flagOutliersOnDetectedPeaks(spikes, outlierSpikes);
-        console.log(
-          `[GenerateFullPlateReport] Well ${wellKey}: Flagged outliers; total spikes: ${spikes.length}`
-        );
-      }
-
-      // Activity Threshold — drop peaks whose apex Y falls below
-      // ratio * this well's Y range. Same rule as the modal pipeline.
-      if (processingParams.activityThresholdEnabled && spikes.length > 0) {
-        let yMin = Infinity;
-        let yMax = -Infinity;
-        for (let i = 0; i < processedSignal.length; i++) {
-          const y = processedSignal[i].y;
-          if (y < yMin) yMin = y;
-          if (y > yMax) yMax = y;
-        }
-        if (isFinite(yMin) && isFinite(yMax) && yMax > yMin) {
-          const absoluteThreshold =
-            yMin +
-            (processingParams.activityThresholdRatio ?? 0.5) * (yMax - yMin);
-          const before = spikes.length;
-          spikes = spikes.filter((sp) => {
-            const apexY =
-              sp.peakCoords?.y ??
-              sp.points?.[sp.peakIdx - sp.startIdx]?.y;
-            return apexY == null || apexY >= absoluteThreshold;
-          });
-          console.log(
-            `[GenerateFullPlateReport] Well ${wellKey}: Activity threshold filtered ${
-              before - spikes.length
-            } sub-threshold spikes (abs ${absoluteThreshold.toFixed(2)}, ratio ${(
-              processingParams.activityThresholdRatio ?? 0.5
-            ).toFixed(2)})`
-          );
-        }
-      }
-
-      console.log(
-        `[GenerateFullPlateReport] Well ${wellKey}: spikes array:`,
-        spikes
-      );
-      console.log(
-        `[GenerateFullPlateReport] Well ${wellKey}: includeSpikeData=${includeSpikeData}, includeOverallMetrics=${includeOverallMetrics}`
-      );
 
       // SPIKE METRICS
       if (includeOverallMetrics) {
@@ -724,37 +612,19 @@ export function GenerateFullPlateReport(
         wellSections.push(spikeMetricsLines.join("\n"));
       }
 
-      // BURST DETECTION
-      let bursts = [];
-      if (spikes.length >= (processingParams.minSpikesPerBurst || 3)) {
-        bursts = detectBursts(spikes, {
-          maxInterSpikeInterval: processingParams.maxInterSpikeInterval || 50,
-          minSpikesPerBurst: processingParams.minSpikesPerBurst || 3,
+      // BURST AUC — runNeuralAnalysisPipeline doesn't compute per-
+      // burst AUC, so do it here. Sum each burst's overlapping spike
+      // AUCs (same calculation the modal does separately).
+      bursts.forEach((burst) => {
+        let burstAUC = 0;
+        spikes.forEach((spike) => {
+          const spikeTime = spike.time ?? spike.peakCoords?.x;
+          if (spikeTime >= burst.startTime && spikeTime <= burst.endTime) {
+            if (spike.auc) burstAUC += spike.auc;
+          }
         });
-
-        console.log(
-          `[GenerateFullPlateReport] Well ${wellKey}: Detected ${bursts.length} bursts`
-        );
-
-        // Calculate AUC for each burst (sum of spike AUCs within the burst)
-        bursts.forEach((burst) => {
-          let burstAUC = 0;
-          // Find all spikes that fall within this burst's time range
-          spikes.forEach((spike) => {
-            const spikeTime = spike.time ?? spike.peakCoords?.x;
-            if (spikeTime >= burst.startTime && spikeTime <= burst.endTime) {
-              if (spike.auc) {
-                burstAUC += spike.auc;
-              }
-            }
-          });
-          burst.auc = burstAUC;
-        });
-
-        console.log(
-          `[GenerateFullPlateReport] Well ${wellKey}: Calculated AUC for ${bursts.length} bursts`
-        );
-      }
+        burst.auc = burstAUC;
+      });
 
       // BURST DATA
       if (includeBurstData && bursts.length > 0) {
@@ -839,7 +709,7 @@ export function GenerateFullPlateReport(
       wellSections.push(`</WELL_DATA: ${wellKey}>`);
       csvChunks.push(wellSections.join("\n\n"));
     }
-  });
+  }
 
   // ========================================
   // ROI SUMMARY TABLE - All Wells Combined
@@ -1002,35 +872,45 @@ export function GenerateFullPlateReport(
             timeRangeMax
           );
 
-          // Store 13 metrics for this ROI
+          // Store 13 metrics for this ROI. Use nullish checks (not
+          // truthy) so legitimately-zero metric values render as "0",
+          // not get swapped for the "no data" placeholder.
           wellRoiMetrics[wellKey].push([
             spikesInROI.length, // Number of Spikes
-            spikeFrequency?.average
+            spikeFrequency?.average != null
               ? formatMetric(spikeFrequency.average)
-              : "0.0000", // Spike Frequency
-            spikeAmplitude?.median
+              : "0", // Spike Frequency
+            spikeAmplitude?.median != null
               ? formatMetric(spikeAmplitude.median)
-              : "0.0000", // Median Spike Amplitude
-            spikeWidth?.median ? formatMetric(spikeWidth.median) : "0.0000", // Median Spike Width
-            spikeAUC?.median ? formatMetric(spikeAUC.median) : "0.0000", // Median Spike AUC
-            spikesInROI.reduce((sum, s) => sum + (s.auc || 0), 0).toFixed(4), // Total Spike AUC
+              : "0", // Median Spike Amplitude
+            spikeWidth?.median != null
+              ? formatMetric(spikeWidth.median)
+              : "0", // Median Spike Width
+            spikeAUC?.median != null
+              ? formatMetric(spikeAUC.median)
+              : "0", // Median Spike AUC
+            formatMetric(
+              spikesInROI.reduce((sum, s) => sum + (s.auc || 0), 0)
+            ), // Total Spike AUC
             burstsInROI.length, // Number of Bursts
-            burstMetrics?.frequency
+            burstMetrics?.frequency != null
               ? formatMetric(burstMetrics.frequency)
-              : "0.0000", // Burst Frequency
-            burstMetrics?.spikesPerBurst?.median
+              : "0", // Burst Frequency
+            burstMetrics?.spikesPerBurst?.median != null
               ? formatMetric(burstMetrics.spikesPerBurst.median)
-              : "0.0000", // Median Spikes per Burst
-            burstMetrics?.duration?.median
+              : "0", // Median Spikes per Burst
+            burstMetrics?.duration?.median != null
               ? formatMetric(burstMetrics.duration.median)
-              : "0.0000", // Median Burst Duration
-            burstMetrics?.interBurstInterval?.median
+              : "0", // Median Burst Duration
+            burstMetrics?.interBurstInterval?.median != null
               ? formatMetric(burstMetrics.interBurstInterval.median)
-              : "0.0000", // Median Interburst Interval
-            burstMetrics?.auc?.median
+              : "0", // Median Interburst Interval
+            burstMetrics?.auc?.median != null
               ? formatMetric(burstMetrics.auc.median)
-              : "0.0000", // Median Burst AUC
-            burstsInROI.reduce((sum, b) => sum + (b.auc || 0), 0).toFixed(4), // Total Burst AUC
+              : "0", // Median Burst AUC
+            formatMetric(
+              burstsInROI.reduce((sum, b) => sum + (b.auc || 0), 0)
+            ), // Total Burst AUC
           ]);
         });
       });

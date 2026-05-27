@@ -65,10 +65,13 @@ const NeuralFullPlateReportModal = ({
     includeBurstData: false,
     includeBurstMetrics: false,
     includeROIAnalysis: true,
-    // "auto" preserves the pre-existing per-well auto-suggestion behavior.
-    // "defined" uses the user's current Prominence / Window slider values
-    // for every well in the plate.
-    parameterMode: "auto",
+    // Default to "defined" so the full-plate report uses the same
+    // Prominence / Window the user has dialed in via the modal's
+    // sliders — that's what they're seeing on screen, and they
+    // reasonably expect the same calibration applied to every well.
+    // "auto" stays available behind the radio for users who want a
+    // per-well auto-suggested prominence instead.
+    parameterMode: "defined",
   });
 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -88,17 +91,20 @@ const NeuralFullPlateReportModal = ({
       setIsCancelled(false);
       setCurrentWellIndex(0);
 
+      // Wells store filtered data as typed-array primary storage
+      // (filteredXs / filteredYs) post-Phase C; the {x,y}[] form
+      // (`filteredData`) is left empty until a consumer calls
+      // `materializeFilteredData()`. So we filter on the typed-array
+      // presence, not on the (always-truthy-when-empty) point array.
       const allWells = [];
       if (wellArrays && Array.isArray(wellArrays)) {
         wellArrays.forEach((well) => {
-          if (
-            well &&
-            well.indicators &&
-            well.indicators[0] &&
-            well.indicators[0].filteredData
-          ) {
-            allWells.push(well);
-          }
+          const ind = well && well.indicators && well.indicators[0];
+          if (!ind) return;
+          const hasFiltered =
+            (ind.filteredYs && ind.filteredYs.length > 0) ||
+            (Array.isArray(ind.filteredData) && ind.filteredData.length > 0);
+          if (hasFiltered) allWells.push(well);
         });
       }
 
@@ -114,7 +120,7 @@ const NeuralFullPlateReportModal = ({
         setCurrentWellIndex(wellIndex);
       };
 
-      const fullPlateCSV = GenerateFullPlateReport(
+      const fullPlateCSV = await GenerateFullPlateReport(
         project,
         allWells,
         processingParams,

@@ -4,7 +4,10 @@ import ZoomOutMapIcon from "@mui/icons-material/ZoomOutMap";
 import CropFreeIcon from "@mui/icons-material/CropFree";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import { Panel, Button } from "../../../../ui";
-import { useNeuralInteraction } from "../../../NeuralProvider";
+import {
+  useNeuralInteraction,
+  useNeuralSettings,
+} from "../../../NeuralProvider";
 import "./NeuralControlPanel.css";
 
 /**
@@ -25,6 +28,7 @@ const PanZoomControls = ({ resetZoom }) => {
     panState,
     setPanState,
   } = useNeuralInteraction();
+  const { resetAllSettings } = useNeuralSettings();
   const panZoomActive = !!enablePanZoom && !!zoomState && !!panState;
 
   const handlePanZoomToggle = (checked) => {
@@ -104,6 +108,16 @@ const PanZoomControls = ({ resetZoom }) => {
         className="reset-zoom-button"
       >
         Reset Zoom
+      </Button>
+
+      <Button
+        variant="secondary"
+        block
+        startIcon={<RestartAltIcon />}
+        onClick={resetAllSettings}
+        className="reset-all-settings-button"
+      >
+        Reset All Settings
       </Button>
 
       {(defineROI || panZoomActive) && (

@@ -3,7 +3,14 @@ import { Tooltip } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import DescriptionIcon from "@mui/icons-material/Description";
 import DashboardIcon from "@mui/icons-material/Dashboard";
-import NeuralResults from "./subComponents/NeuralResults/NeuralResults";
+import NeuralResults, {
+  calculateSpikeFrequency,
+  calculateSpikeAmplitude,
+  calculateSpikeWidth,
+  calculateSpikeAUC,
+  calculateMaxSpikeSignal,
+  calculateBurstMetrics,
+} from "./subComponents/NeuralResults/NeuralResults";
 import ChartControls from "./subComponents/NeuralGraph/ChartControls";
 import NeuralWellSelector from "./subComponents/WellSelection/NeuralWellSelector";
 import NeuralGraph from "./subComponents/NeuralGraph/NeuralGraph";
@@ -69,6 +76,39 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
   const burstResults = pipelineResults.burstResults;
   const overallMetrics = pipelineResults.metrics;
   const processedSignal = pipelineResults.processedSignal;
+
+  // Compute per-ROI metrics here so the CSV report receives the same
+  // shape that <NeuralResults> displays. Previously the report was
+  // called with `roiMetrics={null}`, so the per-ROI section of the
+  // CSV was always empty. <NeuralResults> still computes its own
+  // copy internally — both call the same exported calculators with
+  // the same inputs, so the values are identical.
+  const roiMetricsForReport = useMemo(() => {
+    if (!Array.isArray(roiList) || roiList.length === 0) return null;
+    if (!Array.isArray(peakResults)) return null;
+    const out = {};
+    roiList.forEach((roi, index) => {
+      if (!roi || roi.xMin === undefined || roi.xMax === undefined) return;
+      const spikesInROI = peakResults.filter(
+        (spike) => spike.time >= roi.xMin && spike.time <= roi.xMax
+      );
+      const burstsInROI = Array.isArray(burstResults)
+        ? burstResults.filter(
+            (burst) =>
+              burst.startTime >= roi.xMin && burst.endTime <= roi.xMax
+          )
+        : [];
+      out[`ROI ${index + 1}`] = {
+        spikeFrequency: calculateSpikeFrequency(spikesInROI, roi.xMin, roi.xMax),
+        spikeAmplitude: calculateSpikeAmplitude(spikesInROI, roi.xMin, roi.xMax),
+        spikeWidth: calculateSpikeWidth(spikesInROI, roi.xMin, roi.xMax),
+        spikeAUC: calculateSpikeAUC(spikesInROI, roi.xMin, roi.xMax),
+        maxSpikeSignal: calculateMaxSpikeSignal(spikesInROI, roi.xMin, roi.xMax),
+        burstMetrics: calculateBurstMetrics(burstsInROI, roi.xMin, roi.xMax),
+      };
+    });
+    return Object.keys(out).length > 0 ? out : null;
+  }, [roiList, peakResults, burstResults]);
 
   const isSingleWellDisabled =
     !selectedWell || !peakResults || peakResults.length === 0;
@@ -278,7 +318,7 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
         peakResults={peakResults}
         burstResults={burstResults}
         overallMetrics={overallMetrics}
-        roiMetrics={null}
+        roiMetrics={roiMetricsForReport}
         roiList={roiList}
         processingParams={processingParams}
       />

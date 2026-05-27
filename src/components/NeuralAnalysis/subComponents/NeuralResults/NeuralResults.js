@@ -35,8 +35,12 @@ function median(sortedAsc) {
 // re-allocated on every render of <NeuralResults>. They close over
 // nothing — every dependency comes in via arguments — so this is
 // purely a memory/identity optimization with bit-identical output.
+//
+// Exported so NeuralAnalysisModal can compute the per-ROI metric
+// object once and pass it both to <NeuralResults> (display) and to
+// <NeuralReportModal> (CSV per-ROI section).
 
-const calculateSpikeFrequency = (spikes, startTime, endTime) => {
+export const calculateSpikeFrequency = (spikes, startTime, endTime) => {
   const spikesInRange = spikes.filter(
     (spike) => spike.time >= startTime && spike.time <= endTime
   );
@@ -51,7 +55,7 @@ const calculateSpikeFrequency = (spikes, startTime, endTime) => {
   };
 };
 
-const calculateSpikeAmplitude = (spikes, startTime, endTime) => {
+export const calculateSpikeAmplitude = (spikes, startTime, endTime) => {
   const spikesInRange = spikes.filter(
     (spike) => spike.time >= startTime && spike.time <= endTime
   );
@@ -65,7 +69,7 @@ const calculateSpikeAmplitude = (spikes, startTime, endTime) => {
   return { average, median: median(sorted), min, max };
 };
 
-const calculateSpikeWidth = (spikes, startTime, endTime) => {
+export const calculateSpikeWidth = (spikes, startTime, endTime) => {
   const spikesInRange = spikes.filter(
     (spike) =>
       spike.time >= startTime &&
@@ -82,7 +86,7 @@ const calculateSpikeWidth = (spikes, startTime, endTime) => {
   return { average, median: median(sorted), min, max };
 };
 
-const calculateSpikeAUC = (spikes, startTime, endTime) => {
+export const calculateSpikeAUC = (spikes, startTime, endTime) => {
   const spikesInRange = spikes.filter(
     (spike) =>
       spike.time >= startTime &&
@@ -99,7 +103,7 @@ const calculateSpikeAUC = (spikes, startTime, endTime) => {
   return { average, median: median(sorted), min, max };
 };
 
-const calculateMaxSpikeSignal = (spikes, startTime, endTime) => {
+export const calculateMaxSpikeSignal = (spikes, startTime, endTime) => {
   const spikesInRange = spikes.filter(
     (spike) => spike.time >= startTime && spike.time <= endTime
   );
@@ -108,7 +112,7 @@ const calculateMaxSpikeSignal = (spikes, startTime, endTime) => {
   return max;
 };
 
-const calculateBurstMetrics = (bursts, startTime, endTime) => {
+export const calculateBurstMetrics = (bursts, startTime, endTime) => {
   if (!Array.isArray(bursts) || bursts.length === 0) {
     return {
       total: 0,
@@ -150,16 +154,14 @@ const calculateBurstMetrics = (bursts, startTime, endTime) => {
   };
 };
 
+// Per client request (Dave Weaver, 2026-05-27), all metric values
+// in the UI round to the nearest integer. Kept the `decimals` arg
+// for API compatibility but ignore it — every caller wants integer
+// output now.
+// eslint-disable-next-line no-unused-vars
 const formatNumber = (num, decimals = 2) => {
-  if (typeof num !== "number" || isNaN(num)) return "0.00";
-  return num.toFixed(decimals);
-};
-
-const formatHistogram = (histogram) => {
-  if (!histogram || Object.keys(histogram).length === 0) return "No data";
-  return Object.entries(histogram)
-    .map(([bin, count]) => `${bin}: ${count}`)
-    .join(", ");
+  if (typeof num !== "number" || isNaN(num)) return "0";
+  return Math.round(num).toString();
 };
 
 // MetricCard / MetricItem were previously declared *inside* the parent
@@ -338,9 +340,6 @@ const NeuralResults = () => {
                 <MetricItem label="Total Spikes" value={metrics.spikeFrequency.total} />
                 <MetricItem label="Average Frequency" value={formatNumber(metrics.spikeFrequency.average)} unit=" Hz" />
                 <MetricItem label="Median Frequency" value={formatNumber(metrics.spikeFrequency.median)} unit=" Hz" />
-                <div className="neural-result-card__caption">
-                  Histogram: {formatHistogram(metrics.spikeFrequency.histogram)}
-                </div>
               </MetricCard>
             </Grid>
             <Grid item xs={12} md={6}>
@@ -349,27 +348,22 @@ const NeuralResults = () => {
                 <MetricItem label="Median Amplitude" value={formatNumber(metrics.spikeAmplitude.median)} />
                 <MetricItem label="Min Amplitude" value={formatNumber(metrics.spikeAmplitude.min)} />
                 <MetricItem label="Max Amplitude" value={formatNumber(metrics.spikeAmplitude.max)} />
-                <div className="neural-result-card__caption">
-                  Histogram: {formatHistogram(metrics.spikeAmplitude.histogram)}
-                </div>
               </MetricCard>
             </Grid>
             <Grid item xs={12} md={6}>
               <MetricCard title="Spike Width">
                 <MetricItem label="Average Width" value={formatNumber(metrics.spikeWidth.average)} unit=" samples" />
                 <MetricItem label="Median Width" value={formatNumber(metrics.spikeWidth.median)} unit=" samples" />
-                <div className="neural-result-card__caption">
-                  Histogram: {formatHistogram(metrics.spikeWidth.histogram)}
-                </div>
+                <MetricItem label="Min Width" value={formatNumber(metrics.spikeWidth.min)} unit=" samples" />
+                <MetricItem label="Max Width" value={formatNumber(metrics.spikeWidth.max)} unit=" samples" />
               </MetricCard>
             </Grid>
             <Grid item xs={12} md={6}>
               <MetricCard title="Spike AUC">
                 <MetricItem label="Average AUC" value={formatNumber(metrics.spikeAUC.average)} />
                 <MetricItem label="Median AUC" value={formatNumber(metrics.spikeAUC.median)} />
-                <div className="neural-result-card__caption">
-                  Histogram: {formatHistogram(metrics.spikeAUC.histogram)}
-                </div>
+                <MetricItem label="Min AUC" value={formatNumber(metrics.spikeAUC.min)} />
+                <MetricItem label="Max AUC" value={formatNumber(metrics.spikeAUC.max)} />
               </MetricCard>
             </Grid>
             <Grid item xs={12} md={6}>
@@ -384,17 +378,11 @@ const NeuralResults = () => {
                 <h6 className="neural-result-card__subtitle">Burst Duration</h6>
                 <MetricItem label="Average Duration" value={formatNumber(metrics.burstMetrics.duration.average)} unit=" ms" />
                 <MetricItem label="Median Duration" value={formatNumber(metrics.burstMetrics.duration.median)} unit=" ms" />
-                <div className="neural-result-card__caption">
-                  Duration Histogram: {formatHistogram(metrics.burstMetrics.duration.histogram)}
-                </div>
 
                 <Divider className="neural-result-card__divider" />
                 <h6 className="neural-result-card__subtitle">Inter-Burst Interval</h6>
                 <MetricItem label="Average IBI" value={formatNumber(metrics.burstMetrics.interBurstInterval.average)} unit=" ms" />
                 <MetricItem label="Median IBI" value={formatNumber(metrics.burstMetrics.interBurstInterval.median)} unit=" ms" />
-                <div className="neural-result-card__caption">
-                  IBI Histogram: {formatHistogram(metrics.burstMetrics.interBurstInterval.histogram)}
-                </div>
               </MetricCard>
             </Grid>
           </Grid>

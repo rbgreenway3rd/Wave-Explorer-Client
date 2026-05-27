@@ -28,6 +28,55 @@ import { PERSISTABLE_KEYS } from "../templates/templateStorage";
 
 export const NeuralSettingsContext = createContext(null);
 
+// Default values for every persistable setting. The `useState`
+// initializers below are the per-section sources of truth, and this
+// map MUST stay in sync with them — the master "Reset All Settings"
+// button (PanZoomControls) calls applySettingsSnapshot(DEFAULT_SETTINGS)
+// to restore the whole panel at once. Each per-section reset button
+// already handles its own subset; this is the union.
+const DEFAULT_SETTINGS = {
+  // Spike detection
+  spikeProminence: 1,
+  spikeWindow: 20,
+  spikeMinDistance: 0,
+  stdMultiplier: 1.0,
+  noiseFloorMultiplier: 0,
+  spikeMinWidth: 5,
+  spikeMinProminenceRatio: 0.01,
+  noiseWindowSize: 0,
+  // Thresholds
+  activityThresholdRatio: 0.5,
+  activityThresholdEnabled: true,
+  baselineThresholdRatio: 0.1,
+  baselineThresholdEnabled: true,
+  // Noise / smoothing / baseline
+  smoothingEnabled: true,
+  smoothingWindow: 9,
+  subtractControl: false,
+  baselineCorrection: false,
+  trendFlatteningEnabled: true,
+  trendFlatteningWindow: 200,
+  trendFlatteningMinimums: 50,
+  // Decimation
+  decimationEnabled: false,
+  decimationSamples: 200,
+  // Outlier detection
+  handleOutliers: true,
+  outlierPercentile: 95,
+  outlierMultiplier: 2.0,
+  // Burst detection
+  showBursts: false,
+  maxInterSpikeInterval: 50,
+  minSpikesPerBurst: 3,
+  // Display toggles
+  showPeakBases: true,
+  markAUC: false,
+  // Legacy spike-display tweaks
+  useAdjustedBases: false,
+  findPeaksWindowWidth: 10,
+  peakProminence: 1,
+};
+
 export const useNeuralSettings = () => {
   const ctx = useContext(NeuralSettingsContext);
   if (!ctx) {
@@ -291,6 +340,18 @@ export const NeuralSettingsProvider = ({ children }) => {
     [settingSetterMap]
   );
 
+  // Master reset: restores every persistable setting to its DEFAULT_
+  // SETTINGS value AND clears the per-well spike-prominence/window
+  // override so the auto-suggestion path takes over again (same
+  // semantics as the Spike Detection section's own reset button). ROI
+  // list, zoom state, and well selection are intentionally NOT
+  // touched — the button is labeled "Reset All Settings" precisely
+  // to scope it to parameters.
+  const resetAllSettings = useCallback(() => {
+    applySettingsSnapshot(DEFAULT_SETTINGS);
+    handleResetSpikeParams();
+  }, [applySettingsSnapshot, handleResetSpikeParams]);
+
   const value = useMemo(
     () => ({
       // spike
@@ -372,6 +433,8 @@ export const NeuralSettingsProvider = ({ children }) => {
       // template snapshot bridge
       getSettingsSnapshot,
       applySettingsSnapshot,
+      // master reset
+      resetAllSettings,
     }),
     [
       spikeProminence,
@@ -413,6 +476,7 @@ export const NeuralSettingsProvider = ({ children }) => {
       peakProminence,
       getSettingsSnapshot,
       applySettingsSnapshot,
+      resetAllSettings,
     ]
   );
 

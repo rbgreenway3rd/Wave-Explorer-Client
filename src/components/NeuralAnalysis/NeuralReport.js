@@ -6,6 +6,14 @@
 
 import { detectBursts } from "./utilities/burstDetection";
 
+// Round metric values to the nearest integer per client request
+// (Dave Weaver, 2026-05-27). Single helper used by every CSV cell
+// so callers can stop sprinkling `?.toFixed(...) ?? "N/A"`.
+function formatMetric(num) {
+  if (num == null || isNaN(num)) return "N/A";
+  return Math.round(num).toString();
+}
+
 /**
  * Calculate spike frequency metrics
  */
@@ -531,14 +539,13 @@ export const GenerateNeuralCSV = (
       );
       csvLines.push(
         `Spike Frequency,${
-          calculatedOverallMetrics.spikeFrequency.average?.toFixed(4) ?? "N/A"
+          formatMetric(calculatedOverallMetrics.spikeFrequency.average)
         },Hz`
       );
       csvLines.push(
-        `Spikes Per Second,${
-          calculatedOverallMetrics.spikeFrequency.spikesPerSecond?.toFixed(4) ??
-          "N/A"
-        },Hz`
+        `Spikes Per Second,${formatMetric(
+          calculatedOverallMetrics.spikeFrequency.spikesPerSecond
+        )},Hz`
       );
     }
 
@@ -546,22 +553,22 @@ export const GenerateNeuralCSV = (
     if (calculatedOverallMetrics.spikeAmplitude) {
       csvLines.push(
         `Average Amplitude,${
-          calculatedOverallMetrics.spikeAmplitude.average?.toFixed(4) ?? "N/A"
+          formatMetric(calculatedOverallMetrics.spikeAmplitude.average)
         },units`
       );
       csvLines.push(
         `Median Amplitude,${
-          calculatedOverallMetrics.spikeAmplitude.median?.toFixed(4) ?? "N/A"
+          formatMetric(calculatedOverallMetrics.spikeAmplitude.median)
         },units`
       );
       csvLines.push(
         `Min Amplitude,${
-          calculatedOverallMetrics.spikeAmplitude.min?.toFixed(4) ?? "N/A"
+          formatMetric(calculatedOverallMetrics.spikeAmplitude.min)
         },units`
       );
       csvLines.push(
         `Max Amplitude,${
-          calculatedOverallMetrics.spikeAmplitude.max?.toFixed(4) ?? "N/A"
+          formatMetric(calculatedOverallMetrics.spikeAmplitude.max)
         },units`
       );
     }
@@ -570,22 +577,22 @@ export const GenerateNeuralCSV = (
     if (calculatedOverallMetrics.spikeWidth) {
       csvLines.push(
         `Average Width,${
-          calculatedOverallMetrics.spikeWidth.average?.toFixed(4) ?? "N/A"
+          formatMetric(calculatedOverallMetrics.spikeWidth.average)
         },samples`
       );
       csvLines.push(
         `Median Width,${
-          calculatedOverallMetrics.spikeWidth.median?.toFixed(4) ?? "N/A"
+          formatMetric(calculatedOverallMetrics.spikeWidth.median)
         },samples`
       );
       csvLines.push(
         `Min Width,${
-          calculatedOverallMetrics.spikeWidth.min?.toFixed(4) ?? "N/A"
+          formatMetric(calculatedOverallMetrics.spikeWidth.min)
         },samples`
       );
       csvLines.push(
         `Max Width,${
-          calculatedOverallMetrics.spikeWidth.max?.toFixed(4) ?? "N/A"
+          formatMetric(calculatedOverallMetrics.spikeWidth.max)
         },samples`
       );
     }
@@ -594,22 +601,22 @@ export const GenerateNeuralCSV = (
     if (calculatedOverallMetrics.spikeAUC) {
       csvLines.push(
         `Average AUC,${
-          calculatedOverallMetrics.spikeAUC.average?.toFixed(4) ?? "N/A"
+          formatMetric(calculatedOverallMetrics.spikeAUC.average)
         },units`
       );
       csvLines.push(
         `Median AUC,${
-          calculatedOverallMetrics.spikeAUC.median?.toFixed(4) ?? "N/A"
+          formatMetric(calculatedOverallMetrics.spikeAUC.median)
         },units`
       );
       csvLines.push(
         `Min AUC,${
-          calculatedOverallMetrics.spikeAUC.min?.toFixed(4) ?? "N/A"
+          formatMetric(calculatedOverallMetrics.spikeAUC.min)
         },units`
       );
       csvLines.push(
         `Max AUC,${
-          calculatedOverallMetrics.spikeAUC.max?.toFixed(4) ?? "N/A"
+          formatMetric(calculatedOverallMetrics.spikeAUC.max)
         },units`
       );
     }
@@ -618,7 +625,7 @@ export const GenerateNeuralCSV = (
     if (calculatedOverallMetrics.maxSpikeSignal !== undefined) {
       csvLines.push(
         `Max Spike Signal,${
-          calculatedOverallMetrics.maxSpikeSignal?.toFixed(4) ?? "N/A"
+          formatMetric(calculatedOverallMetrics.maxSpikeSignal)
         },units`
       );
     }
@@ -671,24 +678,24 @@ export const GenerateNeuralCSV = (
 
     csvLines.push(`Total Bursts,${burstMetricsForReport.total ?? "N/A"},count`);
     csvLines.push(
-      `Average Duration,${
-        burstMetricsForReport.duration?.average?.toFixed(4) ?? "N/A"
-      },ms`
+      `Average Duration,${formatMetric(
+        burstMetricsForReport.duration?.average
+      )},ms`
     );
     csvLines.push(
-      `Median Duration,${
-        burstMetricsForReport.duration?.median?.toFixed(4) ?? "N/A"
-      },ms`
+      `Median Duration,${formatMetric(
+        burstMetricsForReport.duration?.median
+      )},ms`
     );
     csvLines.push(
-      `Average Inter-Burst Interval,${
-        burstMetricsForReport.interBurstInterval?.average?.toFixed(4) ?? "N/A"
-      },ms`
+      `Average Inter-Burst Interval,${formatMetric(
+        burstMetricsForReport.interBurstInterval?.average
+      )},ms`
     );
     csvLines.push(
-      `Median Inter-Burst Interval,${
-        burstMetricsForReport.interBurstInterval?.median?.toFixed(4) ?? "N/A"
-      },ms`
+      `Median Inter-Burst Interval,${formatMetric(
+        burstMetricsForReport.interBurstInterval?.median
+      )},ms`
     );
 
     csvLines.push("</BURST_METRICS>");
@@ -750,46 +757,46 @@ export const GenerateNeuralCSV = (
         );
         csvLines.push(
           `Spike Frequency,${
-            metrics.spikeFrequency.average?.toFixed(4) ?? "N/A"
+            formatMetric(metrics.spikeFrequency.average)
           },Hz`
         );
       }
       if (metrics.spikeAmplitude) {
         csvLines.push(
           `Average Amplitude,${
-            metrics.spikeAmplitude.average?.toFixed(4) ?? "N/A"
+            formatMetric(metrics.spikeAmplitude.average)
           },units`
         );
         csvLines.push(
           `Median Amplitude,${
-            metrics.spikeAmplitude.median?.toFixed(4) ?? "N/A"
+            formatMetric(metrics.spikeAmplitude.median)
           },units`
         );
       }
       if (metrics.spikeWidth) {
         csvLines.push(
           `Average Width,${
-            metrics.spikeWidth.average?.toFixed(4) ?? "N/A"
+            formatMetric(metrics.spikeWidth.average)
           },samples`
         );
         csvLines.push(
           `Median Width,${
-            metrics.spikeWidth.median?.toFixed(4) ?? "N/A"
+            formatMetric(metrics.spikeWidth.median)
           },samples`
         );
       }
       if (metrics.spikeAUC) {
         csvLines.push(
-          `Average AUC,${metrics.spikeAUC.average?.toFixed(4) ?? "N/A"},units`
+          `Average AUC,${formatMetric(metrics.spikeAUC.average)},units`
         );
         csvLines.push(
-          `Median AUC,${metrics.spikeAUC.median?.toFixed(4) ?? "N/A"},units`
+          `Median AUC,${formatMetric(metrics.spikeAUC.median)},units`
         );
       }
       if (metrics.maxSpikeSignal !== undefined) {
         csvLines.push(
           `Max Spike Signal,${
-            metrics.maxSpikeSignal?.toFixed(4) ?? "N/A"
+            formatMetric(metrics.maxSpikeSignal)
           },units`
         );
       }
@@ -829,26 +836,24 @@ export const GenerateNeuralCSV = (
             `Total Bursts,${metrics.burstMetrics.total ?? "N/A"},count`
           );
           csvLines.push(
-            `Average Duration,${
-              metrics.burstMetrics.duration?.average?.toFixed(4) ?? "N/A"
-            },ms`
+            `Average Duration,${formatMetric(
+              metrics.burstMetrics.duration?.average
+            )},ms`
           );
           csvLines.push(
-            `Median Duration,${
-              metrics.burstMetrics.duration?.median?.toFixed(4) ?? "N/A"
-            },ms`
+            `Median Duration,${formatMetric(
+              metrics.burstMetrics.duration?.median
+            )},ms`
           );
           csvLines.push(
-            `Average Inter-Burst Interval,${
-              metrics.burstMetrics.interBurstInterval?.average?.toFixed(4) ??
-              "N/A"
-            },ms`
+            `Average Inter-Burst Interval,${formatMetric(
+              metrics.burstMetrics.interBurstInterval?.average
+            )},ms`
           );
           csvLines.push(
-            `Median Inter-Burst Interval,${
-              metrics.burstMetrics.interBurstInterval?.median?.toFixed(4) ??
-              "N/A"
-            },ms`
+            `Median Inter-Burst Interval,${formatMetric(
+              metrics.burstMetrics.interBurstInterval?.median
+            )},ms`
           );
 
           csvLines.push("</ROI_BURST_METRICS>");
