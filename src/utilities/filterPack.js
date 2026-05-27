@@ -3,7 +3,7 @@
 // pool and merges results back into the existing Indicator instances
 // (preserving class identity, methods, and DynamicRatio aliasing).
 
-const filterCore = require("../workers/filterCore.js");
+import filterCore from "../workers/filterCore.js";
 
 // Kept as a public no-op for callers that still invoke it: previously
 // allocated a fresh {x,y}[] copy of rawData for filteredData (~440MB for a
@@ -467,6 +467,21 @@ const _exports = {
   readWellXyInRange,
 };
 
-if (typeof module !== "undefined" && module.exports) {
-  module.exports = _exports;
-}
+export {
+  seedFilteredDataFromRaw,
+  packWellsToTypedArrays,
+  packShard,
+  mergeFilteredBack,
+  splitPhasesByControlSubtraction,
+  serializeFilter,
+  computeControlAveragesFromPacked,
+  collectTransferables,
+  isControlSubFilter,
+  sliceFilterSpecForShard,
+  makeShards,
+  filteredYsView,
+  filteredXsView,
+  filteredLength,
+  filteredXyInRange,
+  readWellXyInRange,
+};
