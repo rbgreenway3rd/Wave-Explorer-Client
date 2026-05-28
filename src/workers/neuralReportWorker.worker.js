@@ -18,6 +18,14 @@ import {
   baselineCorrected,
 } from "../components/NeuralAnalysis/utilities/neuralSmoothing";
 import { suppressNoise } from "../components/NeuralAnalysis/utilities/noiseSuppression";
+// `suggestProminence` is centralized in parameterSuggestions so the
+// modal and the full-plate report can't drift apart. The worker's
+// `suggestWindow` below is intentionally NOT centralized — it uses a
+// substantively different algorithm (inter-peak-distance estimate
+// instead of the prominence × num × samplingRate heuristic the modal
+// uses). Unifying that algorithm is a separate decision; for now the
+// two windows can produce different recommendations.
+import { suggestProminence } from "../components/NeuralAnalysis/utilities/parameterSuggestions";
 
 /**
  * Fast number formatting - replaces toFixed(4) for performance
@@ -222,19 +230,15 @@ function calculateBurstMetrics(bursts) {
   };
 }
 
-/**
- * Suggest prominence based on signal variance
- */
-function suggestProminence(signal, factor = 0.5) {
-  const ySignal = signal.map((pt) => pt.y);
-  const mean = ySignal.reduce((sum, y) => sum + y, 0) / ySignal.length;
-  const variance =
-    ySignal.reduce((sum, y) => sum + (y - mean) ** 2, 0) / ySignal.length;
-  return Math.floor(factor * Math.sqrt(variance));
-}
+// suggestProminence is imported from parameterSuggestions (see top of
+// file). The previous copy here used `Math.floor(factor * σ)` which
+// zeroed out for normalized signals and let every slope wiggle
+// through the downstream prominence gate.
 
 /**
- * Suggest window based on prominence
+ * Suggest window based on prominence (worker-local variant — uses
+ * actual inter-peak distance from a coarse pre-scan rather than the
+ * simpler `prominence × num × samplingRate` heuristic the modal uses).
  */
 function suggestWindow(signal, prominence, num = 5) {
   if (!Array.isArray(signal) || signal.length === 0) return 10;

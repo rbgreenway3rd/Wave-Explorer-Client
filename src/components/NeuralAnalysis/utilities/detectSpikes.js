@@ -439,10 +439,19 @@ function findTrueSpikes(
     normalPeaks = peaks.filter((p) => !apexSet.has(p.index));
   }
 
-  // Extract prominences for the k-means input (normals only).
-  let prominences = normalPeaks.map((p) =>
-    Math.min(p.prominences.leftProminence, p.prominences.rightProminence)
-  );
+  // Prefer the detection prominence (topographic, unbounded-search
+  // bases) over the measurement prominence (which can use wide
+  // baseline-crossing bases). Without this, a slope sample on a tall
+  // spike inherits the same wide footprint as the apex and gets an
+  // apex-equivalent measurement prominence — k-means then can't
+  // separate it from real signal. Falls back to the measurement
+  // prominence when detection metadata is absent (re-injected outliers
+  // from `readdOutliersAsSpikes` don't carry it).
+  const detProm = (p) =>
+    typeof p.detectionProminence === "number"
+      ? p.detectionProminence
+      : Math.min(p.prominences.leftProminence, p.prominences.rightProminence);
+  let prominences = normalPeaks.map(detProm);
   // Reassigned below so the post-k-means filter chain uses the right
   // `peaks` variable name. Names kept compatible with the existing
   // code below the k-means block.
@@ -513,11 +522,15 @@ function findTrueSpikes(
   filteredPeaks = filteredPeaks.filter((p) => p.width >= minWidth);
   perf.count(`spikeFilter.afterWidth=${filteredPeaks.length}`);
 
-  // Apply prominence ratio filter for symmetry
+  // Apply prominence ratio filter for symmetry. Uses detection
+  // prominences (topographic) when available so a slope sample with a
+  // wide measurement footprint can't satisfy the symmetry test by
+  // virtue of sharing the apex's left/right baseline crossings.
   if (minProminenceRatio > 0) {
     filteredPeaks = filteredPeaks.filter((p) => {
-      const left = p.prominences.leftProminence;
-      const right = p.prominences.rightProminence;
+      const proms = p.detectionProminences || p.prominences;
+      const left = proms.leftProminence;
+      const right = proms.rightProminence;
       const ratio = Math.min(left, right) / Math.max(left, right);
       return ratio >= minProminenceRatio;
     });
@@ -749,13 +762,66 @@ export function detectSpikes(data, options = {}) {
     return cached;
   }
 
+  // Detection bases are ALWAYS topographic — they use `findBases`
+  // regardless of `baselineMode`. That keeps event-selection decoupled
+  // from the user-facing baseline-crossing measurement: the prominence
+  // gate sees a true scipy-style prominence, while `basesFor()`
+  // continues to feed the reported width / AUC / left/right base
+  // coordinates on the NeuralPeak.
+  //
+  // Without this split, baselineMode's wide bases gave a slope sample
+  // on the upslope of a tall spike the same baseline-cross footprint
+  // as the apex — the gate then accepted the slope sample because it
+  // saw apex-level prominence. With topographic findBases (which
+  // anchors each side at the nearest "the signal climbs back above the
+  // candidate" point), a slope sample on a steep rise has its right
+  // base pinned at the very next sample (still on the upslope, above
+  // the candidate's y) — rightProminence collapses to 0 and the gate
+  // rejects it.
+  //
+  // searchRange matches the user's `wlen/2`: same scale as the live
+  // measurement code's non-baseline path. Going wider doesn't tighten
+  // the slope-vs-apex discrimination (both are already correct), but
+  // it does change downstream k-means/symmetry inputs in a way that
+  // makes those filters brittle on small synthetic peak sets.
+  const detectionBaseCache = new Map();
+  function detectionBasesFor(peakIdx) {
+    let cached = detectionBaseCache.get(peakIdx);
+    if (cached !== undefined) return cached;
+    const searchRange = wlen ? Math.floor(wlen / 2) : data.length;
+    const { leftBaseIdx, rightBaseIdx } = findBases(
+      data,
+      peakIdx,
+      searchRange,
+      globalMax
+    );
+    const leftProminence = data[peakIdx].y - data[leftBaseIdx].y;
+    const rightProminence = data[peakIdx].y - data[rightBaseIdx].y;
+    cached = {
+      leftBaseIdx,
+      rightBaseIdx,
+      prominences: { leftProminence, rightProminence },
+      prominence: Math.min(leftProminence, rightProminence),
+    };
+    detectionBaseCache.set(peakIdx, cached);
+    return cached;
+  }
+
+  // First-pass gate uses the existing measurement prominence so users'
+  // saved `spikeProminence` slider values stay valid — switching the
+  // gate to detection prominence (smaller, `wlen/2`-bounded) would
+  // silently reject every peak unless they recalibrated. The actual
+  // slope-vs-apex discrimination happens in Layer 3 (prominence-aware
+  // NMS over detection footprints): slope samples accumulate at the
+  // gate, then NMS keeps only the apex of each footprint. Detection
+  // metadata still flows downstream — k-means/symmetry use it via
+  // `detectionBasesFor` / the metadata attached to each NeuralPeak.
   let filteredPeakIndices = [];
   for (let peakIdx of peakIndices) {
     const { leftBaseIdx, rightBaseIdx } = basesFor(peakIdx);
-    let leftProminence = data[peakIdx].y - data[leftBaseIdx].y;
-    let rightProminence = data[peakIdx].y - data[rightBaseIdx].y;
-    let prominenceValue = Math.min(leftProminence, rightProminence);
-    if (prominenceValue >= prominence) {
+    const leftProminence = data[peakIdx].y - data[leftBaseIdx].y;
+    const rightProminence = data[peakIdx].y - data[rightBaseIdx].y;
+    if (Math.min(leftProminence, rightProminence) >= prominence) {
       filteredPeakIndices.push(peakIdx);
     }
   }
@@ -823,18 +889,26 @@ export function detectSpikes(data, options = {}) {
     let leftBaseCoords = data[leftBaseIdx];
     let peakCoords = data[peakIdx];
     let rightBaseCoords = data[rightBaseIdx];
-    peaks.push(
-      new NeuralPeak(
-        peakCoords,
-        leftBaseCoords,
-        rightBaseCoords,
-        prominences,
-        data,
-        peakIdx,
-        leftBaseIdx,
-        rightBaseIdx
-      )
+    const peak = new NeuralPeak(
+      peakCoords,
+      leftBaseCoords,
+      rightBaseCoords,
+      prominences,
+      data,
+      peakIdx,
+      leftBaseIdx,
+      rightBaseIdx
     );
+    // Attach detection metadata for downstream gates / NMS without
+    // disturbing the NeuralPeak public surface used by CSV reports and
+    // the UI. `prominences` above stays as the user-facing measurement
+    // (from baseline-crossing bases when baselineMode is on).
+    const det = detectionBasesFor(peakIdx);
+    peak.detectionLeftBaseIdx = det.leftBaseIdx;
+    peak.detectionRightBaseIdx = det.rightBaseIdx;
+    peak.detectionProminences = det.prominences;
+    peak.detectionProminence = det.prominence;
+    peaks.push(peak);
   }
 
   const finalSpikes = findTrueSpikes(

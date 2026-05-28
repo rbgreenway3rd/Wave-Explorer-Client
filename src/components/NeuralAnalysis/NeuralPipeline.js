@@ -17,45 +17,10 @@ import {
 } from "./utilities/outlierRemoval";
 import { perf } from "./utilities/perfLogger";
 
-// --- Parameter Suggestion ---
-export function suggestProminence(signal, factor = 3) {
-  if (!Array.isArray(signal) || signal.length === 0) return 1;
-  const ySignal = signal.map((pt) => pt.y);
-  const mean = ySignal.reduce((sum, y) => sum + y, 0) / ySignal.length;
-  const variance =
-    ySignal.reduce((sum, y) => sum + (y - mean) ** 2, 0) / ySignal.length;
-  return Math.floor(factor * Math.sqrt(variance));
-}
-
-export function suggestWindow(signal, prominence, num = 5) {
-  if (!Array.isArray(signal) || signal.length === 0) return 20;
-
-  // Calculate sampling rate (average time between samples)
-  const samplingRate =
-    signal.length > 1
-      ? (signal[signal.length - 1].x - signal[0].x) / signal.length
-      : 1;
-
-  // Estimate typical peak width from prominence
-  // Larger prominence suggests wider peaks that need larger windows
-  // Scale by num to allow tuning
-  const baseWindow = Math.max(10, Math.floor(prominence * num * samplingRate));
-
-  // Constrain to reasonable bounds
-  //   const maxWindow = Math.min(500, Math.floor(signal.length / 10));
-  const maxWindow = Math.min(
-    Math.floor(signal.length / 50),
-    Math.floor(signal.length / 10)
-  );
-  const minWindow = 10;
-
-  const optimalWindowWidth = Math.max(
-    minWindow,
-    Math.min(baseWindow, maxWindow)
-  );
-
-  return optimalWindowWidth;
-}
+// Auto-suggest helpers live in their own module so the live pipeline,
+// full-plate report, and report worker all agree. Re-exported here
+// because existing call sites import them from this file.
+export { suggestProminence, suggestWindow } from "./utilities/parameterSuggestions";
 
 // --- Metrics Calculation ---
 export function calculateSpikeFrequency(spikes, startTime, endTime) {
