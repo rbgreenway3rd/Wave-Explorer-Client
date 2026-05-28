@@ -188,16 +188,7 @@ class DatParser {
     // loop, but .split is good enough at this scale and clearer.
     const cols = line.split("\t");
     if (cols.length === 0) return;
-    // .dat files store the time column in seconds (e.g. 0, 0.007,
-    // 0.014, ...), but the underlying acquisition is in milliseconds
-    // (a 7 ms inter-frame interval is written as 0.007). Every
-    // downstream analysis assumes time is in ms — chart axis labelled
-    // "Time (ms)", `calculateSpikeFrequency` divides by 1000, burst
-    // detection's `maxInterSpikeInterval` defaults to 50 (ms), etc.
-    // Multiplying here matches the `* 1000` conversion the .txt
-    // loader already applies (txtFileUploader.js), so both file
-    // formats agree on ms downstream.
-    const t = +cols[0] * 1000;
+    const t = +cols[0];
     if (Number.isNaN(t)) return;
     ind.times.push(t);
     if (!ind.currentChunk) {

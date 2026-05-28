@@ -114,7 +114,7 @@ const parseTxtFile = (fileContent) => {
   // Parse each line of the file
   lines.slice(1).forEach((line) => {
     const values = line.split("\t");
-    times.push(parseFloat(values[0] * 1000)); // Extract time value
+    times.push(parseFloat(values[0]));
 
     // Extract data for each well
     values.slice(1).forEach((value, index) => {

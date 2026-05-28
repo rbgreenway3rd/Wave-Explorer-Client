@@ -22,12 +22,14 @@ import { suppressNoise } from "../components/NeuralAnalysis/utilities/noiseSuppr
 /**
  * Fast number formatting - replaces toFixed(4) for performance
  */
-// Per client request (Dave Weaver, 2026-05-27), all metric values
-// in reports round to the nearest integer.
-function formatMetric(num) {
-  if (num === 0) return "0";
+// Per client request (Dave Weaver, 2026-05-27), most metric values
+// in reports round to the nearest integer. Frequencies (Hz) need
+// sub-integer precision because typical spike rates are < 1 Hz, so
+// callers pass decimals=2 for those.
+function formatMetric(num, decimals = 0) {
   if (num == null || isNaN(num)) return "N/A";
-  return Math.round(num).toString();
+  if (num === 0) return decimals > 0 ? (0).toFixed(decimals) : "0";
+  return decimals > 0 ? num.toFixed(decimals) : Math.round(num).toString();
 }
 
 /**
@@ -36,12 +38,34 @@ function formatMetric(num) {
 function calculateSpikeFrequency(spikes, startTime, endTime) {
   const duration = endTime - startTime;
   const total = spikes.length;
-  const spikesPerSecond = total / (duration / 1000);
-
+  const spikesPerSecond = duration > 0 ? total / duration : 0;
+  let averageFrequency = 0;
+  let medianFrequency = 0;
+  let meanIsi = 0;
+  let medianIsi = 0;
+  if (total >= 2) {
+    const sortedTimes = spikes.map((s) => s.time).sort((a, b) => a - b);
+    const isis = new Array(sortedTimes.length - 1);
+    for (let i = 1; i < sortedTimes.length; i++) {
+      isis[i - 1] = sortedTimes[i] - sortedTimes[i - 1];
+    }
+    meanIsi = isis.reduce((s, v) => s + v, 0) / isis.length;
+    const sortedIsis = [...isis].sort((a, b) => a - b);
+    const mid = Math.floor(sortedIsis.length / 2);
+    medianIsi =
+      sortedIsis.length % 2 === 0
+        ? (sortedIsis[mid - 1] + sortedIsis[mid]) / 2
+        : sortedIsis[mid];
+    averageFrequency = meanIsi > 0 ? 1 / meanIsi : 0;
+    medianFrequency = medianIsi > 0 ? 1 / medianIsi : 0;
+  }
   return {
     total,
-    average: spikesPerSecond,
     spikesPerSecond,
+    averageFrequency,
+    medianFrequency,
+    meanIsi,
+    medianIsi,
   };
 }
 
@@ -407,9 +431,10 @@ function processSingleWell(
     if (includeOverallMetrics) {
       const spikeMetricsLines = [];
       if (spikes.length > 0) {
-        const times = spikes.map((spike) => spike.time);
-        const startTime = Math.min(...times);
-        const endTime = Math.max(...times);
+        // Recording-window bounds, not detected-spike-spread bounds.
+        const startTime = processedSignal?.[0]?.x ?? 0;
+        const endTime =
+          processedSignal?.[processedSignal.length - 1]?.x ?? startTime;
 
         const spikeFrequency = calculateSpikeFrequency(
           spikes,
@@ -424,10 +449,14 @@ function processSingleWell(
           "<SPIKE_METRICS>",
           "Metric,Value,Unit",
           `Total Spikes,${spikeFrequency.total},count`,
-          `Spike Frequency,${formatMetric(spikeFrequency.average)},Hz`,
+          `Average Frequency,${formatMetric(spikeFrequency.averageFrequency, 4)},Hz`,
+          `Median Frequency,${formatMetric(spikeFrequency.medianFrequency, 4)},Hz`,
           `Spikes Per Second,${formatMetric(
-            spikeFrequency.spikesPerSecond
+            spikeFrequency.spikesPerSecond,
+            4
           )},Hz`,
+          `Mean Inter-Spike Interval,${formatMetric(spikeFrequency.meanIsi, 4)},s`,
+          `Median Inter-Spike Interval,${formatMetric(spikeFrequency.medianIsi, 4)},s`,
           `Average Amplitude,${formatMetric(spikeAmplitude.average)},units`,
           `Median Amplitude,${formatMetric(spikeAmplitude.median)},units`,
           `Min Amplitude,${formatMetric(spikeAmplitude.min)},units`,
@@ -457,7 +486,7 @@ function processSingleWell(
     let bursts = [];
     if (spikes.length >= (processingParams.minSpikesPerBurst || 3)) {
       bursts = detectBursts(spikes, {
-        maxInterSpikeInterval: processingParams.maxInterSpikeInterval || 50,
+        maxInterSpikeInterval: processingParams.maxInterSpikeInterval || 0.05,
         minSpikesPerBurst: processingParams.minSpikesPerBurst || 3,
       });
     }
@@ -606,11 +635,39 @@ function processSingleWell(
               "count",
             ]);
             sections.spikeMetrics.push([
-              "Spike Frequency",
-              roiSpikeFrequency?.average
-                ? formatMetric(roiSpikeFrequency.average)
+              "Average Frequency",
+              roiSpikeFrequency?.averageFrequency
+                ? formatMetric(roiSpikeFrequency.averageFrequency, 4)
                 : "0.0000",
               "Hz",
+            ]);
+            sections.spikeMetrics.push([
+              "Median Frequency",
+              roiSpikeFrequency?.medianFrequency
+                ? formatMetric(roiSpikeFrequency.medianFrequency, 4)
+                : "0.0000",
+              "Hz",
+            ]);
+            sections.spikeMetrics.push([
+              "Spikes Per Second",
+              roiSpikeFrequency?.spikesPerSecond
+                ? formatMetric(roiSpikeFrequency.spikesPerSecond, 4)
+                : "0.0000",
+              "Hz",
+            ]);
+            sections.spikeMetrics.push([
+              "Mean Inter-Spike Interval",
+              roiSpikeFrequency?.meanIsi
+                ? formatMetric(roiSpikeFrequency.meanIsi, 4)
+                : "0.0000",
+              "s",
+            ]);
+            sections.spikeMetrics.push([
+              "Median Inter-Spike Interval",
+              roiSpikeFrequency?.medianIsi
+                ? formatMetric(roiSpikeFrequency.medianIsi, 4)
+                : "0.0000",
+              "s",
             ]);
             sections.spikeMetrics.push([
               "Average Amplitude",
@@ -714,14 +771,14 @@ function processSingleWell(
               roiBurstMetrics?.duration?.average
                 ? formatMetric(roiBurstMetrics.duration.average)
                 : "0.0000",
-              "ms",
+              "s",
             ]);
             sections.burstMetrics.push([
               "Median Duration",
               roiBurstMetrics?.duration?.median
                 ? formatMetric(roiBurstMetrics.duration.median)
                 : "0.0000",
-              "ms",
+              "s",
             ]);
             sections.burstMetrics.push([
               "Average Spikes Per Burst",
@@ -744,14 +801,14 @@ function processSingleWell(
                 roiBurstMetrics.interBurstInterval.average
                   ? formatMetric(roiBurstMetrics.interBurstInterval.average)
                   : "0.0000",
-                "ms",
+                "s",
               ]);
               sections.burstMetrics.push([
                 "Median Inter-Burst Interval",
                 roiBurstMetrics.interBurstInterval.median
                   ? formatMetric(roiBurstMetrics.interBurstInterval.median)
                   : "0.0000",
-                "ms",
+                "s",
               ]);
             }
 

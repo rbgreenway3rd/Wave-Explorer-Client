@@ -8,7 +8,7 @@ import { useDraftSlider } from "../../../utilities/useDraftSlider";
 import "./NeuralControlPanel.css";
 
 /**
- * BurstDetectionControls — sliders for max inter-spike interval (ms)
+ * BurstDetectionControls — sliders for max inter-spike interval (s)
  * and min spikes per burst. Reads burst state directly from
  * NeuralSettingsContext; sliders use useDraftSlider so dragging only
  * updates a local value and the pipeline-triggering setter fires once
@@ -22,7 +22,7 @@ const BurstDetectionControls = () => {
     minSpikesPerBurst,
     setMinSpikesPerBurst,
   } = useNeuralSettings();
-  const DEFAULT_MAX_INTERVAL = 50;
+  const DEFAULT_MAX_INTERVAL = 0.05;
   const DEFAULT_MIN_SPIKES = 3;
 
   const interval = useDraftSlider(
@@ -67,7 +67,7 @@ const BurstDetectionControls = () => {
             Max Inter-Spike Interval
           </span>
           <span className="neural-control-panel__field-value">
-            {interval.value} ms
+            {interval.value} s
           </span>
         </div>
         <Slider
@@ -79,15 +79,15 @@ const BurstDetectionControls = () => {
           onChangeCommitted={interval.onChangeCommitted}
           disabled={!showBursts}
           min={0}
-          max={250}
-          step={5}
+          max={0.25}
+          step={0.005}
           marks={[
-            { value: 10, label: "10ms" },
-            { value: 50, label: "50ms" },
-            { value: 100, label: "100ms" },
-            { value: 150, label: "150ms" },
-            { value: 200, label: "200ms" },
-            { value: 250, label: "250ms" },
+            { value: 0.01, label: "0.01s" },
+            { value: 0.05, label: "0.05s" },
+            { value: 0.1, label: "0.1s" },
+            { value: 0.15, label: "0.15s" },
+            { value: 0.2, label: "0.2s" },
+            { value: 0.25, label: "0.25s" },
           ]}
         />
       </div>

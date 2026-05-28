@@ -38,13 +38,13 @@ export class NeuralBurst {
  *
  * @param {NeuralPeak[]} peaks - Array of detected neural spikes
  * @param {Object} options
- * @param {number} [options.maxInterSpikeInterval=50] - Max time between
- *        consecutive spikes for them to be considered same burst
+ * @param {number} [options.maxInterSpikeInterval=0.05] - Max time between
+ *        consecutive spikes (in seconds) for them to be considered same burst
  * @param {number} [options.minSpikesPerBurst=3] - Minimum spike count
  * @returns {NeuralBurst[]}
  */
 export function detectBursts(peaks, options = {}) {
-  const maxIsi = options.dbscanEps ?? options.maxInterSpikeInterval ?? 50;
+  const maxIsi = options.dbscanEps ?? options.maxInterSpikeInterval ?? 0.05;
   const minSpikesPerBurst = options.minSpikesPerBurst ?? 3;
   if (!Array.isArray(peaks) || peaks.length < minSpikesPerBurst) return [];
 

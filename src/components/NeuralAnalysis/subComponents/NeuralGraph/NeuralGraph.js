@@ -345,7 +345,14 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
         !Array.isArray(processedSignal) ||
         processedSignal.length === 0
       ) {
-        setChartData(null);
+        // Only unmount the chart when there's truly no well selected.
+        // During a well-switch the upstream pipeline briefly returns no
+        // processedSignal between the click and the new worker result;
+        // nulling chartData here would unmount <Line>, leaving the user
+        // staring at "No well selected" until the next paint. Keeping
+        // chartData (stale datasets are replaced by the imperative-
+        // update effect below as soon as the new data arrives).
+        if (!selectedWell) setChartData(null);
         return;
       }
 
@@ -428,7 +435,7 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
         }
         setChartData({ datasets });
       }
-    }, [processedSignal, chartData, peakResults, noiseSuppressionActive, showPeakBases]);
+    }, [processedSignal, chartData, peakResults, noiseSuppressionActive, showPeakBases, selectedWell]);
 
     // Memoized chart-data projections. Each useMemo skips its allocation
     // when its single source of truth is reference-stable across renders
@@ -709,7 +716,7 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
             border: { display: true, color: "#333333", width: 1 },
             title: {
               display: true,
-              text: "Time (ms)",
+              text: "Time (s)",
               color: "#333333",
               font: {
                 size: 14,

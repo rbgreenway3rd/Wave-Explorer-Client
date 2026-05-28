@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Grid, Divider } from "@mui/material";
+import { Grid, Divider, Tooltip } from "@mui/material";
 import { Panel } from "../../../ui";
 import {
   useNeuralInteraction,
@@ -46,12 +46,32 @@ export const calculateSpikeFrequency = (spikes, startTime, endTime) => {
   );
   const duration = endTime - startTime;
   const total = spikesInRange.length;
-  const spikesPerSecond = duration > 0 ? total / (duration / 1000) : 0;
+  const spikesPerSecond = duration > 0 ? total / duration : 0;
+  let averageFrequency = 0;
+  let medianFrequency = 0;
+  let meanIsi = 0;
+  let medianIsi = 0;
+  if (total >= 2) {
+    const sortedTimes = spikesInRange
+      .map((s) => s.time)
+      .sort((a, b) => a - b);
+    const isis = new Array(sortedTimes.length - 1);
+    for (let i = 1; i < sortedTimes.length; i++) {
+      isis[i - 1] = sortedTimes[i] - sortedTimes[i - 1];
+    }
+    meanIsi = isis.reduce((s, v) => s + v, 0) / isis.length;
+    const sortedIsis = [...isis].sort((a, b) => a - b);
+    medianIsi = median(sortedIsis);
+    averageFrequency = meanIsi > 0 ? 1 / meanIsi : 0;
+    medianFrequency = medianIsi > 0 ? 1 / medianIsi : 0;
+  }
   return {
     total,
-    average: spikesPerSecond,
-    median: spikesPerSecond,
     spikesPerSecond,
+    averageFrequency,
+    medianFrequency,
+    meanIsi,
+    medianIsi,
   };
 };
 
@@ -154,14 +174,13 @@ export const calculateBurstMetrics = (bursts, startTime, endTime) => {
   };
 };
 
-// Per client request (Dave Weaver, 2026-05-27), all metric values
-// in the UI round to the nearest integer. Kept the `decimals` arg
-// for API compatibility but ignore it — every caller wants integer
-// output now.
-// eslint-disable-next-line no-unused-vars
-const formatNumber = (num, decimals = 2) => {
+// Per client request (Dave Weaver, 2026-05-27), most metric values in
+// the UI round to the nearest integer. Frequencies (Hz) need sub-
+// integer precision because typical spike rates are < 1 Hz, so callers
+// pass decimals=2 for those.
+const formatNumber = (num, decimals = 0) => {
   if (typeof num !== "number" || isNaN(num)) return "0";
-  return Math.round(num).toString();
+  return decimals > 0 ? num.toFixed(decimals) : Math.round(num).toString();
 };
 
 // MetricCard / MetricItem were previously declared *inside* the parent
@@ -177,15 +196,62 @@ const MetricCard = ({ title, children }) => (
   </Panel>
 );
 
-const MetricItem = ({ label, value, unit = "" }) => (
-  <div className="neural-result-item">
-    {label}:{" "}
-    <span className="neural-result-item__value">
-      {value}
-      {unit}
-    </span>
-  </div>
-);
+// Tooltip text explaining how each metric is computed. Shown on hover
+// over the corresponding MetricItem.
+const TIPS = {
+  totalSpikes: "Count of spikes detected within the analysis window.",
+  avgFrequency:
+    "1 / (mean inter-spike interval). Average firing rate between consecutive spikes — reflects how fast the cell fires when it is firing.",
+  medFrequency:
+    "1 / (median inter-spike interval). Less sensitive to outlier intervals than the average.",
+  spikesPerSecond:
+    "Total spikes ÷ analysis-window duration. Window-averaged firing rate; includes silent gaps, so it drops when spikes cluster in a small portion of the recording.",
+  meanIsi:
+    "Mean inter-spike interval in seconds — average time between consecutive spikes. Reciprocal of Average Frequency.",
+  medianIsi:
+    "Median inter-spike interval in seconds — middle value of all spike-to-spike gaps. Less sensitive to outlier intervals than the mean.",
+  avgAmp: "Mean peak Y-value across all spikes in the window.",
+  medAmp: "Median peak Y-value across all spikes. Less sensitive to outliers.",
+  minAmp: "Smallest peak Y-value observed in the window.",
+  maxAmp: "Largest peak Y-value observed in the window.",
+  avgWidth:
+    "Mean spike width, measured as the sample count between the left and right base of each spike.",
+  medWidth: "Median spike width in samples.",
+  minWidth: "Narrowest spike width observed in the window.",
+  maxWidth: "Widest spike width observed in the window.",
+  avgAuc:
+    "Mean area under the curve across all spikes (integral from left base to right base, baseline-subtracted).",
+  medAuc: "Median area under the curve across all spikes.",
+  minAuc: "Smallest single-spike AUC observed in the window.",
+  maxAuc: "Largest single-spike AUC observed in the window.",
+  maxSignal: "Highest peak Y-value across every spike in the window.",
+  totalBursts:
+    "Number of bursts detected. A burst is a run of ≥ Min-Spikes-Per-Burst consecutive spikes whose inter-spike intervals are all ≤ Max-Inter-Spike-Interval (set in the Burst Detection controls).",
+  avgBurstDuration:
+    "Mean burst duration — last-spike time minus first-spike time within each burst.",
+  medBurstDuration: "Median burst duration across all detected bursts.",
+  avgIBI:
+    "Mean inter-burst interval — time gap between the last spike of one burst and the first spike of the next.",
+  medIBI: "Median inter-burst interval across consecutive burst pairs.",
+};
+
+const MetricItem = ({ label, value, unit = "", tooltip = "" }) => {
+  const body = (
+    <div className="neural-result-item">
+      {label}:{" "}
+      <span className="neural-result-item__value">
+        {value}
+        {unit}
+      </span>
+    </div>
+  );
+  if (!tooltip) return body;
+  return (
+    <Tooltip title={tooltip} placement="top" arrow>
+      {body}
+    </Tooltip>
+  );
+};
 
 const NeuralResults = () => {
   const { selectedWell } = useNeuralSelection();
@@ -267,54 +333,59 @@ const NeuralResults = () => {
           <Grid container spacing={2}>
             <Grid item xs={12} md={6}>
               <MetricCard title="Spike Frequency">
-                <MetricItem label="Total Spikes" value={overallMetrics.spikeFrequency.total} />
-                <MetricItem label="Average Frequency" value={formatNumber(overallMetrics.spikeFrequency.average)} unit=" Hz" />
-                <MetricItem label="Spikes Per Second" value={formatNumber(overallMetrics.spikeFrequency.spikesPerSecond)} unit=" Hz" />
+                <MetricItem label="Total Spikes" value={overallMetrics.spikeFrequency.total} tooltip={TIPS.totalSpikes} />
+                <MetricItem label="Average Frequency" value={formatNumber(overallMetrics.spikeFrequency.averageFrequency, 4)} unit=" Hz" tooltip={TIPS.avgFrequency} />
+                <MetricItem label="Median Frequency" value={formatNumber(overallMetrics.spikeFrequency.medianFrequency, 4)} unit=" Hz" tooltip={TIPS.medFrequency} />
+                <MetricItem label="Spikes Per Second" value={formatNumber(overallMetrics.spikeFrequency.spikesPerSecond, 4)} unit=" Hz" tooltip={TIPS.spikesPerSecond} />
+                <Divider className="neural-result-card__divider" />
+                <h6 className="neural-result-card__subtitle">Inter-Spike Interval</h6>
+                <MetricItem label="Mean ISI" value={formatNumber(overallMetrics.spikeFrequency.meanIsi, 4)} unit=" s" tooltip={TIPS.meanIsi} />
+                <MetricItem label="Median ISI" value={formatNumber(overallMetrics.spikeFrequency.medianIsi, 4)} unit=" s" tooltip={TIPS.medianIsi} />
               </MetricCard>
             </Grid>
             <Grid item xs={12} md={6}>
               <MetricCard title="Spike Amplitude">
-                <MetricItem label="Average Amplitude" value={formatNumber(overallMetrics.spikeAmplitude.average)} />
-                <MetricItem label="Median Amplitude" value={formatNumber(overallMetrics.spikeAmplitude.median)} />
-                <MetricItem label="Min Amplitude" value={formatNumber(overallMetrics.spikeAmplitude.min)} />
-                <MetricItem label="Max Amplitude" value={formatNumber(overallMetrics.spikeAmplitude.max)} />
+                <MetricItem label="Average Amplitude" value={formatNumber(overallMetrics.spikeAmplitude.average)} tooltip={TIPS.avgAmp} />
+                <MetricItem label="Median Amplitude" value={formatNumber(overallMetrics.spikeAmplitude.median)} tooltip={TIPS.medAmp} />
+                <MetricItem label="Min Amplitude" value={formatNumber(overallMetrics.spikeAmplitude.min)} tooltip={TIPS.minAmp} />
+                <MetricItem label="Max Amplitude" value={formatNumber(overallMetrics.spikeAmplitude.max)} tooltip={TIPS.maxAmp} />
               </MetricCard>
             </Grid>
             <Grid item xs={12} md={6}>
               <MetricCard title="Spike Width">
-                <MetricItem label="Average Width" value={formatNumber(overallMetrics.spikeWidth.average)} unit=" samples" />
-                <MetricItem label="Median Width" value={formatNumber(overallMetrics.spikeWidth.median)} unit=" samples" />
-                <MetricItem label="Min Width" value={formatNumber(overallMetrics.spikeWidth.min)} unit=" samples" />
-                <MetricItem label="Max Width" value={formatNumber(overallMetrics.spikeWidth.max)} unit=" samples" />
+                <MetricItem label="Average Width" value={formatNumber(overallMetrics.spikeWidth.average)} unit=" samples" tooltip={TIPS.avgWidth} />
+                <MetricItem label="Median Width" value={formatNumber(overallMetrics.spikeWidth.median)} unit=" samples" tooltip={TIPS.medWidth} />
+                <MetricItem label="Min Width" value={formatNumber(overallMetrics.spikeWidth.min)} unit=" samples" tooltip={TIPS.minWidth} />
+                <MetricItem label="Max Width" value={formatNumber(overallMetrics.spikeWidth.max)} unit=" samples" tooltip={TIPS.maxWidth} />
               </MetricCard>
             </Grid>
             <Grid item xs={12} md={6}>
               <MetricCard title="Spike AUC">
-                <MetricItem label="Average AUC" value={formatNumber(overallMetrics.spikeAUC.average)} />
-                <MetricItem label="Median AUC" value={formatNumber(overallMetrics.spikeAUC.median)} />
-                <MetricItem label="Min AUC" value={formatNumber(overallMetrics.spikeAUC.min)} />
-                <MetricItem label="Max AUC" value={formatNumber(overallMetrics.spikeAUC.max)} />
+                <MetricItem label="Average AUC" value={formatNumber(overallMetrics.spikeAUC.average)} tooltip={TIPS.avgAuc} />
+                <MetricItem label="Median AUC" value={formatNumber(overallMetrics.spikeAUC.median)} tooltip={TIPS.medAuc} />
+                <MetricItem label="Min AUC" value={formatNumber(overallMetrics.spikeAUC.min)} tooltip={TIPS.minAuc} />
+                <MetricItem label="Max AUC" value={formatNumber(overallMetrics.spikeAUC.max)} tooltip={TIPS.maxAuc} />
               </MetricCard>
             </Grid>
             <Grid item xs={12} md={6}>
               <MetricCard title="Max Spike Signal">
-                <MetricItem label="Max Spike Signal" value={formatNumber(overallMetrics.maxSpikeSignal)} />
+                <MetricItem label="Max Spike Signal" value={formatNumber(overallMetrics.maxSpikeSignal)} tooltip={TIPS.maxSignal} />
               </MetricCard>
             </Grid>
 
             {overallMetrics.burstMetrics.total > 0 && (
               <Grid item xs={12}>
                 <MetricCard title="Burst Metrics">
-                  <MetricItem label="Total Bursts" value={overallMetrics.burstMetrics.total} />
+                  <MetricItem label="Total Bursts" value={overallMetrics.burstMetrics.total} tooltip={TIPS.totalBursts} />
                   <Divider className="neural-result-card__divider" />
                   <h6 className="neural-result-card__subtitle">Burst Duration</h6>
-                  <MetricItem label="Average Duration" value={formatNumber(overallMetrics.burstMetrics.duration.average)} unit=" ms" />
-                  <MetricItem label="Median Duration" value={formatNumber(overallMetrics.burstMetrics.duration.median)} unit=" ms" />
+                  <MetricItem label="Average Duration" value={formatNumber(overallMetrics.burstMetrics.duration.average)} unit=" s" tooltip={TIPS.avgBurstDuration} />
+                  <MetricItem label="Median Duration" value={formatNumber(overallMetrics.burstMetrics.duration.median)} unit=" s" tooltip={TIPS.medBurstDuration} />
 
                   <Divider className="neural-result-card__divider" />
                   <h6 className="neural-result-card__subtitle">Inter-Burst Interval</h6>
-                  <MetricItem label="Average IBI" value={formatNumber(overallMetrics.burstMetrics.interBurstInterval.average)} unit=" ms" />
-                  <MetricItem label="Median IBI" value={formatNumber(overallMetrics.burstMetrics.interBurstInterval.median)} unit=" ms" />
+                  <MetricItem label="Average IBI" value={formatNumber(overallMetrics.burstMetrics.interBurstInterval.average)} unit=" s" tooltip={TIPS.avgIBI} />
+                  <MetricItem label="Median IBI" value={formatNumber(overallMetrics.burstMetrics.interBurstInterval.median)} unit=" s" tooltip={TIPS.medIBI} />
                 </MetricCard>
               </Grid>
             )}
@@ -337,52 +408,57 @@ const NeuralResults = () => {
           <Grid container spacing={2}>
             <Grid item xs={12} md={6}>
               <MetricCard title="Spike Frequency">
-                <MetricItem label="Total Spikes" value={metrics.spikeFrequency.total} />
-                <MetricItem label="Average Frequency" value={formatNumber(metrics.spikeFrequency.average)} unit=" Hz" />
-                <MetricItem label="Median Frequency" value={formatNumber(metrics.spikeFrequency.median)} unit=" Hz" />
+                <MetricItem label="Total Spikes" value={metrics.spikeFrequency.total} tooltip={TIPS.totalSpikes} />
+                <MetricItem label="Average Frequency" value={formatNumber(metrics.spikeFrequency.averageFrequency, 4)} unit=" Hz" tooltip={TIPS.avgFrequency} />
+                <MetricItem label="Median Frequency" value={formatNumber(metrics.spikeFrequency.medianFrequency, 4)} unit=" Hz" tooltip={TIPS.medFrequency} />
+                <MetricItem label="Spikes Per Second" value={formatNumber(metrics.spikeFrequency.spikesPerSecond, 4)} unit=" Hz" tooltip={TIPS.spikesPerSecond} />
+                <Divider className="neural-result-card__divider" />
+                <h6 className="neural-result-card__subtitle">Inter-Spike Interval</h6>
+                <MetricItem label="Mean ISI" value={formatNumber(metrics.spikeFrequency.meanIsi, 4)} unit=" s" tooltip={TIPS.meanIsi} />
+                <MetricItem label="Median ISI" value={formatNumber(metrics.spikeFrequency.medianIsi, 4)} unit=" s" tooltip={TIPS.medianIsi} />
               </MetricCard>
             </Grid>
             <Grid item xs={12} md={6}>
               <MetricCard title="Spike Amplitude">
-                <MetricItem label="Average Amplitude" value={formatNumber(metrics.spikeAmplitude.average)} />
-                <MetricItem label="Median Amplitude" value={formatNumber(metrics.spikeAmplitude.median)} />
-                <MetricItem label="Min Amplitude" value={formatNumber(metrics.spikeAmplitude.min)} />
-                <MetricItem label="Max Amplitude" value={formatNumber(metrics.spikeAmplitude.max)} />
+                <MetricItem label="Average Amplitude" value={formatNumber(metrics.spikeAmplitude.average)} tooltip={TIPS.avgAmp} />
+                <MetricItem label="Median Amplitude" value={formatNumber(metrics.spikeAmplitude.median)} tooltip={TIPS.medAmp} />
+                <MetricItem label="Min Amplitude" value={formatNumber(metrics.spikeAmplitude.min)} tooltip={TIPS.minAmp} />
+                <MetricItem label="Max Amplitude" value={formatNumber(metrics.spikeAmplitude.max)} tooltip={TIPS.maxAmp} />
               </MetricCard>
             </Grid>
             <Grid item xs={12} md={6}>
               <MetricCard title="Spike Width">
-                <MetricItem label="Average Width" value={formatNumber(metrics.spikeWidth.average)} unit=" samples" />
-                <MetricItem label="Median Width" value={formatNumber(metrics.spikeWidth.median)} unit=" samples" />
-                <MetricItem label="Min Width" value={formatNumber(metrics.spikeWidth.min)} unit=" samples" />
-                <MetricItem label="Max Width" value={formatNumber(metrics.spikeWidth.max)} unit=" samples" />
+                <MetricItem label="Average Width" value={formatNumber(metrics.spikeWidth.average)} unit=" samples" tooltip={TIPS.avgWidth} />
+                <MetricItem label="Median Width" value={formatNumber(metrics.spikeWidth.median)} unit=" samples" tooltip={TIPS.medWidth} />
+                <MetricItem label="Min Width" value={formatNumber(metrics.spikeWidth.min)} unit=" samples" tooltip={TIPS.minWidth} />
+                <MetricItem label="Max Width" value={formatNumber(metrics.spikeWidth.max)} unit=" samples" tooltip={TIPS.maxWidth} />
               </MetricCard>
             </Grid>
             <Grid item xs={12} md={6}>
               <MetricCard title="Spike AUC">
-                <MetricItem label="Average AUC" value={formatNumber(metrics.spikeAUC.average)} />
-                <MetricItem label="Median AUC" value={formatNumber(metrics.spikeAUC.median)} />
-                <MetricItem label="Min AUC" value={formatNumber(metrics.spikeAUC.min)} />
-                <MetricItem label="Max AUC" value={formatNumber(metrics.spikeAUC.max)} />
+                <MetricItem label="Average AUC" value={formatNumber(metrics.spikeAUC.average)} tooltip={TIPS.avgAuc} />
+                <MetricItem label="Median AUC" value={formatNumber(metrics.spikeAUC.median)} tooltip={TIPS.medAuc} />
+                <MetricItem label="Min AUC" value={formatNumber(metrics.spikeAUC.min)} tooltip={TIPS.minAuc} />
+                <MetricItem label="Max AUC" value={formatNumber(metrics.spikeAUC.max)} tooltip={TIPS.maxAuc} />
               </MetricCard>
             </Grid>
             <Grid item xs={12} md={6}>
               <MetricCard title="Max Spike Signal">
-                <MetricItem label="Max Spike Signal" value={formatNumber(metrics.maxSpikeSignal)} />
+                <MetricItem label="Max Spike Signal" value={formatNumber(metrics.maxSpikeSignal)} tooltip={TIPS.maxSignal} />
               </MetricCard>
             </Grid>
             <Grid item xs={12}>
               <MetricCard title="Burst Metrics">
-                <MetricItem label="Total Bursts" value={metrics.burstMetrics.total} />
+                <MetricItem label="Total Bursts" value={metrics.burstMetrics.total} tooltip={TIPS.totalBursts} />
                 <Divider className="neural-result-card__divider" />
                 <h6 className="neural-result-card__subtitle">Burst Duration</h6>
-                <MetricItem label="Average Duration" value={formatNumber(metrics.burstMetrics.duration.average)} unit=" ms" />
-                <MetricItem label="Median Duration" value={formatNumber(metrics.burstMetrics.duration.median)} unit=" ms" />
+                <MetricItem label="Average Duration" value={formatNumber(metrics.burstMetrics.duration.average)} unit=" s" tooltip={TIPS.avgBurstDuration} />
+                <MetricItem label="Median Duration" value={formatNumber(metrics.burstMetrics.duration.median)} unit=" s" tooltip={TIPS.medBurstDuration} />
 
                 <Divider className="neural-result-card__divider" />
                 <h6 className="neural-result-card__subtitle">Inter-Burst Interval</h6>
-                <MetricItem label="Average IBI" value={formatNumber(metrics.burstMetrics.interBurstInterval.average)} unit=" ms" />
-                <MetricItem label="Median IBI" value={formatNumber(metrics.burstMetrics.interBurstInterval.median)} unit=" ms" />
+                <MetricItem label="Average IBI" value={formatNumber(metrics.burstMetrics.interBurstInterval.average)} unit=" s" tooltip={TIPS.avgIBI} />
+                <MetricItem label="Median IBI" value={formatNumber(metrics.burstMetrics.interBurstInterval.median)} unit=" s" tooltip={TIPS.medIBI} />
               </MetricCard>
             </Grid>
           </Grid>

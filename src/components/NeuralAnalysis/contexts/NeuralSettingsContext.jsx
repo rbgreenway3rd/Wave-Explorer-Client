@@ -28,6 +28,21 @@ import { PERSISTABLE_KEYS } from "../templates/templateStorage";
 
 export const NeuralSettingsContext = createContext(null);
 
+// One-time migration for snapshots saved before the seconds-throughout
+// unit conversion. `maxInterSpikeInterval` was previously stored in
+// milliseconds (default 50, slider range 0–250). The current slider's
+// max is 0.25 s, so any value > 1 is unambiguously a legacy ms value —
+// divide by 1000 to get the equivalent seconds value. Idempotent: new
+// snapshots already have values ≤ 0.25, so this is a no-op for them.
+const migrateLegacySnapshot = (snapshot) => {
+  if (!snapshot || typeof snapshot !== "object") return snapshot;
+  const v = snapshot.maxInterSpikeInterval;
+  if (typeof v === "number" && v > 1) {
+    return { ...snapshot, maxInterSpikeInterval: v / 1000 };
+  }
+  return snapshot;
+};
+
 // Default values for every persistable setting. The `useState`
 // initializers below are the per-section sources of truth, and this
 // map MUST stay in sync with them — the master "Reset All Settings"
@@ -66,7 +81,7 @@ const DEFAULT_SETTINGS = {
   outlierMultiplier: 2.0,
   // Burst detection
   showBursts: false,
-  maxInterSpikeInterval: 50,
+  maxInterSpikeInterval: 0.05,
   minSpikesPerBurst: 3,
   // Display toggles
   showPeakBases: true,
@@ -180,7 +195,7 @@ export const NeuralSettingsProvider = ({ children }) => {
 
   // ---- Burst detection ---------------------------------------------------
   const [showBursts, setShowBursts] = useState(false);
-  const [maxInterSpikeInterval, setMaxInterSpikeInterval] = useState(50);
+  const [maxInterSpikeInterval, setMaxInterSpikeInterval] = useState(0.05);
   const [minSpikesPerBurst, setMinSpikesPerBurst] = useState(3);
 
   // ---- Display toggles (chart overlay) -----------------------------------
@@ -331,10 +346,11 @@ export const NeuralSettingsProvider = ({ children }) => {
 
   const applySettingsSnapshot = useCallback(
     (snapshot) => {
-      if (!snapshot || typeof snapshot !== "object") return;
-      for (const key of Object.keys(snapshot)) {
+      const migrated = migrateLegacySnapshot(snapshot);
+      if (!migrated || typeof migrated !== "object") return;
+      for (const key of Object.keys(migrated)) {
         const setter = settingSetterMap[key];
-        if (setter) setter(snapshot[key]);
+        if (setter) setter(migrated[key]);
       }
     },
     [settingSetterMap]

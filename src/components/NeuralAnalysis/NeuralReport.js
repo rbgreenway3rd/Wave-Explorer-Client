@@ -7,11 +7,12 @@
 import { detectBursts } from "./utilities/burstDetection";
 
 // Round metric values to the nearest integer per client request
-// (Dave Weaver, 2026-05-27). Single helper used by every CSV cell
-// so callers can stop sprinkling `?.toFixed(...) ?? "N/A"`.
-function formatMetric(num) {
+// (Dave Weaver, 2026-05-27). Frequencies (Hz) need sub-integer
+// precision because typical spike rates are < 1 Hz, so callers pass
+// decimals=2 for those.
+function formatMetric(num, decimals = 0) {
   if (num == null || isNaN(num)) return "N/A";
-  return Math.round(num).toString();
+  return decimals > 0 ? num.toFixed(decimals) : Math.round(num).toString();
 }
 
 /**
@@ -23,13 +24,36 @@ function calculateSpikeFrequency(spikes, startTime, endTime) {
   );
   const duration = endTime - startTime;
   const total = spikesInRange.length;
-  const spikesPerSecond = duration > 0 ? total / (duration / 1000) : 0;
-
+  const spikesPerSecond = duration > 0 ? total / duration : 0;
+  let averageFrequency = 0;
+  let medianFrequency = 0;
+  let meanIsi = 0;
+  let medianIsi = 0;
+  if (total >= 2) {
+    const sortedTimes = spikesInRange
+      .map((s) => s.time)
+      .sort((a, b) => a - b);
+    const isis = new Array(sortedTimes.length - 1);
+    for (let i = 1; i < sortedTimes.length; i++) {
+      isis[i - 1] = sortedTimes[i] - sortedTimes[i - 1];
+    }
+    meanIsi = isis.reduce((s, v) => s + v, 0) / isis.length;
+    const sortedIsis = [...isis].sort((a, b) => a - b);
+    const mid = Math.floor(sortedIsis.length / 2);
+    medianIsi =
+      sortedIsis.length % 2 === 0
+        ? (sortedIsis[mid - 1] + sortedIsis[mid]) / 2
+        : sortedIsis[mid];
+    averageFrequency = meanIsi > 0 ? 1 / meanIsi : 0;
+    medianFrequency = medianIsi > 0 ? 1 / medianIsi : 0;
+  }
   return {
     total,
-    average: spikesPerSecond,
-    median: spikesPerSecond,
     spikesPerSecond,
+    averageFrequency,
+    medianFrequency,
+    meanIsi,
+    medianIsi,
   };
 }
 
@@ -254,18 +278,21 @@ export const GenerateNeuralCSV = (
     if (!burstResults || burstResults.length === 0) {
       // Run burst detection with parameters from processingParams
       const detectedBursts = detectBursts(peakResults, {
-        maxInterSpikeInterval: processingParams?.maxInterSpikeInterval || 50,
+        maxInterSpikeInterval: processingParams?.maxInterSpikeInterval || 0.05,
         minSpikesPerBurst: processingParams?.minSpikesPerBurst || 3,
       });
 
       finalBurstResults = detectedBursts;
     }
 
-    // Calculate burst metrics for the full time range
+    // Calculate burst metrics for the full time range. Use the
+    // recording window from processedSignal (first/last sample x), not
+    // the spread of detected spike times — sparse spikes inside a long
+    // recording would otherwise yield bogus per-second rates.
     if (finalBurstResults.length > 0) {
-      const times = peakResults.map((spike) => spike.time);
-      const startTime = Math.min(...times);
-      const endTime = Math.max(...times);
+      const startTime = processedSignal?.[0]?.x ?? 0;
+      const endTime =
+        processedSignal?.[processedSignal.length - 1]?.x ?? startTime;
 
       burstMetricsForReport = calculateBurstMetrics(
         finalBurstResults,
@@ -296,9 +323,12 @@ export const GenerateNeuralCSV = (
   let calculatedOverallMetrics = null;
 
   if (peakResults && peakResults.length > 0) {
-    const times = peakResults.map((spike) => spike.time);
-    const startTime = Math.min(...times);
-    const endTime = Math.max(...times);
+    // Recording-window bounds, not detected-spike-spread bounds. See
+    // NeuralResults.js's overallMetrics block for why — sparse spikes
+    // would otherwise produce an inflated spikesPerSecond divisor.
+    const startTime = processedSignal?.[0]?.x ?? 0;
+    const endTime =
+      processedSignal?.[processedSignal.length - 1]?.x ?? startTime;
 
     calculatedOverallMetrics = {
       spikeFrequency: calculateSpikeFrequency(peakResults, startTime, endTime),
@@ -307,7 +337,6 @@ export const GenerateNeuralCSV = (
       spikeAUC: calculateSpikeAUC(peakResults, startTime, endTime),
       maxSpikeSignal: calculateMaxSpikeSignal(peakResults, startTime, endTime),
     };
-  } else {
   }
 
   const csvLines = [];
@@ -538,14 +567,32 @@ export const GenerateNeuralCSV = (
         },count`
       );
       csvLines.push(
-        `Spike Frequency,${
-          formatMetric(calculatedOverallMetrics.spikeFrequency.average)
+        `Average Frequency,${
+          formatMetric(calculatedOverallMetrics.spikeFrequency.averageFrequency, 4)
+        },Hz`
+      );
+      csvLines.push(
+        `Median Frequency,${
+          formatMetric(calculatedOverallMetrics.spikeFrequency.medianFrequency, 4)
         },Hz`
       );
       csvLines.push(
         `Spikes Per Second,${formatMetric(
-          calculatedOverallMetrics.spikeFrequency.spikesPerSecond
+          calculatedOverallMetrics.spikeFrequency.spikesPerSecond,
+          4
         )},Hz`
+      );
+      csvLines.push(
+        `Mean Inter-Spike Interval,${formatMetric(
+          calculatedOverallMetrics.spikeFrequency.meanIsi,
+          4
+        )},s`
+      );
+      csvLines.push(
+        `Median Inter-Spike Interval,${formatMetric(
+          calculatedOverallMetrics.spikeFrequency.medianIsi,
+          4
+        )},s`
       );
     }
 
@@ -680,22 +727,22 @@ export const GenerateNeuralCSV = (
     csvLines.push(
       `Average Duration,${formatMetric(
         burstMetricsForReport.duration?.average
-      )},ms`
+      )},s`
     );
     csvLines.push(
       `Median Duration,${formatMetric(
         burstMetricsForReport.duration?.median
-      )},ms`
+      )},s`
     );
     csvLines.push(
       `Average Inter-Burst Interval,${formatMetric(
         burstMetricsForReport.interBurstInterval?.average
-      )},ms`
+      )},s`
     );
     csvLines.push(
       `Median Inter-Burst Interval,${formatMetric(
         burstMetricsForReport.interBurstInterval?.median
-      )},ms`
+      )},s`
     );
 
     csvLines.push("</BURST_METRICS>");
@@ -756,9 +803,29 @@ export const GenerateNeuralCSV = (
           `Total Spikes,${metrics.spikeFrequency.total ?? "N/A"},count`
         );
         csvLines.push(
-          `Spike Frequency,${
-            formatMetric(metrics.spikeFrequency.average)
+          `Average Frequency,${
+            formatMetric(metrics.spikeFrequency.averageFrequency, 4)
           },Hz`
+        );
+        csvLines.push(
+          `Median Frequency,${
+            formatMetric(metrics.spikeFrequency.medianFrequency, 4)
+          },Hz`
+        );
+        csvLines.push(
+          `Spikes Per Second,${
+            formatMetric(metrics.spikeFrequency.spikesPerSecond, 4)
+          },Hz`
+        );
+        csvLines.push(
+          `Mean Inter-Spike Interval,${
+            formatMetric(metrics.spikeFrequency.meanIsi, 4)
+          },s`
+        );
+        csvLines.push(
+          `Median Inter-Spike Interval,${
+            formatMetric(metrics.spikeFrequency.medianIsi, 4)
+          },s`
         );
       }
       if (metrics.spikeAmplitude) {
@@ -838,22 +905,22 @@ export const GenerateNeuralCSV = (
           csvLines.push(
             `Average Duration,${formatMetric(
               metrics.burstMetrics.duration?.average
-            )},ms`
+            )},s`
           );
           csvLines.push(
             `Median Duration,${formatMetric(
               metrics.burstMetrics.duration?.median
-            )},ms`
+            )},s`
           );
           csvLines.push(
             `Average Inter-Burst Interval,${formatMetric(
               metrics.burstMetrics.interBurstInterval?.average
-            )},ms`
+            )},s`
           );
           csvLines.push(
             `Median Inter-Burst Interval,${formatMetric(
               metrics.burstMetrics.interBurstInterval?.median
-            )},ms`
+            )},s`
           );
 
           csvLines.push("</ROI_BURST_METRICS>");

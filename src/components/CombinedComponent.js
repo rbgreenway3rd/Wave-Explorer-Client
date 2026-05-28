@@ -288,16 +288,39 @@ export const CombinedComponent = ({ profile, setProfile }) => {
   const handleResetFilteredData = () => {
     if (!wellArrays || !wellArrays.length) return;
 
-    // Deep copy wells and reset filteredData
-    const resetWellArrays = wellArrays.map((well) => ({
+    // Mutate existing Indicator instances in place to restore filtered =
+    // raw, then create new outer well/array references so downstream
+    // memoization detects the update. Same pattern as applyFilters →
+    // mergeFilteredBack: identity-preserving so methods like
+    // materializeFilteredData() survive the reset.
+    //
+    // Previously this spread `{...indicator}` produced plain objects
+    // (dropping prototype methods) and read `rawData.map(...)` which is
+    // empty post-Phase C — filteredData became `[]` and the filtered
+    // chart went blank.
+    for (const well of wellArrays) {
+      for (const indicator of well.indicators) {
+        if (typeof indicator.setFilteredTypedArrays === "function") {
+          // Point filtered typed-arrays back at raw. Next applyFilters
+          // call replaces these refs with new worker-produced arrays.
+          indicator.setFilteredTypedArrays(indicator.rawXs, indicator.rawYs);
+        } else {
+          // Legacy path (shouldn't happen post-Phase C, but kept safe):
+          // mirror raw {x,y}[] form into filteredData.
+          indicator.filteredData = Array.isArray(indicator.rawData)
+            ? indicator.rawData.map((p) => ({ ...p }))
+            : [];
+        }
+      }
+    }
+
+    // New outer references — same Indicator INSTANCES — so consumers
+    // memoized on wellArrays/selectedWellArray pick up the change.
+    const updatedWellArrays = wellArrays.map((well) => ({
       ...well,
-      indicators: well.indicators.map((indicator) => ({
-        ...indicator,
-        filteredData: indicator.rawData.map((point) => ({ ...point })),
-      })),
+      indicators: [...well.indicators],
     }));
 
-    // Update project
     if (typeof setProject === "function" && project) {
       const updatedProject = {
         ...project,
@@ -305,18 +328,17 @@ export const CombinedComponent = ({ profile, setProfile }) => {
           ...plate,
           experiments: plate.experiments.map((experiment) => ({
             ...experiment,
-            wells: resetWellArrays,
+            wells: updatedWellArrays,
           })),
         })),
       };
       setProject(updatedProject);
     }
 
-    // Update selectedWellArray
     if (typeof setSelectedWellArray === "function" && selectedWellArray) {
       const updatedSelectedWellArray = selectedWellArray.map(
         (selectedWell) =>
-          resetWellArrays.find((well) => well.id === selectedWell.id) ||
+          updatedWellArrays.find((well) => well.id === selectedWell.id) ||
           selectedWell
       );
       setSelectedWellArray(updatedSelectedWellArray);

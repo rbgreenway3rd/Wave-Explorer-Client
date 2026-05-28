@@ -39,10 +39,7 @@ const EXPECTED_BLUE_FLAT = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 const EXPECTED_RED_FLAT = [
   100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200,
 ];
-// Fixture stores time in seconds (0.0, 0.1, 0.2). The parser now
-// multiplies by 1000 on load to normalize to ms (matching the .txt
-// loader), so the expected output is the ms equivalent.
-const EXPECTED_TIMES = [0, 100, 200];
+const EXPECTED_TIMES = [0, 0.1, 0.2];
 
 function feedInChunks(parser, text, chunkSize) {
   for (let i = 0; i < text.length; i += chunkSize) {

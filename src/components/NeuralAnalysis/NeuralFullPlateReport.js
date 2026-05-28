@@ -9,13 +9,14 @@ import { runNeuralAnalysisPipeline } from "./NeuralPipeline";
 /**
  * Round to the nearest integer for CSV output. Per client request
  * (Dave Weaver, 2026-05-27): "For your metrics, I think you can round
- * all of them to the nearest integer." Returns "0" for zero, "N/A"
- * for null/NaN, integer string otherwise.
+ * all of them to the nearest integer." Frequencies (Hz) need sub-
+ * integer precision because typical spike rates are < 1 Hz, so callers
+ * pass decimals=2 for those.
  */
-function formatMetric(num) {
-  if (num === 0) return "0";
+function formatMetric(num, decimals = 0) {
   if (num == null || isNaN(num)) return "N/A";
-  return Math.round(num).toString();
+  if (num === 0) return decimals > 0 ? (0).toFixed(decimals) : "0";
+  return decimals > 0 ? num.toFixed(decimals) : Math.round(num).toString();
 }
 
 /**
@@ -27,12 +28,36 @@ function calculateSpikeFrequency(spikes, startTime, endTime) {
   );
   const duration = endTime - startTime;
   const total = spikesInRange.length;
-  const spikesPerSecond = duration > 0 ? total / (duration / 1000) : 0;
-
+  const spikesPerSecond = duration > 0 ? total / duration : 0;
+  let averageFrequency = 0;
+  let medianFrequency = 0;
+  let meanIsi = 0;
+  let medianIsi = 0;
+  if (total >= 2) {
+    const sortedTimes = spikesInRange
+      .map((s) => s.time)
+      .sort((a, b) => a - b);
+    const isis = new Array(sortedTimes.length - 1);
+    for (let i = 1; i < sortedTimes.length; i++) {
+      isis[i - 1] = sortedTimes[i] - sortedTimes[i - 1];
+    }
+    meanIsi = isis.reduce((s, v) => s + v, 0) / isis.length;
+    const sortedIsis = [...isis].sort((a, b) => a - b);
+    const mid = Math.floor(sortedIsis.length / 2);
+    medianIsi =
+      sortedIsis.length % 2 === 0
+        ? (sortedIsis[mid - 1] + sortedIsis[mid]) / 2
+        : sortedIsis[mid];
+    averageFrequency = meanIsi > 0 ? 1 / meanIsi : 0;
+    medianFrequency = medianIsi > 0 ? 1 / medianIsi : 0;
+  }
   return {
     total,
-    average: spikesPerSecond,
     spikesPerSecond,
+    averageFrequency,
+    medianFrequency,
+    meanIsi,
+    medianIsi,
   };
 }
 
@@ -135,7 +160,7 @@ function calculateBurstMetrics(bursts, startTime, endTime) {
   }
 
   // Calculate burst frequency (bursts per second)
-  const timeRangeSeconds = (endTime - startTime) / 1000;
+  const timeRangeSeconds = endTime - startTime;
   const frequency = timeRangeSeconds > 0 ? bursts.length / timeRangeSeconds : 0;
 
   // Calculate durations
@@ -566,9 +591,11 @@ export async function GenerateFullPlateReport(
       if (includeOverallMetrics) {
         const spikeMetricsLines = [];
         if (spikes.length > 0) {
-          const times = spikes.map((spike) => spike.time);
-          const startTime = Math.min(...times);
-          const endTime = Math.max(...times);
+          // Recording-window bounds (first/last sample x), not the
+          // spread of detected spike times.
+          const startTime = rawSignal?.[0]?.x ?? 0;
+          const endTime =
+            rawSignal?.[rawSignal.length - 1]?.x ?? startTime;
 
           const spikeFrequency = calculateSpikeFrequency(
             spikes,
@@ -583,10 +610,14 @@ export async function GenerateFullPlateReport(
             "<SPIKE_METRICS>",
             "Metric,Value,Unit",
             `Total Spikes,${spikeFrequency.total},count`,
-            `Spike Frequency,${formatMetric(spikeFrequency.average)},Hz`,
+            `Average Frequency,${formatMetric(spikeFrequency.averageFrequency, 4)},Hz`,
+            `Median Frequency,${formatMetric(spikeFrequency.medianFrequency, 4)},Hz`,
             `Spikes Per Second,${formatMetric(
-              spikeFrequency.spikesPerSecond
+              spikeFrequency.spikesPerSecond,
+              4
             )},Hz`,
+            `Mean Inter-Spike Interval,${formatMetric(spikeFrequency.meanIsi, 4)},s`,
+            `Median Inter-Spike Interval,${formatMetric(spikeFrequency.medianIsi, 4)},s`,
             `Average Amplitude,${formatMetric(spikeAmplitude.average)},units`,
             `Median Amplitude,${formatMetric(spikeAmplitude.median)},units`,
             `Min Amplitude,${formatMetric(spikeAmplitude.min)},units`,
@@ -658,14 +689,14 @@ export async function GenerateFullPlateReport(
           "<BURST_METRICS>",
           "Metric,Value,Unit",
           `Total Bursts,${burstMetrics.total},count`,
-          `Average Duration,${formatMetric(burstMetrics.duration.average)},ms`,
-          `Median Duration,${formatMetric(burstMetrics.duration.median)},ms`,
+          `Average Duration,${formatMetric(burstMetrics.duration.average)},s`,
+          `Median Duration,${formatMetric(burstMetrics.duration.median)},s`,
           `Average Inter-Burst Interval,${formatMetric(
             burstMetrics.interBurstInterval.average
-          )},ms`,
+          )},s`,
           `Median Inter-Burst Interval,${formatMetric(
             burstMetrics.interBurstInterval.median
-          )},ms`,
+          )},s`,
           "</BURST_METRICS>",
         ];
         wellSections.push(burstMetricsLines.join("\n"));
@@ -752,8 +783,8 @@ export async function GenerateFullPlateReport(
       roiTableLines.push("BURST DETECTION SETTINGS:");
       roiTableLines.push(
         `Max Inter-Spike Interval,${
-          processingParams?.maxInterSpikeInterval ?? 50
-        } ms`
+          processingParams?.maxInterSpikeInterval ?? 0.05
+        } s`
       );
       roiTableLines.push(
         `Min Spikes Per Burst,${
@@ -810,10 +841,12 @@ export async function GenerateFullPlateReport(
         `[GenerateFullPlateReport] Processing ${roisToAnalyze.length} ROIs`
       );
 
-      // Metric names (13 metrics per ROI)
+      // Metric names (15 metrics per ROI)
       const metricNames = [
         "Number of Spikes",
         "Spike Frequency (Hz)",
+        "Mean ISI (s)",
+        "Median ISI (s)",
         "Median Spike Amplitude",
         "Median Spike Width",
         "Median Spike AUC",
@@ -821,8 +854,8 @@ export async function GenerateFullPlateReport(
         "Number of Bursts",
         "Burst Frequency (Hz)",
         "Median Spikes per Burst",
-        "Median Burst Duration (ms)",
-        "Median Interburst Interval (ms)",
+        "Median Burst Duration (s)",
+        "Median Interburst Interval (s)",
         "Median Burst AUC",
         "Total Burst AUC",
       ];
@@ -872,14 +905,20 @@ export async function GenerateFullPlateReport(
             timeRangeMax
           );
 
-          // Store 13 metrics for this ROI. Use nullish checks (not
+          // Store 15 metrics for this ROI. Use nullish checks (not
           // truthy) so legitimately-zero metric values render as "0",
           // not get swapped for the "no data" placeholder.
           wellRoiMetrics[wellKey].push([
             spikesInROI.length, // Number of Spikes
-            spikeFrequency?.average != null
-              ? formatMetric(spikeFrequency.average)
-              : "0", // Spike Frequency
+            spikeFrequency?.averageFrequency != null
+              ? formatMetric(spikeFrequency.averageFrequency, 4)
+              : "0", // Spike Frequency (1/mean ISI)
+            spikeFrequency?.meanIsi != null
+              ? formatMetric(spikeFrequency.meanIsi, 4)
+              : "0", // Mean ISI
+            spikeFrequency?.medianIsi != null
+              ? formatMetric(spikeFrequency.medianIsi, 4)
+              : "0", // Median ISI
             spikeAmplitude?.median != null
               ? formatMetric(spikeAmplitude.median)
               : "0", // Median Spike Amplitude
@@ -894,7 +933,7 @@ export async function GenerateFullPlateReport(
             ), // Total Spike AUC
             burstsInROI.length, // Number of Bursts
             burstMetrics?.frequency != null
-              ? formatMetric(burstMetrics.frequency)
+              ? formatMetric(burstMetrics.frequency, 4)
               : "0", // Burst Frequency
             burstMetrics?.spikesPerBurst?.median != null
               ? formatMetric(burstMetrics.spikesPerBurst.median)
@@ -923,15 +962,15 @@ export async function GenerateFullPlateReport(
         const duration =
           roi.xMax === Infinity
             ? "Variable"
-            : ((roi.xMax - roi.xMin) / 1000).toFixed(1);
+            : (roi.xMax - roi.xMin).toFixed(1);
         const endValue = roi.xMax === Infinity ? "End of trace" : roi.xMax;
 
         // Consolidated header in well label column
         row1.push(
           `${roiName} | Duration: ${duration}s | Start: ${roi.xMin} | End: ${endValue}`
         );
-        // Fill remaining columns for this ROI's metrics (13 columns)
-        for (let i = 0; i < 13; i++) {
+        // Fill remaining columns for this ROI's metrics (15 columns)
+        for (let i = 0; i < 15; i++) {
           row1.push("");
         }
         // Add separator column between tables (except after last ROI)
@@ -945,8 +984,8 @@ export async function GenerateFullPlateReport(
       const row2 = [];
       roisToAnalyze.forEach((roi, roiIndex) => {
         row2.push(""); // Empty well label column
-        // Fill remaining columns for this ROI's metrics (13 columns)
-        for (let i = 0; i < 13; i++) {
+        // Fill remaining columns for this ROI's metrics (15 columns)
+        for (let i = 0; i < 15; i++) {
           row2.push("");
         }
         if (roiIndex < roisToAnalyze.length - 1) {
@@ -959,8 +998,8 @@ export async function GenerateFullPlateReport(
       const row3 = [];
       roisToAnalyze.forEach((roi, roiIndex) => {
         row3.push(""); // Empty well label column
-        // Fill remaining columns for this ROI's metrics (13 columns)
-        for (let i = 0; i < 13; i++) {
+        // Fill remaining columns for this ROI's metrics (15 columns)
+        for (let i = 0; i < 15; i++) {
           row3.push("");
         }
         if (roiIndex < roisToAnalyze.length - 1) {
@@ -973,7 +1012,7 @@ export async function GenerateFullPlateReport(
       const row4 = [];
       roisToAnalyze.forEach((roi, roiIndex) => {
         row4.push(""); // Empty well label column
-        row4.push(...metricNames); // 13 metric names
+        row4.push(...metricNames); // 15 metric names
         if (roiIndex < roisToAnalyze.length - 1) {
           row4.push(""); // Empty separator column
         }
@@ -993,7 +1032,7 @@ export async function GenerateFullPlateReport(
         const wellRow = [];
         roisToAnalyze.forEach((roi, roiIndex) => {
           wellRow.push(wellKey); // Well label for this ROI table
-          wellRow.push(...metrics[roiIndex]); // 13 metrics for this ROI
+          wellRow.push(...metrics[roiIndex]); // 15 metrics for this ROI
           if (roiIndex < roisToAnalyze.length - 1) {
             wellRow.push(""); // Empty separator column
           }
