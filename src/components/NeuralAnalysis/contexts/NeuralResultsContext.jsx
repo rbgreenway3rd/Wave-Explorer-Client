@@ -7,10 +7,7 @@ import React, {
   useState,
 } from "react";
 import { DataContext } from "../../../providers/DataProvider";
-import {
-  suggestProminence,
-  suggestWindow,
-} from "../NeuralPipeline";
+import { suggestSpikeParameters } from "../utilities/parameterSuggestions";
 import {
   makePipelineRunner,
   PIPELINE_STALE,
@@ -70,7 +67,7 @@ export const NeuralResultsProvider = ({ children }) => {
     activityThresholdEnabled,
     baselineThresholdRatio,
     baselineThresholdEnabled,
-    spikeParamsOverrideForWellKey,
+    spikeParamsOverrideActive,
     noiseSuppressionActive,
     smoothingEnabled,
     smoothingWindow,
@@ -99,7 +96,7 @@ export const NeuralResultsProvider = ({ children }) => {
   // suggestion regardless of whether the user has overridden it.
   const suggestedSpikeParams = useMemo(() => {
     if (!selectedWell?.indicators?.[0]) {
-      return { prominence: null, window: null };
+      return { prominence: null, window: null, diagnostics: null };
     }
     const ind = selectedWell.indicators[0];
     const rawSignal =
@@ -107,20 +104,24 @@ export const NeuralResultsProvider = ({ children }) => {
         ? ind.materializeFilteredData()
         : ind.filteredData;
     if (!rawSignal || rawSignal.length === 0) {
-      return { prominence: null, window: null };
+      return { prominence: null, window: null, diagnostics: null };
     }
-    const prominence = suggestProminence(rawSignal, 0.5);
-    const wndw = suggestWindow(rawSignal, Number(prominence), 5);
-    return { prominence, window: wndw };
+    const bundle = suggestSpikeParameters(rawSignal);
+    return {
+      prominence: bundle.prominence.value,
+      window: bundle.window.value,
+      diagnostics: bundle,
+    };
   }, [selectedWell]);
 
   // ---- Effective spike params -------------------------------------------
-  // If the user has explicitly set prominence / window for this well,
-  // use those values; otherwise fall back to the auto-suggestion.
+  // Plate-wide manual-override model: when `spikeParamsOverrideActive`
+  // is true the user-set values apply to every well; otherwise the
+  // per-well auto-suggestion takes over. This matches the (already
+  // plate-wide) behavior of every other detection parameter. Switching
+  // wells no longer evaporates the user's tunings.
   const { effectiveSpikeProminence, effectiveSpikeWindow } = useMemo(() => {
-    const userOverride =
-      selectedWell?.key && spikeParamsOverrideForWellKey === selectedWell.key;
-    if (userOverride) {
+    if (spikeParamsOverrideActive) {
       return {
         effectiveSpikeProminence: spikeProminence,
         effectiveSpikeWindow: spikeWindow,
@@ -132,8 +133,7 @@ export const NeuralResultsProvider = ({ children }) => {
       effectiveSpikeWindow: suggestedSpikeParams.window ?? spikeWindow,
     };
   }, [
-    selectedWell?.key,
-    spikeParamsOverrideForWellKey,
+    spikeParamsOverrideActive,
     spikeProminence,
     spikeWindow,
     suggestedSpikeParams,
@@ -268,6 +268,10 @@ export const NeuralResultsProvider = ({ children }) => {
       // 2,000 on noisy wells) regardless of any user override.
       suggestedSpikeProminence: suggestedSpikeParams.prominence,
       suggestedSpikeWindow: suggestedSpikeParams.window,
+      // Full diagnostic envelope from the auto-suggester. UI consumers
+      // (the slider auto/manual hint) read `.prominence.method` from
+      // here to surface which Otsu path fired per well.
+      suggestedSpikeDiagnostics: suggestedSpikeParams.diagnostics,
     }),
     [
       pipelineResults,

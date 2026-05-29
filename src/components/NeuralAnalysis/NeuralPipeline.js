@@ -9,6 +9,7 @@ import {
   computeResidualRobustStd,
   computeLocalRobustStd,
 } from "./utilities/detectSpikes";
+import { computeSignalStats } from "./utilities/peakGeometry";
 import { detectBursts } from "./utilities/burstDetection";
 import {
   identifyOutlierSpikes,
@@ -392,24 +393,39 @@ export function runNeuralAnalysisPipeline({
       id(preSmoothingSignal),
     ],
     () =>
-      perf.time("metrics", () => ({
-        // Same σ the noise-floor check uses (residual when SG is on,
-        // data-only otherwise). Surfaced so the UI can show the
-        // absolute threshold value next to the slider.
-        robustStd:
+      perf.time("metrics", () => {
+        // Cache-warm read on signal stats; `computeSignalStats` is
+        // WeakMap-keyed against the data array so calling it here is
+        // free once detectSpikes has already populated it.
+        const stats =
           processedForDetection.length > 0
-            ? computeResidualRobustStd(processedForDetection, preSmoothingSignal)
-            : 0,
-        spikeFrequency: calculateSpikeFrequency(
-          spikeResults,
-          processed[0]?.x || 0,
-          processed[processed.length - 1]?.x || 1
-        ),
-        spikeAmplitude: calculateSpikeAmplitude(spikeResults),
-        spikeWidth: calculateSpikeWidth(spikeResults),
-        spikeAUC: calculateSpikeAUC(spikeResults),
-        burstMetrics: calculateBurstMetrics(burstResults),
-      }))
+            ? computeSignalStats(processedForDetection)
+            : { signalRange: 0, globalMin: 0, globalMax: 0 };
+        return {
+          // Same σ the noise-floor check uses (residual when SG is on,
+          // data-only otherwise). Surfaced so the UI can show the
+          // absolute threshold value next to the slider.
+          robustStd:
+            processedForDetection.length > 0
+              ? computeResidualRobustStd(processedForDetection, preSmoothingSignal)
+              : 0,
+          // Signal envelope, surfaced so the prominence slider can
+          // size itself per-well. Without this the slider hard-floored
+          // at 100, unrepresentable for normalized y ∈ [-0.02, 0.17].
+          signalRange: stats.signalRange,
+          signalYMin: stats.globalMin,
+          signalYMax: stats.globalMax,
+          spikeFrequency: calculateSpikeFrequency(
+            spikeResults,
+            processed[0]?.x || 0,
+            processed[processed.length - 1]?.x || 1
+          ),
+          spikeAmplitude: calculateSpikeAmplitude(spikeResults),
+          spikeWidth: calculateSpikeWidth(spikeResults),
+          spikeAUC: calculateSpikeAUC(spikeResults),
+          burstMetrics: calculateBurstMetrics(burstResults),
+        };
+      })
   );
 
   perf.flushGroup();

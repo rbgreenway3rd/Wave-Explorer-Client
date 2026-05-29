@@ -29,6 +29,8 @@ const SpikeDetectionControls = () => {
     effectiveSpikeProminence,
     effectiveSpikeWindow,
     suggestedSpikeProminence,
+    suggestedSpikeWindow,
+    suggestedSpikeDiagnostics,
     pipelineResults,
   } = useNeuralResults();
   const {
@@ -47,6 +49,7 @@ const SpikeDetectionControls = () => {
     handleSpikeProminenceChange,
     handleSpikeWindowChange,
     handleResetSpikeParams,
+    spikeParamsOverrideActive,
   } = useNeuralSettings();
   const DEFAULT_MIN_DISTANCE = 0;
   const DEFAULT_STD_MULTIPLIER = 1.0;
@@ -57,26 +60,63 @@ const SpikeDetectionControls = () => {
   // σ used by the noise-floor check, exposed by the pipeline so the UI
   // can show the absolute prominence threshold next to the slider value.
   const noiseSigma = pipelineResults?.metrics?.robustStd ?? 0;
+  // Per-well signal envelope, exposed by the pipeline so the slider
+  // can size itself to the data it's gating. Without this the
+  // prominence slider hard-floored at 100 — unusable for normalized
+  // y ∈ [-0.02, 0.17] where the right threshold is < 0.05.
+  const signalRange = pipelineResults?.metrics?.signalRange ?? 0;
 
   // ---- Dynamic prominence-slider range ----
-  // The auto-suggested prominence can range from a few units (clean
-  // signals) to several thousand (noisy or high-amplitude wells). Size
-  // the slider to suggested * 1.2 so the user always has headroom past
-  // the suggestion without losing fine-grained control on quiet signals.
-  // Floor at 100 so the slider stays usable when the suggestion is tiny.
-  const PROMINENCE_FLOOR = 100;
+  // promMax covers the larger of: (1) headroom past the auto-suggested
+  // value, (2) headroom past the user's CURRENT effective value (so the
+  // slider doesn't shrink under them mid-session), (3) a per-well floor
+  // derived from the signal range (2% of envelope) so the slider stays
+  // draggable on quiet signals and on first-render before the
+  // suggestion arrives. The 1e-6 final floor is the "no data yet" safety
+  // net — without it the slider's `max` is 0 and the slider freezes.
   const PROMINENCE_HEADROOM = 1.2;
+  const rangeFloor = signalRange > 0 ? signalRange * 0.02 : 0;
   const promMax = Math.max(
-    Math.ceil(((suggestedSpikeProminence ?? 0) || PROMINENCE_FLOOR) * PROMINENCE_HEADROOM),
-    PROMINENCE_FLOOR
+    (suggestedSpikeProminence ?? 0) * PROMINENCE_HEADROOM,
+    (effectiveSpikeProminence ?? 0) * PROMINENCE_HEADROOM,
+    rangeFloor,
+    1e-6
   );
-  // Step scales with range so dragging always covers ~200 increments.
-  const promStep = Math.max(0.5, Math.round((promMax / 200) * 10) / 10);
-  // Marks at 0 / 25 / 50 / 75 / 100 % of the dynamic max, integer-rounded.
+  // Step scales with range so dragging always covers ~200 increments —
+  // no `0.5` integer floor so sub-integer prominences are draggable.
+  const promStep = promMax / 200;
+
+  // Marks at 0 / 25 / 50 / 75 / 100 % of the dynamic max. Format with
+  // decimals when the scale is sub-integer; otherwise integer.
+  const promFormat = (v) => (promMax < 1 ? v.toFixed(4) : String(Math.round(v)));
   const promMarks = [0, 0.25, 0.5, 0.75, 1].map((f) => {
-    const v = Math.round(promMax * f);
-    return { value: v, label: String(v) };
+    const v = promMax * f;
+    return { value: v, label: promFormat(v) };
   });
+
+  // ---- Auto / Manual hint ---------------------------------------------
+  // The slider rows surface what mode prominence and window are in.
+  // When the user hasn't touched the slider, the effective value comes
+  // from the per-well auto-suggestion — show "Auto (method)" so the
+  // user can see which Otsu path fired. When they've manually set a
+  // value, that value applies plate-wide — show "Manual" plus the
+  // current per-well suggestion in parens so the user can see how far
+  // they've drifted from sensible per-well values when switching wells.
+  const otsuMethod = suggestedSpikeDiagnostics?.prominence?.method ?? null;
+  const promHint = spikeParamsOverrideActive
+    ? `Manual — auto: ${
+        suggestedSpikeProminence != null
+          ? promFormat(suggestedSpikeProminence)
+          : "—"
+      }`
+    : otsuMethod
+    ? `Auto (${otsuMethod})`
+    : "Auto";
+  const winHint = spikeParamsOverrideActive
+    ? `Manual — auto: ${
+        suggestedSpikeWindow != null ? suggestedSpikeWindow : "—"
+      }`
+    : "Auto";
 
   const prominence = useDraftSlider(
     effectiveSpikeProminence,
@@ -133,9 +173,14 @@ const SpikeDetectionControls = () => {
 
       <div className="neural-control-panel__field">
         <div className="neural-control-panel__field-header">
-          <span className="neural-control-panel__field-label">Prominence</span>
+          <span className="neural-control-panel__field-label">
+            Prominence
+            <span className="neural-control-panel__field-hint">
+              {promHint}
+            </span>
+          </span>
           <span className="neural-control-panel__field-value">
-            {Number(prominence.value).toFixed(1)}
+            {promFormat(Number(prominence.value) || 0)}
           </span>
         </div>
         <Slider
@@ -154,7 +199,12 @@ const SpikeDetectionControls = () => {
 
       <div className="neural-control-panel__field">
         <div className="neural-control-panel__field-header">
-          <span className="neural-control-panel__field-label">Window Width</span>
+          <span className="neural-control-panel__field-label">
+            Window Width
+            <span className="neural-control-panel__field-hint">
+              {winHint}
+            </span>
+          </span>
           <span className="neural-control-panel__field-value">
             {windowDraft.value}
           </span>

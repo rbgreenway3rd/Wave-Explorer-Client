@@ -5,10 +5,7 @@
  */
 
 import { runNeuralAnalysisPipeline } from "./NeuralPipeline";
-import {
-  suggestProminence,
-  suggestWindow,
-} from "./utilities/parameterSuggestions";
+import { suggestSpikeParameters } from "./utilities/parameterSuggestions";
 
 /**
  * Round to the nearest integer for CSV output. Per client request
@@ -479,8 +476,9 @@ export async function GenerateFullPlateReport(
         prominenceForWell = processingParams.spikeProminence;
         windowForWell = processingParams.spikeWindow;
       } else {
-        prominenceForWell = suggestProminence(rawSignal, 0.5);
-        windowForWell = suggestWindow(rawSignal, prominenceForWell, 5);
+        const bundle = suggestSpikeParameters(rawSignal);
+        prominenceForWell = bundle.prominence.value;
+        windowForWell = bundle.window.value;
       }
 
       console.log(

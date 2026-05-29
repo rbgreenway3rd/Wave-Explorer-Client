@@ -140,29 +140,31 @@ export const NeuralSettingsProvider = ({ children }) => {
   const [baselineThresholdRatio, setBaselineThresholdRatio] = useState(0.1);
   const [baselineThresholdEnabled, setBaselineThresholdEnabled] =
     useState(true);
-  // Tracks the well key the user has overridden spike params for. When
-  // the selected well changes, the override no longer applies and the
-  // effective values fall back to the auto-suggestion (computed in
-  // NeuralResultsContext, where the raw signal is already accessible).
-  const [spikeParamsOverrideForWellKey, setSpikeParamsOverrideForWellKey] =
-    useState(null);
+  // Plate-wide manual-override flag for spikeProminence / spikeWindow.
+  // When false the effective values come from the per-well auto-
+  // suggestion (NeuralResultsContext). When true the user-set values
+  // apply to every well in the analysis. Other detection params are
+  // already plate-wide; this brings prominence/window into the same
+  // model.
+  const [spikeParamsOverrideActive, setSpikeParamsOverrideActive] =
+    useState(false);
 
   const handleSpikeProminenceChange = useCallback(
     (val) => {
-      setSpikeParamsOverrideForWellKey(selectedWell?.key ?? null);
+      setSpikeParamsOverrideActive(true);
       setSpikeProminence(val);
     },
-    [selectedWell?.key]
+    []
   );
   const handleSpikeWindowChange = useCallback(
     (val) => {
-      setSpikeParamsOverrideForWellKey(selectedWell?.key ?? null);
+      setSpikeParamsOverrideActive(true);
       setSpikeWindow(val);
     },
-    [selectedWell?.key]
+    []
   );
   const handleResetSpikeParams = useCallback(() => {
-    setSpikeParamsOverrideForWellKey(null);
+    setSpikeParamsOverrideActive(false);
   }, []);
 
   // ---- Noise / smoothing / baseline --------------------------------------
@@ -352,17 +354,33 @@ export const NeuralSettingsProvider = ({ children }) => {
         const setter = settingSetterMap[key];
         if (setter) setter(migrated[key]);
       }
+      // A loaded snapshot — template or master reset — is a manual
+      // choice by definition. Flag the override as active so the
+      // values flow into every well's effective params instead of
+      // being silently overridden by the per-well auto-suggestion.
+      // For the master-reset path this is paired with
+      // `handleResetSpikeParams()` (which clears the flag) immediately
+      // after, so the master reset still ends in the "auto" state.
+      if (
+        Object.prototype.hasOwnProperty.call(migrated, "spikeProminence") ||
+        Object.prototype.hasOwnProperty.call(migrated, "spikeWindow")
+      ) {
+        setSpikeParamsOverrideActive(true);
+      }
     },
     [settingSetterMap]
   );
 
   // Master reset: restores every persistable setting to its DEFAULT_
-  // SETTINGS value AND clears the per-well spike-prominence/window
+  // SETTINGS value AND clears the plate-wide spike-prominence/window
   // override so the auto-suggestion path takes over again (same
   // semantics as the Spike Detection section's own reset button). ROI
   // list, zoom state, and well selection are intentionally NOT
   // touched — the button is labeled "Reset All Settings" precisely
-  // to scope it to parameters.
+  // to scope it to parameters. Order matters: `applySettingsSnapshot`
+  // sets the override flag because it writes spike params; the
+  // subsequent `handleResetSpikeParams()` clears the flag so a master
+  // reset ends in the auto-suggest state.
   const resetAllSettings = useCallback(() => {
     applySettingsSnapshot(DEFAULT_SETTINGS);
     handleResetSpikeParams();
@@ -395,7 +413,7 @@ export const NeuralSettingsProvider = ({ children }) => {
       setBaselineThresholdRatio,
       baselineThresholdEnabled,
       setBaselineThresholdEnabled,
-      spikeParamsOverrideForWellKey,
+      spikeParamsOverrideActive,
       handleSpikeProminenceChange,
       handleSpikeWindowChange,
       handleResetSpikeParams,
@@ -465,7 +483,7 @@ export const NeuralSettingsProvider = ({ children }) => {
       activityThresholdEnabled,
       baselineThresholdRatio,
       baselineThresholdEnabled,
-      spikeParamsOverrideForWellKey,
+      spikeParamsOverrideActive,
       handleSpikeProminenceChange,
       handleSpikeWindowChange,
       handleResetSpikeParams,

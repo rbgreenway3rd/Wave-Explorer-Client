@@ -1,76 +1,17 @@
 import { detectBursts } from "./burstDetection.js";
 import { perf } from "./perfLogger.js";
-
-// ---- Signal statistics cache --------------------------------------------
-// Per-detection on the same `data` array, the median, MAD, baseline
-// percentile, and global min/max are constant — they depend only on the
-// signal, not on spike-detection params. Caching them via a WeakMap keyed
-// on the data array lets repeat detections (e.g. a slider drag of
-// prominence/window after Tier E warms upstream stages) skip the three
-// O(n log n) sorts and the y-extraction pass.
-const signalStatsCache = new WeakMap();
-
-function computeSignalStats(data) {
-  const cached = signalStatsCache.get(data);
-  if (cached) return cached;
-
-  const n = data.length;
-  const allYValues = new Array(n);
-  let globalMin = Infinity;
-  let globalMax = -Infinity;
-  for (let i = 0; i < n; i++) {
-    const y = data[i].y;
-    allYValues[i] = y;
-    if (y < globalMin) globalMin = y;
-    if (y > globalMax) globalMax = y;
-  }
-  const signalRange = globalMax - globalMin;
-
-  // One sort, three statistics: median (n/2 index), 2nd-percentile
-  // baseline (n*0.02 index), and an absolute-deviation array we reuse
-  // to compute the MAD via a second sort. Previously this ran three
-  // independent sorts on copies of the same array — the dominant
-  // cost on 250k-point signals. Output values are bit-identical.
-  const sortedY = allYValues.slice().sort((a, b) => a - b);
-  const medianY = sortedY[Math.floor(n / 2)];
-  const percentileIndex = Math.floor(n * 0.02);
-  const baselineThreshold = sortedY[Math.max(0, percentileIndex)];
-
-  // MAD-based robust std. Still needs its own sort (absolute
-  // deviations are a different multiset), but we no longer re-slice
-  // `allYValues` just to sort it again — that copy was redundant.
-  const absDevs = new Array(n);
-  for (let i = 0; i < n; i++) {
-    absDevs[i] = Math.abs(allYValues[i] - medianY);
-  }
-  absDevs.sort((a, b) => a - b);
-  const medianAbsDev = absDevs[Math.floor(n / 2)];
-  const robustStd = medianAbsDev / 0.6745;
-
-  const alternativeThreshold = globalMin + signalRange * 0.05;
-  const finalBaselineThreshold = Math.min(
-    baselineThreshold,
-    alternativeThreshold
-  );
-  const fallbackThreshold = globalMin + signalRange * 0.02;
-
-  const stats = {
-    globalMin,
-    globalMax,
-    signalRange,
-    robustStd,
-    finalBaselineThreshold,
-    fallbackThreshold,
-    medianY,
-  };
-  signalStatsCache.set(data, stats);
-  return stats;
-}
+import {
+  computeSignalStats,
+  findBases,
+  kMeans,
+  localMaxima,
+} from "./peakGeometry.js";
 
 // Public accessor for code outside detectSpikes that needs the signal
 // median — e.g. the Baseline Threshold control seeds itself at the
-// noise median when first enabled. Reuses the WeakMap cache so the
-// cost of repeat calls during slider drags collapses to a lookup.
+// noise median when first enabled. Reuses the WeakMap cache inside
+// computeSignalStats so repeat calls during slider drags collapse to
+// a lookup.
 export function getSignalMedianY(data) {
   if (!Array.isArray(data) || data.length === 0) return null;
   return computeSignalStats(data).medianY;
@@ -227,124 +168,13 @@ export class NeuralPeak {
  * @param {number} k - Number of clusters (fixed to 2)
  * @returns {Object} {centroids: [number, number], assignments: number[]}
  */
-function kMeans(data, k = 2) {
-  // k not used, logic hardcoded to always use two centroids and 2 clusters
-  if (!Array.isArray(data) || data.length < 2) {
-    return { centroids: [0, 0], assignments: data.map(() => 0) };
-  }
-  // Initialize centroids: min and max. Use explicit loop instead of
-  // Math.min(...data) — spread into a function call blows the JS engine's
-  // argument-count limit (~10K-65K) on large prominences arrays.
-  let initMin = Infinity;
-  let initMax = -Infinity;
-  for (let i = 0; i < data.length; i++) {
-    const v = data[i];
-    if (v < initMin) initMin = v;
-    if (v > initMax) initMax = v;
-  }
-  let centroids = [initMin, initMax];
-  let assignments = new Array(data.length).fill(0);
-  let changed = true;
-  let maxIterations = 1000; // Prevent infinite loop
-  let iteration = 0;
+// kMeans now lives in peakGeometry.js so the auto-suggest module can
+// share the same implementation. Imported at the top of this file.
 
-  while (changed && iteration < maxIterations) {
-    changed = false;
-    iteration++;
-
-    // Assign points to nearest centroid
-    for (let i = 0; i < data.length; i++) {
-      let dist0 = Math.abs(data[i] - centroids[0]);
-      let dist1 = Math.abs(data[i] - centroids[1]);
-      let newAssignment = dist0 < dist1 ? 0 : 1;
-      if (newAssignment !== assignments[i]) {
-        assignments[i] = newAssignment;
-        changed = true;
-      }
-    }
-
-    // Update centroids
-    let sum0 = 0,
-      count0 = 0,
-      sum1 = 0,
-      count1 = 0;
-    for (let i = 0; i < data.length; i++) {
-      if (assignments[i] === 0) {
-        sum0 += data[i];
-        count0++;
-      } else {
-        sum1 += data[i];
-        count1++;
-      }
-    }
-    centroids[0] = count0 > 0 ? sum0 / count0 : centroids[0];
-    centroids[1] = count1 > 0 ? sum1 / count1 : centroids[1];
-  }
-
-  return { centroids, assignments };
-}
-
-/**
- * Find left and right bases for a peak using horizontal line extension method (inspired by SciPy peak_prominences).
- * Extends horizontal lines from the peak until they intersect the signal again, then finds bases in those regions.
- *
- * Parameters are passed down from detectSpikes() for consistent configuration.
- *
- * @param {{x: number, y: number}[]} data - The signal data
- * @param {number} peakIdx - Index of the peak
- * @param {number} searchRange - Maximum range to search for bases
- * @param {number} baselineThreshold - Maximum y-value allowed for valid base points
- * @returns {Object} {leftBaseIdx: number, rightBaseIdx: number}
- */
-function findBases(data, peakIdx, searchRange, baselineThreshold) {
-  const peakY = data[peakIdx].y;
-  let leftBaseIdx = peakIdx;
-  let rightBaseIdx = peakIdx;
-
-  // === LEFT BASE FINDING ===
-  // Extend horizontal line from peak to the left until it intersects signal
-  let leftIntersectionIdx = peakIdx;
-  for (let j = peakIdx - 1; j >= Math.max(0, peakIdx - searchRange); j--) {
-    if (data[j].y >= peakY) {
-      // Found intersection with signal (higher peak or plateau)
-      leftIntersectionIdx = j;
-      break;
-    }
-    leftIntersectionIdx = j;
-  }
-
-  // Within the intersection region, find the lowest point (respecting threshold)
-  for (let j = peakIdx - 1; j >= leftIntersectionIdx; j--) {
-    if (data[j].y <= baselineThreshold && data[j].y < data[leftBaseIdx].y) {
-      leftBaseIdx = j;
-    }
-  }
-
-  // === RIGHT BASE FINDING ===
-  // Extend horizontal line from peak to the right until it intersects signal
-  let rightIntersectionIdx = peakIdx;
-  for (
-    let j = peakIdx + 1;
-    j <= Math.min(data.length - 1, peakIdx + searchRange);
-    j++
-  ) {
-    if (data[j].y >= peakY) {
-      // Found intersection with signal (higher peak or plateau)
-      rightIntersectionIdx = j;
-      break;
-    }
-    rightIntersectionIdx = j;
-  }
-
-  // Within the intersection region, find the lowest point (respecting threshold)
-  for (let j = peakIdx + 1; j <= rightIntersectionIdx; j++) {
-    if (data[j].y <= baselineThreshold && data[j].y < data[rightBaseIdx].y) {
-      rightBaseIdx = j;
-    }
-  }
-
-  return { leftBaseIdx, rightBaseIdx };
-}
+// `findBases` now lives in peakGeometry.js so the auto-suggest module
+// can share the same topographic walk. Imported at the top of this
+// file. `findBasesAtBaseline` below is detection-specific (baseline-
+// crossing semantics for AUC/width reporting) and stays here.
 
 /**
  * Find left and right bases by intersecting the signal with a fixed
@@ -416,7 +246,8 @@ function findTrueSpikes(
   stdMultiplier = 1.5, // gates whole-detection k-means cutoff
   noiseFloorMultiplier = 0, // per-peak floor; 0 = disabled
   localStds = null, // optional Float64Array — when present, per-peak σ is localStds[peak.index]
-  apexSet = null // Set<number> of outlier apex `index` values; peaks at these indices bypass the k-means cluster filter
+  apexSet = null, // Set<number> of outlier apex `index` values; peaks at these indices bypass the k-means cluster filter
+  spikeWindow = 0 // NMS footprint radius in samples (0 disables NMS)
 ) {
   if (!Array.isArray(peaks) || peaks.length < 2) {
     const filtered = peaks.filter((p) => p.width >= minWidth);
@@ -481,34 +312,33 @@ function findTrueSpikes(
   }
   perf.count(`spikeFilter.afterNoiseFloor=${peaks.length}`);
 
-  // K-means cluster filter (normals only). Skipped when there are
-  // fewer than 2 normal peaks (k-means on a single point is undefined
-  // and would crash the call below). The cluster filter is also
-  // skipped if outliers exist *and* no normal peaks survived noise-
-  // floor — in that case the user just gets the outliers back.
+  // K-means circuit-breaker (normals only). The previous logic kept
+  // ONLY the top cluster, which silently dropped every smaller-but-
+  // real event when the well had a wide amplitude spread (e.g. Ca²⁺
+  // events from 0.05 to 0.18 → k-means clusters ~0.10, drops the
+  // smaller half). That cluster-keep behavior didn't match what
+  // `stdMultiplier` is named after, and it ran before NMS could
+  // dedup slope candidates. Now k-means is purely a noise-only bail-
+  // out: when both clusters look like noise (higher centroid below
+  // the σ-derived noise threshold AND clusters poorly separated)
+  // we drop everything. Otherwise we keep every normal peak — slope
+  // / duplicate dedup happens in NMS below.
   let afterKMeans = peaks;
   if (peaks.length >= 2) {
-    const { centroids, assignments } = kMeans(prominences, 2);
-    const topCluster = centroids[0] > centroids[1] ? 0 : 1;
+    const { centroids } = kMeans(prominences, 2);
     const higherCentroid = Math.max(...centroids);
     const lowerCentroid = Math.min(...centroids);
     const clusterSeparation = higherCentroid - lowerCentroid;
     const noiseThreshold = stdMultiplier * robustStd;
 
-    // Bail-out: if both clusters are essentially noise (higher centroid
-    // below the noise threshold AND clusters poorly separated), drop
-    // all normal peaks. Outliers (bypassed) still survive below.
     if (
       higherCentroid < noiseThreshold &&
       clusterSeparation < noiseThreshold * 0.5
     ) {
       afterKMeans = [];
-    } else {
-      // Keep only top-cluster peaks (the "signal" cluster).
-      afterKMeans = peaks.filter(
-        (_p, idx) => assignments[idx] === topCluster
-      );
     }
+    // else: keep every peak. Lower-cluster real events survive at
+    // this stage; NMS picks the apex within each event's footprint.
   }
   perf.count(`spikeFilter.afterKMeans=${afterKMeans.length}`);
 
@@ -537,10 +367,71 @@ function findTrueSpikes(
   }
   perf.count(`spikeFilter.afterSymmetry=${filteredPeaks.length}`);
 
-  // Apply distance filter: remove peaks too close to others
+  // Prominence-aware NMS (Layer 3). Replaces the old chronological-
+  // first-wins distance filter, which kept whichever peak happened to
+  // come first in time even when a taller / more prominent peak sat
+  // right next to it. The new rule: sort all surviving candidates by
+  // detection prominence DESC (outlier apexes win ties; apex Y is the
+  // final tie-breaker) and greedily accept the next-best candidate
+  // only when it falls outside every already-accepted candidate's
+  // footprint. Footprint radius is `spikeWindow` (the existing
+  // "Window Width" knob), so the slider still controls how aggressive
+  // the dedup is — narrow window keeps adjacent peaks separate, wide
+  // window collapses them.
+  //
+  // Skipped when spikeWindow is 0 or there are <2 peaks: nothing to
+  // suppress.
+  if (spikeWindow > 0 && filteredPeaks.length > 1) {
+    const apexHas = (idx) => apexSet && apexSet.has(idx);
+    const detP = (p) =>
+      typeof p.detectionProminence === "number"
+        ? p.detectionProminence
+        : Math.min(p.prominences.leftProminence, p.prominences.rightProminence);
+    const sortedByPriority = [...filteredPeaks].sort((a, b) => {
+      // Outlier apex wins (ensures `readdOutliersAsSpikes` flagged peaks
+      // and structurally-identified outlier apexes are always preferred
+      // when they fall inside a footprint containing a non-outlier).
+      const aOutlier = apexHas(a.index);
+      const bOutlier = apexHas(b.index);
+      if (aOutlier !== bOutlier) return aOutlier ? -1 : 1;
+      const dp = detP(b) - detP(a);
+      if (dp !== 0) return dp;
+      return b.peakCoords.y - a.peakCoords.y;
+    });
+    // Accepted footprints stored as sorted-by-index intervals for an
+    // O(n log n) overlap check via binary search. For typical detected-
+    // spike counts (≤ a few thousand) a linear scan over accepted peaks
+    // would also be fine; the binary search keeps it well-behaved on
+    // pathological-density inputs.
+    const accepted = []; // { peak, start, end }
+    const inAcceptedFootprint = (idx) => {
+      for (let i = 0; i < accepted.length; i++) {
+        const f = accepted[i];
+        if (idx >= f.start && idx <= f.end) return true;
+      }
+      return false;
+    };
+    for (const p of sortedByPriority) {
+      if (inAcceptedFootprint(p.index)) continue;
+      accepted.push({
+        peak: p,
+        start: p.index - spikeWindow,
+        end: p.index + spikeWindow,
+      });
+    }
+    filteredPeaks = accepted.map((a) => a.peak);
+  }
+  perf.count(`spikeFilter.afterNMS=${filteredPeaks.length}`);
+
+  // `spikeMinDistance` survives as an additional hard minimum-gap floor
+  // applied to the NMS survivors. Operates in chronological order now
+  // (NMS already chose the best peak per footprint, so chronological
+  // walk is unambiguous), keeping the lower-index peak when two land
+  // closer than `minDistance` apart. Setting `minDistance` ≤ 0 disables
+  // this floor; the slider sits at 0 by default.
   if (minDistance > 0 && filteredPeaks.length > 1) {
     filteredPeaks.sort((a, b) => a.index - b.index);
-    let result = [filteredPeaks[0]];
+    const result = [filteredPeaks[0]];
     for (let i = 1; i < filteredPeaks.length; i++) {
       if (
         filteredPeaks[i].index - result[result.length - 1].index >=
@@ -641,29 +532,10 @@ export function detectSpikes(data, options = {}) {
     prominence = 2 * robustStd;
   }
 
-  // === MAIN DETECTION LOGIC === (unchanged from previous)
-
-  let peakIndices = [];
-
-  for (let i = 1; i < data.length - 1; i++) {
-    if (data[i].y > data[i - 1].y && data[i].y >= data[i + 1].y) {
-      peakIndices.push(i);
-    } else if (data[i].y === data[i + 1].y && data[i].y > data[i - 1].y) {
-      let plateauStart = i;
-      let plateauEnd = i;
-      while (
-        plateauEnd + 1 < data.length &&
-        data[plateauEnd].y === data[plateauEnd + 1].y
-      ) {
-        plateauEnd++;
-      }
-      if (data[plateauStart].y > data[plateauEnd + 1]?.y) {
-        const plateauPeak = Math.floor((plateauStart + plateauEnd) / 2);
-        peakIndices.push(plateauPeak);
-      }
-      i = plateauEnd;
-    }
-  }
+  // Local-maxima scan (with plateau handling) now lives in
+  // peakGeometry.js. Both detection and the auto-suggest helpers use
+  // it so the candidate set is identical across both.
+  let peakIndices = localMaxima(data);
 
   // Compute bases ONCE per peak (was previously computed twice — first
   // for prominence filtering, then again to build the NeuralPeak in the
@@ -682,7 +554,11 @@ export function detectSpikes(data, options = {}) {
   function basesFor(peakIdx) {
     let cached = baseCache.get(peakIdx);
     if (cached !== undefined) return cached;
-    const searchRange = wlen ? Math.floor(wlen / 2) : data.length;
+    // Step B: `spikeWindow` (= wlen) now means "half-width radius of a
+    // typical event." Detection-base search range uses the full wlen
+    // (previously wlen/2). NMS also uses wlen as the suppression
+    // radius, so the two are consistent.
+    const searchRange = wlen ? wlen : data.length;
     let leftBaseIdx, rightBaseIdx;
     if (baselineMode) {
       // Search the full signal, not just ±wlen/2 around the peak.
@@ -779,16 +655,16 @@ export function detectSpikes(data, options = {}) {
   // the candidate's y) — rightProminence collapses to 0 and the gate
   // rejects it.
   //
-  // searchRange matches the user's `wlen/2`: same scale as the live
-  // measurement code's non-baseline path. Going wider doesn't tighten
-  // the slope-vs-apex discrimination (both are already correct), but
-  // it does change downstream k-means/symmetry inputs in a way that
-  // makes those filters brittle on small synthetic peak sets.
+  // Step B: detection-base search uses the full wlen (same as the
+  // non-baseline branch of `basesFor`). spikeWindow now means
+  // "half-width radius of a typical event"; both base-search and NMS
+  // suppression use the same value, so the prominences fed to the
+  // gate are in the same units as the NMS footprint that follows.
   const detectionBaseCache = new Map();
   function detectionBasesFor(peakIdx) {
     let cached = detectionBaseCache.get(peakIdx);
     if (cached !== undefined) return cached;
-    const searchRange = wlen ? Math.floor(wlen / 2) : data.length;
+    const searchRange = wlen ? wlen : data.length;
     const { leftBaseIdx, rightBaseIdx } = findBases(
       data,
       peakIdx,
@@ -816,12 +692,22 @@ export function detectSpikes(data, options = {}) {
   // gate, then NMS keeps only the apex of each footprint. Detection
   // metadata still flows downstream — k-means/symmetry use it via
   // `detectionBasesFor` / the metadata attached to each NeuralPeak.
+  // Step D: prominence gate uses TOPOGRAPHIC (detection) bases, not
+  // baseline-crossing measurement bases. A slope sample on the upslope
+  // of a tall spike inherits the same baseline-crossing footprint as
+  // the apex — under measurement-prominence the gate gave the slope
+  // sample apex-level prominence and let it through. Under topographic
+  // bases the slope sample's right base is pinned at the very next
+  // sample (still on the upslope, above the candidate's y) →
+  // rightProminence collapses to 0, fails the gate. The apex is
+  // strictly higher than both neighbors → positive prominence →
+  // passes. The reported `prominences` field on each NeuralPeak still
+  // uses `basesFor` (Step D leaves that untouched), so CSV / UI
+  // measurements are unchanged.
   let filteredPeakIndices = [];
   for (let peakIdx of peakIndices) {
-    const { leftBaseIdx, rightBaseIdx } = basesFor(peakIdx);
-    const leftProminence = data[peakIdx].y - data[leftBaseIdx].y;
-    const rightProminence = data[peakIdx].y - data[rightBaseIdx].y;
-    if (Math.min(leftProminence, rightProminence) >= prominence) {
+    const det = detectionBasesFor(peakIdx);
+    if (det.prominence >= prominence) {
       filteredPeakIndices.push(peakIdx);
     }
   }
@@ -842,43 +728,13 @@ export function detectSpikes(data, options = {}) {
     );
   }
 
-  // Window-grouping pass: within a window of `wlen/2` samples, collapse
-  // adjacent peaks down to one representative. Outliers PARTICIPATE in
-  // grouping but get PRIORITY when present in a group — the outlier
-  // wins regardless of whether any normal peak in the same window
-  // happens to have a higher raw y value. When no outlier is in the
-  // group, the existing "highest-y" rule applies.
-  let finalFilteredPeakIndices = [];
-  if (wlen && zoneFilteredPeakIndices.length > 1) {
-    const hasApexSet = apexSet && apexSet.size > 0;
-    let i = 0;
-    while (i < zoneFilteredPeakIndices.length) {
-      let group = [];
-      let currentPeakIdx = zoneFilteredPeakIndices[i];
-      group.push(currentPeakIdx);
-      for (let j = i + 1; j < zoneFilteredPeakIndices.length; j++) {
-        if (zoneFilteredPeakIndices[j] <= currentPeakIdx + wlen / 2) {
-          group.push(zoneFilteredPeakIndices[j]);
-        } else {
-          break;
-        }
-      }
-      let chosenIdx;
-      if (hasApexSet) {
-        chosenIdx = group.find((idx) => apexSet.has(idx));
-      }
-      if (chosenIdx === undefined) {
-        chosenIdx = group.reduce(
-          (maxIdx, idx) => (data[idx].y > data[maxIdx].y ? idx : maxIdx),
-          group[0]
-        );
-      }
-      finalFilteredPeakIndices.push(chosenIdx);
-      i += group.length;
-    }
-  } else {
-    finalFilteredPeakIndices = zoneFilteredPeakIndices;
-  }
+  // Window-grouping is now done by Layer 3's prominence-aware NMS in
+  // `findTrueSpikes` — it operates on NeuralPeak instances (so it can
+  // sort by detection prominence and use detection footprints) and
+  // supersedes the old chain-of-first-peak heuristic that lived here.
+  // We pass every gate-survivor through unchanged so NMS has the full
+  // candidate set to choose from.
+  const finalFilteredPeakIndices = zoneFilteredPeakIndices;
 
   let peaks = [];
   for (let peakIdx of finalFilteredPeakIndices) {
@@ -920,7 +776,8 @@ export function detectSpikes(data, options = {}) {
     stdMultiplier,
     noiseFloorMultiplier,
     localStds,
-    apexSet
+    apexSet,
+    wlen // Layer 3 NMS footprint radius
   );
 
   return finalSpikes;

@@ -18,14 +18,11 @@ import {
   baselineCorrected,
 } from "../components/NeuralAnalysis/utilities/neuralSmoothing";
 import { suppressNoise } from "../components/NeuralAnalysis/utilities/noiseSuppression";
-// `suggestProminence` is centralized in parameterSuggestions so the
-// modal and the full-plate report can't drift apart. The worker's
-// `suggestWindow` below is intentionally NOT centralized — it uses a
-// substantively different algorithm (inter-peak-distance estimate
-// instead of the prominence × num × samplingRate heuristic the modal
-// uses). Unifying that algorithm is a separate decision; for now the
-// two windows can produce different recommendations.
-import { suggestProminence } from "../components/NeuralAnalysis/utilities/parameterSuggestions";
+// Use the centralized adaptive suggester — Otsu prominence +
+// topographic-width window — so modal and report agree per-well. The
+// worker-local `suggestWindow` below is obsoleted by the new approach
+// and kept only as `_legacySuggestWindow` until callers are migrated.
+import { suggestSpikeParameters } from "../components/NeuralAnalysis/utilities/parameterSuggestions";
 
 /**
  * Fast number formatting - replaces toFixed(4) for performance
@@ -235,63 +232,12 @@ function calculateBurstMetrics(bursts) {
 // zeroed out for normalized signals and let every slope wiggle
 // through the downstream prominence gate.
 
-/**
- * Suggest window based on prominence (worker-local variant — uses
- * actual inter-peak distance from a coarse pre-scan rather than the
- * simpler `prominence × num × samplingRate` heuristic the modal uses).
- */
-function suggestWindow(signal, prominence, num = 5) {
-  if (!Array.isArray(signal) || signal.length === 0) return 10;
-
-  const samplingRate =
-    signal.length > 1
-      ? (signal[signal.length - 1].x - signal[0].x) / (signal.length - 1)
-      : 1;
-
-  const ySignal = signal.map((pt) => pt.y);
-  const peakIndices = [];
-
-  for (let i = 1; i < ySignal.length - 1; i++) {
-    if (ySignal[i] > ySignal[i - 1] && ySignal[i] > ySignal[i + 1]) {
-      let leftProminence = 0;
-      for (let j = i - 1; j >= 0; j--) {
-        const drop = ySignal[i] - ySignal[j];
-        if (drop >= prominence) {
-          leftProminence = drop;
-          break;
-        }
-      }
-
-      let rightProminence = 0;
-      for (let j = i + 1; j < ySignal.length; j++) {
-        const drop = ySignal[i] - ySignal[j];
-        if (drop >= prominence) {
-          rightProminence = drop;
-          break;
-        }
-      }
-
-      if (leftProminence >= prominence && rightProminence >= prominence) {
-        peakIndices.push(i);
-      }
-    }
-  }
-
-  if (peakIndices.length < 2) return 10;
-
-  const distances = [];
-  for (let i = 1; i < peakIndices.length; i++) {
-    distances.push(peakIndices[i] - peakIndices[i - 1]);
-  }
-
-  distances.sort((a, b) => a - b);
-  const topNum = Math.min(num, distances.length);
-  const topDistances = distances.slice(0, topNum);
-  const avgDistance =
-    topDistances.reduce((sum, d) => sum + d, 0) / topDistances.length;
-
-  return Math.max(5, Math.floor((avgDistance * samplingRate) / 2));
-}
+// The worker-local `suggestWindow` (inter-peak-distance estimator) has
+// been removed. All per-well window suggestions now flow through the
+// centralized `suggestSpikeParameters`, which derives the window from
+// median topographic widths of post-gate events. That estimator uses
+// the same `findBases` geometry the detection pipeline uses, so modal
+// and report agree on what each well's NMS footprint should be.
 
 /**
  * Process a single well and return CSV content
@@ -318,9 +264,11 @@ function processSingleWell(
   try {
     const rawSignal = well.indicators[0].filteredData;
 
-    // Calculate optimal parameters
-    const optimalProminence = suggestProminence(rawSignal, 0.5);
-    const optimalWindow = suggestWindow(rawSignal, optimalProminence, 5);
+    // Calculate optimal parameters via the centralized adaptive
+    // suggester (Otsu-on-log-prominence + topographic-width window).
+    const optimalParams = suggestSpikeParameters(rawSignal);
+    const optimalProminence = optimalParams.prominence.value;
+    const optimalWindow = optimalParams.window.value;
 
     // Signal preprocessing
     let processedSignal = suppressNoise(rawSignal, [], {
