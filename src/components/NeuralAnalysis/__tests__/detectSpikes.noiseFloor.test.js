@@ -48,11 +48,16 @@ describe("detectSpikes noiseFloorMultiplier", () => {
       minDistance: 5,
       minProminenceRatio: 0,
       stdMultiplier: 0.1, // ~no cluster gate
-      noiseFloorMultiplier: 6,
+      // Threshold sized for the unified spikeWindow geometry: detection
+      // bases now use the full window radius, so noise-peak prominences
+      // are larger than they were under the old wlen/2 search. Floor of
+      // 15 × σ ≈ 4.5 sits above the noise-peak prominence ceiling (~3-4)
+      // and well below the tall spikes (amplitude 12).
+      noiseFloorMultiplier: 15,
     };
     const result = detectSpikes(signal, opts);
     // Only the tall spikes (~12) should remain. Shallow ones (1.5) are
-    // far below 6 × robustStd (~ 6 × 0.3 = 1.8 — borderline; 12 ≫ 1.8).
+    // far below 15 × robustStd (~ 15 × 0.3 = 4.5 ≫ 1.5).
     for (const p of result) {
       const closest = [200, 600].reduce(
         (best, c) =>

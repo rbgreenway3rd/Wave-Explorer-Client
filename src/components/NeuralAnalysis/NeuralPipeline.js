@@ -9,6 +9,7 @@ import {
   computeResidualRobustStd,
   computeLocalRobustStd,
 } from "./utilities/detectSpikes";
+import { computeSignalStats } from "./utilities/peakGeometry";
 import { detectBursts } from "./utilities/burstDetection";
 import {
   identifyOutlierSpikes,
@@ -17,45 +18,10 @@ import {
 } from "./utilities/outlierRemoval";
 import { perf } from "./utilities/perfLogger";
 
-// --- Parameter Suggestion ---
-export function suggestProminence(signal, factor = 3) {
-  if (!Array.isArray(signal) || signal.length === 0) return 1;
-  const ySignal = signal.map((pt) => pt.y);
-  const mean = ySignal.reduce((sum, y) => sum + y, 0) / ySignal.length;
-  const variance =
-    ySignal.reduce((sum, y) => sum + (y - mean) ** 2, 0) / ySignal.length;
-  return Math.floor(factor * Math.sqrt(variance));
-}
-
-export function suggestWindow(signal, prominence, num = 5) {
-  if (!Array.isArray(signal) || signal.length === 0) return 20;
-
-  // Calculate sampling rate (average time between samples)
-  const samplingRate =
-    signal.length > 1
-      ? (signal[signal.length - 1].x - signal[0].x) / signal.length
-      : 1;
-
-  // Estimate typical peak width from prominence
-  // Larger prominence suggests wider peaks that need larger windows
-  // Scale by num to allow tuning
-  const baseWindow = Math.max(10, Math.floor(prominence * num * samplingRate));
-
-  // Constrain to reasonable bounds
-  //   const maxWindow = Math.min(500, Math.floor(signal.length / 10));
-  const maxWindow = Math.min(
-    Math.floor(signal.length / 50),
-    Math.floor(signal.length / 10)
-  );
-  const minWindow = 10;
-
-  const optimalWindowWidth = Math.max(
-    minWindow,
-    Math.min(baseWindow, maxWindow)
-  );
-
-  return optimalWindowWidth;
-}
+// Auto-suggest helpers live in their own module so the live pipeline,
+// full-plate report, and report worker all agree. Re-exported here
+// because existing call sites import them from this file.
+export { suggestProminence, suggestWindow } from "./utilities/parameterSuggestions";
 
 // --- Metrics Calculation ---
 export function calculateSpikeFrequency(spikes, startTime, endTime) {
@@ -427,24 +393,39 @@ export function runNeuralAnalysisPipeline({
       id(preSmoothingSignal),
     ],
     () =>
-      perf.time("metrics", () => ({
-        // Same σ the noise-floor check uses (residual when SG is on,
-        // data-only otherwise). Surfaced so the UI can show the
-        // absolute threshold value next to the slider.
-        robustStd:
+      perf.time("metrics", () => {
+        // Cache-warm read on signal stats; `computeSignalStats` is
+        // WeakMap-keyed against the data array so calling it here is
+        // free once detectSpikes has already populated it.
+        const stats =
           processedForDetection.length > 0
-            ? computeResidualRobustStd(processedForDetection, preSmoothingSignal)
-            : 0,
-        spikeFrequency: calculateSpikeFrequency(
-          spikeResults,
-          processed[0]?.x || 0,
-          processed[processed.length - 1]?.x || 1
-        ),
-        spikeAmplitude: calculateSpikeAmplitude(spikeResults),
-        spikeWidth: calculateSpikeWidth(spikeResults),
-        spikeAUC: calculateSpikeAUC(spikeResults),
-        burstMetrics: calculateBurstMetrics(burstResults),
-      }))
+            ? computeSignalStats(processedForDetection)
+            : { signalRange: 0, globalMin: 0, globalMax: 0 };
+        return {
+          // Same σ the noise-floor check uses (residual when SG is on,
+          // data-only otherwise). Surfaced so the UI can show the
+          // absolute threshold value next to the slider.
+          robustStd:
+            processedForDetection.length > 0
+              ? computeResidualRobustStd(processedForDetection, preSmoothingSignal)
+              : 0,
+          // Signal envelope, surfaced so the prominence slider can
+          // size itself per-well. Without this the slider hard-floored
+          // at 100, unrepresentable for normalized y ∈ [-0.02, 0.17].
+          signalRange: stats.signalRange,
+          signalYMin: stats.globalMin,
+          signalYMax: stats.globalMax,
+          spikeFrequency: calculateSpikeFrequency(
+            spikeResults,
+            processed[0]?.x || 0,
+            processed[processed.length - 1]?.x || 1
+          ),
+          spikeAmplitude: calculateSpikeAmplitude(spikeResults),
+          spikeWidth: calculateSpikeWidth(spikeResults),
+          spikeAUC: calculateSpikeAUC(spikeResults),
+          burstMetrics: calculateBurstMetrics(burstResults),
+        };
+      })
   );
 
   perf.flushGroup();

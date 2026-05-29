@@ -5,6 +5,7 @@
  */
 
 import { runNeuralAnalysisPipeline } from "./NeuralPipeline";
+import { suggestSpikeParameters } from "./utilities/parameterSuggestions";
 
 /**
  * Round to the nearest integer for CSV output. Per client request
@@ -235,53 +236,12 @@ function calculateBurstMetrics(bursts, startTime, endTime) {
   };
 }
 
-/**
- * Suggest prominence based on signal variance (matches NeuralPipeline)
- */
-function suggestProminence(signal, factor = 0.5) {
-  if (!Array.isArray(signal) || signal.length === 0) return 1;
-  const ySignal = signal.map((pt) => pt.y);
-  const mean = ySignal.reduce((sum, y) => sum + y, 0) / ySignal.length;
-  const variance =
-    ySignal.reduce((sum, y) => sum + (y - mean) ** 2, 0) / ySignal.length;
-  return Math.floor(factor * Math.sqrt(variance));
-}
-
-/**
- * Suggest window based on prominence (matches NeuralPipeline algorithm)
- */
-function suggestWindow(signal, prominence, num = 5) {
-  if (!Array.isArray(signal) || signal.length === 0) return 20;
-
-  // Calculate sampling rate (average time between samples)
-  const samplingRate =
-    signal.length > 1
-      ? (signal[signal.length - 1].x - signal[0].x) / signal.length
-      : 1;
-
-  // Estimate typical peak width from prominence
-  // Larger prominence suggests wider peaks that need larger windows
-  // Scale by num to allow tuning
-  const baseWindow = Math.max(10, Math.floor(prominence * num * samplingRate));
-
-  // Constrain to reasonable bounds
-  const maxWindow = Math.min(
-    Math.floor(signal.length / 50),
-    Math.floor(signal.length / 10)
-  );
-  const minWindow = 10;
-
-  const optimalWindowWidth = Math.max(
-    minWindow,
-    Math.min(baseWindow, maxWindow)
-  );
-
-  console.log(
-    `[BatchNeuralReport suggestWindow] prominence: ${prominence}, num: ${num}, calculated: ${optimalWindowWidth}`
-  );
-
-  return optimalWindowWidth;
-}
+// suggestProminence / suggestWindow live in
+// ./utilities/parameterSuggestions and are imported above. Previously
+// this file shipped a copy of each that had drifted from the live
+// pipeline's version (Math.floor zeroed prominence for normalized
+// signals; report-side factor was 0.5 vs. pipeline's 3). Callers below
+// pass their factor explicitly.
 
 /**
  * Generate full-plate neural analysis CSV report
@@ -516,8 +476,9 @@ export async function GenerateFullPlateReport(
         prominenceForWell = processingParams.spikeProminence;
         windowForWell = processingParams.spikeWindow;
       } else {
-        prominenceForWell = suggestProminence(rawSignal, 0.5);
-        windowForWell = suggestWindow(rawSignal, prominenceForWell, 5);
+        const bundle = suggestSpikeParameters(rawSignal);
+        prominenceForWell = bundle.prominence.value;
+        windowForWell = bundle.window.value;
       }
 
       console.log(
