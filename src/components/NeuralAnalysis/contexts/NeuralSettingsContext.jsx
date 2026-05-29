@@ -76,7 +76,7 @@ const DEFAULT_SETTINGS = {
   decimationEnabled: false,
   decimationSamples: 200,
   // Outlier detection
-  handleOutliers: true,
+  handleOutliers: false,
   outlierPercentile: 95,
   outlierMultiplier: 2.0,
   // Burst detection
@@ -191,7 +191,7 @@ export const NeuralSettingsProvider = ({ children }) => {
   const [decimationSamples, setDecimationSamples] = useState(200);
 
   // ---- Outlier detection -------------------------------------------------
-  const [handleOutliers, setHandleOutliers] = useState(true);
+  const [handleOutliers, setHandleOutliers] = useState(false);
   const [outlierPercentile, setOutlierPercentile] = useState(95);
   const [outlierMultiplier, setOutlierMultiplier] = useState(2.0);
 
