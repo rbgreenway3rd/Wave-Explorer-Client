@@ -60,3 +60,23 @@ export const BASELINE_THRESHOLD_STYLE = {
   width: 2,
   dash: [2, 3],
 };
+
+// Parameter-visualization overlays (prominence, window, noise floor).
+// Single source of truth for both the chart plugin (NeuralGraph) and the
+// legend swatches (ChartLegend) so they cannot drift out of sync.
+export const PARAM_VIZ_PROMINENCE_STYLE = {
+  color: "rgba(140, 240, 100, 0.95)",
+  lineWidth: 2,
+  capHalfPx: 9,
+};
+export const PARAM_VIZ_WINDOW_STYLE = {
+  fill: "rgba(180, 120, 240, 0.22)",
+  edge: "rgba(180, 120, 240, 0.85)",
+  edgeWidth: 1.25,
+};
+export const PARAM_VIZ_NOISE_STYLE = {
+  color: "rgba(255, 200, 100, 0.92)",
+  dash: [4, 3],
+  halfPx: 8,
+  lineWidth: 1.5,
+};

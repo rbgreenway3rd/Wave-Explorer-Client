@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { Slider, Tooltip } from "@mui/material";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import { Panel, IconButton } from "../../../../ui";
@@ -50,6 +50,18 @@ const SpikeDetectionControls = () => {
     handleSpikeWindowChange,
     handleResetSpikeParams,
     spikeParamsOverrideActive,
+    // Parameter-viz draft publishing. Sliders publish their live drag
+    // value into these context slots so the graph overlay can redraw
+    // mid-drag without waiting for onChangeCommitted (which fires
+    // the pipeline). Only published when the corresponding overlay is
+    // on; otherwise the callback no-ops so unused renders cost nothing.
+    showParamOverlays,
+    showProminenceOverlay,
+    showWindowOverlay,
+    showNoiseFloorOverlay,
+    setDraftSpikeProminence,
+    setDraftSpikeWindow,
+    setDraftNoiseFloorMultiplier,
   } = useNeuralSettings();
   const DEFAULT_MIN_DISTANCE = 0;
   const DEFAULT_STD_MULTIPLIER = 1.0;
@@ -118,19 +130,52 @@ const SpikeDetectionControls = () => {
       }`
     : "Auto";
 
+  // Conditional draft publishers. When the corresponding overlay is on
+  // the slider's live value flows into the shared draft slot so the
+  // chart overlay can redraw mid-drag; when off the callback is a
+  // no-op and the published draft stays at whatever it last was (which
+  // is never read because master overlay is off).
+  const publishProminenceDraft = useCallback(
+    (val) => {
+      if (showParamOverlays && showProminenceOverlay) {
+        setDraftSpikeProminence(val);
+      }
+    },
+    [showParamOverlays, showProminenceOverlay, setDraftSpikeProminence]
+  );
+  const publishWindowDraft = useCallback(
+    (val) => {
+      if (showParamOverlays && showWindowOverlay) {
+        setDraftSpikeWindow(val);
+      }
+    },
+    [showParamOverlays, showWindowOverlay, setDraftSpikeWindow]
+  );
+  const publishNoiseFloorDraft = useCallback(
+    (val) => {
+      if (showParamOverlays && showNoiseFloorOverlay) {
+        setDraftNoiseFloorMultiplier(val);
+      }
+    },
+    [showParamOverlays, showNoiseFloorOverlay, setDraftNoiseFloorMultiplier]
+  );
+
   const prominence = useDraftSlider(
     effectiveSpikeProminence,
-    handleSpikeProminenceChange
+    handleSpikeProminenceChange,
+    publishProminenceDraft
   );
   const windowDraft = useDraftSlider(
     effectiveSpikeWindow,
-    handleSpikeWindowChange
+    handleSpikeWindowChange,
+    publishWindowDraft
   );
   const minDistance = useDraftSlider(spikeMinDistance, setSpikeMinDistance);
   const std = useDraftSlider(stdMultiplier, setStdMultiplier);
   const noiseFloor = useDraftSlider(
     noiseFloorMultiplier,
-    setNoiseFloorMultiplier
+    setNoiseFloorMultiplier,
+    publishNoiseFloorDraft
   );
   const minWidth = useDraftSlider(spikeMinWidth, setSpikeMinWidth);
   const promRatio = useDraftSlider(

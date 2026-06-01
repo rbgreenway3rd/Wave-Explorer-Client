@@ -30,6 +30,9 @@ import {
   ROI_PALETTE,
   ACTIVITY_THRESHOLD_STYLE,
   BASELINE_THRESHOLD_STYLE,
+  PARAM_VIZ_PROMINENCE_STYLE,
+  PARAM_VIZ_WINDOW_STYLE,
+  PARAM_VIZ_NOISE_STYLE,
 } from "./chartStyles";
 
 // Cap on samples drawn along the top edge of each peak's AUC polygon.
@@ -185,7 +188,205 @@ const aucFillPlugin = {
   },
 };
 
-Chart.register(...registerables, Tooltip, zoomPlugin, annotationPlugin, aucFillPlugin);
+// Parameter-visualization overlay: draws the three Phase-1 gates
+// (prominence, window, noise floor) on top of detected peaks so the
+// user can see what the slider value means in signal coordinates.
+//
+// Lives on `chart.$paramViz` like the AUC plugin to avoid the per-draw
+// option-resolver overhead — overlays are tied to live-drag slider
+// state and may rewrite this every frame.
+//
+// Shape:
+//   chart.$paramViz = {
+//     master:    boolean,            // gate everything
+//     prom:      boolean,            // draw prominence ticks
+//     win:       boolean,            // draw window bands
+//     noise:     boolean,            // draw noise-floor ticks
+//     promValue: number,             // current prominence (draft or committed)
+//     winValue:  number,             // current window radius (samples)
+//     noiseMult: number,             // current noise-floor multiplier
+//     peaks:     NeuralPeak-shaped[],// must carry detection bases + noiseSigma
+//     signal:    { x, y }[],         // processedSignal for index → coord lookup
+//   }
+//
+// Geometry references the *detection* bases that the gate itself uses
+// (peakY − max(leftDetBaseY, rightDetBaseY) ≥ value), not the
+// measurement bases — otherwise the overlay would lie under Baseline
+// Threshold mode where measurement bases differ wildly from detection
+// bases.
+// Param-viz palette + geometry imported from chartStyles so the legend
+// swatches and the chart-plugin drawing always stay in lock-step.
+const paramVizPlugin = {
+  id: "paramViz",
+  afterDatasetsDraw(chart) {
+    const s = chart && chart.$paramViz;
+    if (!s || !s.master) return;
+    const drawProm = !!s.prom && typeof s.promValue === "number" && s.promValue > 0;
+    const drawWin =
+      !!s.win && typeof s.winValue === "number" && s.winValue > 0;
+    const drawNoise =
+      !!s.noise &&
+      typeof s.noiseMult === "number" &&
+      s.noiseMult > 0;
+    if (!drawProm && !drawWin && !drawNoise) return;
+    const peaks = s.peaks;
+    const signal = s.signal;
+    if (!Array.isArray(peaks) || peaks.length === 0) return;
+    if (!Array.isArray(signal) || signal.length === 0) return;
+    const xScale = chart.scales && chart.scales.x;
+    const yScale = chart.scales && chart.scales.y;
+    const { ctx, chartArea } = chart;
+    if (!xScale || !yScale || !ctx || !chartArea) return;
+    const signalLen = signal.length;
+    const xMin = xScale.min;
+    const xMax = xScale.max;
+
+    ctx.save();
+    // Clip so overlays never bleed into axis gutters.
+    ctx.beginPath();
+    ctx.rect(
+      chartArea.left,
+      chartArea.top,
+      chartArea.right - chartArea.left,
+      chartArea.bottom - chartArea.top
+    );
+    ctx.clip();
+
+    // Window bands: violet fill with crisp vertical edges. Drawn first
+    // so prominence + noise ticks render on top. Edges are batched into
+    // a single stroke after all the fills.
+    if (drawWin) {
+      const w = Math.max(1, Math.floor(s.winValue));
+      const topPx = chartArea.top;
+      const heightPx = chartArea.bottom - chartArea.top;
+      // Track edges so we can stroke them all in one pass.
+      const edgeXs = [];
+      ctx.fillStyle = PARAM_VIZ_WINDOW_STYLE.fill;
+      for (let i = 0; i < peaks.length; i++) {
+        const pk = peaks[i];
+        if (!pk || typeof pk.index !== "number") continue;
+        const px = pk.peakCoords ? pk.peakCoords.x : null;
+        if (typeof px !== "number" || px < xMin || px > xMax) continue;
+        const loIdx = pk.index - w < 0 ? 0 : pk.index - w;
+        const hiIdx =
+          pk.index + w >= signalLen ? signalLen - 1 : pk.index + w;
+        const loPt = signal[loIdx];
+        const hiPt = signal[hiIdx];
+        if (!loPt || !hiPt) continue;
+        const loPx = xScale.getPixelForValue(loPt.x);
+        const hiPx = xScale.getPixelForValue(hiPt.x);
+        const widthPx = hiPx - loPx;
+        if (widthPx <= 0) continue;
+        ctx.fillRect(loPx, topPx, widthPx, heightPx);
+        edgeXs.push(loPx, hiPx);
+      }
+      if (edgeXs.length > 0) {
+        ctx.beginPath();
+        for (let j = 0; j < edgeXs.length; j++) {
+          const ex = edgeXs[j];
+          ctx.moveTo(ex, topPx);
+          ctx.lineTo(ex, topPx + heightPx);
+        }
+        ctx.strokeStyle = PARAM_VIZ_WINDOW_STYLE.edge;
+        ctx.lineWidth = PARAM_VIZ_WINDOW_STYLE.edgeWidth;
+        ctx.setLineDash([]);
+        ctx.stroke();
+      }
+    }
+
+    // Prominence I-beams: one batched path covering every kept peak.
+    // Bottom cap sits on max(left, right detection base) → "this is
+    // where the gate measures from." Vertical line goes up by promValue.
+    // Top cap sits at the threshold → "the peak top must clear this."
+    // Cap widths exceed the cyan data line's stroke so the shape pops
+    // even when the peak is on a steep slope.
+    if (drawProm) {
+      const cap = PARAM_VIZ_PROMINENCE_STYLE.capHalfPx;
+      ctx.beginPath();
+      for (let i = 0; i < peaks.length; i++) {
+        const pk = peaks[i];
+        if (!pk || !pk.peakCoords) continue;
+        const px = pk.peakCoords.x;
+        if (typeof px !== "number" || px < xMin || px > xMax) continue;
+        const lIdx = pk.detectionLeftBaseIdx;
+        const rIdx = pk.detectionRightBaseIdx;
+        if (typeof lIdx !== "number" || typeof rIdx !== "number") continue;
+        const lPt = signal[lIdx];
+        const rPt = signal[rIdx];
+        if (!lPt || !rPt) continue;
+        const baseY = lPt.y > rPt.y ? lPt.y : rPt.y;
+        const thresholdY = baseY + s.promValue;
+        const xPx = xScale.getPixelForValue(px);
+        const basePxY = yScale.getPixelForValue(baseY);
+        const thresholdPxY = yScale.getPixelForValue(thresholdY);
+        // Bottom cap (the reference base).
+        ctx.moveTo(xPx - cap, basePxY);
+        ctx.lineTo(xPx + cap, basePxY);
+        // Vertical riser.
+        ctx.moveTo(xPx, basePxY);
+        ctx.lineTo(xPx, thresholdPxY);
+        // Top cap (the threshold the peak must clear).
+        ctx.moveTo(xPx - cap, thresholdPxY);
+        ctx.lineTo(xPx + cap, thresholdPxY);
+      }
+      ctx.strokeStyle = PARAM_VIZ_PROMINENCE_STYLE.color;
+      ctx.lineWidth = PARAM_VIZ_PROMINENCE_STYLE.lineWidth;
+      ctx.setLineDash([]);
+      ctx.stroke();
+    }
+
+    // Noise-floor ticks: dashed; per-peak threshold = max(left, right
+    // detection base) + multiplier × σ_i. Outliers bypass the gate, so
+    // skip them — drawing the gate on a peak that didn't have to clear
+    // it would mislead.
+    if (drawNoise) {
+      ctx.beginPath();
+      for (let i = 0; i < peaks.length; i++) {
+        const pk = peaks[i];
+        if (!pk || !pk.peakCoords) continue;
+        if (pk.isOutlier) continue;
+        const px = pk.peakCoords.x;
+        if (typeof px !== "number" || px < xMin || px > xMax) continue;
+        const lIdx = pk.detectionLeftBaseIdx;
+        const rIdx = pk.detectionRightBaseIdx;
+        const sigma = pk.noiseSigma;
+        if (
+          typeof lIdx !== "number" ||
+          typeof rIdx !== "number" ||
+          typeof sigma !== "number" ||
+          !(sigma > 0)
+        ) {
+          continue;
+        }
+        const lPt = signal[lIdx];
+        const rPt = signal[rIdx];
+        if (!lPt || !rPt) continue;
+        const baseY = lPt.y > rPt.y ? lPt.y : rPt.y;
+        const tickY = baseY + s.noiseMult * sigma;
+        const xPx = xScale.getPixelForValue(px);
+        const tickPxY = yScale.getPixelForValue(tickY);
+        ctx.moveTo(xPx - PARAM_VIZ_NOISE_STYLE.halfPx, tickPxY);
+        ctx.lineTo(xPx + PARAM_VIZ_NOISE_STYLE.halfPx, tickPxY);
+      }
+      ctx.strokeStyle = PARAM_VIZ_NOISE_STYLE.color;
+      ctx.lineWidth = PARAM_VIZ_NOISE_STYLE.lineWidth;
+      ctx.setLineDash(PARAM_VIZ_NOISE_STYLE.dash);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    ctx.restore();
+  },
+};
+
+Chart.register(
+  ...registerables,
+  Tooltip,
+  zoomPlugin,
+  annotationPlugin,
+  aucFillPlugin,
+  paramVizPlugin
+);
 
 /**
  * NeuralGraph — chart.js Line wrapper. After Tier B reads everything from
@@ -215,6 +416,15 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       setBaselineThresholdRatio,
       showPeakBases,
       markAUC,
+      // Parameter-visualization overlays.
+      showParamOverlays,
+      showProminenceOverlay,
+      showWindowOverlay,
+      showNoiseFloorOverlay,
+      draftSpikeProminence,
+      draftSpikeWindow,
+      draftNoiseFloorMultiplier,
+      noiseFloorMultiplier,
     } = useNeuralSettings();
     const {
       defineROI,
@@ -226,7 +436,11 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       currentRoiIndex,
       setCurrentRoiIndex,
     } = useNeuralInteraction();
-    const { pipelineResults } = useNeuralResults();
+    const {
+      pipelineResults,
+      effectiveSpikeProminence,
+      effectiveSpikeWindow,
+    } = useNeuralResults();
     const processedSignal = pipelineResults.processedSignal;
     const peakResults = pipelineResults.spikeResults;
     const burstResults = pipelineResults.burstResults;
@@ -500,6 +714,50 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       };
       chart.update("none");
     }, [markAUC, peakResults, processedSignal]);
+
+    // Parameter-visualization overlay state. Same imperative pattern as
+    // AUC above — writes to `chart.$paramViz` and triggers a no-anim
+    // redraw. Draft slider values (published mid-drag by useDraftSlider)
+    // are preferred so the overlay tracks the thumb in real time;
+    // fall back to the committed effective value otherwise. The pipeline
+    // does NOT re-run on draft changes — that only fires on slider
+    // release via onChangeCommitted in SpikeDetectionControls.
+    useEffect(() => {
+      const chart = neuralGraphRef.current;
+      if (!chart) return;
+      chart.$paramViz = {
+        master: !!showParamOverlays,
+        prom: !!showProminenceOverlay,
+        win: !!showWindowOverlay,
+        noise: !!showNoiseFloorOverlay,
+        promValue:
+          draftSpikeProminence != null
+            ? draftSpikeProminence
+            : effectiveSpikeProminence,
+        winValue:
+          draftSpikeWindow != null ? draftSpikeWindow : effectiveSpikeWindow,
+        noiseMult:
+          draftNoiseFloorMultiplier != null
+            ? draftNoiseFloorMultiplier
+            : noiseFloorMultiplier,
+        peaks: Array.isArray(peakResults) ? peakResults : [],
+        signal: Array.isArray(processedSignal) ? processedSignal : [],
+      };
+      chart.update("none");
+    }, [
+      showParamOverlays,
+      showProminenceOverlay,
+      showWindowOverlay,
+      showNoiseFloorOverlay,
+      draftSpikeProminence,
+      draftSpikeWindow,
+      draftNoiseFloorMultiplier,
+      effectiveSpikeProminence,
+      effectiveSpikeWindow,
+      noiseFloorMultiplier,
+      peakResults,
+      processedSignal,
+    ]);
 
     // Update chart data imperatively to preserve zoom state.
     //

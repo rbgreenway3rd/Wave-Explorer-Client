@@ -43,7 +43,19 @@ const ChartDisplayToggles = () => {
     setShowPeakBases,
     markAUC,
     setMarkAUC,
+    showParamOverlays,
+    setShowParamOverlays,
+    showProminenceOverlay,
+    setShowProminenceOverlay,
+    showWindowOverlay,
+    setShowWindowOverlay,
+    showNoiseFloorOverlay,
+    setShowNoiseFloorOverlay,
+    noiseFloorMultiplier,
   } = useNeuralSettings();
+  // Disable the noise-floor sub-toggle when the gate itself is off — the
+  // overlay would draw at base + 0 × σ = base, which is meaningless.
+  const noiseFloorGateOff = !(noiseFloorMultiplier > 0);
 
   return (
     <div
@@ -116,6 +128,167 @@ const ChartDisplayToggles = () => {
           sx={{ margin: 0, gap: "0.25rem" }}
         />
       </Tooltip>
+
+      {/* Vertical separator before the Parameter Overlays group. */}
+      <span
+        aria-hidden="true"
+        style={{
+          width: 1,
+          height: 18,
+          background: "rgba(255, 255, 255, 0.18)",
+        }}
+      />
+
+      <Tooltip
+        title="Master toggle for spike-detection parameter overlays. When on, the sub-toggles draw the prominence threshold, NMS window footprint, and noise floor as overlays on each detected peak."
+        arrow
+        placement="bottom"
+      >
+        <FormControlLabel
+          control={
+            <Switch
+              size="small"
+              checked={!!showParamOverlays}
+              onChange={(_, checked) => {
+                setShowParamOverlays(checked);
+                // When the master flips on, auto-enable every applicable
+                // sub-toggle so the user immediately sees something —
+                // they explicitly asked to "show overlays," not to
+                // hunt for which sub-overlay to enable next. Noise
+                // floor only auto-ons when its gate is actually active
+                // (multiplier > 0); otherwise it stays off because
+                // there'd be nothing to draw. Flipping master off does
+                // NOT touch the subs — they're harmless when invisible
+                // and the user's prior preferences are preserved for
+                // the next on.
+                if (checked) {
+                  setShowProminenceOverlay(true);
+                  setShowWindowOverlay(true);
+                  if (noiseFloorMultiplier > 0) {
+                    setShowNoiseFloorOverlay(true);
+                  }
+                }
+              }}
+              sx={switchSx}
+            />
+          }
+          label={
+            <span
+              style={{
+                fontSize: 12,
+                color: "#ddd",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Param Overlays
+            </span>
+          }
+          sx={{ margin: 0, gap: "0.25rem" }}
+        />
+      </Tooltip>
+
+      {showParamOverlays && (
+        <>
+          <Tooltip
+            title="Vertical tick at each detected peak showing the prominence threshold the gate is applying. Threshold sits at max(left, right detection base) + prominence value."
+            arrow
+            placement="bottom"
+          >
+            <FormControlLabel
+              control={
+                <Switch
+                  size="small"
+                  checked={!!showProminenceOverlay}
+                  onChange={(_, checked) =>
+                    setShowProminenceOverlay(checked)
+                  }
+                  sx={switchSx}
+                />
+              }
+              label={
+                <span
+                  style={{
+                    fontSize: 12,
+                    color: "#ddd",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Prominence
+                </span>
+              }
+              sx={{ margin: 0, gap: "0.25rem" }}
+            />
+          </Tooltip>
+
+          <Tooltip
+            title="Translucent horizontal band around each detected peak showing the NMS center-exclusion footprint (apex ± window samples). Surviving apexes are more than `window` samples apart."
+            arrow
+            placement="bottom"
+          >
+            <FormControlLabel
+              control={
+                <Switch
+                  size="small"
+                  checked={!!showWindowOverlay}
+                  onChange={(_, checked) => setShowWindowOverlay(checked)}
+                  sx={switchSx}
+                />
+              }
+              label={
+                <span
+                  style={{
+                    fontSize: 12,
+                    color: "#ddd",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Window
+                </span>
+              }
+              sx={{ margin: 0, gap: "0.25rem" }}
+            />
+          </Tooltip>
+
+          <Tooltip
+            title={
+              noiseFloorGateOff
+                ? "Noise Floor multiplier is 0 — gate is off, so there is nothing to visualize. Raise the multiplier in Spike Detection to enable."
+                : "Per-peak dashed tick at max(left, right detection base) + multiplier × σ. When Noise Window is on, σ varies per block and the ticks step accordingly."
+            }
+            arrow
+            placement="bottom"
+          >
+            {/* span wrapper so the Tooltip still triggers on a disabled control */}
+            <span>
+              <FormControlLabel
+                control={
+                  <Switch
+                    size="small"
+                    checked={!!showNoiseFloorOverlay && !noiseFloorGateOff}
+                    onChange={(_, checked) =>
+                      setShowNoiseFloorOverlay(checked)
+                    }
+                    disabled={noiseFloorGateOff}
+                    sx={switchSx}
+                  />
+                }
+                label={
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: noiseFloorGateOff ? "#888" : "#ddd",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Noise Floor
+                  </span>
+                }
+                sx={{ margin: 0, gap: "0.25rem" }}
+              />
+            </span>
+          </Tooltip>
+        </>
+      )}
     </div>
   );
 };

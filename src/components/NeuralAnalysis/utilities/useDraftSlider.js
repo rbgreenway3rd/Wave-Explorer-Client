@@ -31,7 +31,7 @@ import { useCallback, useEffect, useState } from "react";
  * - Both event handlers ignore the first `event` arg as a convenience
  *   (matches MUI's handler shape).
  */
-export function useDraftSlider(external, commit) {
+export function useDraftSlider(external, commit, onDraftChange) {
   const [draft, setDraft] = useState(external);
 
   // Sync external → draft whenever the upstream value changes (e.g.,
@@ -40,9 +40,22 @@ export function useDraftSlider(external, commit) {
     setDraft(external);
   }, [external]);
 
-  const onChange = useCallback((_event, value) => {
-    setDraft(value);
-  }, []);
+  // Mirror external → onDraftChange so consumers reading the published
+  // draft (e.g. graph overlay) stay aligned when the external value
+  // moves via something other than drag (Reset, programmatic update,
+  // well switch). Without this the overlay would lag a step behind
+  // the slider thumb after an external change.
+  useEffect(() => {
+    if (onDraftChange) onDraftChange(external);
+  }, [external, onDraftChange]);
+
+  const onChange = useCallback(
+    (_event, value) => {
+      setDraft(value);
+      if (onDraftChange) onDraftChange(value);
+    },
+    [onDraftChange]
+  );
 
   const onChangeCommitted = useCallback(
     (_event, value) => {

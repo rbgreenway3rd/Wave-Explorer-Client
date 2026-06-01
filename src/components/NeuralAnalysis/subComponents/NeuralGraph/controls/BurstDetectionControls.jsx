@@ -13,7 +13,50 @@ import "./NeuralControlPanel.css";
  * NeuralSettingsContext; sliders use useDraftSlider so dragging only
  * updates a local value and the pipeline-triggering setter fires once
  * on release.
+ *
+ * The ISI slider is LOG-scaled so a single control can cover the full
+ * realistic burst-timescale range: 5 ms (single-unit electrophys) up
+ * to 30 s (slow Ca²⁺ events on minute-long recordings sampled at a
+ * few Hz). A linear 0–30 s slider would make the sub-second sub-range
+ * unreachable in practice; log scale puts equal-pixel-distance =
+ * equal-log-distance, so 0.01 ↔ 0.1 ↔ 1 ↔ 10 are all the same drag.
  */
+const ISI_MIN_S = 0.005;
+const ISI_MAX_S = 30;
+const ISI_LOG_MIN = Math.log(ISI_MIN_S);
+const ISI_LOG_RANGE = Math.log(ISI_MAX_S) - ISI_LOG_MIN;
+// Slider internal position space — finer than 1000 isn't perceptible.
+const ISI_POSITION_MAX = 1000;
+const positionFromIsi = (s) => {
+  if (!(s > 0)) return 0;
+  const clamped = Math.max(ISI_MIN_S, Math.min(ISI_MAX_S, s));
+  return Math.round(
+    ((Math.log(clamped) - ISI_LOG_MIN) / ISI_LOG_RANGE) * ISI_POSITION_MAX
+  );
+};
+const isiFromPosition = (p) => {
+  const t = Math.max(0, Math.min(ISI_POSITION_MAX, p)) / ISI_POSITION_MAX;
+  return Math.exp(ISI_LOG_MIN + t * ISI_LOG_RANGE);
+};
+// Snap to a display-friendly precision per decade so the readout
+// doesn't show 1.2837492 s. Stored value also uses the snapped form
+// because the burst gate is a `≤` comparison and tiny ULP noise has
+// no clinical meaning here.
+const snapIsi = (s) => {
+  if (s < 0.01) return Math.round(s * 10000) / 10000;
+  if (s < 0.1) return Math.round(s * 1000) / 1000;
+  if (s < 1) return Math.round(s * 100) / 100;
+  if (s < 10) return Math.round(s * 10) / 10;
+  return Math.round(s);
+};
+const formatIsi = (s) => {
+  if (s < 0.01) return s.toFixed(4);
+  if (s < 0.1) return s.toFixed(3);
+  if (s < 1) return s.toFixed(2);
+  if (s < 10) return s.toFixed(1);
+  return String(Math.round(s));
+};
+
 const BurstDetectionControls = () => {
   const {
     showBursts,
@@ -22,7 +65,9 @@ const BurstDetectionControls = () => {
     minSpikesPerBurst,
     setMinSpikesPerBurst,
   } = useNeuralSettings();
-  const DEFAULT_MAX_INTERVAL = 0.05;
+  // Sensible Ca²⁺ default — the prior 0.05 s default essentially
+  // disabled burst detection on slow-sampled recordings.
+  const DEFAULT_MAX_INTERVAL = 1.0;
   const DEFAULT_MIN_SPIKES = 3;
 
   const interval = useDraftSlider(
@@ -35,6 +80,29 @@ const BurstDetectionControls = () => {
     setMaxInterSpikeInterval(DEFAULT_MAX_INTERVAL);
     setMinSpikesPerBurst(DEFAULT_MIN_SPIKES);
   };
+
+  // Log-scaled slider plumbing: position ↔ seconds via exponential.
+  // useDraftSlider stores/commits the SECONDS value; the slider's
+  // value/marks/step live in position space. Mark labels intentionally
+  // round to clean log-decade anchors (0.01, 0.1, 1, 10) so the user
+  // has familiar reference points.
+  const intervalPosition = positionFromIsi(interval.value);
+  const handleIntervalChange = (e, position) => {
+    perf.count("slider.maxInterSpikeInterval");
+    const seconds = snapIsi(isiFromPosition(position));
+    interval.onChange(e, seconds);
+  };
+  const handleIntervalCommitted = (e, position) => {
+    const seconds = snapIsi(isiFromPosition(position));
+    interval.onChangeCommitted(e, seconds);
+  };
+  const intervalMarks = [
+    { value: positionFromIsi(0.01), label: "0.01s" },
+    { value: positionFromIsi(0.1), label: "0.1s" },
+    { value: positionFromIsi(1), label: "1s" },
+    { value: positionFromIsi(10), label: "10s" },
+    { value: positionFromIsi(30), label: "30s" },
+  ];
 
   return (
     <Panel
@@ -67,28 +135,18 @@ const BurstDetectionControls = () => {
             Max Inter-Spike Interval
           </span>
           <span className="neural-control-panel__field-value">
-            {interval.value} s
+            {formatIsi(Number(interval.value) || 0)} s
           </span>
         </div>
         <Slider
-          value={interval.value}
-          onChange={(e, v) => {
-            perf.count("slider.maxInterSpikeInterval");
-            interval.onChange(e, v);
-          }}
-          onChangeCommitted={interval.onChangeCommitted}
+          value={intervalPosition}
+          onChange={handleIntervalChange}
+          onChangeCommitted={handleIntervalCommitted}
           disabled={!showBursts}
           min={0}
-          max={0.25}
-          step={0.005}
-          marks={[
-            { value: 0.01, label: "0.01s" },
-            { value: 0.05, label: "0.05s" },
-            { value: 0.1, label: "0.1s" },
-            { value: 0.15, label: "0.15s" },
-            { value: 0.2, label: "0.2s" },
-            { value: 0.25, label: "0.25s" },
-          ]}
+          max={ISI_POSITION_MAX}
+          step={1}
+          marks={intervalMarks}
         />
       </div>
 

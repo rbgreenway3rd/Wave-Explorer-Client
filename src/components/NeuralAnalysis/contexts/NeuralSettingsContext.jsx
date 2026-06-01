@@ -30,14 +30,16 @@ export const NeuralSettingsContext = createContext(null);
 
 // One-time migration for snapshots saved before the seconds-throughout
 // unit conversion. `maxInterSpikeInterval` was previously stored in
-// milliseconds (default 50, slider range 0–250). The current slider's
-// max is 0.25 s, so any value > 1 is unambiguously a legacy ms value —
-// divide by 1000 to get the equivalent seconds value. Idempotent: new
-// snapshots already have values ≤ 0.25, so this is a no-op for them.
+// milliseconds (default 50, slider range 0–250). The current slider
+// is log-scaled with max 30 s, so any value > 30 is unambiguously a
+// legacy ms value — divide by 1000 to convert. Values in [5, 30] are
+// treated as legitimate seconds; legacy ms values that happened to
+// fall in that range (5–30 ms, rare; default was 50) would need to
+// be re-saved manually.
 const migrateLegacySnapshot = (snapshot) => {
   if (!snapshot || typeof snapshot !== "object") return snapshot;
   const v = snapshot.maxInterSpikeInterval;
-  if (typeof v === "number" && v > 1) {
+  if (typeof v === "number" && v > 30) {
     return { ...snapshot, maxInterSpikeInterval: v / 1000 };
   }
   return snapshot;
@@ -81,11 +83,18 @@ const DEFAULT_SETTINGS = {
   outlierMultiplier: 2.0,
   // Burst detection
   showBursts: false,
-  maxInterSpikeInterval: 0.05,
+  maxInterSpikeInterval: 1.0,
   minSpikesPerBurst: 3,
   // Display toggles
   showPeakBases: true,
   markAUC: false,
+  // Parameter-visualization overlays — render gate thresholds (prominence,
+  // window, noise floor) on top of detected peaks so users can see the
+  // gate the slider controls. Master + sub-toggles, all off by default.
+  showParamOverlays: false,
+  showProminenceOverlay: false,
+  showWindowOverlay: false,
+  showNoiseFloorOverlay: false,
   // Legacy spike-display tweaks
   useAdjustedBases: false,
   findPeaksWindowWidth: 10,
@@ -197,7 +206,7 @@ export const NeuralSettingsProvider = ({ children }) => {
 
   // ---- Burst detection ---------------------------------------------------
   const [showBursts, setShowBursts] = useState(false);
-  const [maxInterSpikeInterval, setMaxInterSpikeInterval] = useState(0.05);
+  const [maxInterSpikeInterval, setMaxInterSpikeInterval] = useState(1.0);
   const [minSpikesPerBurst, setMinSpikesPerBurst] = useState(3);
 
   // ---- Display toggles (chart overlay) -----------------------------------
@@ -210,6 +219,25 @@ export const NeuralSettingsProvider = ({ children }) => {
   // doesn't affect detection or metric values.
   const [showPeakBases, setShowPeakBases] = useState(true);
   const [markAUC, setMarkAUC] = useState(false);
+
+  // ---- Parameter-visualization overlays ----------------------------------
+  // Master toggle (`showParamOverlays`) gates the three sub-toggles. The
+  // overlay plugin draws nothing unless master is on AND at least one
+  // sub-toggle is on. Sub-toggles drive prominence, window, and noise
+  // floor overlays respectively. All persistable; defaults all off.
+  const [showParamOverlays, setShowParamOverlays] = useState(false);
+  const [showProminenceOverlay, setShowProminenceOverlay] = useState(false);
+  const [showWindowOverlay, setShowWindowOverlay] = useState(false);
+  const [showNoiseFloorOverlay, setShowNoiseFloorOverlay] = useState(false);
+  // Draft slider values published by useDraftSlider during drag so the
+  // overlay plugin can redraw at the slider's current position without
+  // waiting for onChangeCommitted (which is when the pipeline re-runs).
+  // null = no draft in progress; the plugin falls back to the committed
+  // value. Not persisted — purely transient render state.
+  const [draftSpikeProminence, setDraftSpikeProminence] = useState(null);
+  const [draftSpikeWindow, setDraftSpikeWindow] = useState(null);
+  const [draftNoiseFloorMultiplier, setDraftNoiseFloorMultiplier] =
+    useState(null);
 
   // ---- Legacy spike-display tweaks consumed only by NeuralGraph ----------
   const [useAdjustedBases, setUseAdjustedBases] = useState(false);
@@ -258,6 +286,10 @@ export const NeuralSettingsProvider = ({ children }) => {
     minSpikesPerBurst,
     showPeakBases,
     markAUC,
+    showParamOverlays,
+    showProminenceOverlay,
+    showWindowOverlay,
+    showNoiseFloorOverlay,
     useAdjustedBases,
     findPeaksWindowWidth,
     peakProminence,
@@ -295,6 +327,10 @@ export const NeuralSettingsProvider = ({ children }) => {
       minSpikesPerBurst: setMinSpikesPerBurst,
       showPeakBases: setShowPeakBases,
       markAUC: setMarkAUC,
+      showParamOverlays: setShowParamOverlays,
+      showProminenceOverlay: setShowProminenceOverlay,
+      showWindowOverlay: setShowWindowOverlay,
+      showNoiseFloorOverlay: setShowNoiseFloorOverlay,
       useAdjustedBases: setUseAdjustedBases,
       findPeaksWindowWidth: setFindPeaksWindowWidth,
       peakProminence: setPeakProminence,
@@ -341,6 +377,10 @@ export const NeuralSettingsProvider = ({ children }) => {
     minSpikesPerBurst,
     showPeakBases,
     markAUC,
+    showParamOverlays,
+    showProminenceOverlay,
+    showWindowOverlay,
+    showNoiseFloorOverlay,
     useAdjustedBases,
     findPeaksWindowWidth,
     peakProminence,
@@ -457,6 +497,21 @@ export const NeuralSettingsProvider = ({ children }) => {
       setShowPeakBases,
       markAUC,
       setMarkAUC,
+      // parameter-visualization overlays
+      showParamOverlays,
+      setShowParamOverlays,
+      showProminenceOverlay,
+      setShowProminenceOverlay,
+      showWindowOverlay,
+      setShowWindowOverlay,
+      showNoiseFloorOverlay,
+      setShowNoiseFloorOverlay,
+      draftSpikeProminence,
+      setDraftSpikeProminence,
+      draftSpikeWindow,
+      setDraftSpikeWindow,
+      draftNoiseFloorMultiplier,
+      setDraftNoiseFloorMultiplier,
       // legacy
       useAdjustedBases,
       setUseAdjustedBases,
@@ -505,6 +560,13 @@ export const NeuralSettingsProvider = ({ children }) => {
       minSpikesPerBurst,
       showPeakBases,
       markAUC,
+      showParamOverlays,
+      showProminenceOverlay,
+      showWindowOverlay,
+      showNoiseFloorOverlay,
+      draftSpikeProminence,
+      draftSpikeWindow,
+      draftNoiseFloorMultiplier,
       useAdjustedBases,
       findPeaksWindowWidth,
       peakProminence,

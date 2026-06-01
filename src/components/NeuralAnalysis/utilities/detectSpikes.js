@@ -764,6 +764,8 @@ export function detectSpikes(data, options = {}) {
     peak.detectionRightBaseIdx = det.rightBaseIdx;
     peak.detectionProminences = det.prominences;
     peak.detectionProminence = det.prominence;
+    peak.noiseSigma =
+      localStds && localStds.length > 0 ? localStds[peakIdx] : robustStd;
     peaks.push(peak);
   }
 

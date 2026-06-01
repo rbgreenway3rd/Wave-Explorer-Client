@@ -72,6 +72,15 @@ function stripSpike(p) {
     auc: p.auc,
     isOutlier: p.isOutlier,
     outlierSpike: p.outlierSpike,
+    // Detection-side metadata used by parameter-visualization overlays.
+    // Topographic bases / prominence drive the actual prominence + noise
+    // floor gates; ship them so overlays can render the gate exactly as
+    // the pipeline applied it. noiseSigma is the per-peak σ used by the
+    // noise floor gate (local-block σ or global robustStd).
+    detectionLeftBaseIdx: p.detectionLeftBaseIdx,
+    detectionRightBaseIdx: p.detectionRightBaseIdx,
+    detectionProminence: p.detectionProminence,
+    noiseSigma: p.noiseSigma ?? null,
   };
 }
 

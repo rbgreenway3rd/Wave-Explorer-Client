@@ -13,6 +13,9 @@ import {
   ROI_PALETTE,
   ACTIVITY_THRESHOLD_STYLE,
   BASELINE_THRESHOLD_STYLE,
+  PARAM_VIZ_PROMINENCE_STYLE,
+  PARAM_VIZ_WINDOW_STYLE,
+  PARAM_VIZ_NOISE_STYLE,
 } from "./chartStyles";
 
 // One short description per legend element. Surfaced as a MUI Tooltip
@@ -35,6 +38,12 @@ const LEGEND_DESCRIPTIONS = {
     "Horizontal cutoff — peaks whose apex falls below this line are filtered out before burst detection and metrics. Drag the line vertically on the chart to adjust.",
   baselineThreshold:
     "Horizontal line at the signal's noise baseline. When enabled, peak width and AUC are measured between the line's intercepts with the signal on either side of each peak instead of from per-peak local minima. Drag vertically to adjust.",
+  paramVizProminence:
+    "Prominence overlay — an I-beam at each detected peak. Bottom cap sits on the higher of the peak's two detection bases; top cap sits at the threshold the peak top must reach. Vertical distance = current Prominence slider value. Red peak dots above the top cap pass the gate; if the top cap rises above a dot the peak is rejected on slider release.",
+  paramVizWindow:
+    "Window overlay — translucent violet band around each peak showing the NMS center-exclusion footprint (apex ± window samples). Surviving apexes are more than `window` samples apart in the final spike set. Note: this shows the *exclusion* radius, not the event width.",
+  paramVizNoiseFloor:
+    "Noise Floor overlay — per-peak dashed tick at max(left, right detection base) + multiplier × σ. The tick shows the per-peak threshold the noise-floor gate is applying. When Noise Window is on, σ varies block-by-block so ticks step accordingly. Outliers bypass this gate and have no tick.",
 };
 
 // Swatch primitives. Each renders a small inline preview of one chart
@@ -113,6 +122,71 @@ const BoxSwatch = ({ fill, border }) => (
   />
 );
 
+// I-beam swatch for the prominence overlay. Mirrors the shape the
+// plugin draws on each peak: bottom cap on the higher detection base,
+// vertical riser the height of the prominence value, top cap at the
+// threshold.
+const IBeamSwatch = ({ color, lineWidth = 2 }) => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 14 14"
+    aria-hidden="true"
+    style={{ flexShrink: 0 }}
+  >
+    {/* Top cap */}
+    <line
+      x1="3"
+      y1="2.5"
+      x2="11"
+      y2="2.5"
+      stroke={color}
+      strokeWidth={lineWidth}
+    />
+    {/* Vertical riser */}
+    <line
+      x1="7"
+      y1="2.5"
+      x2="7"
+      y2="11.5"
+      stroke={color}
+      strokeWidth={lineWidth}
+    />
+    {/* Bottom cap */}
+    <line
+      x1="3"
+      y1="11.5"
+      x2="11"
+      y2="11.5"
+      stroke={color}
+      strokeWidth={lineWidth}
+    />
+  </svg>
+);
+
+// Band swatch for the window overlay. Filled rectangle with crisp
+// vertical edges, mirroring how the plugin draws the NMS footprint.
+const BandSwatch = ({ fill, edge, edgeWidth = 1.25 }) => (
+  <svg
+    width="18"
+    height="12"
+    viewBox="0 0 18 12"
+    aria-hidden="true"
+    style={{ flexShrink: 0 }}
+  >
+    <rect x="3" y="1" width="12" height="10" fill={fill} />
+    <line x1="3" y1="1" x2="3" y2="11" stroke={edge} strokeWidth={edgeWidth} />
+    <line
+      x1="15"
+      y1="1"
+      x2="15"
+      y2="11"
+      stroke={edge}
+      strokeWidth={edgeWidth}
+    />
+  </svg>
+);
+
 const LegendItem = ({ children, label, description }) => (
   <Tooltip title={description || ""} arrow placement="bottom">
     <span
@@ -139,7 +213,22 @@ const ChartLegend = () => {
     handleOutliers,
     showBursts,
     noiseSuppressionActive,
+    showParamOverlays,
+    showProminenceOverlay,
+    showWindowOverlay,
+    showNoiseFloorOverlay,
+    noiseFloorMultiplier,
   } = useNeuralSettings();
+  // Param-viz legend entries only render when the corresponding overlay
+  // is actually being drawn. The noise-floor sub-toggle is gated on the
+  // multiplier > 0 in ChartDisplayToggles, so mirror that here.
+  const showProminenceLegend = !!(showParamOverlays && showProminenceOverlay);
+  const showWindowLegend = !!(showParamOverlays && showWindowOverlay);
+  const showNoiseFloorLegend = !!(
+    showParamOverlays &&
+    showNoiseFloorOverlay &&
+    noiseFloorMultiplier > 0
+  );
   const { roiList } = useNeuralInteraction();
 
   const hasRoi =
@@ -224,6 +313,40 @@ const ChartLegend = () => {
       {showBursts && (
         <LegendItem label="Bursts" description={LEGEND_DESCRIPTIONS.bursts}>
           <BoxSwatch fill={BURST_STYLE.fill} border={BURST_STYLE.border} />
+        </LegendItem>
+      )}
+      {showProminenceLegend && (
+        <LegendItem
+          label="Prominence"
+          description={LEGEND_DESCRIPTIONS.paramVizProminence}
+        >
+          <IBeamSwatch
+            color={PARAM_VIZ_PROMINENCE_STYLE.color}
+            lineWidth={PARAM_VIZ_PROMINENCE_STYLE.lineWidth}
+          />
+        </LegendItem>
+      )}
+      {showWindowLegend && (
+        <LegendItem
+          label="Window"
+          description={LEGEND_DESCRIPTIONS.paramVizWindow}
+        >
+          <BandSwatch
+            fill={PARAM_VIZ_WINDOW_STYLE.fill}
+            edge={PARAM_VIZ_WINDOW_STYLE.edge}
+            edgeWidth={PARAM_VIZ_WINDOW_STYLE.edgeWidth}
+          />
+        </LegendItem>
+      )}
+      {showNoiseFloorLegend && (
+        <LegendItem
+          label="Noise Floor"
+          description={LEGEND_DESCRIPTIONS.paramVizNoiseFloor}
+        >
+          <LineSwatch
+            color={PARAM_VIZ_NOISE_STYLE.color}
+            dash={PARAM_VIZ_NOISE_STYLE.dash}
+          />
         </LegendItem>
       )}
     </div>
