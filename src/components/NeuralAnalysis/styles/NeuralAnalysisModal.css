@@ -68,6 +68,16 @@
   display: flex;
   flex-direction: row;
   gap: var(--space-3);
+  /* Match the chart-controls bar's intrinsic 14rem row so the two
+   * siblings (.modal-header-item-container and .neural-chart-controls)
+   * stretch to the same height. Without this, the taller project-info
+   * column dictated the row height and the bar either filled with
+   * empty space or got opted out via align-self; both produced an
+   * asymmetric header. The project-info column shrinks to fit and
+   * scrolls internally for any overflow (see its rule below). */
+  height: 14rem;
+  /* Breathing room between the header row and the chart body below. */
+  margin-bottom: 0.75rem;
 }
 
 .neural-analysis-modal .modal-body {
@@ -142,6 +152,13 @@
   border-bottom: 1px solid black;
   display: flex;
   flex-direction: column;
+  /* Cap to the parent's height so the column never pushes below the
+   * chart-controls bar beside it. min-height: 0 is the standard "let
+   * me actually shrink in a flex parent" escape hatch; overflow-y:auto
+   * keeps the project info + report buttons accessible if the natural
+   * content height exceeds the 14rem header allotment. */
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* Tighten the default browser margins on the heading elements stacked
@@ -154,11 +171,18 @@
   margin-bottom: var(--space-1);
 }
 
+/* Selected-well banner uses a smaller font than the default h2 so the
+ * project-info column fits inside the 14rem header. */
+.neural-analysis-modal .modal-header-item-container > h2 {
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
 /* Centered underlined label sitting above the two report-action buttons. */
 .neural-analysis-modal__report-actions-label {
   display: block;
   font-family: var(--font-family);
-  font-size: 1.125rem;
+  font-size: 0.875rem;
   font-weight: var(--font-weight-medium);
   color: var(--color-text);
   text-decoration: underline;
@@ -167,16 +191,40 @@
   margin-bottom: var(--space-1);
 }
 
-/* Report-action buttons stacked vertically and centered under the
- * Generate Report label. `flex: 1` lets this block consume the
- * remaining vertical space in the flex-column parent, and
- * `justify-content: center` centers the buttons between the
- * Generate Report label above and the parent's bottom border below. */
+/* Report actions sit as a horizontal row: the two CSV buttons stack
+ * vertically in their own group on the left, and the Templates dropdown
+ * sits to the right of that group. `flex: 1` lets the row consume the
+ * remaining vertical space in the flex-column parent so it's centered
+ * between the "Generate Report" label and the bottom border. */
 .neural-analysis-modal__report-actions {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
   flex: 1;
+  gap: var(--space-3);
+}
+
+/* CSV buttons stay stacked vertically inside the row. */
+.neural-analysis-modal__report-actions-csv-group {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   gap: var(--space-2);
+}
+
+/* Tighter padding + smaller font on the CSV buttons so they don't push
+ * the header column wider than the chart-controls bar sibling. */
+.neural-analysis-modal__report-actions-csv-group .ui-button.MuiButton-root {
+  font-size: 0.75rem;
+  line-height: 1.2;
+  padding: 0.25rem 0.6rem;
+  min-width: 0;
+  white-space: nowrap;
+}
+.neural-analysis-modal__report-actions-csv-group
+  .ui-button
+  .MuiButton-startIcon
+  > *:first-of-type {
+  font-size: 0.95rem;
 }

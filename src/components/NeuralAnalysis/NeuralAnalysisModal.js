@@ -281,32 +281,34 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
                 Generate Report
               </span>
               <div className="neural-analysis-modal__report-actions">
-                <Tooltip title={singleWellTooltip} arrow placement="top">
-                  <span>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      startIcon={<DescriptionIcon />}
-                      onClick={handleGenerateReport}
-                      disabled={isSingleWellDisabled}
-                    >
-                      Single-Well CSV
-                    </Button>
-                  </span>
-                </Tooltip>
-                <Tooltip title={fullPlateTooltip} arrow placement="top">
-                  <span>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      startIcon={<DashboardIcon />}
-                      onClick={handleGenerateFullPlateReport}
-                      disabled={isFullPlateDisabled}
-                    >
-                      Full-Plate CSV
-                    </Button>
-                  </span>
-                </Tooltip>
+                <div className="neural-analysis-modal__report-actions-csv-group">
+                  <Tooltip title={singleWellTooltip} arrow placement="top">
+                    <span>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        startIcon={<DescriptionIcon />}
+                        onClick={handleGenerateReport}
+                        disabled={isSingleWellDisabled}
+                      >
+                        Single-Well CSV
+                      </Button>
+                    </span>
+                  </Tooltip>
+                  <Tooltip title={fullPlateTooltip} arrow placement="top">
+                    <span>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        startIcon={<DashboardIcon />}
+                        onClick={handleGenerateFullPlateReport}
+                        disabled={isFullPlateDisabled}
+                      >
+                        Full-Plate CSV
+                      </Button>
+                    </span>
+                  </Tooltip>
+                </div>
                 <TemplateMenu />
               </div>
             </div>
