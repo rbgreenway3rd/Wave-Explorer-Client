@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useRef, useState } from "react";
+import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Tooltip } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import DescriptionIcon from "@mui/icons-material/Description";
@@ -13,6 +13,9 @@ import NeuralResults, {
 } from "./subComponents/NeuralResults/NeuralResults";
 import ChartControls from "./subComponents/NeuralGraph/ChartControls";
 import NeuralWellSelector from "./subComponents/WellSelection/NeuralWellSelector";
+import CollapsibleSection from "./subComponents/CollapsibleSection";
+import DetectionFunnel from "./subComponents/DetectionFunnel";
+import PeakInspector from "./subComponents/PeakInspector";
 import NeuralGraph from "./subComponents/NeuralGraph/NeuralGraph";
 import ChartLegend from "./subComponents/NeuralGraph/ChartLegend";
 import ChartDisplayToggles from "./subComponents/NeuralGraph/ChartDisplayToggles";
@@ -21,6 +24,7 @@ import NeuralFullPlateReportModal from "./NeuralFullPlateReportModal";
 import TemplateMenu from "./templates/TemplateMenu";
 import "../NeuralAnalysis/styles/NeuralAnalysisModal.css";
 import {
+  useNeuralInspector,
   useNeuralInteraction,
   useNeuralResults,
   useNeuralSelection,
@@ -71,6 +75,40 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
   // ---- Report-generation state + handlers ---------------------------------
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [fullPlateModalOpen, setFullPlateModalOpen] = useState(false);
+
+  // Accordion state for the modal's right column. Each entry maps a
+  // section key to whether its body is expanded. Both Wells and Results
+  // open by default — visually identical to today. Funnel and Peak
+  // Inspector slots are added in later phases of the Decision
+  // Explanation Layer; they default closed so the first-load layout
+  // doesn't change.
+  const [rightColumnExpanded, setRightColumnExpanded] = useState({
+    wells: true,
+    results: true,
+    funnel: false, // Decision Explanation Layer — collapsed by default; opt-in.
+    inspector: false,
+  });
+  const toggleRightSection = (key) =>
+    setRightColumnExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  // Auto-expand Peak Inspector the moment a candidate is selected on
+  // the chart. Idempotent — if the user explicitly collapses the
+  // section while the same candidate is still selected, we don't fight
+  // them. (Re-selecting a different candidate is a new transition and
+  // will re-expand.)
+  const { selectedCandidateIndex } = useNeuralInspector();
+  const prevSelectedIndexRef = useRef(null);
+  useEffect(() => {
+    if (
+      selectedCandidateIndex !== null &&
+      selectedCandidateIndex !== prevSelectedIndexRef.current
+    ) {
+      setRightColumnExpanded((prev) =>
+        prev.inspector ? prev : { ...prev, inspector: true }
+      );
+    }
+    prevSelectedIndexRef.current = selectedCandidateIndex;
+  }, [selectedCandidateIndex]);
 
   const peakResults = pipelineResults.spikeResults;
   const burstResults = pipelineResults.burstResults;
@@ -243,32 +281,34 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
                 Generate Report
               </span>
               <div className="neural-analysis-modal__report-actions">
-                <Tooltip title={singleWellTooltip} arrow placement="top">
-                  <span>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      startIcon={<DescriptionIcon />}
-                      onClick={handleGenerateReport}
-                      disabled={isSingleWellDisabled}
-                    >
-                      Single-Well CSV
-                    </Button>
-                  </span>
-                </Tooltip>
-                <Tooltip title={fullPlateTooltip} arrow placement="top">
-                  <span>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      startIcon={<DashboardIcon />}
-                      onClick={handleGenerateFullPlateReport}
-                      disabled={isFullPlateDisabled}
-                    >
-                      Full-Plate CSV
-                    </Button>
-                  </span>
-                </Tooltip>
+                <div className="neural-analysis-modal__report-actions-csv-group">
+                  <Tooltip title={singleWellTooltip} arrow placement="top">
+                    <span>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        startIcon={<DescriptionIcon />}
+                        onClick={handleGenerateReport}
+                        disabled={isSingleWellDisabled}
+                      >
+                        Single-Well CSV
+                      </Button>
+                    </span>
+                  </Tooltip>
+                  <Tooltip title={fullPlateTooltip} arrow placement="top">
+                    <span>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        startIcon={<DashboardIcon />}
+                        onClick={handleGenerateFullPlateReport}
+                        disabled={isFullPlateDisabled}
+                      >
+                        Full-Plate CSV
+                      </Button>
+                    </span>
+                  </Tooltip>
+                </div>
                 <TemplateMenu />
               </div>
             </div>
@@ -302,8 +342,37 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
               <NeuralGraph className="neural-graph" ref={neuralGraphRef} />
             </section>
             <section className="selector-and-average-graph">
-              <NeuralWellSelector />
-              <NeuralResults />
+              <CollapsibleSection
+                title="Wells"
+                expanded={rightColumnExpanded.wells}
+                onToggle={() => toggleRightSection("wells")}
+              >
+                <NeuralWellSelector />
+              </CollapsibleSection>
+              <CollapsibleSection
+                title="Analysis Results"
+                expanded={rightColumnExpanded.results}
+                onToggle={() => toggleRightSection("results")}
+                growWhenExpanded
+              >
+                <NeuralResults />
+              </CollapsibleSection>
+              <CollapsibleSection
+                title="Detection Funnel"
+                expanded={rightColumnExpanded.funnel}
+                onToggle={() => toggleRightSection("funnel")}
+                growWhenExpanded
+              >
+                <DetectionFunnel />
+              </CollapsibleSection>
+              <CollapsibleSection
+                title="Peak Inspector"
+                expanded={rightColumnExpanded.inspector}
+                onToggle={() => toggleRightSection("inspector")}
+                growWhenExpanded
+              >
+                <PeakInspector />
+              </CollapsibleSection>
             </section>
           </div>
         </div>

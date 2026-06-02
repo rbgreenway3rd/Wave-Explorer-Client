@@ -21,13 +21,15 @@
      * the Advanced Settings card's content occupies its compact 8rem
      * left rail and the rest of its cell is dark panel background. */
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    /* Hard cap on row height. The bar must not grow when a section is
-     * opened in the Advanced Tweakables card — otherwise the chart
-     * shrinks and the user has to scroll to see it. Capping the row
-     * (not just the container) forces each grid item to be no taller
-     * than 14rem; tall section content scrolls *inside* the Advanced
-     * Tweakables card's right pane via its own overflow-y rule. */
-    grid-template-rows: minmax(0, 14rem);
+    /* Bar sits in a flex-row parent (`.modal-header`) whose height is
+     * locked to 14rem (see NeuralAnalysisModal.css). Default flex
+     * `align-items: stretch` makes the bar fill that 14rem. The grid
+     * row uses `minmax(14rem, 1fr)` so the cards always fill the bar
+     * exactly — the 1fr term absorbs the (currently zero) leftover
+     * height, and the 14rem floor matches the parent's height to keep
+     * the bar consistent if a future layout change makes the parent
+     * taller. */
+    grid-template-rows: minmax(14rem, 1fr);
     align-items: stretch;
     box-sizing: border-box;
     width: 100%;

@@ -40,6 +40,11 @@ const EMPTY_RESULTS = Object.freeze({
   spikeResults: [],
   burstResults: [],
   metrics: {},
+  candidateDiagnostics: Object.freeze({
+    records: [],
+    truncatedCount: 0,
+    totalCandidates: 0,
+  }),
 });
 
 export const useNeuralResults = () => {

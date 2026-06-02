@@ -9,7 +9,11 @@ import {
   computeResidualRobustStd,
   computeLocalRobustStd,
 } from "./utilities/detectSpikes";
-import { computeSignalStats } from "./utilities/peakGeometry";
+import {
+  computeSignalStats,
+  classifyMargin,
+  GATE_ACTIVITY,
+} from "./utilities/peakGeometry";
 import { detectBursts } from "./utilities/burstDetection";
 import {
   identifyOutlierSpikes,
@@ -214,6 +218,11 @@ export function runNeuralAnalysisPipeline({
 
   // 4. Spike detection (on cleaned signal without outliers)
   let spikeResults = [];
+  // Hoisted outside the `if (runSpikeDetection)` block so the pipeline's
+  // final return can read it whether detection runs or not. Empty Map
+  // when detection didn't run; populated by detectSpikes and Gate-9
+  // (activity threshold) demotion otherwise.
+  let candidateDiagnostics = new Map();
   if (analysis.runSpikeDetection) {
     // Optional per-sample local σ — kicks in when the user sets a
     // Noise Window > 0 in the UI. Cached separately so the same
@@ -262,7 +271,11 @@ export function runNeuralAnalysisPipeline({
       }
     }
 
-    spikeResults = memo(
+    // Memo wraps both the kept spikes and the diagnostic Map together
+    // so the candidate-overlay data stays cache-coherent with the spike
+    // array. Without bundling, a cache hit would return the spikes but
+    // not the diagnostics (the Map would be empty on a cached run).
+    const detectResult = memo(
       "detectSpikes",
       [
         id(processedForDetection),
@@ -283,8 +296,9 @@ export function runNeuralAnalysisPipeline({
         id(pipelineOutlierSpikes),
       ],
       () =>
-        perf.time("detectSpikes", () =>
-          detectSpikes(processedForDetection, {
+        perf.time("detectSpikes", () => {
+          const diag = new Map();
+          const spikes = detectSpikes(processedForDetection, {
             prominence: params.spikeProminence,
             window: params.spikeWindow,
             minWidth: params.spikeMinWidth,
@@ -294,6 +308,7 @@ export function runNeuralAnalysisPipeline({
             noiseFloorMultiplier: params.noiseFloorMultiplier,
             noiseReference: preSmoothingSignal,
             localStds,
+            diagnostics: diag,
             useBaselineForBases: baselineY !== null,
             baselineY: baselineY ?? undefined,
             // Outlier spike structures (with start/peak/end indices)
@@ -306,9 +321,12 @@ export function runNeuralAnalysisPipeline({
             // radius adapts to spike width regardless of signal type
             // or sample rate.
             outlierSpikes: pipelineOutlierSpikes,
-          })
-        )
+          });
+          return { spikes, diagnostics: diag };
+        })
     );
+    spikeResults = detectResult.spikes;
+    candidateDiagnostics = detectResult.diagnostics;
 
     // 5. Flag detected peaks that match the identified outlier set
     // with isOutlier=true. Pure visual classification — every peak's
@@ -333,7 +351,7 @@ export function runNeuralAnalysisPipeline({
     // `processed` here, which is what the modal also renders as
     // processedSignal) so the filter and the chart line agree exactly.
     if (params.activityThresholdEnabled && spikeResults.length > 0) {
-      spikeResults = memo(
+      const activityResult = memo(
         "activityThreshold",
         [
           id(spikeResults),
@@ -350,15 +368,66 @@ export function runNeuralAnalysisPipeline({
               if (y > yMax) yMax = y;
             }
             if (!isFinite(yMin) || !isFinite(yMax) || yMax === yMin) {
-              return spikeResults; // degenerate signal; nothing to filter against
+              return { spikes: spikeResults, demoted: [] };
             }
             const absoluteThreshold =
               yMin + params.activityThresholdRatio * (yMax - yMin);
-            return spikeResults.filter(
-              (pk) => pk.peakCoords.y >= absoluteThreshold
-            );
+            const yScale = Math.max(yMax - yMin, 1e-9);
+            const kept = [];
+            const demoted = [];
+            for (const pk of spikeResults) {
+              if (pk.peakCoords.y >= absoluteThreshold) {
+                kept.push(pk);
+              } else {
+                demoted.push({
+                  index: pk.index,
+                  peakX: pk.peakCoords.x,
+                  peakY: pk.peakCoords.y,
+                  threshold: absoluteThreshold,
+                  yScale,
+                  detectionProminence:
+                    typeof pk.detectionProminence === "number"
+                      ? pk.detectionProminence
+                      : null,
+                });
+              }
+            }
+            return { spikes: kept, demoted };
           })
       );
+      spikeResults = activityResult.spikes;
+      // Gate 9: demote activity-threshold rejections into the diagnostics
+      // Map so the Inspector can show "rejected by activity threshold" on
+      // peaks that detectSpikes considered valid. Records that were
+      // KEPT through detectSpikes get their rejectedBy flipped to
+      // GATE_ACTIVITY here; the rejection's tier is computed against
+      // the signal's Y range.
+      for (const d of activityResult.demoted) {
+        const tier = classifyMargin(d.peakY, d.threshold, d.yScale);
+        let rec = candidateDiagnostics.get(d.index);
+        if (!rec) {
+          rec = {
+            index: d.index,
+            peakX: d.peakX,
+            peakY: d.peakY,
+            rejectedBy: GATE_ACTIVITY,
+            tier,
+            gates: [],
+            nmsSuppressor: null,
+            detectionProminence: d.detectionProminence,
+          };
+          candidateDiagnostics.set(d.index, rec);
+        }
+        rec.rejectedBy = GATE_ACTIVITY;
+        rec.tier = tier;
+        rec.gates.push({
+          id: GATE_ACTIVITY,
+          value: d.peakY,
+          threshold: d.threshold,
+          tier,
+          status: "fail",
+        });
+      }
     }
   }
 
@@ -430,6 +499,25 @@ export function runNeuralAnalysisPipeline({
 
   perf.flushGroup();
 
+  // Finalize candidate diagnostics for the Decision Explanation Layer.
+  // Cap to top-MAX_DIAGNOSTIC_RECORDS by detection prominence so the
+  // worker → main-thread payload stays bounded on noisy wells. Records
+  // without a measured detection prominence (zone/activity rejections)
+  // sort last; their visual placement is by peakY anyway.
+  const MAX_DIAGNOSTIC_RECORDS = 1500;
+  let diagRecords = Array.from(candidateDiagnostics.values());
+  const totalCandidates = diagRecords.length;
+  let truncatedCount = 0;
+  if (diagRecords.length > MAX_DIAGNOSTIC_RECORDS) {
+    diagRecords.sort((a, b) => {
+      const ap = a.detectionProminence ?? -Infinity;
+      const bp = b.detectionProminence ?? -Infinity;
+      return bp - ap;
+    });
+    truncatedCount = diagRecords.length - MAX_DIAGNOSTIC_RECORDS;
+    diagRecords = diagRecords.slice(0, MAX_DIAGNOSTIC_RECORDS);
+  }
+
   // Return the processed signal for display
   // Outliers have been removed from detection but will be marked as spikes
   return {
@@ -437,6 +525,11 @@ export function runNeuralAnalysisPipeline({
     spikeResults,
     burstResults,
     metrics,
+    candidateDiagnostics: {
+      records: diagRecords,
+      truncatedCount,
+      totalCandidates,
+    },
   };
 }
 

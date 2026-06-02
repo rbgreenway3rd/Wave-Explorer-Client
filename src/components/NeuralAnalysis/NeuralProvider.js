@@ -3,6 +3,7 @@ import { NeuralSelectionProvider } from "./contexts/NeuralSelectionContext";
 import { NeuralSettingsProvider } from "./contexts/NeuralSettingsContext";
 import { NeuralInteractionProvider } from "./contexts/NeuralInteractionContext";
 import { NeuralResultsProvider } from "./contexts/NeuralResultsContext";
+import { NeuralInspectorProvider } from "./contexts/NeuralInspectorContext";
 
 /**
  * NeuralProvider — composes the four narrower Neural-modal contexts.
@@ -24,7 +25,9 @@ export const NeuralProvider = ({ children }) => (
   <NeuralSelectionProvider>
     <NeuralSettingsProvider>
       <NeuralInteractionProvider>
-        <NeuralResultsProvider>{children}</NeuralResultsProvider>
+        <NeuralResultsProvider>
+          <NeuralInspectorProvider>{children}</NeuralInspectorProvider>
+        </NeuralResultsProvider>
       </NeuralInteractionProvider>
     </NeuralSettingsProvider>
   </NeuralSelectionProvider>
@@ -40,3 +43,4 @@ export { useNeuralSelection } from "./contexts/NeuralSelectionContext";
 export { useNeuralSettings } from "./contexts/NeuralSettingsContext";
 export { useNeuralInteraction } from "./contexts/NeuralInteractionContext";
 export { useNeuralResults } from "./contexts/NeuralResultsContext";
+export { useNeuralInspector } from "./contexts/NeuralInspectorContext";

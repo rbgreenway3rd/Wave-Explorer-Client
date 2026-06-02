@@ -52,7 +52,10 @@
  */
 .neural-chart-controls > .neural-control-panel.ui-panel.ui-panel--dark {
   padding: var(--space-1) var(--space-2);
-  min-height: 7rem;
+  /* Fill the parent grid row exactly — combined with the parent's
+   * `grid-template-rows: 14rem`, this guarantees every card is the
+   * same fixed height even when its content is short. */
+  height: 100%;
 }
 
 /* Detection panels inside the Advanced Tweakables disclosure (Outlier /

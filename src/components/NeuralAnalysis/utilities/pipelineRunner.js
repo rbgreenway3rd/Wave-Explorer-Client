@@ -213,6 +213,12 @@ export function makePipelineRunner() {
         spikeResults: workerResult.spikes,
         burstResults: workerResult.bursts,
         metrics: workerResult.metrics,
+        candidateDiagnostics:
+          workerResult.candidateDiagnostics || {
+            records: [],
+            truncatedCount: 0,
+            totalCandidates: 0,
+          },
       };
     },
 

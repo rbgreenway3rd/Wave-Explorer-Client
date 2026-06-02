@@ -52,6 +52,8 @@ const ChartDisplayToggles = () => {
     showNoiseFloorOverlay,
     setShowNoiseFloorOverlay,
     noiseFloorMultiplier,
+    showRejectedCandidates,
+    setShowRejectedCandidates,
   } = useNeuralSettings();
   // Disable the noise-floor sub-toggle when the gate itself is off — the
   // overlay would draw at base + 0 × σ = base, which is meaningless.
@@ -289,6 +291,45 @@ const ChartDisplayToggles = () => {
           </Tooltip>
         </>
       )}
+
+      {/* Separator before the candidate-overlay toggle. */}
+      <span
+        aria-hidden="true"
+        style={{
+          width: 1,
+          height: 18,
+          background: "rgba(255, 255, 255, 0.18)",
+        }}
+      />
+
+      <Tooltip
+        title="Show rejected near-miss candidates as small ghost dots, color-coded by which gate rejected each. Kept peaks that were close to a rejection get a yellow ring (marginal-pass)."
+        arrow
+        placement="bottom"
+      >
+        <FormControlLabel
+          control={
+            <Switch
+              size="small"
+              checked={!!showRejectedCandidates}
+              onChange={(_, checked) => setShowRejectedCandidates(checked)}
+              sx={switchSx}
+            />
+          }
+          label={
+            <span
+              style={{
+                fontSize: 12,
+                color: "#ddd",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Rejected Candidates
+            </span>
+          }
+          sx={{ margin: 0, gap: "0.25rem" }}
+        />
+      </Tooltip>
     </div>
   );
 };
