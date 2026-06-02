@@ -16,6 +16,7 @@ import NeuralWellSelector from "./subComponents/WellSelection/NeuralWellSelector
 import CollapsibleSection from "./subComponents/CollapsibleSection";
 import DetectionFunnel from "./subComponents/DetectionFunnel";
 import PeakInspector from "./subComponents/PeakInspector";
+import Distributions from "./subComponents/Distributions";
 import NeuralGraph from "./subComponents/NeuralGraph/NeuralGraph";
 import ChartLegend from "./subComponents/NeuralGraph/ChartLegend";
 import ChartDisplayToggles from "./subComponents/NeuralGraph/ChartDisplayToggles";
@@ -87,6 +88,7 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
     results: true,
     funnel: false, // Decision Explanation Layer — collapsed by default; opt-in.
     inspector: false,
+    distributions: false,
   });
   const toggleRightSection = (key) =>
     setRightColumnExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -350,14 +352,6 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
                 <NeuralWellSelector />
               </CollapsibleSection>
               <CollapsibleSection
-                title="Analysis Results"
-                expanded={rightColumnExpanded.results}
-                onToggle={() => toggleRightSection("results")}
-                growWhenExpanded
-              >
-                <NeuralResults />
-              </CollapsibleSection>
-              <CollapsibleSection
                 title="Detection Funnel"
                 expanded={rightColumnExpanded.funnel}
                 onToggle={() => toggleRightSection("funnel")}
@@ -372,6 +366,22 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
                 growWhenExpanded
               >
                 <PeakInspector />
+              </CollapsibleSection>
+              <CollapsibleSection
+                title="Distributions"
+                expanded={rightColumnExpanded.distributions}
+                onToggle={() => toggleRightSection("distributions")}
+                growWhenExpanded
+              >
+                <Distributions />
+              </CollapsibleSection>
+              <CollapsibleSection
+                title="Analysis Results"
+                expanded={rightColumnExpanded.results}
+                onToggle={() => toggleRightSection("results")}
+                growWhenExpanded
+              >
+                <NeuralResults />
               </CollapsibleSection>
             </section>
           </div>

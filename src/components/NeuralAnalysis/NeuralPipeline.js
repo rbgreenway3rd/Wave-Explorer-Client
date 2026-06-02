@@ -73,6 +73,38 @@ export function calculateBurstMetrics(bursts) {
   return { avgDuration, avgSpikeCount };
 }
 
+// Compact linear histogram for the candidate prominence distribution.
+// Returned as typed arrays for cheap structured-clone across the worker
+// boundary (~600 B regardless of input size). Counts are unbiased —
+// every local maximum's prominence is binned, not just the survivors.
+function binLinearProminences(values, nBins) {
+  if (!Array.isArray(values) || values.length === 0) {
+    return {
+      edges: new Float32Array([0, 1]),
+      counts: new Uint32Array([0]),
+      max: 0,
+    };
+  }
+  let max = 0;
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i];
+    if (Number.isFinite(v) && v > max) max = v;
+  }
+  if (!(max > 0)) max = 1; // degenerate: all zeros / negatives
+  const edges = new Float32Array(nBins + 1);
+  for (let i = 0; i <= nBins; i++) edges[i] = (i / nBins) * max;
+  const counts = new Uint32Array(nBins);
+  const denom = max / nBins;
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i];
+    if (!Number.isFinite(v) || v < 0) continue;
+    let bin = Math.floor(v / denom);
+    if (bin >= nBins) bin = nBins - 1;
+    counts[bin]++;
+  }
+  return { edges, counts, max };
+}
+
 // --- Main Pipeline ---
 
 export function runNeuralAnalysisPipeline({
@@ -223,6 +255,14 @@ export function runNeuralAnalysisPipeline({
   // when detection didn't run; populated by detectSpikes and Gate-9
   // (activity threshold) demotion otherwise.
   let candidateDiagnostics = new Map();
+  // Compact candidate-prominence histogram for the Distributions panel.
+  // Empty (zero-bin) shape when detection didn't run; populated below
+  // when it does. Lives in `candidateDistributions` to leave room for
+  // future per-attribute histograms (amplitude, noise σ, …) the worker
+  // may want to emit pre-binned.
+  let candidateDistributions = {
+    prominence: { edges: new Float32Array([0, 1]), counts: new Uint32Array([0]), max: 0 },
+  };
   if (analysis.runSpikeDetection) {
     // Optional per-sample local σ — kicks in when the user sets a
     // Noise Window > 0 in the UI. Cached separately so the same
@@ -298,6 +338,12 @@ export function runNeuralAnalysisPipeline({
       () =>
         perf.time("detectSpikes", () => {
           const diag = new Map();
+          // Collect every local maximum's detection prominence so we
+          // can bin into a histogram. Distinct from the diagnostics Map
+          // (which is capped at 1500 records sorted by prominence and
+          // would therefore over-represent the high tail). This array
+          // is unbiased and released immediately after binning below.
+          const candProms = [];
           const spikes = detectSpikes(processedForDetection, {
             prominence: params.spikeProminence,
             window: params.spikeWindow,
@@ -309,6 +355,7 @@ export function runNeuralAnalysisPipeline({
             noiseReference: preSmoothingSignal,
             localStds,
             diagnostics: diag,
+            candidateProminencesOut: candProms,
             useBaselineForBases: baselineY !== null,
             baselineY: baselineY ?? undefined,
             // Outlier spike structures (with start/peak/end indices)
@@ -322,11 +369,20 @@ export function runNeuralAnalysisPipeline({
             // or sample rate.
             outlierSpikes: pipelineOutlierSpikes,
           });
-          return { spikes, diagnostics: diag };
+          // Bin the raw prominences into 50 linear bins between 0 and
+          // max. Compact wire form: ~600 B for the binEdges + counts
+          // pair regardless of how many candidates there were.
+          const prominenceHistogram = binLinearProminences(candProms, 50);
+          return {
+            spikes,
+            diagnostics: diag,
+            distributions: { prominence: prominenceHistogram },
+          };
         })
     );
     spikeResults = detectResult.spikes;
     candidateDiagnostics = detectResult.diagnostics;
+    candidateDistributions = detectResult.distributions;
 
     // 5. Flag detected peaks that match the identified outlier set
     // with isOutlier=true. Pure visual classification — every peak's
@@ -530,6 +586,7 @@ export function runNeuralAnalysisPipeline({
       truncatedCount,
       totalCandidates,
     },
+    candidateDistributions,
   };
 }
 

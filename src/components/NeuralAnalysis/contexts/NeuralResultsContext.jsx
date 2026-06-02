@@ -45,6 +45,13 @@ const EMPTY_RESULTS = Object.freeze({
     truncatedCount: 0,
     totalCandidates: 0,
   }),
+  candidateDistributions: Object.freeze({
+    prominence: Object.freeze({
+      edges: new Float32Array([0, 1]),
+      counts: new Uint32Array([0]),
+      max: 0,
+    }),
+  }),
 });
 
 export const useNeuralResults = () => {

@@ -219,6 +219,14 @@ export function makePipelineRunner() {
             truncatedCount: 0,
             totalCandidates: 0,
           },
+        candidateDistributions:
+          workerResult.candidateDistributions || {
+            prominence: {
+              edges: new Float32Array([0, 1]),
+              counts: new Uint32Array([0]),
+              max: 0,
+            },
+          },
       };
     },
 
