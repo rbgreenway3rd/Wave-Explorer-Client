@@ -1,0 +1,228 @@
+/* PeakInspector — gate-by-gate diagnostic panel for a single peak. */
+
+.peak-inspector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  color: #ddd;
+  font-size: 12px;
+  min-height: 0;
+}
+
+.peak-inspector--empty {
+  align-items: center;
+  text-align: center;
+  color: #aaa;
+  padding: 18px 14px;
+  gap: 10px;
+}
+.peak-inspector--empty .MuiSvgIcon-root {
+  color: rgba(255, 255, 255, 0.3);
+}
+.peak-inspector--empty p {
+  margin: 0;
+  line-height: 1.4;
+}
+.peak-inspector__empty-hint {
+  font-size: 11px;
+  color: #888;
+}
+
+.peak-inspector__clear-btn {
+  margin-top: 6px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+  color: #ccc;
+  font-size: 11px;
+  cursor: pointer;
+}
+.peak-inspector__clear-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.peak-inspector__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.peak-inspector__header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.peak-inspector__coords {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: #ddd;
+  font-variant-numeric: tabular-nums;
+}
+.peak-inspector__coords strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+.peak-inspector__sub {
+  font-size: 11px;
+  color: #888;
+}
+
+.peak-inspector__close-btn {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+}
+.peak-inspector__close-btn:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.05);
+  color: #ddd;
+}
+
+.peak-inspector__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.peak-inspector__badge--kept {
+  background: rgba(139, 195, 74, 0.16);
+  color: #b3d68b;
+  border: 1px solid rgba(139, 195, 74, 0.4);
+}
+.peak-inspector__badge--rejected {
+  background: rgba(244, 67, 54, 0.16);
+  color: #f1928a;
+  border: 1px solid rgba(244, 67, 54, 0.4);
+}
+.peak-inspector__badge-gate {
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #ddd;
+}
+.peak-inspector__badge-tier {
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #aaa;
+  font-size: 10px;
+}
+
+.peak-inspector__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.peak-inspector__table th {
+  text-align: left;
+  font-weight: 500;
+  color: #888;
+  padding: 4px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.peak-inspector__table td {
+  padding: 4px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+.peak-inspector__table tr:last-child td {
+  border-bottom: none;
+}
+.peak-inspector__table th:nth-child(2),
+.peak-inspector__table th:nth-child(3),
+.peak-inspector__table th:nth-child(4),
+.peak-inspector__table td:nth-child(2),
+.peak-inspector__table td:nth-child(3),
+.peak-inspector__table td:nth-child(4) {
+  text-align: right;
+  color: #ccc;
+}
+.peak-inspector__table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.peak-inspector__gate-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.peak-inspector__row--pass {
+  color: #ddd;
+}
+.peak-inspector__row--fail td {
+  background: rgba(244, 67, 54, 0.06);
+}
+.peak-inspector__row--dimmed {
+  opacity: 0.4;
+}
+.peak-inspector__row--dimmed td {
+  color: #777;
+}
+
+.peak-inspector__status-cell {
+  white-space: nowrap;
+}
+.peak-inspector__status {
+  font-weight: 600;
+  font-size: 11px;
+}
+.peak-inspector__status--pass {
+  color: #8bc34a;
+}
+.peak-inspector__status--fail {
+  color: #f44336;
+}
+.peak-inspector__status--skip {
+  color: #666;
+}
+
+.peak-inspector__nms-cell {
+  text-align: left !important;
+  font-size: 11px;
+  color: #ddd;
+}
+.peak-inspector__suppressor-link {
+  background: transparent;
+  border: none;
+  color: #80deea;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+.peak-inspector__suppressor-link:hover:not(:disabled) {
+  color: #b2ebf2;
+}
+.peak-inspector__suppressor-link:disabled {
+  color: #666;
+  text-decoration: none;
+  cursor: not-allowed;
+}
+.peak-inspector__nms-meta {
+  color: #aaa;
+  font-size: 11px;
+}

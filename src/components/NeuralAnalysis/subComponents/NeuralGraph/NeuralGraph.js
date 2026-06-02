@@ -10,6 +10,7 @@ import React, {
 } from "react";
 import { Line } from "react-chartjs-2";
 import {
+  useNeuralInspector,
   useNeuralInteraction,
   useNeuralResults,
   useNeuralSelection,
@@ -33,7 +34,15 @@ import {
   PARAM_VIZ_PROMINENCE_STYLE,
   PARAM_VIZ_WINDOW_STYLE,
   PARAM_VIZ_NOISE_STYLE,
+  CANDIDATE_GATE_COLOR_BY_ID,
+  CANDIDATE_MARKER_STYLE,
+  MARGINAL_PASS_RING_STYLE,
 } from "./chartStyles";
+import {
+  GATE_KEPT,
+  TIER_MARGINAL_FAIL,
+  TIER_CLEAR_PASS,
+} from "../../utilities/peakGeometry";
 
 // Cap on samples drawn along the top edge of each peak's AUC polygon.
 // Wide peaks (hundreds of samples between left and right base) were
@@ -425,6 +434,10 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       draftSpikeWindow,
       draftNoiseFloorMultiplier,
       noiseFloorMultiplier,
+      // Candidate overlay (Decision Explanation Layer).
+      showRejectedCandidates,
+      candidateShowAllRejections,
+      candidateHighlightGate,
     } = useNeuralSettings();
     const {
       defineROI,
@@ -441,9 +454,11 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       effectiveSpikeProminence,
       effectiveSpikeWindow,
     } = useNeuralResults();
+    const { selectCandidate } = useNeuralInspector();
     const processedSignal = pipelineResults.processedSignal;
     const peakResults = pipelineResults.spikeResults;
     const burstResults = pipelineResults.burstResults;
+    const candidateDiagnostics = pipelineResults.candidateDiagnostics;
     const { globalMaxY } = useContext(DataContext);
     const [chartData, setChartData] = useState(null);
     // ROI selection state. roiEnd / annotationKey are set during click-drag
@@ -665,12 +680,19 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       [processedSignal]
     );
     // Ordinary spikes — regular detection result. Drawn as solid red dots.
+    // Each point carries its sample-index in the signal so the chart's
+    // onClick handler can resolve the click back to a candidate-
+    // diagnostics record without re-scanning by coordinates.
     const peakScatter = useMemo(
       () =>
         Array.isArray(peakResults) && peakResults.length > 0
           ? peakResults
               .filter((pk) => !pk.isOutlier)
-              .map((pk) => ({ x: pk.peakCoords.x, y: pk.peakCoords.y }))
+              .map((pk) => ({
+                x: pk.peakCoords.x,
+                y: pk.peakCoords.y,
+                _candidateIndex: pk.index,
+              }))
           : [],
       [peakResults]
     );
@@ -682,7 +704,11 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
         Array.isArray(peakResults) && peakResults.length > 0
           ? peakResults
               .filter((pk) => pk.isOutlier)
-              .map((pk) => ({ x: pk.peakCoords.x, y: pk.peakCoords.y }))
+              .map((pk) => ({
+                x: pk.peakCoords.x,
+                y: pk.peakCoords.y,
+                _candidateIndex: pk.index,
+              }))
           : [],
       [peakResults]
     );
@@ -696,6 +722,115 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
           : [],
       [peakResults]
     );
+
+    // Diagnostic record lookup by sample index. Keyed once when the
+    // pipeline result changes so per-frame consumers (the kept-peak
+    // ring colors and the candidate scatter) can stay O(N).
+    const candidateDiagByIndex = useMemo(() => {
+      const m = new Map();
+      const records = candidateDiagnostics?.records;
+      if (Array.isArray(records)) {
+        for (const r of records) m.set(r.index, r);
+      }
+      return m;
+    }, [candidateDiagnostics]);
+
+    // Ghost-marker dataset for rejected candidates within the
+    // visibility band. Three filters apply, in order:
+    //   1. Skip kept candidates (rejectedBy === GATE_KEPT).
+    //   2. Apply the tier ceiling — near-misses only by default, or all
+    //      rejections when the funnel's "Include clear-fail" toggle is on.
+    //   3. If the funnel highlights a single gate, hide every other gate.
+    const tierCeiling = candidateShowAllRejections ? 3 : TIER_MARGINAL_FAIL;
+    const candidateScatter = useMemo(() => {
+      if (!showRejectedCandidates) return [];
+      const records = candidateDiagnostics?.records;
+      if (!Array.isArray(records) || records.length === 0) return [];
+      const out = [];
+      for (const r of records) {
+        if (r.rejectedBy === GATE_KEPT) continue;
+        if (r.tier > tierCeiling) continue;
+        if (
+          candidateHighlightGate !== null &&
+          r.rejectedBy !== candidateHighlightGate
+        ) {
+          continue;
+        }
+        out.push({ x: r.peakX, y: r.peakY, _candidateIndex: r.index });
+      }
+      return out;
+    }, [
+      showRejectedCandidates,
+      candidateDiagnostics,
+      tierCeiling,
+      candidateHighlightGate,
+    ]);
+
+    // Parallel-indexed colors so chart.js paints each ghost marker by
+    // the gate that rejected its candidate. Built in a second pass so
+    // memo deps stay readable; both arrays must use the SAME filter so
+    // their indices remain aligned.
+    const candidateScatterColors = useMemo(() => {
+      if (!showRejectedCandidates) return [];
+      const records = candidateDiagnostics?.records;
+      if (!Array.isArray(records) || records.length === 0) return [];
+      const out = [];
+      for (const r of records) {
+        if (r.rejectedBy === GATE_KEPT) continue;
+        if (r.tier > tierCeiling) continue;
+        if (
+          candidateHighlightGate !== null &&
+          r.rejectedBy !== candidateHighlightGate
+        ) {
+          continue;
+        }
+        out.push(
+          CANDIDATE_GATE_COLOR_BY_ID[r.rejectedBy] ||
+            CANDIDATE_GATE_COLOR_BY_ID[1]
+        );
+      }
+      return out;
+    }, [
+      showRejectedCandidates,
+      candidateDiagnostics,
+      tierCeiling,
+      candidateHighlightGate,
+    ]);
+
+    // Per-kept-peak border styling. When the candidate overlay is on,
+    // kept peaks whose overall tier > clear-pass get a yellow ring —
+    // a visible "barely-passing" warning the user can spot at a glance.
+    // When off, kept peaks fall back to the default PEAK_STYLE.border.
+    const keptPeakBorders = useMemo(() => {
+      const fallback = PEAK_STYLE.border;
+      if (!showRejectedCandidates) return fallback;
+      const arr = [];
+      for (const pk of peakResults || []) {
+        if (pk.isOutlier) continue;
+        const rec = candidateDiagByIndex.get(pk.index);
+        arr.push(
+          rec && rec.tier > TIER_CLEAR_PASS
+            ? MARGINAL_PASS_RING_STYLE.color
+            : fallback
+        );
+      }
+      return arr;
+    }, [showRejectedCandidates, peakResults, candidateDiagByIndex]);
+    const keptPeakBorderWidths = useMemo(() => {
+      const fallback = PEAK_STYLE.borderWidth;
+      if (!showRejectedCandidates) return fallback;
+      const arr = [];
+      for (const pk of peakResults || []) {
+        if (pk.isOutlier) continue;
+        const rec = candidateDiagByIndex.get(pk.index);
+        arr.push(
+          rec && rec.tier > TIER_CLEAR_PASS
+            ? MARGINAL_PASS_RING_STYLE.borderWidth
+            : fallback
+        );
+      }
+      return arr;
+    }, [showRejectedCandidates, peakResults, candidateDiagByIndex]);
 
     // Attach the AUC-fill plugin's live state directly to the chart
     // instance. The plugin reads from `chart.$aucFill` on every draw,
@@ -803,6 +938,24 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
           borderWidth: WAVE_STYLE.width,
           fill: false,
         },
+        // Candidate ghost markers (Decision Explanation Layer). Drawn
+        // BEFORE Detected Spikes so the red kept-peak dots paint over
+        // any candidate that lands on the same pixel — kept peaks win
+        // z-order on overlap.
+        ...(candidateScatter.length > 0
+          ? [
+              {
+                type: "scatter",
+                label: "Rejected Candidates",
+                data: candidateScatter,
+                pointBackgroundColor: candidateScatterColors,
+                pointBorderColor: candidateScatterColors,
+                pointRadius: CANDIDATE_MARKER_STYLE.radius,
+                showLine: false,
+                borderWidth: CANDIDATE_MARKER_STYLE.borderWidth,
+              },
+            ]
+          : []),
         ...(peakScatter.length > 0
           ? [
               {
@@ -810,10 +963,10 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
                 label: "Detected Spikes",
                 data: peakScatter,
                 pointBackgroundColor: PEAK_STYLE.fill,
-                pointBorderColor: PEAK_STYLE.border,
+                pointBorderColor: keptPeakBorders,
                 pointRadius: PEAK_STYLE.radius,
                 showLine: false,
-                borderWidth: PEAK_STYLE.borderWidth,
+                borderWidth: keptPeakBorderWidths,
               },
             ]
           : []),
@@ -837,7 +990,20 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       // Mutate chart data imperatively without triggering re-render
       chart.data.datasets = newDatasets;
       perf.time("chart.update (data)", () => chart.update("none"));
-    }, [processedSignal, noiseSuppressionActive, chartPoints, peakScatter, outlierScatter, baseScatter, chartData, showPeakBases]);
+    }, [
+      processedSignal,
+      noiseSuppressionActive,
+      chartPoints,
+      peakScatter,
+      outlierScatter,
+      baseScatter,
+      chartData,
+      showPeakBases,
+      candidateScatter,
+      candidateScatterColors,
+      keptPeakBorders,
+      keptPeakBorderWidths,
+    ]);
 
     // Memoize chartOptions - recalculate when processedSignal changes to update axis ranges
     // Initialize with pan/zoom enabled based on initial props
@@ -1083,11 +1249,76 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
           ]
         : ["mousemove", "mouseout", "click", "touchstart", "touchmove"];
 
+      // Chart-level click handler — used to populate the Peak Inspector.
+      // ROI-define mode owns clicks for drawing rectangles, so we
+      // silently no-op there.
+      //
+      // Hit-testing approach: bypass chart.js' built-in hit-test
+      // (which is tuned for the 250K-point line dataset and inconsistent
+      // for small scatter markers). Instead, scan the scatter datasets
+      // ourselves and pick the closest candidate-bearing point within
+      // CLICK_HIT_RADIUS_PX of the click. Walking datasets in reverse
+      // order means later-drawn datasets (kept peaks) win over earlier
+      // ones (ghost candidates) when both sit under the cursor.
+      const CLICK_HIT_RADIUS_PX = 14;
+      chart.options.onClick = (event, _elements, ch) => {
+        if (defineROI) return;
+        const canvasRect = ch.canvas.getBoundingClientRect();
+        const px = event.native
+          ? event.native.clientX - canvasRect.left
+          : event.x;
+        const py = event.native
+          ? event.native.clientY - canvasRect.top
+          : event.y;
+        if (typeof px !== "number" || typeof py !== "number") return;
+        const xScale = ch.scales?.x;
+        const yScale = ch.scales?.y;
+        if (!xScale || !yScale) return;
+
+        let bestIndex = null;
+        let bestDist = CLICK_HIT_RADIUS_PX * CLICK_HIT_RADIUS_PX;
+        for (let dsIdx = ch.data.datasets.length - 1; dsIdx >= 0; dsIdx--) {
+          const ds = ch.data.datasets[dsIdx];
+          const data = ds?.data;
+          if (!Array.isArray(data) || data.length === 0) continue;
+          // Only datasets whose points carry `_candidateIndex` are
+          // clickable — skips the signal line, bases, threshold lines,
+          // burst boxes, etc.
+          const firstWithIdx = data[0];
+          if (
+            !firstWithIdx ||
+            typeof firstWithIdx._candidateIndex !== "number"
+          ) {
+            continue;
+          }
+          for (let i = 0; i < data.length; i++) {
+            const pt = data[i];
+            if (!pt || typeof pt._candidateIndex !== "number") continue;
+            const ppx = xScale.getPixelForValue(pt.x);
+            const ppy = yScale.getPixelForValue(pt.y);
+            const dx = ppx - px;
+            const dy = ppy - py;
+            const d2 = dx * dx + dy * dy;
+            if (d2 < bestDist) {
+              bestDist = d2;
+              bestIndex = pt._candidateIndex;
+            }
+          }
+          // Kept peaks are last-drawn → highest dsIdx first; if we found
+          // a hit at this layer, stop so deeper layers don't override.
+          if (bestIndex !== null) break;
+        }
+        if (bestIndex !== null) {
+          selectCandidate(bestIndex);
+        }
+      };
+
       // Use regular update() to reinitialize zoom plugin event handlers
       // This is necessary for pan/zoom to work properly when enabled
       perf.time("chart.update (full)", () => chart.update());
     }, [
       defineROI,
+      selectCandidate,
       enablePanZoom,
       panState,
       zoomState,

@@ -16,6 +16,8 @@ import {
   PARAM_VIZ_PROMINENCE_STYLE,
   PARAM_VIZ_WINDOW_STYLE,
   PARAM_VIZ_NOISE_STYLE,
+  CANDIDATE_GATE_PALETTE,
+  MARGINAL_PASS_RING_STYLE,
 } from "./chartStyles";
 
 // One short description per legend element. Surfaced as a MUI Tooltip
@@ -44,6 +46,8 @@ const LEGEND_DESCRIPTIONS = {
     "Window overlay — translucent violet band around each peak showing the NMS center-exclusion footprint (apex ± window samples). Surviving apexes are more than `window` samples apart in the final spike set. Note: this shows the *exclusion* radius, not the event width.",
   paramVizNoiseFloor:
     "Noise Floor overlay — per-peak dashed tick at max(left, right detection base) + multiplier × σ. The tick shows the per-peak threshold the noise-floor gate is applying. When Noise Window is on, σ varies block-by-block so ticks step accordingly. Outliers bypass this gate and have no tick.",
+  rejectedCandidates:
+    "Near-miss candidates that fell within 10% of some gate's threshold. Color encodes which gate rejected each: grey=prominence, purple=zone, orange=noise floor, teal=k-means, indigo=width, pink=symmetry, yellow=NMS, brown=min distance, blue=activity threshold. Kept peaks that are barely passing get a yellow ring.",
 };
 
 // Swatch primitives. Each renders a small inline preview of one chart
@@ -164,6 +168,32 @@ const IBeamSwatch = ({ color, lineWidth = 2 }) => (
   </svg>
 );
 
+// Compact palette swatch — three small circles in distinct gate colors
+// surrounded by a yellow ring. Communicates "rejected candidates,
+// color-coded by gate" + "marginal-pass ring" without needing nine
+// separate legend rows.
+const CandidatePaletteSwatch = ({ ringColor }) => (
+  <svg
+    width="24"
+    height="14"
+    viewBox="0 0 24 14"
+    aria-hidden="true"
+    style={{ flexShrink: 0 }}
+  >
+    <circle cx="4" cy="7" r="2.5" fill={CANDIDATE_GATE_PALETTE.prominence} />
+    <circle cx="10" cy="7" r="2.5" fill={CANDIDATE_GATE_PALETTE.noiseFloor} />
+    <circle cx="16" cy="7" r="2.5" fill={CANDIDATE_GATE_PALETTE.symmetry} />
+    <circle
+      cx="21"
+      cy="7"
+      r="2.5"
+      fill="#ff1744"
+      stroke={ringColor}
+      strokeWidth="1.6"
+    />
+  </svg>
+);
+
 // Band swatch for the window overlay. Filled rectangle with crisp
 // vertical edges, mirroring how the plugin draws the NMS footprint.
 const BandSwatch = ({ fill, edge, edgeWidth = 1.25 }) => (
@@ -218,6 +248,7 @@ const ChartLegend = () => {
     showWindowOverlay,
     showNoiseFloorOverlay,
     noiseFloorMultiplier,
+    showRejectedCandidates,
   } = useNeuralSettings();
   // Param-viz legend entries only render when the corresponding overlay
   // is actually being drawn. The noise-floor sub-toggle is gated on the
@@ -347,6 +378,14 @@ const ChartLegend = () => {
             color={PARAM_VIZ_NOISE_STYLE.color}
             dash={PARAM_VIZ_NOISE_STYLE.dash}
           />
+        </LegendItem>
+      )}
+      {showRejectedCandidates && (
+        <LegendItem
+          label="Rejected Candidates"
+          description={LEGEND_DESCRIPTIONS.rejectedCandidates}
+        >
+          <CandidatePaletteSwatch ringColor={MARGINAL_PASS_RING_STYLE.color} />
         </LegendItem>
       )}
     </div>

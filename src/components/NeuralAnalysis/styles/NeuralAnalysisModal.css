@@ -118,23 +118,18 @@
   grid-template-rows: auto minmax(0, 1fr);
 }
 
-/* Right column is a vertical flex stack: NeuralWellSelector at natural
- * height on top, NeuralResults below filling the rest with internal
- * scrolling. `min-height: 0` is required on the column itself (and on
- * NeuralResults — see NeuralResults.css) so the flex item can shrink
- * below its content height, which is what lets the inner scroll
- * activate instead of overflowing the modal. */
+/* Right column is a vertical flex stack of CollapsibleSection wrappers
+ * (Wells at top, Results below; later phases add Funnel and Peak
+ * Inspector). Each section's own CSS handles its expanded/collapsed
+ * height — sections marked `--grow` take remaining vertical space and
+ * own their internal scroll via `overflow-y: auto`. The column itself
+ * keeps `min-height: 0` so the grid cell can shrink and the inner
+ * scroll activates rather than overflowing the modal. */
 .neural-analysis-modal .selector-and-average-graph {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   min-height: 0;
-}
-
-.neural-analysis-modal .selector-and-average-graph > .neural-results {
-  flex: 1 1 0;
-  min-height: 0;
-  overflow-y: auto;
 }
 
 /* Close out the bottom of the info-block column with the same 1px

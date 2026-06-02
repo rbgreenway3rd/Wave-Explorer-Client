@@ -5,7 +5,48 @@ import {
   findBases,
   kMeans,
   localMaxima,
+  classifyMargin,
+  worstTier,
+  GATE_KEPT,
+  GATE_PROMINENCE,
+  GATE_ZONE,
+  GATE_NOISE_FLOOR,
+  GATE_KMEANS,
+  GATE_WIDTH,
+  GATE_SYMMETRY,
+  GATE_NMS,
+  GATE_MIN_DISTANCE,
+  TIER_CLEAR_FAIL,
+  TIER_MARGINAL_FAIL,
 } from "./peakGeometry.js";
+
+// Pushes a gate-result entry into the candidate's diagnostic record
+// when a `diagnostics` Map has been supplied. Records accumulate as a
+// candidate survives gates; for rejected candidates, this is the final
+// entry. Each entry carries enough info for the Peak Inspector UI:
+// metric value, gate threshold, and a discrete tier classification.
+// `clear-fail` entries are skipped at the rejection site to keep the
+// payload bounded on noisy wells where most local maxima fail Gate 1
+// by a wide margin — far-failures aren't visually useful in the
+// overlay and would otherwise blow past the 1500-record cap.
+function recordGateResult(diagnostics, idx, gateEntry, signalPoint) {
+  if (!diagnostics) return;
+  let record = diagnostics.get(idx);
+  if (!record) {
+    record = {
+      index: idx,
+      peakX: signalPoint ? signalPoint.x : 0,
+      peakY: signalPoint ? signalPoint.y : 0,
+      rejectedBy: GATE_KEPT,
+      tier: 0,
+      gates: [],
+      nmsSuppressor: null,
+      detectionProminence: null,
+    };
+    diagnostics.set(idx, record);
+  }
+  record.gates.push(gateEntry);
+}
 
 // Public accessor for code outside detectSpikes that needs the signal
 // median — e.g. the Baseline Threshold control seeds itself at the
@@ -247,7 +288,9 @@ function findTrueSpikes(
   noiseFloorMultiplier = 0, // per-peak floor; 0 = disabled
   localStds = null, // optional Float64Array — when present, per-peak σ is localStds[peak.index]
   apexSet = null, // Set<number> of outlier apex `index` values; peaks at these indices bypass the k-means cluster filter
-  spikeWindow = 0 // NMS footprint radius in samples (0 disables NMS)
+  spikeWindow = 0, // NMS footprint radius in samples (0 disables NMS)
+  diagnostics = null, // optional Map<index, record> for Decision Explanation Layer
+  data = null // underlying signal — needed for diagnostic peakX/peakY when first emitting a record here
 ) {
   if (!Array.isArray(peaks) || peaks.length < 2) {
     const filtered = peaks.filter((p) => p.width >= minWidth);
@@ -297,13 +340,39 @@ function findTrueSpikes(
     const keptPeaks = [];
     const keptProms = [];
     for (let i = 0; i < peaks.length; i++) {
+      const pk = peaks[i];
       const sigma =
         localStds && localStds.length > 0
-          ? localStds[peaks[i].index]
+          ? localStds[pk.index]
           : robustStd;
       const floor = noiseFloorMultiplier * sigma;
-      if (prominences[i] >= floor) {
-        keptPeaks.push(peaks[i]);
+      const passed = prominences[i] >= floor;
+      // Emit unconditionally past Gate 1 — once a candidate reaches
+      // here it's already in the trimmed "diagnostically interesting"
+      // set (Gate 1 dropped the 10K-50K clear-fail noise wiggles),
+      // so per-gate filtering is no longer needed for payload control.
+      if (diagnostics) {
+        const tier = classifyMargin(prominences[i], floor, Math.max(floor, 1e-9));
+        recordGateResult(
+          diagnostics,
+          pk.index,
+          {
+            id: GATE_NOISE_FLOOR,
+            value: prominences[i],
+            threshold: floor,
+            tier,
+            status: passed ? "pass" : "fail",
+            noiseSigma: sigma,
+          },
+          data ? data[pk.index] : pk.peakCoords
+        );
+        if (!passed) {
+          const rec = diagnostics.get(pk.index);
+          if (rec) rec.rejectedBy = GATE_NOISE_FLOOR;
+        }
+      }
+      if (passed) {
+        keptPeaks.push(pk);
         keptProms.push(prominences[i]);
       }
     }
@@ -335,6 +404,36 @@ function findTrueSpikes(
       higherCentroid < noiseThreshold &&
       clusterSeparation < noiseThreshold * 0.5
     ) {
+      // K-means bailout: the whole well looks like noise. Every peak
+      // gets dropped here. Diagnostically mark each one with kmeans
+      // rejection + the cluster-distance metric so the Inspector can
+      // show "your top cluster sits at X, noise threshold is Y".
+      if (diagnostics) {
+        for (const pk of peaks) {
+          const tier = classifyMargin(
+            higherCentroid,
+            noiseThreshold,
+            Math.max(noiseThreshold, 1e-9)
+          );
+          if (tier <= TIER_MARGINAL_FAIL) {
+            recordGateResult(
+              diagnostics,
+              pk.index,
+              {
+                id: GATE_KMEANS,
+                value: higherCentroid,
+                threshold: noiseThreshold,
+                tier,
+                status: "fail",
+                clusterSeparation,
+              },
+              data ? data[pk.index] : pk.peakCoords
+            );
+          }
+          const rec = diagnostics.get(pk.index);
+          if (rec) rec.rejectedBy = GATE_KMEANS;
+        }
+      }
       afterKMeans = [];
     }
     // else: keep every peak. Lower-cluster real events survive at
@@ -349,6 +448,31 @@ function findTrueSpikes(
     ? [...outlierPeaks, ...afterKMeans]
     : afterKMeans;
 
+  // Width gate. Emit a per-candidate record unconditionally — past
+  // Gate 1, the candidate set is already trimmed to "diagnostically
+  // interesting" peaks. Inspector wants the full per-gate breakdown.
+  if (diagnostics) {
+    for (const p of filteredPeaks) {
+      const passed = p.width >= minWidth;
+      const tier = classifyMargin(p.width, minWidth, Math.max(minWidth, 1));
+      recordGateResult(
+        diagnostics,
+        p.index,
+        {
+          id: GATE_WIDTH,
+          value: p.width,
+          threshold: minWidth,
+          tier,
+          status: passed ? "pass" : "fail",
+        },
+        data ? data[p.index] : p.peakCoords
+      );
+      if (!passed) {
+        const rec = diagnostics.get(p.index);
+        if (rec) rec.rejectedBy = GATE_WIDTH;
+      }
+    }
+  }
   filteredPeaks = filteredPeaks.filter((p) => p.width >= minWidth);
   perf.count(`spikeFilter.afterWidth=${filteredPeaks.length}`);
 
@@ -357,13 +481,40 @@ function findTrueSpikes(
   // wide measurement footprint can't satisfy the symmetry test by
   // virtue of sharing the apex's left/right baseline crossings.
   if (minProminenceRatio > 0) {
-    filteredPeaks = filteredPeaks.filter((p) => {
+    const next = [];
+    for (const p of filteredPeaks) {
       const proms = p.detectionProminences || p.prominences;
       const left = proms.leftProminence;
       const right = proms.rightProminence;
-      const ratio = Math.min(left, right) / Math.max(left, right);
-      return ratio >= minProminenceRatio;
-    });
+      const denom = Math.max(left, right);
+      const ratio = denom > 0 ? Math.min(left, right) / denom : 0;
+      const passed = ratio >= minProminenceRatio;
+      if (diagnostics) {
+        const tier = classifyMargin(
+          ratio,
+          minProminenceRatio,
+          Math.max(minProminenceRatio, 1e-9)
+        );
+        recordGateResult(
+          diagnostics,
+          p.index,
+          {
+            id: GATE_SYMMETRY,
+            value: ratio,
+            threshold: minProminenceRatio,
+            tier,
+            status: passed ? "pass" : "fail",
+          },
+          data ? data[p.index] : p.peakCoords
+        );
+        if (!passed) {
+          const rec = diagnostics.get(p.index);
+          if (rec) rec.rejectedBy = GATE_SYMMETRY;
+        }
+      }
+      if (passed) next.push(p);
+    }
+    filteredPeaks = next;
   }
   perf.count(`spikeFilter.afterSymmetry=${filteredPeaks.length}`);
 
@@ -404,15 +555,56 @@ function findTrueSpikes(
     // would also be fine; the binary search keeps it well-behaved on
     // pathological-density inputs.
     const accepted = []; // { peak, start, end }
-    const inAcceptedFootprint = (idx) => {
+    // Find the suppressing peak (first accepted footprint that
+    // contains idx) so we can attribute NMS rejections to a specific
+    // suppressor for the Inspector's "suppressed by peak at t=X" line.
+    const suppressorFor = (idx) => {
       for (let i = 0; i < accepted.length; i++) {
         const f = accepted[i];
-        if (idx >= f.start && idx <= f.end) return true;
+        if (idx >= f.start && idx <= f.end) return f.peak;
       }
-      return false;
+      return null;
     };
     for (const p of sortedByPriority) {
-      if (inAcceptedFootprint(p.index)) continue;
+      const suppressor = suppressorFor(p.index);
+      if (suppressor !== null) {
+        if (diagnostics) {
+          const overlap = spikeWindow - Math.abs(p.index - suppressor.index);
+          const promRatio =
+            suppressor.detectionProminence != null && p.detectionProminence
+              ? suppressor.detectionProminence / p.detectionProminence
+              : null;
+          // NMS doesn't have a numeric margin — represent the rejection
+          // as marginal-fail (it was a near-miss in the suppressor's
+          // footprint). The Inspector renders this as text rather than
+          // a percentage.
+          recordGateResult(
+            diagnostics,
+            p.index,
+            {
+              id: GATE_NMS,
+              value: p.index,
+              threshold: suppressor.index,
+              tier: TIER_MARGINAL_FAIL,
+              status: "fail",
+              suppressorIndex: suppressor.index,
+              suppressorPromRatio: promRatio,
+              overlapSamples: Math.max(0, overlap),
+            },
+            data ? data[p.index] : p.peakCoords
+          );
+          const rec = diagnostics.get(p.index);
+          if (rec) {
+            rec.rejectedBy = GATE_NMS;
+            rec.nmsSuppressor = {
+              index: suppressor.index,
+              promRatio,
+              overlapSamples: Math.max(0, overlap),
+            };
+          }
+        }
+        continue;
+      }
       accepted.push({
         peak: p,
         start: p.index - spikeWindow,
@@ -433,12 +625,28 @@ function findTrueSpikes(
     filteredPeaks.sort((a, b) => a.index - b.index);
     const result = [filteredPeaks[0]];
     for (let i = 1; i < filteredPeaks.length; i++) {
-      if (
-        filteredPeaks[i].index - result[result.length - 1].index >=
-        minDistance
-      ) {
-        result.push(filteredPeaks[i]);
+      const gap = filteredPeaks[i].index - result[result.length - 1].index;
+      const passed = gap >= minDistance;
+      if (diagnostics) {
+        const tier = classifyMargin(gap, minDistance, Math.max(minDistance, 1));
+        recordGateResult(
+          diagnostics,
+          filteredPeaks[i].index,
+          {
+            id: GATE_MIN_DISTANCE,
+            value: gap,
+            threshold: minDistance,
+            tier,
+            status: passed ? "pass" : "fail",
+          },
+          data ? data[filteredPeaks[i].index] : filteredPeaks[i].peakCoords
+        );
+        if (!passed) {
+          const rec = diagnostics.get(filteredPeaks[i].index);
+          if (rec) rec.rejectedBy = GATE_MIN_DISTANCE;
+        }
       }
+      if (passed) result.push(filteredPeaks[i]);
     }
     filteredPeaks = result;
   }
@@ -704,12 +912,44 @@ export function detectSpikes(data, options = {}) {
   // passes. The reported `prominences` field on each NeuralPeak still
   // uses `basesFor` (Step D leaves that untouched), so CSV / UI
   // measurements are unchanged.
+  const diagnostics = options.diagnostics instanceof Map ? options.diagnostics : null;
   let filteredPeakIndices = [];
   for (let peakIdx of peakIndices) {
     const det = detectionBasesFor(peakIdx);
-    if (det.prominence >= prominence) {
-      filteredPeakIndices.push(peakIdx);
+    const passed = det.prominence >= prominence;
+    if (diagnostics) {
+      const tier = classifyMargin(
+        det.prominence,
+        prominence,
+        Math.max(prominence, 1e-9)
+      );
+      // Emit a record for every candidate that's not a clear-fail at
+      // Gate 1. On noisy wells this gate sees 10K–50K candidates;
+      // dropping clear-fails here keeps the diagnostic array bounded
+      // to the visually-relevant near-misses (and all survivors).
+      if (tier <= TIER_MARGINAL_FAIL || passed) {
+        recordGateResult(
+          diagnostics,
+          peakIdx,
+          {
+            id: GATE_PROMINENCE,
+            value: det.prominence,
+            threshold: prominence,
+            tier,
+            status: passed ? "pass" : "fail",
+          },
+          data[peakIdx]
+        );
+        // Cache the detection prominence on the record — used later
+        // for the 1500-cap sort and surfaced in the Inspector header.
+        const rec = diagnostics.get(peakIdx);
+        if (rec) rec.detectionProminence = det.prominence;
+        if (!passed) {
+          if (rec) rec.rejectedBy = GATE_PROMINENCE;
+        }
+      }
     }
+    if (passed) filteredPeakIndices.push(peakIdx);
   }
 
   // Outlier-zone pre-filter (runs before window-grouping). Drop any
@@ -723,9 +963,31 @@ export function detectSpikes(data, options = {}) {
   // sample rates without tuning.
   let zoneFilteredPeakIndices = filteredPeakIndices;
   if (zoneSet) {
-    zoneFilteredPeakIndices = filteredPeakIndices.filter(
-      (idx) => !zoneSet.has(idx) || apexSet.has(idx)
-    );
+    zoneFilteredPeakIndices = [];
+    for (const idx of filteredPeakIndices) {
+      const passed = !zoneSet.has(idx) || apexSet.has(idx);
+      if (passed) {
+        zoneFilteredPeakIndices.push(idx);
+      } else if (diagnostics) {
+        // Zone is a hard membership gate — there's no numeric margin.
+        // Surface as marginal-fail so it's visible in the overlay but
+        // tier-1 (worst case) so it doesn't drown out signal gates.
+        recordGateResult(
+          diagnostics,
+          idx,
+          {
+            id: GATE_ZONE,
+            value: 1,
+            threshold: 0,
+            tier: TIER_MARGINAL_FAIL,
+            status: "fail",
+          },
+          data[idx]
+        );
+        const rec = diagnostics.get(idx);
+        if (rec) rec.rejectedBy = GATE_ZONE;
+      }
+    }
   }
 
   // Window-grouping is now done by Layer 3's prominence-aware NMS in
@@ -779,8 +1041,41 @@ export function detectSpikes(data, options = {}) {
     noiseFloorMultiplier,
     localStds,
     apexSet,
-    wlen // Layer 3 NMS footprint radius
+    wlen, // Layer 3 NMS footprint radius
+    diagnostics,
+    data
   );
+
+  // Finalize kept-peak records: any candidate whose record made it to
+  // the end without a non-zero `rejectedBy` is a kept peak. Its overall
+  // tier is the worst across all gates it was evaluated against — that
+  // tier drives the marginal-pass ring in the candidate overlay (peaks
+  // with a tier ≥ 1 are visibly "close to a rejection" and the user
+  // can tell at a glance which ones are about to flip on a slider drag).
+  if (diagnostics) {
+    const survivingIndices = new Set();
+    for (const sp of finalSpikes) survivingIndices.add(sp.index);
+    for (const rec of diagnostics.values()) {
+      if (survivingIndices.has(rec.index)) {
+        rec.rejectedBy = GATE_KEPT;
+        rec.tier = worstTier(rec.gates.map((g) => g.tier));
+      } else if (rec.rejectedBy === GATE_KEPT) {
+        // Sanity: a record without an explicit rejectedBy that isn't
+        // in the survivor set must have been silently dropped (e.g.
+        // K-means bailout already marked it, but we also catch any
+        // hole here). The last gate it has is the failing one.
+        if (rec.gates.length > 0) {
+          const last = rec.gates[rec.gates.length - 1];
+          if (last.status === "fail") rec.rejectedBy = last.id;
+        }
+      } else {
+        // Record's rejectedBy was set during a gate's reject branch;
+        // the tier is the tier of the gate at which it failed.
+        const failing = rec.gates.find((g) => g.id === rec.rejectedBy);
+        if (failing) rec.tier = failing.tier;
+      }
+    }
+  }
 
   return finalSpikes;
 }

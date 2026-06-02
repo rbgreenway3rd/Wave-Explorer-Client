@@ -230,3 +230,91 @@ export function kMeans(data, _k = 2) {
 
   return { centroids, assignments };
 }
+
+// ---- Detection diagnostics primitives ------------------------------------
+//
+// Stable IDs for every gate in the detection cascade. The Decision
+// Explanation Layer ships these through the worker as a Uint8 enum so
+// the UI knows which gate rejected each candidate. `GATE_KEPT` is the
+// sentinel for candidates that survived every gate.
+export const GATE_KEPT = 0;
+export const GATE_PROMINENCE = 1;
+export const GATE_ZONE = 2;
+export const GATE_NOISE_FLOOR = 3;
+export const GATE_KMEANS = 4;
+export const GATE_WIDTH = 5;
+export const GATE_SYMMETRY = 6;
+export const GATE_NMS = 7;
+export const GATE_MIN_DISTANCE = 8;
+export const GATE_ACTIVITY = 9;
+
+export const GATE_NAMES = {
+  [GATE_KEPT]: "kept",
+  [GATE_PROMINENCE]: "prominence",
+  [GATE_ZONE]: "zone",
+  [GATE_NOISE_FLOOR]: "noiseFloor",
+  [GATE_KMEANS]: "kmeans",
+  [GATE_WIDTH]: "width",
+  [GATE_SYMMETRY]: "symmetry",
+  [GATE_NMS]: "nms",
+  [GATE_MIN_DISTANCE]: "minDistance",
+  [GATE_ACTIVITY]: "activity",
+};
+
+// Four-tier classification for "how far from the threshold" a gate
+// result is. Used to drive the candidate-overlay color tier and the
+// Peak Inspector's pass/fail margin display. Two passes (clear, marginal)
+// and two fails (marginal, clear); the threshold for "marginal" is
+// fixed at ±10% of the gate's natural scale, and "clear-pass" needs
+// > 50% margin on top.
+export const TIER_CLEAR_PASS = 0;
+export const TIER_MARGINAL_PASS = 1;
+export const TIER_MARGINAL_FAIL = 2;
+export const TIER_CLEAR_FAIL = 3;
+
+/**
+ * classifyMargin — classify a (metric, threshold) pair into one of the
+ * four tiers using a gate-natural scale.
+ *
+ * @param {number} metric    - the candidate's measured value
+ * @param {number} threshold - the gate's threshold (pass when metric ≥ threshold)
+ * @param {number} scale     - gate's natural scale for "what counts as close";
+ *                             usually = threshold, but callers should pass
+ *                             an alternative when threshold == 0 (e.g.
+ *                             minDistance = 0 disables the gate; nothing is
+ *                             close, so scale just controls the visual band).
+ * @returns {0|1|2|3} tier id (TIER_*)
+ */
+export function classifyMargin(metric, threshold, scale) {
+  const margin = metric - threshold;
+  if (
+    !Number.isFinite(margin) ||
+    !Number.isFinite(scale) ||
+    scale <= 0
+  ) {
+    return margin >= 0 ? TIER_CLEAR_PASS : TIER_CLEAR_FAIL;
+  }
+  const relative = margin / scale;
+  if (relative >= 0.5) return TIER_CLEAR_PASS;
+  if (relative >= 0) return TIER_MARGINAL_PASS;
+  if (relative >= -0.1) return TIER_MARGINAL_FAIL;
+  return TIER_CLEAR_FAIL;
+}
+
+/**
+ * worstTier — combine multiple per-gate tiers into a single overall
+ * tier for a kept candidate. The user-facing tier is the worst of all
+ * gates evaluated, since a kept peak's vulnerability comes from its
+ * tightest gate, not the loosest.
+ *
+ * @param {number[]} tiers
+ * @returns {0|1|2|3}
+ */
+export function worstTier(tiers) {
+  let worst = TIER_CLEAR_PASS;
+  for (let i = 0; i < tiers.length; i++) {
+    if (tiers[i] > worst) worst = tiers[i];
+  }
+  return worst;
+}
+

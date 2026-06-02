@@ -137,6 +137,17 @@ self.onmessage = (event) => {
     const { xs: processedXs, ys: processedYs } = flatten(result.processedSignal);
     const wireSpikes = (result.spikeResults || []).map(stripSpike);
 
+    // Candidate diagnostics for the Decision Explanation Layer. Records
+    // already trimmed to the cap (≤1500) in the pipeline; structuredClone
+    // through postMessage handles the per-record object shape fine at
+    // this size (~300KB worst case). No transferable optimization here
+    // yet — profile first if it becomes a hot path.
+    const candidateDiagnostics = result.candidateDiagnostics || {
+      records: [],
+      truncatedCount: 0,
+      totalCandidates: 0,
+    };
+
     self.postMessage(
       {
         type: "result",
@@ -146,6 +157,7 @@ self.onmessage = (event) => {
         spikes: wireSpikes,
         bursts: result.burstResults || [],
         metrics: result.metrics || {},
+        candidateDiagnostics,
       },
       [processedXs.buffer, processedYs.buffer]
     );

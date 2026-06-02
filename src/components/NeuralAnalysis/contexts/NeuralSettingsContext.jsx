@@ -95,6 +95,18 @@ const DEFAULT_SETTINGS = {
   showProminenceOverlay: false,
   showWindowOverlay: false,
   showNoiseFloorOverlay: false,
+  // Decision Explanation Layer: master toggle for the candidate
+  // overlay (ghost markers for near-miss rejections + marginal-pass
+  // rings on kept peaks). Off by default — opt-in so a first-time
+  // user isn't confronted with extra chart clutter.
+  showRejectedCandidates: false,
+  // Decision Explanation Layer / Detection Funnel control state.
+  // `candidateShowAllRejections` widens the visibility from near-misses
+  // only (tier ≤ marginal-fail) to include clear-fail rejections that
+  // came through gates 2-9. `candidateHighlightGate` filters the
+  // candidate scatter to a single gate's rejections (null = all).
+  candidateShowAllRejections: false,
+  candidateHighlightGate: null,
   // Legacy spike-display tweaks
   useAdjustedBases: false,
   findPeaksWindowWidth: 10,
@@ -229,6 +241,11 @@ export const NeuralSettingsProvider = ({ children }) => {
   const [showProminenceOverlay, setShowProminenceOverlay] = useState(false);
   const [showWindowOverlay, setShowWindowOverlay] = useState(false);
   const [showNoiseFloorOverlay, setShowNoiseFloorOverlay] = useState(false);
+  // Candidate overlay (Decision Explanation Layer) — see DEFAULT_SETTINGS.
+  const [showRejectedCandidates, setShowRejectedCandidates] = useState(false);
+  const [candidateShowAllRejections, setCandidateShowAllRejections] =
+    useState(false);
+  const [candidateHighlightGate, setCandidateHighlightGate] = useState(null);
   // Draft slider values published by useDraftSlider during drag so the
   // overlay plugin can redraw at the slider's current position without
   // waiting for onChangeCommitted (which is when the pipeline re-runs).
@@ -290,6 +307,9 @@ export const NeuralSettingsProvider = ({ children }) => {
     showProminenceOverlay,
     showWindowOverlay,
     showNoiseFloorOverlay,
+    showRejectedCandidates,
+    candidateShowAllRejections,
+    candidateHighlightGate,
     useAdjustedBases,
     findPeaksWindowWidth,
     peakProminence,
@@ -331,6 +351,9 @@ export const NeuralSettingsProvider = ({ children }) => {
       showProminenceOverlay: setShowProminenceOverlay,
       showWindowOverlay: setShowWindowOverlay,
       showNoiseFloorOverlay: setShowNoiseFloorOverlay,
+      showRejectedCandidates: setShowRejectedCandidates,
+      candidateShowAllRejections: setCandidateShowAllRejections,
+      candidateHighlightGate: setCandidateHighlightGate,
       useAdjustedBases: setUseAdjustedBases,
       findPeaksWindowWidth: setFindPeaksWindowWidth,
       peakProminence: setPeakProminence,
@@ -381,6 +404,9 @@ export const NeuralSettingsProvider = ({ children }) => {
     showProminenceOverlay,
     showWindowOverlay,
     showNoiseFloorOverlay,
+    showRejectedCandidates,
+    candidateShowAllRejections,
+    candidateHighlightGate,
     useAdjustedBases,
     findPeaksWindowWidth,
     peakProminence,
@@ -506,6 +532,12 @@ export const NeuralSettingsProvider = ({ children }) => {
       setShowWindowOverlay,
       showNoiseFloorOverlay,
       setShowNoiseFloorOverlay,
+      showRejectedCandidates,
+      setShowRejectedCandidates,
+      candidateShowAllRejections,
+      setCandidateShowAllRejections,
+      candidateHighlightGate,
+      setCandidateHighlightGate,
       draftSpikeProminence,
       setDraftSpikeProminence,
       draftSpikeWindow,
@@ -564,6 +596,9 @@ export const NeuralSettingsProvider = ({ children }) => {
       showProminenceOverlay,
       showWindowOverlay,
       showNoiseFloorOverlay,
+      showRejectedCandidates,
+      candidateShowAllRejections,
+      candidateHighlightGate,
       draftSpikeProminence,
       draftSpikeWindow,
       draftNoiseFloorMultiplier,
