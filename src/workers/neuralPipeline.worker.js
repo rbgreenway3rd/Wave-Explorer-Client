@@ -147,6 +147,18 @@ self.onmessage = (event) => {
       truncatedCount: 0,
       totalCandidates: 0,
     };
+    // Compact candidate-distribution histograms (typed arrays). Used by
+    // the Distributions panel's prominence chart; pre-binned in the
+    // pipeline so the wire payload is fixed-size (~600 B) regardless of
+    // input size. Survives structuredClone — the typed arrays clone
+    // cheaply at this size, no transferables needed.
+    const candidateDistributions = result.candidateDistributions || {
+      prominence: {
+        edges: new Float32Array([0, 1]),
+        counts: new Uint32Array([0]),
+        max: 0,
+      },
+    };
 
     self.postMessage(
       {
@@ -158,6 +170,7 @@ self.onmessage = (event) => {
         bursts: result.burstResults || [],
         metrics: result.metrics || {},
         candidateDiagnostics,
+        candidateDistributions,
       },
       [processedXs.buffer, processedYs.buffer]
     );

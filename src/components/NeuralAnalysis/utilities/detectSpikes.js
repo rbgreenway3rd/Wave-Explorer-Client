@@ -913,9 +913,23 @@ export function detectSpikes(data, options = {}) {
   // uses `basesFor` (Step D leaves that untouched), so CSV / UI
   // measurements are unchanged.
   const diagnostics = options.diagnostics instanceof Map ? options.diagnostics : null;
+  // Optional raw-prominence collector — when provided, every local
+  // maximum's detection prominence gets pushed for the caller to bin
+  // into a histogram. This is the unbiased input for the candidate
+  // prominence distribution (separate from the 1500-record diagnostics
+  // cap, which would otherwise skew the histogram toward high-prominence
+  // survivors). Released immediately after binning at the pipeline level.
+  const candidateProminencesOut = Array.isArray(
+    options.candidateProminencesOut
+  )
+    ? options.candidateProminencesOut
+    : null;
   let filteredPeakIndices = [];
   for (let peakIdx of peakIndices) {
     const det = detectionBasesFor(peakIdx);
+    if (candidateProminencesOut) {
+      candidateProminencesOut.push(det.prominence);
+    }
     const passed = det.prominence >= prominence;
     if (diagnostics) {
       const tier = classifyMargin(
