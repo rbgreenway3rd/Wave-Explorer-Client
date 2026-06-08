@@ -614,6 +614,12 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
         // Peak base markers are gated by the user-visible "Show Peak
         // Bases" toggle (Chart Display Toggles strip). Default ON,
         // but the user can hide them to declutter the chart.
+        // Dataset order matters: chart.js v4 sorts metasets by
+        // (order, _idx) ascending and then draws via reverse iteration
+        // (chart.cjs `_drawDatasets`: `for (let i = length-1; i >= 0; --i)`).
+        // So lower-index datasets draw LAST → on TOP. Build the array
+        // top-down: Bases, Detected Spikes, Outlier Spikes, then the
+        // signal Line at the bottom of the stack.
         if (showPeakBases && initialBaseScatter.length > 0) {
           datasets.push({
             type: "scatter",
@@ -626,17 +632,6 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
             borderWidth: PEAK_BASE_STYLE.borderWidth,
           });
         }
-        datasets.push({
-          label: noiseSuppressionActive
-            ? "Noise Suppressed Data"
-            : "Neural Data",
-          data: initialChartPoints,
-          borderColor: noiseSuppressionActive
-            ? WAVE_STYLE.noiseSuppressedColor
-            : WAVE_STYLE.rawColor,
-          borderWidth: WAVE_STYLE.width,
-          fill: false,
-        });
         if (initialPeakScatter.length > 0) {
           datasets.push({
             type: "scatter",
@@ -662,6 +657,17 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
             borderWidth: OUTLIER_PEAK_STYLE.borderWidth,
           });
         }
+        datasets.push({
+          label: noiseSuppressionActive
+            ? "Noise Suppressed Data"
+            : "Neural Data",
+          data: initialChartPoints,
+          borderColor: noiseSuppressionActive
+            ? WAVE_STYLE.noiseSuppressedColor
+            : WAVE_STYLE.rawColor,
+          borderWidth: WAVE_STYLE.width,
+          fill: false,
+        });
         setChartData({ datasets });
       }
     }, [processedSignal, chartData, peakResults, noiseSuppressionActive, showPeakBases, selectedWell]);
@@ -680,47 +686,62 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       [processedSignal]
     );
     // Ordinary spikes — regular detection result. Drawn as solid red dots.
+    // Chronologically-sorted view of peakResults. detectSpikes already
+    // sorts before returning, but routing every scatter projection
+    // through this single source of truth means the parallel style
+    // arrays (keptPeakBorders / keptPeakBorderWidths) stay aligned with
+    // peakScatter automatically — and any future code path that produces
+    // out-of-order peaks can't silently break chart.js's `parsing:false`
+    // sorted-data assumption (which culled visible peaks during zoom).
+    const sortedPeakResults = useMemo(
+      () =>
+        Array.isArray(peakResults) && peakResults.length > 0
+          ? [...peakResults].sort((a, b) => a.index - b.index)
+          : [],
+      [peakResults]
+    );
     // Each point carries its sample-index in the signal so the chart's
     // onClick handler can resolve the click back to a candidate-
     // diagnostics record without re-scanning by coordinates.
     const peakScatter = useMemo(
       () =>
-        Array.isArray(peakResults) && peakResults.length > 0
-          ? peakResults
-              .filter((pk) => !pk.isOutlier)
-              .map((pk) => ({
-                x: pk.peakCoords.x,
-                y: pk.peakCoords.y,
-                _candidateIndex: pk.index,
-              }))
-          : [],
-      [peakResults]
+        sortedPeakResults
+          .filter((pk) => !pk.isOutlier)
+          .map((pk) => ({
+            x: pk.peakCoords.x,
+            y: pk.peakCoords.y,
+            _candidateIndex: pk.index,
+          })),
+      [sortedPeakResults]
     );
     // Outlier spikes — re-added by the outlier-removal stage with
     // isOutlier:true. Drawn as orange hollow rings so the Outlier
     // Handling sliders have a visible effect on the chart.
     const outlierScatter = useMemo(
       () =>
-        Array.isArray(peakResults) && peakResults.length > 0
-          ? peakResults
-              .filter((pk) => pk.isOutlier)
-              .map((pk) => ({
-                x: pk.peakCoords.x,
-                y: pk.peakCoords.y,
-                _candidateIndex: pk.index,
-              }))
-          : [],
-      [peakResults]
+        sortedPeakResults
+          .filter((pk) => pk.isOutlier)
+          .map((pk) => ({
+            x: pk.peakCoords.x,
+            y: pk.peakCoords.y,
+            _candidateIndex: pk.index,
+          })),
+      [sortedPeakResults]
     );
+    // Bases need their own chronological re-sort: each peak contributes
+    // a [leftBase, rightBase] pair, and when peaks overlap (one peak's
+    // right base sits past the next peak's left base) the pair order
+    // produces an interleaved-but-unsorted x sequence. Sorting flat is
+    // simpler than reasoning about overlap.
     const baseScatter = useMemo(
       () =>
-        Array.isArray(peakResults) && peakResults.length > 0
-          ? peakResults.flatMap((pk) => [
-              { x: pk.leftBaseCoords.x, y: pk.leftBaseCoords.y },
-              { x: pk.rightBaseCoords.x, y: pk.rightBaseCoords.y },
-            ])
-          : [],
-      [peakResults]
+        sortedPeakResults
+          .flatMap((pk) => [
+            { x: pk.leftBaseCoords.x, y: pk.leftBaseCoords.y },
+            { x: pk.rightBaseCoords.x, y: pk.rightBaseCoords.y },
+          ])
+          .sort((a, b) => a.x - b.x),
+      [sortedPeakResults]
     );
 
     // Diagnostic record lookup by sample index. Keyed once when the
@@ -741,8 +762,15 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
     //   2. Apply the tier ceiling — near-misses only by default, or all
     //      rejections when the funnel's "Include clear-fail" toggle is on.
     //   3. If the funnel highlights a single gate, hide every other gate.
+    //
+    // Build the data and the per-element color as paired entries in one
+    // pass, sort by x, then split — both `candidateDiagnostics.records`
+    // arrives prominence-sorted (not chronological), and chart.js with
+    // `parsing: false` treats this dataset as sorted and binary-searches
+    // for visible-point culling during zoom. Without the sort, peaks
+    // within the visible window can silently drop from rendering.
     const tierCeiling = candidateShowAllRejections ? 3 : TIER_MARGINAL_FAIL;
-    const candidateScatter = useMemo(() => {
+    const candidatePairs = useMemo(() => {
       if (!showRejectedCandidates) return [];
       const records = candidateDiagnostics?.records;
       if (!Array.isArray(records) || records.length === 0) return [];
@@ -756,8 +784,14 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
         ) {
           continue;
         }
-        out.push({ x: r.peakX, y: r.peakY, _candidateIndex: r.index });
+        out.push({
+          data: { x: r.peakX, y: r.peakY, _candidateIndex: r.index },
+          color:
+            CANDIDATE_GATE_COLOR_BY_ID[r.rejectedBy] ||
+            CANDIDATE_GATE_COLOR_BY_ID[1],
+        });
       }
+      out.sort((a, b) => a.data.x - b.data.x);
       return out;
     }, [
       showRejectedCandidates,
@@ -765,47 +799,32 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       tierCeiling,
       candidateHighlightGate,
     ]);
-
-    // Parallel-indexed colors so chart.js paints each ghost marker by
-    // the gate that rejected its candidate. Built in a second pass so
-    // memo deps stay readable; both arrays must use the SAME filter so
-    // their indices remain aligned.
-    const candidateScatterColors = useMemo(() => {
-      if (!showRejectedCandidates) return [];
-      const records = candidateDiagnostics?.records;
-      if (!Array.isArray(records) || records.length === 0) return [];
-      const out = [];
-      for (const r of records) {
-        if (r.rejectedBy === GATE_KEPT) continue;
-        if (r.tier > tierCeiling) continue;
-        if (
-          candidateHighlightGate !== null &&
-          r.rejectedBy !== candidateHighlightGate
-        ) {
-          continue;
-        }
-        out.push(
-          CANDIDATE_GATE_COLOR_BY_ID[r.rejectedBy] ||
-            CANDIDATE_GATE_COLOR_BY_ID[1]
-        );
-      }
-      return out;
-    }, [
-      showRejectedCandidates,
-      candidateDiagnostics,
-      tierCeiling,
-      candidateHighlightGate,
-    ]);
+    const candidateScatter = useMemo(
+      () => candidatePairs.map((p) => p.data),
+      [candidatePairs]
+    );
+    // Parallel-indexed colors — chart.js paints each ghost marker by
+    // the gate that rejected its candidate. Stays aligned with
+    // `candidateScatter` because both derive from the same sorted
+    // `candidatePairs` source.
+    const candidateScatterColors = useMemo(
+      () => candidatePairs.map((p) => p.color),
+      [candidatePairs]
+    );
 
     // Per-kept-peak border styling. When the candidate overlay is on,
     // kept peaks whose overall tier > clear-pass get a yellow ring —
     // a visible "barely-passing" warning the user can spot at a glance.
     // When off, kept peaks fall back to the default PEAK_STYLE.border.
+    // Iterate `sortedPeakResults` (NOT raw `peakResults`) so the
+    // per-element style arrays stay aligned with `peakScatter`, which
+    // also derives from the sorted view. Misaligned styling would paint
+    // the wrong colors on the wrong peaks.
     const keptPeakBorders = useMemo(() => {
       const fallback = PEAK_STYLE.border;
       if (!showRejectedCandidates) return fallback;
       const arr = [];
-      for (const pk of peakResults || []) {
+      for (const pk of sortedPeakResults) {
         if (pk.isOutlier) continue;
         const rec = candidateDiagByIndex.get(pk.index);
         arr.push(
@@ -815,12 +834,12 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
         );
       }
       return arr;
-    }, [showRejectedCandidates, peakResults, candidateDiagByIndex]);
+    }, [showRejectedCandidates, sortedPeakResults, candidateDiagByIndex]);
     const keptPeakBorderWidths = useMemo(() => {
       const fallback = PEAK_STYLE.borderWidth;
       if (!showRejectedCandidates) return fallback;
       const arr = [];
-      for (const pk of peakResults || []) {
+      for (const pk of sortedPeakResults) {
         if (pk.isOutlier) continue;
         const rec = candidateDiagByIndex.get(pk.index);
         arr.push(
@@ -830,7 +849,7 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
         );
       }
       return arr;
-    }, [showRejectedCandidates, peakResults, candidateDiagByIndex]);
+    }, [showRejectedCandidates, sortedPeakResults, candidateDiagByIndex]);
 
     // Attach the AUC-fill plugin's live state directly to the chart
     // instance. The plugin reads from `chart.$aucFill` on every draw,
@@ -909,10 +928,17 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       const chart = neuralGraphRef.current;
       if (!chart || !processedSignal || processedSignal.length === 0) return;
 
+      // Dataset order matters: chart.js v4 sorts metasets by
+      // (order, _idx) ascending and then draws via reverse iteration
+      // (chart.cjs `_drawDatasets`: `for (let i = length-1; i >= 0; --i)`).
+      // So the FIRST dataset in this array draws LAST — i.e., on TOP.
+      // Stack top→bottom: Bases, Detected Spikes, Outlier Spikes,
+      // Rejected Candidates, then the signal Line at the bottom.
+      // This puts the red peak markers above the cyan signal line where
+      // the eye expects to find them, and keeps "kept peaks win z-order
+      // over rejected candidates" actually true under chart.js's reverse
+      // draw order (Detected at idx 1 draws after Candidates at idx 3).
       const newDatasets = [
-        // Peak base markers — gated by the "Show Peak Bases" toggle in
-        // the Chart Display Toggles strip. Default ON; turn off to
-        // declutter the chart when the user only cares about apexes.
         ...(showPeakBases && baseScatter.length > 0
           ? [
               {
@@ -924,35 +950,6 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
                 pointRadius: PEAK_BASE_STYLE.radius,
                 showLine: false,
                 borderWidth: PEAK_BASE_STYLE.borderWidth,
-              },
-            ]
-          : []),
-        {
-          label: noiseSuppressionActive
-            ? "Noise Suppressed Data"
-            : "Neural Data",
-          data: chartPoints,
-          borderColor: noiseSuppressionActive
-            ? WAVE_STYLE.noiseSuppressedColor
-            : WAVE_STYLE.rawColor,
-          borderWidth: WAVE_STYLE.width,
-          fill: false,
-        },
-        // Candidate ghost markers (Decision Explanation Layer). Drawn
-        // BEFORE Detected Spikes so the red kept-peak dots paint over
-        // any candidate that lands on the same pixel — kept peaks win
-        // z-order on overlap.
-        ...(candidateScatter.length > 0
-          ? [
-              {
-                type: "scatter",
-                label: "Rejected Candidates",
-                data: candidateScatter,
-                pointBackgroundColor: candidateScatterColors,
-                pointBorderColor: candidateScatterColors,
-                pointRadius: CANDIDATE_MARKER_STYLE.radius,
-                showLine: false,
-                borderWidth: CANDIDATE_MARKER_STYLE.borderWidth,
               },
             ]
           : []),
@@ -985,6 +982,31 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
               },
             ]
           : []),
+        ...(candidateScatter.length > 0
+          ? [
+              {
+                type: "scatter",
+                label: "Rejected Candidates",
+                data: candidateScatter,
+                pointBackgroundColor: candidateScatterColors,
+                pointBorderColor: candidateScatterColors,
+                pointRadius: CANDIDATE_MARKER_STYLE.radius,
+                showLine: false,
+                borderWidth: CANDIDATE_MARKER_STYLE.borderWidth,
+              },
+            ]
+          : []),
+        {
+          label: noiseSuppressionActive
+            ? "Noise Suppressed Data"
+            : "Neural Data",
+          data: chartPoints,
+          borderColor: noiseSuppressionActive
+            ? WAVE_STYLE.noiseSuppressedColor
+            : WAVE_STYLE.rawColor,
+          borderWidth: WAVE_STYLE.width,
+          fill: false,
+        },
       ];
 
       // Mutate chart data imperatively without triggering re-render
