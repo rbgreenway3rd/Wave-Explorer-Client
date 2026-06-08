@@ -1091,6 +1091,16 @@ export function detectSpikes(data, options = {}) {
     }
   }
 
+  // Sort chronologically before returning. NMS (findTrueSpikes) walks
+  // candidates in prominence-descending order and accumulates the
+  // accepted peaks in that same order; the chronological re-sort only
+  // runs when `minDistance > 0`, which is off by default. Downstream
+  // consumers (chart scatter datasets, burst detection, reports) all
+  // assume time order — chart.js in particular treats `parsing: false`
+  // datasets as sorted and binary-searches for visible-point culling,
+  // which silently drops markers when the array isn't actually sorted.
+  finalSpikes.sort((a, b) => a.index - b.index);
+
   return finalSpikes;
 }
 
