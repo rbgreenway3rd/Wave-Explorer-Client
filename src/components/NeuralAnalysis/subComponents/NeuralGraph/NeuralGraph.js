@@ -1262,8 +1262,6 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       // ones (ghost candidates) when both sit under the cursor.
       const CLICK_HIT_RADIUS_PX = 14;
       chart.options.onClick = (event, _elements, ch) => {
-        // eslint-disable-next-line no-console
-        console.log("[ChartClick] fired", { defineROI });
         if (defineROI) return;
         const canvasRect = ch.canvas.getBoundingClientRect();
         const px = event.native
@@ -1279,8 +1277,6 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
 
         let bestIndex = null;
         let bestDist = CLICK_HIT_RADIUS_PX * CLICK_HIT_RADIUS_PX;
-        let datasetsScanned = 0;
-        let pointsScanned = 0;
         for (let dsIdx = ch.data.datasets.length - 1; dsIdx >= 0; dsIdx--) {
           const ds = ch.data.datasets[dsIdx];
           const data = ds?.data;
@@ -1295,11 +1291,9 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
           ) {
             continue;
           }
-          datasetsScanned++;
           for (let i = 0; i < data.length; i++) {
             const pt = data[i];
             if (!pt || typeof pt._candidateIndex !== "number") continue;
-            pointsScanned++;
             const ppx = xScale.getPixelForValue(pt.x);
             const ppy = yScale.getPixelForValue(pt.y);
             const dx = ppx - px;
@@ -1314,14 +1308,6 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
           // a hit at this layer, stop so deeper layers don't override.
           if (bestIndex !== null) break;
         }
-        // eslint-disable-next-line no-console
-        console.log("[ChartClick] hit-test", {
-          clickPx: { px, py },
-          datasetsScanned,
-          pointsScanned,
-          bestIndex,
-          bestDistPx: bestIndex == null ? null : Math.sqrt(bestDist).toFixed(1),
-        });
         if (bestIndex !== null) {
           selectCandidate(bestIndex);
         }

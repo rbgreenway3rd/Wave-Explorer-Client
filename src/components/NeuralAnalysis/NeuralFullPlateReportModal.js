@@ -43,6 +43,12 @@ const PLATE_OPTIONS = [
     title: "Burst Metrics",
     caption: "Summary statistics for burst duration and intervals",
   },
+  {
+    key: "includePlateSummary",
+    title: "Plate Summary Table",
+    caption:
+      "Side-by-side per-ROI summary across all wells (supplemental; appended after the per-well blocks)",
+  },
 ];
 
 /**
@@ -65,6 +71,7 @@ const NeuralFullPlateReportModal = ({
     includeBurstData: false,
     includeBurstMetrics: false,
     includeROIAnalysis: true,
+    includePlateSummary: true,
     // Default to "defined" so the full-plate report uses the same
     // Prominence / Window the user has dialed in via the modal's
     // sliders — that's what they're seeing on screen, and they
@@ -120,7 +127,12 @@ const NeuralFullPlateReportModal = ({
         setCurrentWellIndex(wellIndex);
       };
 
-      const fullPlateCSV = await GenerateFullPlateReport(
+      // GenerateFullPlateReport returns an ARRAY of CSV chunks (not a
+      // single string) so very large plates don't hit Firefox's
+      // "allocation size overflow" limit when concatenating the whole
+      // file in JS. Blob accepts the array directly and handles the
+      // storage natively.
+      const csvChunks = await GenerateFullPlateReport(
         project,
         allWells,
         processingParams,
@@ -136,7 +148,7 @@ const NeuralFullPlateReportModal = ({
         return;
       }
 
-      const blob = new Blob([fullPlateCSV], {
+      const blob = new Blob(csvChunks, {
         type: "text/csv;charset=utf-8;",
       });
       const url = URL.createObjectURL(blob);

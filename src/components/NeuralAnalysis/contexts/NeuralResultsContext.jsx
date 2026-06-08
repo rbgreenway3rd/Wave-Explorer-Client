@@ -101,6 +101,16 @@ export const NeuralResultsProvider = ({ children }) => {
   // for x-axis bounds) require no further plumbing.
   useContext(DataContext);
 
+  // Signal-data tokens. The filter pipeline mutates an indicator's
+  // typed arrays *in place* (filterPack.js → setFilteredTypedArrays),
+  // so the Well object reference doesn't change when a filter writes
+  // new data. The Float64Array reference does. Memos and effects that
+  // need to re-run when the underlying signal changes must depend on
+  // these tokens, not on `selectedWell` / `controlWell` alone — otherwise
+  // post-filter detection runs against pre-filter auto-suggested params.
+  const selectedSignalRef = selectedWell?.indicators?.[0]?.filteredYs;
+  const controlSignalRef = controlWell?.indicators?.[0]?.filteredYs;
+
   // ---- Suggested spike params (signal-derived, override-independent) ----
   // Always-computed auto-suggestion for the currently selected well.
   // Exposed alongside the effective values so consumers (e.g. the
@@ -124,7 +134,10 @@ export const NeuralResultsProvider = ({ children }) => {
       window: bundle.window.value,
       diagnostics: bundle,
     };
-  }, [selectedWell]);
+    // `selectedSignalRef` is the typed-array token that changes when a
+    // filter writes new data into the same Well object — without it,
+    // suggestions stay calibrated to the pre-filter signal scale.
+  }, [selectedWell, selectedSignalRef]);
 
   // ---- Effective spike params -------------------------------------------
   // Plate-wide manual-override model: when `spikeParamsOverrideActive`
@@ -241,7 +254,9 @@ export const NeuralResultsProvider = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     selectedWell,
+    selectedSignalRef,
     controlWell,
+    controlSignalRef,
     subtractControl,
     trendFlatteningEnabled,
     trendFlatteningWindow,
