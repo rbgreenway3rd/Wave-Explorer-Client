@@ -65,9 +65,9 @@ export const LargeGraphOptions = (
 
   return {
     normalized: true,
-    animation: {
-      duration: 0,
-    },
+    // `false` (not `{ duration: 0 }`) so chart.js skips the animator
+    // entirely.
+    animation: false,
     parsing: false,
     plugins: {
       legend: false,

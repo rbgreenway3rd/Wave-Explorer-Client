@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useContext } from "react";
 import { DataContext } from "../../../../providers/DataProvider";
 import { AnalysisContext } from "../../AnalysisProvider";
@@ -213,7 +213,7 @@ import { findPeaks } from "../../utilities/PeakFinder";
 //                     ? getFilteredMedianData(well)
 //                     : getChartData(well)
 //                 }
-//                 options={getChartOptions()}
+//                 options={chartOptions}
 //                 onClick={() => handleSelectWell(well)}
 //               />
 //             </div>
@@ -233,6 +233,11 @@ export const WellSelector = () => {
   const [isRenderingComplete, setIsRenderingComplete] = useState(false);
   const [showMedianGrid, setShowMedianGrid] = useState(false);
   const [filteredMedianData, setFilteredMedianData] = useState({}); // Cache for precomputed data
+  // Plate-wide Y bounds — locking the y-scale to these stops chart.js
+  // from auto-fitting on every render across all 96+ mini-chart
+  // instances. Same pattern as NeuralWellSelector.
+  const [globalYMin, setGlobalYMin] = useState(0);
+  const [globalYMax, setGlobalYMax] = useState(1);
 
   // Extracted plate and experiment data from the project
   const plate = project?.plate[0] || [];
@@ -255,6 +260,34 @@ export const WellSelector = () => {
 
       return () => clearTimeout(timeout); // Cleanup timeout on component unmount
     }
+  }, [wellArrays]);
+
+  // Compute plate-wide Y min/max once per wellArrays change. Prefers
+  // the typed-array path (post-Phase C, filteredData is empty until
+  // materializeFilteredData() is called per-well).
+  useEffect(() => {
+    let min = Infinity;
+    let max = -Infinity;
+    (wellArrays || []).forEach((well) => {
+      const ind = well?.indicators?.[0];
+      if (ind && ind.filteredYs) {
+        const ys = ind.filteredYs;
+        for (let i = 0; i < ys.length; i++) {
+          const y = ys[i];
+          if (y < min) min = y;
+          if (y > max) max = y;
+        }
+        return;
+      }
+      (ind?.filteredData || []).forEach((point) => {
+        if (point.y < min) min = point.y;
+        if (point.y > max) max = point.y;
+      });
+    });
+    if (!isFinite(min)) min = 0;
+    if (!isFinite(max)) max = 1;
+    setGlobalYMin(min);
+    setGlobalYMax(max);
   }, [wellArrays]);
 
   // Precompute filtered median data when showMedianGrid is toggled to true
@@ -302,68 +335,83 @@ export const WellSelector = () => {
     ],
   });
 
-  const getChartOptions = () => ({
-    normalized: true,
-    maintainAspectRatio: false,
-    responsive: true,
-    devicePixelRatio: window.devicePixelRatio || 1, // Match screen pixel density
+  // Memoized so all ~96 mini-charts share one chart.js options object
+  // instead of receiving a fresh one on every parent re-render — which
+  // forced chart.js to diff and `chart.update()` each instance even
+  // when nothing changed about the options. Same pattern as
+  // NeuralWellSelector.
+  const chartOptions = useMemo(
+    () => ({
+      normalized: true,
+      maintainAspectRatio: false,
+      responsive: true,
+      // DPR capped to 1 — 96–384 tiny canvases at 2× retina is
+      // significant memory + draw cost; visual delta is negligible at
+      // this surface size.
+      devicePixelRatio: 1,
 
-    spanGaps: false,
-    events: ["mousemove", "mouseout", "click", "touchstart", "touchmove"],
-    animation: {
-      duration: 0,
-    },
-    parsing: false,
-    plugins: {
-      legend: false,
-      decimation: {
-        enabled: true,
-        algorithm: "lttb",
-        samples: 40,
-        threshold: 80,
+      spanGaps: false,
+      events: ["mousemove", "mouseout", "click", "touchstart", "touchmove"],
+      // `false` (not `{ duration: 0 }`) so chart.js skips the animator
+      // entirely. Compounds across all well-selector instances.
+      animation: false,
+      parsing: false,
+      plugins: {
+        legend: false,
+        decimation: {
+          enabled: true,
+          algorithm: "lttb",
+          samples: 40,
+          threshold: 80,
+        },
+        tooltip: {
+          enabled: false, // set to FALSE if using an external function for tooltip
+          mode: "nearest",
+          intersect: false,
+        },
       },
-      tooltip: {
-        enabled: false, // set to FALSE if using an external function for tooltip
-        mode: "nearest",
-        intersect: false,
+      elements: {
+        point: {
+          radius: 0,
+        },
+        line: {
+          borderWidth: 1.5,
+        },
       },
-    },
-    elements: {
-      point: {
-        radius: 0,
+      layout: {
+        autoPadding: false,
+        padding: {
+          left: -30,
+          bottom: -30,
+        },
       },
-      line: {
-        borderWidth: 1.5,
-      },
-    },
-    layout: {
-      autoPadding: false,
-      padding: {
-        left: -30,
-        bottom: -30,
-      },
-    },
-    scales: {
-      x: {
-        type: "time",
+      scales: {
+        x: {
+          type: "time",
 
-        ticks: {
-          display: false,
+          ticks: {
+            display: false,
+          },
+          grid: {
+            display: false,
+          },
         },
-        grid: {
-          display: false,
+        y: {
+          ticks: {
+            display: false,
+          },
+          grid: {
+            display: false,
+          },
+          // Lock to plate-wide bounds so chart.js skips per-render
+          // auto-fit across all 96+ mini-chart instances.
+          min: globalYMin,
+          max: globalYMax,
         },
       },
-      y: {
-        ticks: {
-          display: false,
-        },
-        grid: {
-          display: false,
-        },
-      },
-    },
-  });
+    }),
+    [globalYMin, globalYMax]
+  );
 
   return (
     <>
@@ -429,7 +477,7 @@ export const WellSelector = () => {
                     ? getFilteredMedianData(well)
                     : getChartData(well)
                 }
-                options={getChartOptions()}
+                options={chartOptions}
                 onClick={() => handleSelectWell(well)}
               />
             </div>

@@ -64,13 +64,16 @@ export const MiniGraphOptions = (
     normalized: true,
     maintainAspectRatio: true,
     responsive: true,
-    devicePixelRatio: window.devicePixelRatio || 1, // Match screen pixel density
+    // DPR capped to 1: 96–384 tiny canvases × 2× retina is significant
+    // memory + per-frame draw cost; visual delta on ~100px charts is
+    // negligible.
+    devicePixelRatio: 1,
 
     spanGaps: false,
     events: ["onHover"],
-    animation: {
-      duration: 0,
-    },
+    // `false` (not `{ duration: 0 }`) so chart.js skips animator setup
+    // entirely. Compounds across 96–384 mini-chart instances.
+    animation: false,
     parsing: false,
     plugins: {
       legend: false,
