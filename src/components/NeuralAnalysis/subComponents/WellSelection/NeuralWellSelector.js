@@ -106,10 +106,15 @@ const NeuralWellSelector = () => {
       normalized: true,
       maintainAspectRatio: false,
       responsive: true,
-      devicePixelRatio: window.devicePixelRatio || 1,
+      // DPR capped to 1 — 96–384 tiny canvases at 2× retina is
+      // significant memory + draw cost; visual delta is negligible at
+      // this surface size.
+      devicePixelRatio: 1,
       spanGaps: false,
       events: ["mousemove", "mouseout", "click", "touchstart", "touchmove"],
-      animation: { duration: 0 },
+      // `false` (not `{ duration: 0 }`) so chart.js skips the animator
+      // entirely. Compounds across all well-selector instances.
+      animation: false,
       parsing: false,
       plugins: {
         legend: false,

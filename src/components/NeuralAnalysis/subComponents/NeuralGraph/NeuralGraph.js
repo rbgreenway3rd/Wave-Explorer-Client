@@ -586,10 +586,12 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       }
 
       if (!chartData) {
-        const initialChartPoints = processedSignal.map((pt) => ({
-          x: pt.x,
-          y: pt.y,
-        }));
+        // Pass processedSignal directly — it's already `{x, y}[]` from
+        // materializeFilteredData(), and chart.js's LineController reads
+        // points via `meta._parsed[i]` without mutating them (verified in
+        // chart.cjs:2506-2514). The previous `.map(pt => ({ x: pt.x, y: pt.y }))`
+        // remap allocated up to 250K duplicate point objects per run.
+        const initialChartPoints = processedSignal;
         const initialBaseScatter =
           Array.isArray(peakResults) && peakResults.length > 0
             ? peakResults.flatMap((pk) => [
@@ -672,19 +674,14 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       }
     }, [processedSignal, chartData, peakResults, noiseSuppressionActive, showPeakBases, selectedWell]);
 
-    // Memoized chart-data projections. Each useMemo skips its allocation
-    // when its single source of truth is reference-stable across renders
-    // — critical because spike-prominence drags trigger pipeline re-runs
-    // that change peakResults but reuse the same processedSignal (Tier E
-    // cache hits upstream stages), so we should NOT re-allocate the
-    // 250K-element chartPoints just because peakResults updated.
-    const chartPoints = useMemo(
-      () =>
-        processedSignal && processedSignal.length > 0
-          ? processedSignal.map((pt) => ({ x: pt.x, y: pt.y }))
-          : [],
-      [processedSignal]
-    );
+    // Line-dataset data passes processedSignal directly — it's already
+    // `{x, y}[]` from materializeFilteredData(), and chart.js's
+    // LineController reads from `meta._parsed[i]` (the dataset's data
+    // with `parsing: false`) without mutating the points. Verified in
+    // chart.cjs:2506-2514. Skipping the remap avoids ~250K object
+    // allocations per pipeline update on the hot slider-drag path.
+    const chartPoints =
+      processedSignal && processedSignal.length > 0 ? processedSignal : [];
     // Ordinary spikes — regular detection result. Drawn as solid red dots.
     // Chronologically-sorted view of peakResults. detectSpikes already
     // sorts before returning, but routing every scatter projection
@@ -1015,7 +1012,6 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
     }, [
       processedSignal,
       noiseSuppressionActive,
-      chartPoints,
       peakScatter,
       outlierScatter,
       baseScatter,
@@ -1049,7 +1045,9 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
               "wheel",
             ]
           : ["mousemove", "mouseout", "click", "touchstart", "touchmove"],
-        animation: { duration: 0 },
+        // `false` (not `{ duration: 0 }`) so chart.js skips animator
+        // registration, frame requests, and interpolation setup entirely.
+        animation: false,
         parsing: false,
         plugins: {
           legend: false,

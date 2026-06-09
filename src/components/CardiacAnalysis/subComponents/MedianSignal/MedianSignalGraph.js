@@ -288,9 +288,9 @@ export const MedianSignalGraph = () => {
                 "touchstart",
                 "touchmove",
               ],
-              animation: {
-                duration: 0,
-              },
+              // `false` (not `{ duration: 0 }`) so chart.js skips the
+              // animator entirely.
+              animation: false,
               parsing: true,
               plugins: {
                 legend: {

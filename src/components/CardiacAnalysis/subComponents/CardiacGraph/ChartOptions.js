@@ -8,6 +8,11 @@ export const getChartOptions = (
   panState,
   panMode
 ) => ({
+  // `normalized: true` deliberately NOT enabled here — cardiac filtered
+  // data sortedness by x is incidental (file load order), not enforced
+  // by an analysis pipeline. Revisit if/when the cardiac pipeline takes
+  // ownership of the sortedness contract the way detectSpikes does for
+  // the neural side.
   // normalized: true,
   maintainAspectRatio: true,
   responsive: true,
@@ -22,7 +27,13 @@ export const getChartOptions = (
     "touchstart",
     "touchmove",
   ],
-
+  // `false` so chart.js skips the animator entirely. Previously there
+  // was no `animation` config, so chart.js used its default 1000 ms
+  // ease-in-out animation on every chart update — every slider drag,
+  // every well switch, every parameter tweak triggered a one-second
+  // animation. That was the biggest single-chart regression in the
+  // codebase.
+  animation: false,
   parsing: false,
   plugins: {
     legend: {

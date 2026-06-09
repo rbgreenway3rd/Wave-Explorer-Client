@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Slider, Tooltip } from "@mui/material";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import { Panel, IconButton } from "../../../../ui";
@@ -94,15 +94,87 @@ const SpikeDetectionControls = () => {
     rangeFloor,
     1e-6
   );
-  // Step scales with range so dragging always covers ~200 increments —
-  // no `0.5` integer floor so sub-integer prominences are draggable.
-  const promStep = promMax / 200;
+  // ---- Animated range transition ----
+  // When the pipeline returns and `promMax` changes, the user's
+  // committed value sits at a different *visual* position even though
+  // the value didn't change. Without animation, the thumb appears to
+  // jump (often back near where it was before the drag), which makes
+  // the drag feel like it did nothing. Solution:
+  //   - track `displayedMax` separately from `promMax`
+  //   - when `promMax` changes, animate `displayedMax` toward it over
+  //     RANGE_ANIM_MS so the thumb's visual position glides smoothly
+  //   - drive the slider's max/step/marks off `displayedMax` so the
+  //     whole scale animates, not just the thumb
+  //   - if the user starts a new drag mid-animation, snap to the final
+  //     value so step/marks are consistent during the new drag
+  //   - skip the very first transition (initial 1e-6 → real value)
+  const RANGE_ANIM_MS = 600;
+  const [displayedMax, setDisplayedMax] = useState(promMax);
+  const animationRef = useRef(null);
+  const isInteractingRef = useRef(false);
+  const hasInitializedRef = useRef(false);
 
-  // Marks at 0 / 25 / 50 / 75 / 100 % of the dynamic max. Format with
-  // decimals when the scale is sub-integer; otherwise integer.
-  const promFormat = (v) => (promMax < 1 ? v.toFixed(4) : String(Math.round(v)));
+  const cancelRangeAnimation = useCallback(() => {
+    if (animationRef.current !== null) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    // First settle: snap, don't animate. Avoids animating the bootstrap
+    // jump from the 1e-6 fallback to the first real range.
+    if (!hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+      setDisplayedMax(promMax);
+      return;
+    }
+    // No-op when the user is still dragging — promMax shouldn't change
+    // during drag in normal flow, but if a stale pipeline finishes
+    // mid-drag we defer the visual change until release.
+    if (isInteractingRef.current) return;
+    // Skip if already at target (avoid useless animation runs).
+    if (promMax === displayedMax) return;
+    // Skip if change is trivial — pointless animation flash.
+    const denom = Math.max(promMax, displayedMax, 1e-9);
+    if (Math.abs(promMax - displayedMax) / denom < 0.005) {
+      setDisplayedMax(promMax);
+      return;
+    }
+
+    cancelRangeAnimation();
+    const fromMax = displayedMax;
+    const toMax = promMax;
+    const startTime = performance.now();
+
+    const tick = (now) => {
+      const t = Math.min(1, (now - startTime) / RANGE_ANIM_MS);
+      // easeInOutSine — smooth start and stop
+      const eased = 0.5 - 0.5 * Math.cos(t * Math.PI);
+      setDisplayedMax(fromMax + (toMax - fromMax) * eased);
+      if (t < 1) {
+        animationRef.current = requestAnimationFrame(tick);
+      } else {
+        animationRef.current = null;
+      }
+    };
+
+    animationRef.current = requestAnimationFrame(tick);
+    return cancelRangeAnimation;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [promMax]);
+
+  // Step scales with the *displayed* range so dragging always covers
+  // ~200 increments at the current visual scale.
+  const promStep = displayedMax / 200;
+
+  // Marks at 0 / 25 / 50 / 75 / 100 % of the displayed max. They animate
+  // along with displayedMax so the whole rail visibly rescales — the
+  // user sees the scale change, not just the thumb teleport.
+  const promFormat = (v) =>
+    (displayedMax < 1 ? v.toFixed(4) : String(Math.round(v)));
   const promMarks = [0, 0.25, 0.5, 0.75, 1].map((f) => {
-    const v = promMax * f;
+    const v = displayedMax * f;
     return { value: v, label: promFormat(v) };
   });
 
@@ -229,14 +301,25 @@ const SpikeDetectionControls = () => {
           </span>
         </div>
         <Slider
-          value={Math.min(Number(prominence.value) || 0, promMax)}
+          value={Math.min(Number(prominence.value) || 0, displayedMax)}
           onChange={(e, v) => {
             perf.count("slider.spikeProminence");
+            // A new drag starts — snap any in-flight range animation
+            // to its endpoint so the visual scale doesn't shift under
+            // the user's fingers.
+            if (animationRef.current !== null) {
+              cancelRangeAnimation();
+              setDisplayedMax(promMax);
+            }
+            isInteractingRef.current = true;
             prominence.onChange(e, v);
           }}
-          onChangeCommitted={prominence.onChangeCommitted}
+          onChangeCommitted={(e, v) => {
+            isInteractingRef.current = false;
+            prominence.onChangeCommitted(e, v);
+          }}
           min={0}
-          max={promMax}
+          max={displayedMax}
           step={promStep}
           marks={promMarks}
         />
