@@ -21,16 +21,14 @@ import "./NeuralControlPanel.css";
  * useDraftSlider so dragging only updates a local value (cheap) and the
  * pipeline-triggering setter only runs once on release.
  *
- * The Reset button clears the override so the auto-suggestion takes over
- * again, and resets minDistance/stdMultiplier to their fixed defaults.
+ * The Reset button restores prominence/window and the other spike
+ * parameters to their fixed defaults. All spike parameters are plate-wide
+ * globals — set once, applied to every well.
  */
 const SpikeDetectionControls = () => {
   const {
     effectiveSpikeProminence,
     effectiveSpikeWindow,
-    suggestedSpikeProminence,
-    suggestedSpikeWindow,
-    suggestedSpikeDiagnostics,
     pipelineResults,
   } = useNeuralResults();
   const {
@@ -49,7 +47,6 @@ const SpikeDetectionControls = () => {
     handleSpikeProminenceChange,
     handleSpikeWindowChange,
     handleResetSpikeParams,
-    spikeParamsOverrideActive,
     // Parameter-viz draft publishing. Sliders publish their live drag
     // value into these context slots so the graph overlay can redraw
     // mid-drag without waiting for onChangeCommitted (which fires
@@ -79,17 +76,18 @@ const SpikeDetectionControls = () => {
   const signalRange = pipelineResults?.metrics?.signalRange ?? 0;
 
   // ---- Dynamic prominence-slider range ----
-  // promMax covers the larger of: (1) headroom past the auto-suggested
-  // value, (2) headroom past the user's CURRENT effective value (so the
-  // slider doesn't shrink under them mid-session), (3) a per-well floor
-  // derived from the signal range (2% of envelope) so the slider stays
-  // draggable on quiet signals and on first-render before the
-  // suggestion arrives. The 1e-6 final floor is the "no data yet" safety
-  // net — without it the slider's `max` is 0 and the slider freezes.
+  // promMax covers the larger of: (1) headroom past the user's CURRENT
+  // effective value (so the slider doesn't shrink under them mid-session),
+  // (2) the current well's signal range — a peak's prominence can't exceed
+  // the full envelope, so this is the practical ceiling and keeps the
+  // slider draggable across scales (raw thousands vs F/Fo-normalized 0–2).
+  // The 1e-6 final floor is the "no data yet" safety net — without it the
+  // slider's `max` is 0 and the slider freezes. Prominence itself is a
+  // plate-wide global value; only the slider's visual track adapts to the
+  // current well's scale — the stored value never changes on well switch.
   const PROMINENCE_HEADROOM = 1.2;
-  const rangeFloor = signalRange > 0 ? signalRange * 0.02 : 0;
+  const rangeFloor = signalRange > 0 ? signalRange : 0;
   const promMax = Math.max(
-    (suggestedSpikeProminence ?? 0) * PROMINENCE_HEADROOM,
     (effectiveSpikeProminence ?? 0) * PROMINENCE_HEADROOM,
     rangeFloor,
     1e-6
@@ -178,30 +176,6 @@ const SpikeDetectionControls = () => {
     return { value: v, label: promFormat(v) };
   });
 
-  // ---- Auto / Manual hint ---------------------------------------------
-  // The slider rows surface what mode prominence and window are in.
-  // When the user hasn't touched the slider, the effective value comes
-  // from the per-well auto-suggestion — show "Auto (method)" so the
-  // user can see which Otsu path fired. When they've manually set a
-  // value, that value applies plate-wide — show "Manual" plus the
-  // current per-well suggestion in parens so the user can see how far
-  // they've drifted from sensible per-well values when switching wells.
-  const otsuMethod = suggestedSpikeDiagnostics?.prominence?.method ?? null;
-  const promHint = spikeParamsOverrideActive
-    ? `Manual — auto: ${
-        suggestedSpikeProminence != null
-          ? promFormat(suggestedSpikeProminence)
-          : "—"
-      }`
-    : otsuMethod
-    ? `Auto (${otsuMethod})`
-    : "Auto";
-  const winHint = spikeParamsOverrideActive
-    ? `Manual — auto: ${
-        suggestedSpikeWindow != null ? suggestedSpikeWindow : "—"
-      }`
-    : "Auto";
-
   // Conditional draft publishers. When the corresponding overlay is on
   // the slider's live value flows into the shared draft slot so the
   // chart overlay can redraw mid-drag; when off the callback is a
@@ -273,7 +247,7 @@ const SpikeDetectionControls = () => {
           Spike Detection Parameters
         </h4>
         <Tooltip
-          title="Reset to auto-suggested prominence/window for this well"
+          title="Reset spike parameters to their defaults"
           placement="top"
         >
           <IconButton
@@ -292,9 +266,6 @@ const SpikeDetectionControls = () => {
         <div className="neural-control-panel__field-header">
           <span className="neural-control-panel__field-label">
             Prominence
-            <span className="neural-control-panel__field-hint">
-              {promHint}
-            </span>
           </span>
           <span className="neural-control-panel__field-value">
             {promFormat(Number(prominence.value) || 0)}
@@ -329,9 +300,6 @@ const SpikeDetectionControls = () => {
         <div className="neural-control-panel__field-header">
           <span className="neural-control-panel__field-label">
             Window Width
-            <span className="neural-control-panel__field-hint">
-              {winHint}
-            </span>
           </span>
           <span className="neural-control-panel__field-value">
             {windowDraft.value}

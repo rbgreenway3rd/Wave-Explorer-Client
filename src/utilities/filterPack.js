@@ -129,31 +129,53 @@ function mergeFilteredBack(wellArrays, packedWells) {
 // ---- phase splitting ---------------------------------------------------
 
 const CONTROL_SUB_TYPE = "controlSubtraction";
+const STATIC_RATIO_TYPE = "staticRatio";
 
 function isControlSubFilter(f) {
   return f && (f.type === CONTROL_SUB_TYPE || f.name === "Control Subtraction");
 }
 
+// True for a StaticRatio filter with the "rescale by plate-median Fo" option
+// enabled. Handles both serialized specs ({type, params}) and class instances
+// ({name, rescaleByMedianFo}). Plain (non-rescale) StaticRatio returns false
+// and stays in the fast sharded segment path.
+function isStaticRatioRescaleFilter(f) {
+  if (!f) return false;
+  if (f.type === STATIC_RATIO_TYPE) {
+    return !!(f.params && f.params.rescaleByMedianFo);
+  }
+  if (f.name === "Static Ratio") return !!f.rescaleByMedianFo;
+  return false;
+}
+
 // Given an ordered list of filter class instances, splits into a list of
-// phases. Segments contain non-CS filters and run in one worker call.
-// ControlSubtraction phases run separately so the orchestrator can compute
-// the average curve from the post-prior-segment state.
+// phases. Segments contain ordinary filters and run in one (shardable)
+// worker call. ControlSubtraction and rescale-enabled StaticRatio run as
+// their own phases so the orchestrator can first compute a plate-wide
+// value (the control average curve, or the per-indicator median Fo) from
+// the post-prior-segment state — a single shard can't see the whole plate.
 function splitPhasesByControlSubtraction(filterInstances) {
   const phases = [];
   let buf = [];
+  const flushSegment = () => {
+    if (buf.length) {
+      phases.push({ kind: "segment", filters: buf });
+      buf = [];
+    }
+  };
   for (let i = 0; i < filterInstances.length; i++) {
     const f = filterInstances[i];
     if (isControlSubFilter(f)) {
-      if (buf.length) {
-        phases.push({ kind: "segment", filters: buf });
-        buf = [];
-      }
+      flushSegment();
       phases.push({ kind: "controlSub", filter: f });
+    } else if (isStaticRatioRescaleFilter(f)) {
+      flushSegment();
+      phases.push({ kind: "staticRatioRescale", filter: f });
     } else {
       buf.push(f);
     }
   }
-  if (buf.length) phases.push({ kind: "segment", filters: buf });
+  flushSegment();
   return phases;
 }
 
@@ -169,7 +191,11 @@ function serializeFilter(filterInstance) {
     case "Static Ratio":
       return {
         type: "staticRatio",
-        params: { start: filterInstance.start, end: filterInstance.end },
+        params: {
+          start: filterInstance.start,
+          end: filterInstance.end,
+          rescaleByMedianFo: !!filterInstance.rescaleByMedianFo,
+        },
       };
     case "Smoothing":
       return {
@@ -222,6 +248,15 @@ function serializeFilter(filterInstance) {
 function computeControlAveragesFromPacked(packedWells, controlSubFilterInstance) {
   const spec = serializeFilter(controlSubFilterInstance);
   return filterCore.computeAverageCurves(packedWells, spec.params);
+}
+
+// Wrapper that computes the plate-wide per-indicator median Fo for a
+// rescale-enabled StaticRatio filter, from the packed (pre-filter) state.
+// Runs on the main thread between worker phases; the result is injected
+// into the StaticRatio spec so the (un-sharded) worker pass can rescale.
+function computeMedianFoByIndicatorFromPacked(packedWells, staticRatioFilterInstance) {
+  const spec = serializeFilter(staticRatioFilterInstance);
+  return filterCore.computeMedianFoByIndicator(packedWells, spec.params);
 }
 
 // ---- shard support ----------------------------------------------------
@@ -456,8 +491,10 @@ const _exports = {
   splitPhasesByControlSubtraction,
   serializeFilter,
   computeControlAveragesFromPacked,
+  computeMedianFoByIndicatorFromPacked,
   collectTransferables,
   isControlSubFilter,
+  isStaticRatioRescaleFilter,
   sliceFilterSpecForShard,
   makeShards,
   filteredYsView,
@@ -475,8 +512,10 @@ export {
   splitPhasesByControlSubtraction,
   serializeFilter,
   computeControlAveragesFromPacked,
+  computeMedianFoByIndicatorFromPacked,
   collectTransferables,
   isControlSubFilter,
+  isStaticRatioRescaleFilter,
   sliceFilterSpecForShard,
   makeShards,
   filteredYsView,

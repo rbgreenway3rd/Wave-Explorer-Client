@@ -31,6 +31,7 @@ import {
   splitPhasesByControlSubtraction,
   serializeFilter,
   computeControlAveragesFromPacked,
+  computeMedianFoByIndicatorFromPacked,
 } from "../utilities/filterPack.js";
 import html2canvas from "html2canvas";
 import { IconButton, Tooltip, Typography, Button } from "@mui/material";
@@ -228,6 +229,32 @@ export const CombinedComponent = ({ profile, setProfile }) => {
               shardable: true,
             });
           }
+        } else if (phase.kind === "staticRatioRescale") {
+          // Rescale-enabled StaticRatio runs un-sharded: the per-indicator
+          // median Fo it multiplies by spans the whole plate, so the worker
+          // pass needs the full packed array (and the scalar array indexed
+          // by global indicator). Seed the packed state if this is the very
+          // first phase (mirrors the ControlSubtraction path above).
+          if (packed === null) {
+            packed = await filterPool.runFromRaw({
+              wellArrays,
+              filters: [],
+              shardable: false,
+            });
+          }
+          const medianFoByIndicator = computeMedianFoByIndicatorFromPacked(
+            packed,
+            phase.filter
+          );
+          const spec = serializeFilter(phase.filter);
+          packed = await filterPool.run({
+            wells: packed,
+            filters: [
+              { ...spec, params: { ...spec.params, medianFoByIndicator } },
+            ],
+            onProgress,
+            shardable: false,
+          });
         } else {
           // ControlSubtraction must run un-sharded: its apply-well lookup is
           // by global row/col, which only matches the full packed array.

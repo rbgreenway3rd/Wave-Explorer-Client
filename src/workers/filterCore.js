@@ -19,7 +19,7 @@
 // pipeline. We do a single pass here; output matches the original to within
 // ~few × 1e-12 relative error (covered by 1e-9 tolerance in the golden).
 function applyStaticRatio(wells, params) {
-  const { start, end } = params;
+  const { start, end, medianFoByIndicator } = params;
   const range = end - start + 1;
   for (let w = 0; w < wells.length; w++) {
     const inds = wells[w].indicators;
@@ -37,9 +37,67 @@ function applyStaticRatio(wells, params) {
         }
       }
       const NV = sum / range;
-      for (let k = 0; k < n; k++) ys[k] = ys[k] / NV;
+      // Optional well-to-well rescale: multiply the F/Fo result by this
+      // indicator's plate-wide median Fo so wells share a comparable
+      // magnitude (restores a sensible scale after F/Fo collapses the
+      // signal to ~0–2). The median is per-indicator — a single scalar
+      // would mis-scale multi-indicator data. Falls back to plain F/Fo
+      // (bit-for-bit unchanged) when no median is supplied.
+      const m = medianFoByIndicator ? medianFoByIndicator[i] : undefined;
+      if (typeof m === "number" && Number.isFinite(m)) {
+        const factor = m / NV;
+        for (let k = 0; k < n; k++) ys[k] = ys[k] * factor;
+      } else {
+        for (let k = 0; k < n; k++) ys[k] = ys[k] / NV;
+      }
     }
   }
+}
+
+// Plate-wide per-indicator median Fo for the StaticRatio "rescale by
+// plate-median Fo" option. For each indicator, collects every well's
+// baseline NV = mean(ys[start..end]) and returns the median across wells.
+// Median (not mean) is robust to empty/dead wells. Computed on the main
+// thread between phases (see filterPack.computeMedianFoByIndicatorFromPacked)
+// because the value spans the whole plate, which a single shard can't see.
+function computeMedianFoByIndicator(wells, params) {
+  const { start, end } = params;
+  const range = end - start + 1;
+  if (!wells || !wells.length || range <= 0) return [];
+  const numIndicators = wells[0].indicators.length;
+  const result = new Array(numIndicators);
+  for (let i = 0; i < numIndicators; i++) {
+    const nvs = [];
+    for (let w = 0; w < wells.length; w++) {
+      const ind = wells[w].indicators[i];
+      if (!ind || !ind.ys) continue;
+      const ys = ind.ys;
+      const n = ys.length;
+      let sum = 0;
+      let ok = true;
+      for (let s = start; s <= end; s++) {
+        if (s < n && typeof ys[s] === "number" && !Number.isNaN(ys[s])) {
+          sum += ys[s];
+        } else {
+          ok = false;
+          break;
+        }
+      }
+      if (ok) nvs.push(sum / range);
+    }
+    result[i] = medianOfArray(nvs);
+  }
+  return result;
+}
+
+// Median of a plain numeric array; null on empty (callers treat null as
+// "no rescale for this indicator" and fall back to plain F/Fo).
+function medianOfArray(arr) {
+  const n = arr.length;
+  if (n === 0) return null;
+  const sorted = arr.slice().sort((a, b) => a - b);
+  const mid = n >> 1;
+  return n % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
 }
 
 // ---------- Smoothing ----------------------------------------------------
@@ -411,6 +469,7 @@ const _exports = {
   applyFlatFieldCorrection,
   applyDynamicRatio,
   computeAverageCurves,
+  computeMedianFoByIndicator,
   runSegment,
   FILTER_FNS,
 };

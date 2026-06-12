@@ -199,6 +199,7 @@ const BatchProcessing = ({ open, onClose }) => {
                 instance = new FilterClass(filterConfig.num, undefined);
                 instance.start = filterConfig.start;
                 instance.end = filterConfig.end;
+                instance.rescaleByMedianFo = !!filterConfig.rescaleByMedianFo;
               } else if (filterConfig.className === "Smoothing_Filter") {
                 instance = new FilterClass(filterConfig.num, undefined);
                 instance.windowWidth = filterConfig.windowWidth;
@@ -294,7 +295,9 @@ const BatchProcessing = ({ open, onClose }) => {
     switch (filter.className || filter.name) {
       case "StaticRatio_Filter":
       case "Static Ratio":
-        return `start: ${filter.start}, end: ${filter.end}`;
+        return `start: ${filter.start}, end: ${filter.end}${
+          filter.rescaleByMedianFo ? ", rescale: yes" : ""
+        }`;
       case "Smoothing_Filter":
       case "Smoothing":
         return `window: ${filter.windowWidth}, median: ${

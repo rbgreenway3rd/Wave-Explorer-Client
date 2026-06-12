@@ -81,6 +81,7 @@ export const FilterControls = ({
   // state for static ratio filter params
   const [startValue, setStartValue] = useState(0);
   const [endValue, setEndValue] = useState(5);
+  const [rescaleByMedianFo, setRescaleByMedianFo] = useState(false);
   // state for smoothing filter params
   const [windowWidth, setWindowWidth] = useState(0);
   const [useMedian, setUseMedian] = useState(false);
@@ -100,6 +101,7 @@ export const FilterControls = ({
   const handleEditStaticRatioParams = (start, end, setParams, filter) => {
     setStartValue(start);
     setEndValue(end);
+    setRescaleByMedianFo(!!filter?.rescaleByMedianFo);
     setCurrentFilter(filter);
     setEditModalType("staticRatio");
     setOpenDialog(true);
@@ -163,7 +165,7 @@ export const FilterControls = ({
 
   const handleSaveParams = (param1, param2) => {
     if (editModalType === "staticRatio") {
-      currentFilter.setParams(startValue, endValue);
+      currentFilter.setParams(startValue, endValue, rescaleByMedianFo);
     } else if (editModalType === "smoothingFilter") {
       currentFilter.setParams(windowWidth, useMedian);
     } else if (editModalType === "controlSubtractionFilter") {
@@ -383,7 +385,7 @@ export const FilterControls = ({
           selectedFilters.length,
           handleEditStaticRatioParams
         );
-        newFilter.setParams(filter.start, filter.end);
+        newFilter.setParams(filter.start, filter.end, filter.rescaleByMedianFo);
       } else if (filter.name === "Smoothing") {
         newFilter = new Smoothing_Filter(
           selectedFilters.length,
@@ -658,6 +660,8 @@ export const FilterControls = ({
           setStartValue={setStartValue}
           endValue={endValue}
           setEndValue={setEndValue}
+          rescaleByMedianFo={rescaleByMedianFo}
+          setRescaleByMedianFo={setRescaleByMedianFo}
           onSave={handleSaveParams}
         />
       )}

@@ -1,3 +1,14 @@
+// Median of a plain numeric array; null on empty. Shared by the StaticRatio
+// "rescale by plate-median Fo" path (mirrors filterCore.medianOfArray, kept
+// here so the legacy execute() path has no cross-module dependency).
+function medianOfArray(arr) {
+  const n = arr.length;
+  if (n === 0) return null;
+  const sorted = arr.slice().sort((a, b) => a - b);
+  const mid = n >> 1;
+  return n % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+}
+
 export class StaticRatio_Filter {
   static desc = "Static Ratio filter";
   constructor(num, onEdit) {
@@ -7,6 +18,10 @@ export class StaticRatio_Filter {
     this.isEnabled = true;
     this.start = 0;
     this.end = 5;
+    // When true, the F/Fo result is rescaled by the plate-wide median Fo
+    // (per indicator) so peak height / AUC are comparable well-to-well and
+    // the y-magnitude stays sensible for downstream neural analysis.
+    this.rescaleByMedianFo = false;
     this.onEdit = onEdit; // Callback to open the modal
   }
 
@@ -21,16 +36,60 @@ export class StaticRatio_Filter {
     }
   }
 
-  setParams(start, end) {
+  setParams(start, end, rescaleByMedianFo = false) {
     this.start = start;
     this.end = end;
+    this.rescaleByMedianFo = !!rescaleByMedianFo;
   }
 
   serialize() {
-    return { type: "staticRatio", params: { start: this.start, end: this.end } };
+    return {
+      type: "staticRatio",
+      params: {
+        start: this.start,
+        end: this.end,
+        rescaleByMedianFo: !!this.rescaleByMedianFo,
+      },
+    };
+  }
+
+  // Plate-wide per-indicator median Fo from the baseline window of the
+  // current filteredData. Computed once, before the in-place division
+  // below mutates filteredData. Median (not mean) is robust to dead wells.
+  _computeMedianFoByIndicator(data) {
+    if (!data || !data.length) return null;
+    const numIndicators = data[0].indicators.length;
+    const result = new Array(numIndicators);
+    for (let i = 0; i < numIndicators; i++) {
+      const nvs = [];
+      for (let w = 0; w < data.length; w++) {
+        const ind = data[w].indicators[i];
+        if (!ind || !ind.filteredData) continue;
+        let sum = 0;
+        let ok = true;
+        for (let s = this.start; s <= this.end; s++) {
+          const pt = ind.filteredData[s];
+          if (pt && typeof pt.y === "number" && !Number.isNaN(pt.y)) {
+            sum += pt.y;
+          } else {
+            ok = false;
+            break;
+          }
+        }
+        if (ok) nvs.push(sum / (this.end - this.start + 1));
+      }
+      result[i] = medianOfArray(nvs);
+    }
+    return result;
   }
 
   execute(data) {
+    // Compute the plate-wide median Fo per indicator BEFORE any division
+    // mutates filteredData (the loop below normalizes in place).
+    const medianFoByIndicator = this.rescaleByMedianFo
+      ? this._computeMedianFoByIndicator(data)
+      : null;
+
     for (let w = 0; w < data.length; ++w) {
       for (let i = 0; i < data[w].indicators.length; ++i) {
         for (let j = 0; j < data[w].indicators[i].rawData.length; ++j) {
@@ -57,6 +116,17 @@ export class StaticRatio_Filter {
               x: data[w].indicators[i].rawData[k].x,
               y: data[w].indicators[i].filteredData[k].y / NV,
             };
+          }
+        }
+
+        // Single post-division rescale by this indicator's plate-wide
+        // median Fo. Applied ONCE per indicator here — NOT inside the
+        // redundant j-loop above, which would compound the factor.
+        if (medianFoByIndicator) {
+          const m = medianFoByIndicator[i];
+          if (typeof m === "number" && Number.isFinite(m)) {
+            const fd = data[w].indicators[i].filteredData;
+            for (let k = 0; k < fd.length; ++k) fd[k].y *= m;
           }
         }
       }

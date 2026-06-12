@@ -7,7 +7,6 @@ import React, {
   useState,
 } from "react";
 import { DataContext } from "../../../providers/DataProvider";
-import { suggestSpikeParameters } from "../utilities/parameterSuggestions";
 import {
   makePipelineRunner,
   PIPELINE_STALE,
@@ -20,8 +19,9 @@ import { useNeuralSettings } from "./NeuralSettingsContext";
  *
  * Two layers:
  *
- *   1. effective spike params — synchronous useMemo. Picks the user
- *      override OR a signal-derived auto-suggestion. Cheap.
+ *   1. effective spike params — the plate-wide settings values. Spike
+ *      prominence/window are global parameters the user sets once; they
+ *      do not change when switching wells.
  *
  *   2. pipelineResults — driven by an async pipelineRunner. The runner
  *      yields to the browser before computing so the slider release
@@ -79,7 +79,6 @@ export const NeuralResultsProvider = ({ children }) => {
     activityThresholdEnabled,
     baselineThresholdRatio,
     baselineThresholdEnabled,
-    spikeParamsOverrideActive,
     noiseSuppressionActive,
     smoothingEnabled,
     smoothingWindow,
@@ -107,62 +106,18 @@ export const NeuralResultsProvider = ({ children }) => {
   // new data. The Float64Array reference does. Memos and effects that
   // need to re-run when the underlying signal changes must depend on
   // these tokens, not on `selectedWell` / `controlWell` alone — otherwise
-  // post-filter detection runs against pre-filter auto-suggested params.
+  // detection runs against the pre-filter signal after a filter pass.
   const selectedSignalRef = selectedWell?.indicators?.[0]?.filteredYs;
   const controlSignalRef = controlWell?.indicators?.[0]?.filteredYs;
 
-  // ---- Suggested spike params (signal-derived, override-independent) ----
-  // Always-computed auto-suggestion for the currently selected well.
-  // Exposed alongside the effective values so consumers (e.g. the
-  // SpikeDetectionControls slider) can size their range to the
-  // suggestion regardless of whether the user has overridden it.
-  const suggestedSpikeParams = useMemo(() => {
-    if (!selectedWell?.indicators?.[0]) {
-      return { prominence: null, window: null, diagnostics: null };
-    }
-    const ind = selectedWell.indicators[0];
-    const rawSignal =
-      typeof ind.materializeFilteredData === "function"
-        ? ind.materializeFilteredData()
-        : ind.filteredData;
-    if (!rawSignal || rawSignal.length === 0) {
-      return { prominence: null, window: null, diagnostics: null };
-    }
-    const bundle = suggestSpikeParameters(rawSignal);
-    return {
-      prominence: bundle.prominence.value,
-      window: bundle.window.value,
-      diagnostics: bundle,
-    };
-    // `selectedSignalRef` is the typed-array token that changes when a
-    // filter writes new data into the same Well object — without it,
-    // suggestions stay calibrated to the pre-filter signal scale.
-  }, [selectedWell, selectedSignalRef]);
-
   // ---- Effective spike params -------------------------------------------
-  // Plate-wide manual-override model: when `spikeParamsOverrideActive`
-  // is true the user-set values apply to every well; otherwise the
-  // per-well auto-suggestion takes over. This matches the (already
-  // plate-wide) behavior of every other detection parameter. Switching
-  // wells no longer evaporates the user's tunings.
-  const { effectiveSpikeProminence, effectiveSpikeWindow } = useMemo(() => {
-    if (spikeParamsOverrideActive) {
-      return {
-        effectiveSpikeProminence: spikeProminence,
-        effectiveSpikeWindow: spikeWindow,
-      };
-    }
-    return {
-      effectiveSpikeProminence:
-        suggestedSpikeParams.prominence ?? spikeProminence,
-      effectiveSpikeWindow: suggestedSpikeParams.window ?? spikeWindow,
-    };
-  }, [
-    spikeParamsOverrideActive,
-    spikeProminence,
-    spikeWindow,
-    suggestedSpikeParams,
-  ]);
+  // Spike prominence/window are plate-wide global parameters, like every
+  // other detection setting. The user sets them once and they apply to
+  // every well; switching wells never changes them. (Per-well auto-
+  // suggestion was removed — it caused parameters to silently drift
+  // between wells.)
+  const effectiveSpikeProminence = spikeProminence;
+  const effectiveSpikeWindow = spikeWindow;
 
   // ---- Pipeline runner (worker-backed, stale-aware) ---------------------
   const runnerRef = useRef(null);
@@ -290,22 +245,8 @@ export const NeuralResultsProvider = ({ children }) => {
       pipelineResults,
       effectiveSpikeProminence,
       effectiveSpikeWindow,
-      // Raw signal-derived suggestions, exposed so the prominence
-      // slider can size its range to the suggestion (which can exceed
-      // 2,000 on noisy wells) regardless of any user override.
-      suggestedSpikeProminence: suggestedSpikeParams.prominence,
-      suggestedSpikeWindow: suggestedSpikeParams.window,
-      // Full diagnostic envelope from the auto-suggester. UI consumers
-      // (the slider auto/manual hint) read `.prominence.method` from
-      // here to surface which Otsu path fired per well.
-      suggestedSpikeDiagnostics: suggestedSpikeParams.diagnostics,
     }),
-    [
-      pipelineResults,
-      effectiveSpikeProminence,
-      effectiveSpikeWindow,
-      suggestedSpikeParams,
-    ]
+    [pipelineResults, effectiveSpikeProminence, effectiveSpikeWindow]
   );
 
   return (

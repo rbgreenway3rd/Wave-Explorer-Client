@@ -161,31 +161,21 @@ export const NeuralSettingsProvider = ({ children }) => {
   const [baselineThresholdRatio, setBaselineThresholdRatio] = useState(0.1);
   const [baselineThresholdEnabled, setBaselineThresholdEnabled] =
     useState(true);
-  // Plate-wide manual-override flag for spikeProminence / spikeWindow.
-  // When false the effective values come from the per-well auto-
-  // suggestion (NeuralResultsContext). When true the user-set values
-  // apply to every well in the analysis. Other detection params are
-  // already plate-wide; this brings prominence/window into the same
-  // model.
-  const [spikeParamsOverrideActive, setSpikeParamsOverrideActive] =
-    useState(false);
 
-  const handleSpikeProminenceChange = useCallback(
-    (val) => {
-      setSpikeParamsOverrideActive(true);
-      setSpikeProminence(val);
-    },
-    []
-  );
-  const handleSpikeWindowChange = useCallback(
-    (val) => {
-      setSpikeParamsOverrideActive(true);
-      setSpikeWindow(val);
-    },
-    []
-  );
+  // spikeProminence / spikeWindow are plate-wide global parameters, like
+  // every other detection setting: set once, applied to every well. (The
+  // former per-well auto-suggestion was removed — it caused the values to
+  // silently drift when switching wells.) These handlers are thin setters
+  // kept for the slider wiring; reset restores the fixed defaults.
+  const handleSpikeProminenceChange = useCallback((val) => {
+    setSpikeProminence(val);
+  }, []);
+  const handleSpikeWindowChange = useCallback((val) => {
+    setSpikeWindow(val);
+  }, []);
   const handleResetSpikeParams = useCallback(() => {
-    setSpikeParamsOverrideActive(false);
+    setSpikeProminence(DEFAULT_SETTINGS.spikeProminence);
+    setSpikeWindow(DEFAULT_SETTINGS.spikeWindow);
   }, []);
 
   // ---- Noise / smoothing / baseline --------------------------------------
@@ -420,37 +410,18 @@ export const NeuralSettingsProvider = ({ children }) => {
         const setter = settingSetterMap[key];
         if (setter) setter(migrated[key]);
       }
-      // A loaded snapshot — template or master reset — is a manual
-      // choice by definition. Flag the override as active so the
-      // values flow into every well's effective params instead of
-      // being silently overridden by the per-well auto-suggestion.
-      // For the master-reset path this is paired with
-      // `handleResetSpikeParams()` (which clears the flag) immediately
-      // after, so the master reset still ends in the "auto" state.
-      if (
-        Object.prototype.hasOwnProperty.call(migrated, "spikeProminence") ||
-        Object.prototype.hasOwnProperty.call(migrated, "spikeWindow")
-      ) {
-        setSpikeParamsOverrideActive(true);
-      }
     },
     [settingSetterMap]
   );
 
   // Master reset: restores every persistable setting to its DEFAULT_
-  // SETTINGS value AND clears the plate-wide spike-prominence/window
-  // override so the auto-suggestion path takes over again (same
-  // semantics as the Spike Detection section's own reset button). ROI
-  // list, zoom state, and well selection are intentionally NOT
-  // touched — the button is labeled "Reset All Settings" precisely
-  // to scope it to parameters. Order matters: `applySettingsSnapshot`
-  // sets the override flag because it writes spike params; the
-  // subsequent `handleResetSpikeParams()` clears the flag so a master
-  // reset ends in the auto-suggest state.
+  // SETTINGS value (spikeProminence/spikeWindow included, since they are
+  // in DEFAULT_SETTINGS). ROI list, zoom state, and well selection are
+  // intentionally NOT touched — the button is labeled "Reset All
+  // Settings" precisely to scope it to parameters.
   const resetAllSettings = useCallback(() => {
     applySettingsSnapshot(DEFAULT_SETTINGS);
-    handleResetSpikeParams();
-  }, [applySettingsSnapshot, handleResetSpikeParams]);
+  }, [applySettingsSnapshot]);
 
   const value = useMemo(
     () => ({
@@ -479,7 +450,6 @@ export const NeuralSettingsProvider = ({ children }) => {
       setBaselineThresholdRatio,
       baselineThresholdEnabled,
       setBaselineThresholdEnabled,
-      spikeParamsOverrideActive,
       handleSpikeProminenceChange,
       handleSpikeWindowChange,
       handleResetSpikeParams,
@@ -570,7 +540,6 @@ export const NeuralSettingsProvider = ({ children }) => {
       activityThresholdEnabled,
       baselineThresholdRatio,
       baselineThresholdEnabled,
-      spikeParamsOverrideActive,
       handleSpikeProminenceChange,
       handleSpikeWindowChange,
       handleResetSpikeParams,

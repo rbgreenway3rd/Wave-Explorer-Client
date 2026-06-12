@@ -18,7 +18,6 @@ import {
 } from "../../NeuralProvider";
 import { DataContext } from "../../../../providers/DataProvider";
 import { perf } from "../../utilities/perfLogger";
-import { getSignalMedianY } from "../../utilities/detectSpikes";
 import { Chart, registerables, Tooltip } from "chart.js";
 import annotationPlugin from "chartjs-plugin-annotation";
 import zoomPlugin from "chartjs-plugin-zoom";
@@ -1587,39 +1586,13 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
     // `onZoomStart` to cancel its own gesture during a threshold drag.
     const activeDragRef = useRef(null);
 
-    // Seed the Baseline Threshold ratio from the well's noise median
-    // the first time the user enables it for a given well. Without
-    // this, the line lands wherever the previous well left it (or at
-    // the initial 0.1 default), which can be visually nonsense on a
-    // well whose noise floor sits far from that point. Tracked by well
-    // key so re-enabling on the same well keeps the user's last drag,
-    // but switching wells re-seeds on the next enable.
-    const baselineSeededWellRef = useRef({ wellKey: null, seeded: false });
-    useEffect(() => {
-      const wellKey = selectedWell?.key ?? null;
-      if (baselineSeededWellRef.current.wellKey !== wellKey) {
-        baselineSeededWellRef.current = { wellKey, seeded: false };
-      }
-      if (!baselineThresholdEnabled) return;
-      if (baselineSeededWellRef.current.seeded) return;
-      if (!processedSignal || processedSignal.length === 0) return;
-      if (!isFinite(localMinY) || !isFinite(localMaxY) || localMaxY <= localMinY) {
-        return;
-      }
-      const median = getSignalMedianY(processedSignal);
-      if (median === null || !isFinite(median)) return;
-      const range = localMaxY - localMinY;
-      const ratio = Math.max(0, Math.min(1, (median - localMinY) / range));
-      setBaselineThresholdRatio(ratio);
-      baselineSeededWellRef.current.seeded = true;
-    }, [
-      baselineThresholdEnabled,
-      selectedWell?.key,
-      processedSignal,
-      localMinY,
-      localMaxY,
-      setBaselineThresholdRatio,
-    ]);
+    // Baseline / activity thresholds are plate-wide global ratios: the
+    // user sets each once and it applies to every well. They are NOT
+    // re-seeded per well — re-seeding caused the stored percentage to
+    // silently drift (e.g. 10% → 13%) when switching wells. The default
+    // ratio (0.1) and any user drag persist across well switches; only
+    // the absolute on-chart line position varies, because the ratio is
+    // mapped onto each well's Y range.
 
     // Drag descriptors — one per threshold line. Each describes the
     // annotation it targets and the setter that commits the final ratio

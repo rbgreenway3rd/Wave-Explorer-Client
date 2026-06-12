@@ -94,6 +94,7 @@ export const GenerateCSV = (
             filterInstance = new StaticRatio_Filter();
             filterInstance.start = filter.start;
             filterInstance.end = filter.end;
+            filterInstance.rescaleByMedianFo = !!filter.rescaleByMedianFo;
             break;
           case "Control Subtraction":
             filterInstance = new ControlSubtraction_Filter(
