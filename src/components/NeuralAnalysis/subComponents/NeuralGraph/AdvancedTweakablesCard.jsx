@@ -8,7 +8,10 @@ import HandleOutlierControls from "./controls/HandleOutlierControls";
 import BurstDetectionControls from "./controls/BurstDetectionControls";
 import NoiseSuppressionControls from "./controls/NoiseSuppressionControls";
 import ControlWellSelector from "./controls/ControlWellSelector";
+import ControlSetScalingPanel from "./controls/ControlSetScalingPanel";
+import NormalizationPanel from "./controls/NormalizationPanel";
 import DecimationControls from "./controls/DecimationControls";
+import DocsHelpButton from "../../docs/DocsHelpButton";
 import "./AdvancedTweakablesCard.css";
 
 // AdvancedTweakablesCard — fourth top-bar card. Replaces the prior
@@ -32,13 +35,57 @@ import "./AdvancedTweakablesCard.css";
 // was active. Same for Show Bursts ↔ Bursts. Manual deselection while
 // a toggle is still on is honored — we don't fight the user.
 
+// `docId` deep-links the section's [?] into the interactive docs
+// (neuralDocsContent.js section ids).
 const SECTIONS = [
-  { key: "spike", label: "Spike Detection", Component: SpikeDetectionControls },
-  { key: "outliers", label: "Outlier Sliders", Component: HandleOutlierControls },
-  { key: "bursts", label: "Burst Sliders", Component: BurstDetectionControls },
-  { key: "noise", label: "Noise Suppression", Component: NoiseSuppressionControls },
-  { key: "controlwell", label: "Control Well", Component: ControlWellSelector },
-  { key: "decimation", label: "Data Decimation", Component: DecimationControls },
+  {
+    key: "spike",
+    label: "Spike Detection",
+    Component: SpikeDetectionControls,
+    docId: "step-spike-detection",
+  },
+  {
+    key: "outliers",
+    label: "Outlier Sliders",
+    Component: HandleOutlierControls,
+    docId: "step-outliers",
+  },
+  {
+    key: "bursts",
+    label: "Burst Sliders",
+    Component: BurstDetectionControls,
+    docId: "step-bursts",
+  },
+  {
+    key: "noise",
+    label: "Noise Suppression",
+    Component: NoiseSuppressionControls,
+    docId: "step-noise-suppression",
+  },
+  {
+    key: "controlwell",
+    label: "Control Well",
+    Component: ControlWellSelector,
+    docId: "step-noise-suppression",
+  },
+  {
+    key: "normalization",
+    label: "F/Fo Normalization",
+    Component: NormalizationPanel,
+    docId: "step-normalization",
+  },
+  {
+    key: "controlscaling",
+    label: "Control Scaling",
+    Component: ControlSetScalingPanel,
+    docId: "step-control-scaling",
+  },
+  {
+    key: "decimation",
+    label: "Data Decimation",
+    Component: DecimationControls,
+    docId: "param-decimation",
+  },
 ];
 
 const AdvancedTweakablesCard = ({ expandedSection, onExpandedChange }) => {
@@ -125,6 +172,14 @@ const AdvancedTweakablesCard = ({ expandedSection, onExpandedChange }) => {
 
       {ActiveComponent && (
         <div className="neural-advanced-tweakables-card__right">
+          {activeSection?.docId && (
+            <div className="neural-docs-help-row">
+              <DocsHelpButton
+                sectionId={activeSection.docId}
+                label={`What does "${activeSection.label}" do?`}
+              />
+            </div>
+          )}
           <ActiveComponent {...activeComponentProps} />
         </div>
       )}

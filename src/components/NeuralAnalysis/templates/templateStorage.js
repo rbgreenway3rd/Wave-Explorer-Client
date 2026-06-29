@@ -35,6 +35,11 @@ export const PERSISTABLE_KEYS = [
   "trendFlatteningEnabled",
   "trendFlatteningWindow",
   "trendFlatteningMinimums",
+  // normalization
+  "neuralNormalizationEnabled",
+  // control-well scaling (the toggle; the control WELL SET is stored
+  // separately as positional keys — see TemplateMenu)
+  "controlScalingEnabled",
   // decimation
   "decimationEnabled",
   "decimationSamples",
@@ -85,6 +90,13 @@ const sanitizeSettings = (settings) => {
   return out;
 };
 
+// Control-well-scaling well set, stored as positional keys (e.g. "A1") so
+// the same plate positions can be re-selected on a different file with the
+// same layout. Kept as a top-level template field (NOT in `settings`,
+// since it's a selection, not a knob — and sanitizeSettings would strip it).
+const sanitizeControlWellKeys = (keys) =>
+  Array.isArray(keys) ? keys.filter((k) => typeof k === "string") : [];
+
 export const listTemplates = () => {
   const store = readStore();
   return [...store.templates].sort((a, b) =>
@@ -97,7 +109,7 @@ export const getTemplate = (name) => {
   return store.templates.find((t) => t.name === name) || null;
 };
 
-export const saveTemplate = (name, settings) => {
+export const saveTemplate = (name, settings, controlWellKeys = []) => {
   const trimmed = (name || "").trim();
   if (!trimmed) {
     throw new Error("Template name cannot be empty");
@@ -109,6 +121,7 @@ export const saveTemplate = (name, settings) => {
     name: trimmed,
     createdAt: new Date().toISOString(),
     settings: sanitized,
+    controlWellKeys: sanitizeControlWellKeys(controlWellKeys),
   };
   if (existingIdx >= 0) {
     store.templates[existingIdx] = entry;
@@ -154,11 +167,12 @@ const sanitizeFilename = (name) =>
     .replace(/\s+/g, "-")
     .trim() || "template";
 
-export const buildTemplatePayload = (name, settings) => ({
+export const buildTemplatePayload = (name, settings, controlWellKeys = []) => ({
   name: (name || "").trim(),
   createdAt: new Date().toISOString(),
   schemaVersion: CURRENT_SCHEMA_VERSION,
   settings: sanitizeSettings(settings),
+  controlWellKeys: sanitizeControlWellKeys(controlWellKeys),
 });
 
 export const downloadTemplateFile = (template) => {
@@ -212,5 +226,6 @@ export const importTemplateFromFile = async (file) => {
         ? parsed.schemaVersion
         : CURRENT_SCHEMA_VERSION,
     settings: sanitizeSettings(parsed.settings),
+    controlWellKeys: sanitizeControlWellKeys(parsed.controlWellKeys),
   };
 };

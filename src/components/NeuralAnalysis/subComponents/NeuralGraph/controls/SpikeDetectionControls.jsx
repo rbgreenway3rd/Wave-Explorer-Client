@@ -85,11 +85,16 @@ const SpikeDetectionControls = () => {
   // slider's `max` is 0 and the slider freezes. Prominence itself is a
   // plate-wide global value; only the slider's visual track adapts to the
   // current well's scale — the stored value never changes on well switch.
-  const PROMINENCE_HEADROOM = 1.2;
-  const rangeFloor = signalRange > 0 ? signalRange : 0;
+  // Prominence is a FRACTION of the signal range (0–1) — scale-invariant,
+  // so it no longer needs a per-well, signal-sized track. A peak rarely
+  // needs to stand out by more than ~50% of the envelope, so cap the
+  // track at 0.5 for resolution (expands if a stored value exceeds it).
+  // A fixed track means the rail no longer rescales/animates on scale
+  // changes — which is the whole point of going relative.
+  const PROM_FRACTION_MAX = 0.5;
   const promMax = Math.max(
-    (effectiveSpikeProminence ?? 0) * PROMINENCE_HEADROOM,
-    rangeFloor,
+    (effectiveSpikeProminence ?? 0) * 1.05,
+    PROM_FRACTION_MAX,
     1e-6
   );
   // ---- Animated range transition ----
@@ -169,8 +174,8 @@ const SpikeDetectionControls = () => {
   // Marks at 0 / 25 / 50 / 75 / 100 % of the displayed max. They animate
   // along with displayedMax so the whole rail visibly rescales — the
   // user sees the scale change, not just the thumb teleport.
-  const promFormat = (v) =>
-    (displayedMax < 1 ? v.toFixed(4) : String(Math.round(v)));
+  // Prominence is a fraction of the signal range — show it as a percent.
+  const promFormat = (v) => `${(v * 100).toFixed(1)}%`;
   const promMarks = [0, 0.25, 0.5, 0.75, 1].map((f) => {
     const v = displayedMax * f;
     return { value: v, label: promFormat(v) };
@@ -184,10 +189,13 @@ const SpikeDetectionControls = () => {
   const publishProminenceDraft = useCallback(
     (val) => {
       if (showParamOverlays && showProminenceOverlay) {
-        setDraftSpikeProminence(val);
+        // `val` is a fraction (0–1 of signal range); the overlay positions
+        // the threshold line in signal units, so publish the absolute
+        // prominence (fraction × signalRange).
+        setDraftSpikeProminence(val * signalRange);
       }
     },
-    [showParamOverlays, showProminenceOverlay, setDraftSpikeProminence]
+    [showParamOverlays, showProminenceOverlay, setDraftSpikeProminence, signalRange]
   );
   const publishWindowDraft = useCallback(
     (val) => {

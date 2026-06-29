@@ -23,6 +23,9 @@ const NeuralWellSelector = () => {
     setControlWell,
     selectingControl,
     setSelectingControl,
+    controlWellSet,
+    selectingControlSet,
+    toggleControlSetWell,
   } = useNeuralSelection();
   const { noiseSuppressionActive } = useNeuralSettings();
   const [globalYMin, setGlobalYMin] = useState(null);
@@ -191,15 +194,20 @@ const NeuralWellSelector = () => {
                 maxHeight: cellHeight / 1.5,
                 maxWidth: cellWidth / 1.5,
                 opacity: selectingControl && !controlWell ? 0.7 : 1,
-                cursor: selectingControl ? "pointer" : "default",
+                cursor:
+                  selectingControl || selectingControlSet
+                    ? "pointer"
+                    : "default",
               }}
               onClick={() => {
-                if (selectingControl && noiseSuppressionActive) {
+                if (selectingControlSet) {
+                  // Multi-select: toggle membership, stay in select mode so
+                  // the user can pick several wells without re-arming.
+                  toggleControlSetWell(well);
+                } else if (selectingControl && noiseSuppressionActive) {
                   setControlWell(well);
                   setSelectingControl(false);
                 } else if (!selectingControl) {
-                  console.log(well);
-                  // setSelectedWell(well);
                   handleSelectWell(well);
                 }
               }}
@@ -211,6 +219,11 @@ const NeuralWellSelector = () => {
                 }${
                   controlWell && controlWell.id === well.id
                     ? " control-well"
+                    : ""
+                }${
+                  controlWellSet &&
+                  controlWellSet.some((w) => w.id === well.id)
+                    ? " control-set-well"
                     : ""
                 }`}
                 data={getChartData(well)}

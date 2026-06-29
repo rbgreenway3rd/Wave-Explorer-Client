@@ -5,6 +5,11 @@ import {
 } from "./utilities/neuralSmoothing";
 import { savitzkyGolay } from "./utilities/savitzkyGolay";
 import {
+  computeFo,
+  applyDeltaFOverFo,
+  UNIT_MODE,
+} from "./utilities/neuralNormalization";
+import {
   detectSpikes,
   computeResidualRobustStd,
   computeLocalRobustStd,
@@ -152,6 +157,14 @@ export function runNeuralAnalysisPipeline({
   // post-detection flag pass (step 5) can mark matching detectSpikes
   // results with isOutlier=true. Empty when handleOutliers is off.
   let pipelineOutlierSpikes = [];
+  // ΔF/F₀ normalization outcome, surfaced on the result for the panel
+  // readout + unit labeling. Default = not applied (native units).
+  let normalizationMeta = {
+    applied: false,
+    thisWellFo: null,
+    unitMode: UNIT_MODE.NATIVE,
+    skipped: false,
+  };
 
   if (noiseSuppressionActive) {
     const tfWindow = params.trendFlatteningWindow ?? 200;
@@ -182,6 +195,47 @@ export function runNeuralAnalysisPipeline({
           )
       );
       processedForDetection = processed;
+    }
+
+    // ΔF/F₀ normalization (the client's "detrend → F/Fo"). Runs right
+    // after detrending so F₀ is the resting brightness and the detrended
+    // signal is the ΔF numerator. F₀ comes from the RAW input signal
+    // (median — robust to sparse spikes), NOT the detrended signal (which
+    // is centered near zero). Detection then runs in ΔF/F₀ units, so the
+    // subsequent outlier/smoothing steps (scale-invariant) operate on the
+    // normalized signal. Gated independently but requires trend flattening
+    // (the ΔF source); default OFF pending D1 sign-off — see
+    // docs/neural-fofo-normalization-plan.md.
+    if (params.neuralNormalizationEnabled && params.trendFlatteningEnabled) {
+      const fo = computeFo(rawSignal.map((p) => p.y));
+      if (fo != null) {
+        const detrended = processed;
+        processed = memo("normalize", [id(detrended), fo], () =>
+          perf.time("normalize", () => {
+            const { ys } = applyDeltaFOverFo(
+              detrended.map((p) => p.y),
+              fo
+            );
+            return detrended.map((p, i) => ({ x: p.x, y: ys[i] }));
+          })
+        );
+        processedForDetection = processed;
+        normalizationMeta = {
+          applied: true,
+          thisWellFo: fo,
+          unitMode: UNIT_MODE.DFF0,
+          skipped: false,
+        };
+      } else {
+        // No valid F₀ (empty/dead well) — leave the signal native and
+        // report the skip rather than dividing by ~0.
+        normalizationMeta = {
+          applied: false,
+          thisWellFo: null,
+          unitMode: UNIT_MODE.NATIVE,
+          skipped: true,
+        };
+      }
     }
 
     // 2b. Identify outliers BEFORE smoothing on the trend-flattened
@@ -315,13 +369,34 @@ export function runNeuralAnalysisPipeline({
     // so the candidate-overlay data stays cache-coherent with the spike
     // array. Without bundling, a cache hit would return the spikes but
     // not the diagnostics (the Map would be empty on a cached run).
+    // Prominence may be given as a FRACTION of the detection signal's
+    // range (params.spikeProminenceRelative), so it stays meaningful when
+    // units change — native ~thousands vs ΔF/F₀ ~0.2. The UI uses relative;
+    // the pipeline default is absolute (back-compat for direct callers and
+    // tests). When relative, convert using the range of the signal
+    // detection runs on (computeSignalStats is WeakMap-cached → free).
+    // Clamp to [0,1] so a stale absolute value just means "≥ full envelope"
+    // (≈ no peaks) instead of exploding.
+    let absoluteProminence = params.spikeProminence;
+    if (params.spikeProminenceRelative) {
+      const promFraction = Math.min(
+        Math.max(params.spikeProminence ?? 0, 0),
+        1
+      );
+      const detSignalRange =
+        processedForDetection.length > 0
+          ? computeSignalStats(processedForDetection).signalRange
+          : 0;
+      absoluteProminence = promFraction * detSignalRange;
+    }
+
     const detectResult = memo(
       "detectSpikes",
       [
         id(processedForDetection),
         id(preSmoothingSignal),
         id(localStds),
-        params.spikeProminence,
+        absoluteProminence,
         params.spikeWindow,
         params.spikeMinWidth,
         params.spikeMinDistance,
@@ -345,7 +420,7 @@ export function runNeuralAnalysisPipeline({
           // is unbiased and released immediately after binning below.
           const candProms = [];
           const spikes = detectSpikes(processedForDetection, {
-            prominence: params.spikeProminence,
+            prominence: absoluteProminence,
             window: params.spikeWindow,
             minWidth: params.spikeMinWidth,
             minDistance: params.spikeMinDistance,
@@ -587,6 +662,7 @@ export function runNeuralAnalysisPipeline({
       totalCandidates,
     },
     candidateDistributions,
+    normalization: normalizationMeta,
   };
 }
 

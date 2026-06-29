@@ -1,8 +1,16 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Tooltip } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import DescriptionIcon from "@mui/icons-material/Description";
 import DashboardIcon from "@mui/icons-material/Dashboard";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
 import NeuralResults, {
   calculateSpikeFrequency,
   calculateSpikeAmplitude,
@@ -23,6 +31,8 @@ import ChartDisplayToggles from "./subComponents/NeuralGraph/ChartDisplayToggles
 import NeuralReportModal from "./NeuralReportModal";
 import NeuralFullPlateReportModal from "./NeuralFullPlateReportModal";
 import TemplateMenu from "./templates/TemplateMenu";
+import NeuralDocsModal from "./docs/NeuralDocsModal";
+import { NeuralDocsContext } from "./docs/NeuralDocsContext";
 import "../NeuralAnalysis/styles/NeuralAnalysisModal.css";
 import {
   useNeuralInspector,
@@ -50,7 +60,7 @@ Chart.register(zoomPlugin);
  *     rendered out of this component.
  */
 export const NeuralAnalysisModal = ({ open, onClose }) => {
-  const { selectedWell, controlWell } = useNeuralSelection();
+  const { selectedWell, controlWell, controlWellSet } = useNeuralSelection();
   const { project, wellArrays } = useContext(DataContext);
   const settings = useNeuralSettings();
   const { roiList } = useNeuralInteraction();
@@ -76,6 +86,20 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
   // ---- Report-generation state + handlers ---------------------------------
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [fullPlateModalOpen, setFullPlateModalOpen] = useState(false);
+
+  // ---- Interactive documentation modal ------------------------------------
+  // docsSectionId lets a control's [?] deep-link to a specific section;
+  // null opens the docs at the top. (Header button uses null; per-control
+  // deep-links are wired in a follow-up.)
+  const [docsOpen, setDocsOpen] = useState(false);
+  const [docsSectionId, setDocsSectionId] = useState(null);
+  const openDocs = useCallback((sectionId = null) => {
+    setDocsSectionId(sectionId);
+    setDocsOpen(true);
+  }, []);
+  // Stable context value so nested controls (via <DocsHelpButton>) can
+  // deep-link into the docs without prop-drilling or extra re-renders.
+  const docsContextValue = useMemo(() => ({ openDocs }), [openDocs]);
 
   // Accordion state for the modal's right column. Each entry maps a
   // section key to whether its body is expanded. Both Wells and Results
@@ -177,12 +201,17 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
       smoothingWindow: settings.smoothingWindow,
       subtractControl: settings.subtractControl,
       controlWell,
+      controlWellSet,
+      controlScalingEnabled: settings.controlScalingEnabled,
       baselineCorrection: settings.baselineCorrection,
       trendFlatteningEnabled: settings.trendFlatteningEnabled,
       handleOutliers: settings.handleOutliers,
       outlierPercentile: settings.outlierPercentile,
       outlierMultiplier: settings.outlierMultiplier,
       spikeProminence: effectiveSpikeProminence,
+      // Prominence is a fraction of signal range — reports convert it to
+      // absolute per-well, same as the live modal.
+      spikeProminenceRelative: true,
       spikeWindow: effectiveSpikeWindow,
       spikeMinWidth: settings.spikeMinWidth,
       spikeMinDistance: settings.spikeMinDistance,
@@ -204,6 +233,8 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
       settings.smoothingWindow,
       settings.subtractControl,
       controlWell,
+      controlWellSet,
+      settings.controlScalingEnabled,
       settings.baselineCorrection,
       settings.trendFlatteningEnabled,
       settings.handleOutliers,
@@ -228,6 +259,7 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
   );
 
   return (
+    <NeuralDocsContext.Provider value={docsContextValue}>
     <Modal
       open={open}
       onClose={null}
@@ -244,6 +276,17 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
             className="neural-analysis-modal__close"
           >
             <CloseIcon />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="How the analysis works" arrow>
+          <IconButton
+            variant="subtle"
+            size="md"
+            aria-label="open documentation"
+            onClick={() => openDocs(null)}
+            className="neural-analysis-modal__docs-btn"
+          >
+            <MenuBookIcon />
           </IconButton>
         </Tooltip>
       </Modal.Header>
@@ -409,7 +452,13 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
         processingParams={processingParams}
         roiList={roiList}
       />
+      <NeuralDocsModal
+        open={docsOpen}
+        onClose={() => setDocsOpen(false)}
+        initialSectionId={docsSectionId}
+      />
     </Modal>
+    </NeuralDocsContext.Provider>
   );
 };
 

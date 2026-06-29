@@ -11,6 +11,10 @@ import {
   makePipelineRunner,
   PIPELINE_STALE,
 } from "../utilities/pipelineRunner";
+import {
+  computeControlScaleFactor,
+  scaleReportedMetrics,
+} from "../utilities/neuralReportBuilder/controlScaling";
 import { useNeuralSelection } from "./NeuralSelectionContext";
 import { useNeuralSettings } from "./NeuralSettingsContext";
 
@@ -65,8 +69,10 @@ export const useNeuralResults = () => {
 };
 
 export const NeuralResultsProvider = ({ children }) => {
-  const { selectedWell, controlWell } = useNeuralSelection();
+  const { selectedWell, controlWell, controlWellSet } = useNeuralSelection();
   const {
+    controlScalingEnabled,
+    neuralNormalizationEnabled,
     spikeProminence,
     spikeWindow,
     spikeMinDistance,
@@ -119,6 +125,69 @@ export const NeuralResultsProvider = ({ children }) => {
   const effectiveSpikeProminence = spikeProminence;
   const effectiveSpikeWindow = spikeWindow;
 
+  // ---- Shared pipeline params -------------------------------------------
+  // One source of truth for the detection params, so the live selected-well
+  // run and the control-set scale-factor computation detect identically.
+  const pipelineParams = useMemo(
+    () => ({
+      subtractControl,
+      trendFlatteningEnabled,
+      trendFlatteningWindow,
+      trendFlatteningMinimums,
+      baselineCorrection,
+      smoothingEnabled,
+      smoothingWindow,
+      handleOutliers,
+      outlierPercentile,
+      outlierMultiplier,
+      spikeProminence: effectiveSpikeProminence,
+      // Prominence is a fraction of signal range; the pipeline converts it
+      // to absolute per-run so detection is scale-invariant.
+      spikeProminenceRelative: true,
+      spikeWindow: effectiveSpikeWindow,
+      spikeMinWidth,
+      spikeMinDistance,
+      spikeMinProminenceRatio,
+      stdMultiplier,
+      noiseFloorMultiplier,
+      noiseWindowSize,
+      activityThresholdRatio,
+      activityThresholdEnabled,
+      baselineThresholdRatio,
+      baselineThresholdEnabled,
+      maxInterSpikeInterval,
+      minSpikesPerBurst,
+      neuralNormalizationEnabled,
+    }),
+    [
+      subtractControl,
+      trendFlatteningEnabled,
+      trendFlatteningWindow,
+      trendFlatteningMinimums,
+      baselineCorrection,
+      smoothingEnabled,
+      smoothingWindow,
+      handleOutliers,
+      outlierPercentile,
+      outlierMultiplier,
+      effectiveSpikeProminence,
+      effectiveSpikeWindow,
+      spikeMinWidth,
+      spikeMinDistance,
+      spikeMinProminenceRatio,
+      stdMultiplier,
+      noiseFloorMultiplier,
+      noiseWindowSize,
+      activityThresholdRatio,
+      activityThresholdEnabled,
+      baselineThresholdRatio,
+      baselineThresholdEnabled,
+      maxInterSpikeInterval,
+      minSpikesPerBurst,
+      neuralNormalizationEnabled,
+    ]
+  );
+
   // ---- Pipeline runner (worker-backed, stale-aware) ---------------------
   const runnerRef = useRef(null);
   if (runnerRef.current === null) {
@@ -149,15 +218,28 @@ export const NeuralResultsProvider = ({ children }) => {
     // Materialize on demand for just the two wells the modal needs
     // (selected + optional control). filteredData {x,y}[] is empty
     // post-Phase C until materializeFilteredData() is called.
-    const selectedFilteredData =
-      typeof selectedWell.indicators[0].materializeFilteredData === "function"
-        ? selectedWell.indicators[0].materializeFilteredData()
-        : selectedWell.indicators[0].filteredData;
+    // Source switch (D3): when ΔF/F₀ normalization is on, the neural
+    // pipeline owns detrend → F/Fo and must start from the RAW signal —
+    // feeding it the already-F/Fo'd filtered signal would double-apply
+    // the ratio. When off, keep today's filtered-data path exactly.
+    // materializeRawData/FilteredData are per-well lazy; fine for the 1-2
+    // wells the modal needs (the full-plate path uses a no-cache helper —
+    // see docs/neural-fofo-normalization-plan.md §4c).
+    const materializeSignal = (ind) => {
+      if (!ind) return [];
+      if (neuralNormalizationEnabled) {
+        return typeof ind.materializeRawData === "function"
+          ? ind.materializeRawData()
+          : ind.rawData || [];
+      }
+      return typeof ind.materializeFilteredData === "function"
+        ? ind.materializeFilteredData()
+        : ind.filteredData || [];
+    };
+    const selectedFilteredData = materializeSignal(selectedWell.indicators[0]);
     const controlFilteredData =
       controlWell && controlWell.indicators && controlWell.indicators[0]
-        ? typeof controlWell.indicators[0].materializeFilteredData === "function"
-          ? controlWell.indicators[0].materializeFilteredData()
-          : controlWell.indicators[0].filteredData
+        ? materializeSignal(controlWell.indicators[0])
         : [];
 
     let active = true;
@@ -165,32 +247,7 @@ export const NeuralResultsProvider = ({ children }) => {
       .run({
         rawSignal: selectedFilteredData,
         controlSignal: controlFilteredData,
-        params: {
-          subtractControl,
-          trendFlatteningEnabled,
-          trendFlatteningWindow,
-          trendFlatteningMinimums,
-          baselineCorrection,
-          smoothingEnabled,
-          smoothingWindow,
-          handleOutliers,
-          outlierPercentile,
-          outlierMultiplier,
-          spikeProminence: effectiveSpikeProminence,
-          spikeWindow: effectiveSpikeWindow,
-          spikeMinWidth,
-          spikeMinDistance,
-          spikeMinProminenceRatio,
-          stdMultiplier,
-          noiseFloorMultiplier,
-          noiseWindowSize,
-          activityThresholdRatio,
-          activityThresholdEnabled,
-          baselineThresholdRatio,
-          baselineThresholdEnabled,
-          maxInterSpikeInterval,
-          minSpikesPerBurst,
-        },
+        params: pipelineParams,
         analysis: {
           runSpikeDetection: true,
           runBurstDetection: showBursts,
@@ -212,41 +269,114 @@ export const NeuralResultsProvider = ({ children }) => {
     selectedSignalRef,
     controlWell,
     controlSignalRef,
-    subtractControl,
-    trendFlatteningEnabled,
-    trendFlatteningWindow,
-    trendFlatteningMinimums,
-    baselineCorrection,
-    smoothingEnabled,
-    smoothingWindow,
-    handleOutliers,
-    outlierPercentile,
-    outlierMultiplier,
-    effectiveSpikeProminence,
-    effectiveSpikeWindow,
-    spikeMinDistance,
-    stdMultiplier,
-    noiseFloorMultiplier,
-    spikeMinWidth,
-    spikeMinProminenceRatio,
-    noiseWindowSize,
-    activityThresholdRatio,
-    activityThresholdEnabled,
-    baselineThresholdRatio,
-    baselineThresholdEnabled,
+    pipelineParams,
     showBursts,
     noiseSuppressionActive,
-    maxInterSpikeInterval,
-    minSpikesPerBurst,
   ]);
+
+  // ---- Control-well scaling factor (k = 100 / control median peak) ------
+  // Computed off the render path. Detects each control well with the SAME
+  // params, takes its median peak height, then the median of those (see
+  // computeControlScaleFactor). Only runs when scaling is enabled and a
+  // control set exists; control sets are small, so the synchronous detection
+  // is acceptable (mirrors the synchronous full-plate report loop).
+  const [controlScale, setControlScale] = useState({
+    controlMedian: null,
+    k: null,
+  });
+
+  // Stable membership key so the effect doesn't refire on unrelated renders.
+  const controlSetKey = useMemo(
+    () => (controlWellSet || []).map((w) => w.id).join(","),
+    [controlWellSet]
+  );
+
+  useEffect(() => {
+    if (
+      !controlScalingEnabled ||
+      !controlWellSet ||
+      controlWellSet.length === 0
+    ) {
+      setControlScale({ controlMedian: null, k: null });
+      return;
+    }
+    // Match the selected-well source: raw when normalization is on (the
+    // control-set pipeline also normalizes), else filtered.
+    const controlInd =
+      controlWell && controlWell.indicators && controlWell.indicators[0];
+    const controlFilteredData = !controlInd
+      ? []
+      : neuralNormalizationEnabled
+      ? (typeof controlInd.materializeRawData === "function"
+          ? controlInd.materializeRawData()
+          : controlInd.rawData) || []
+      : (typeof controlInd.materializeFilteredData === "function"
+          ? controlInd.materializeFilteredData()
+          : controlInd.filteredData) || [];
+    const { controlMedian, k } = computeControlScaleFactor(controlWellSet, {
+      params: pipelineParams,
+      controlSignal: controlFilteredData,
+      noiseSuppressionActive,
+    });
+    setControlScale({ controlMedian, k });
+    // controlSetKey captures membership; per-control-well signal tokens are
+    // omitted for simplicity (recompute on set / params / control changes).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    controlScalingEnabled,
+    controlSetKey,
+    pipelineParams,
+    controlWell,
+    controlSignalRef,
+    noiseSuppressionActive,
+  ]);
+
+  const controlScalingActive =
+    controlScalingEnabled &&
+    typeof controlScale.k === "number" &&
+    Number.isFinite(controlScale.k);
+
+  // Control-scaled view when scaling is active. Only the reported
+  // magnitude NUMBERS (amplitude / AUC + aggregates) are scaled to "% of
+  // control"; the signal + coordinates stay native so the graph's y-axis
+  // and peak markers don't move when k changes (k is recomputed from the
+  // control wells' detection, which depends on prominence — scaling the
+  // signal made the axis lurch while tuning). See scaleReportedMetrics.
+  const displayedResults = useMemo(
+    () =>
+      controlScalingActive
+        ? scaleReportedMetrics(pipelineResults, controlScale.k)
+        : pipelineResults,
+    [controlScalingActive, pipelineResults, controlScale.k]
+  );
+
+  // Prominence is a FRACTION of the signal range (scale-invariant). The
+  // pipeline converts it to absolute per-run for detection. For the
+  // parameter overlay — which draws the threshold line in signal units —
+  // expose the absolute value (fraction × signalRange). One-cycle lag off
+  // the latest signalRange is fine; the overlay is opt-in.
+  const effectiveSpikeProminenceAbs =
+    effectiveSpikeProminence * (pipelineResults?.metrics?.signalRange || 0);
 
   const value = useMemo(
     () => ({
-      pipelineResults,
+      pipelineResults: displayedResults,
       effectiveSpikeProminence,
+      effectiveSpikeProminenceAbs,
       effectiveSpikeWindow,
+      controlScalingActive,
+      controlScaleFactor: controlScale.k,
+      controlMedianPeakHeight: controlScale.controlMedian,
     }),
-    [pipelineResults, effectiveSpikeProminence, effectiveSpikeWindow]
+    [
+      displayedResults,
+      effectiveSpikeProminence,
+      effectiveSpikeProminenceAbs,
+      effectiveSpikeWindow,
+      controlScalingActive,
+      controlScale.k,
+      controlScale.controlMedian,
+    ]
   );
 
   return (

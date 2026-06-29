@@ -450,7 +450,7 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
     } = useNeuralInteraction();
     const {
       pipelineResults,
-      effectiveSpikeProminence,
+      effectiveSpikeProminenceAbs,
       effectiveSpikeWindow,
     } = useNeuralResults();
     const { selectCandidate } = useNeuralInspector();
@@ -883,7 +883,7 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
         promValue:
           draftSpikeProminence != null
             ? draftSpikeProminence
-            : effectiveSpikeProminence,
+            : effectiveSpikeProminenceAbs,
         winValue:
           draftSpikeWindow != null ? draftSpikeWindow : effectiveSpikeWindow,
         noiseMult:
@@ -902,7 +902,7 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       draftSpikeProminence,
       draftSpikeWindow,
       draftNoiseFloorMultiplier,
-      effectiveSpikeProminence,
+      effectiveSpikeProminenceAbs,
       effectiveSpikeWindow,
       noiseFloorMultiplier,
       peakResults,
@@ -1469,6 +1469,14 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       chart.options.plugins.annotation.annotations = allRoiAnnotations;
       perf.time("chart.update (annotations)", () => chart.update("none"));
     }, [
+      // `chartData` is in the deps for the same reason as the imperative
+      // data-update effect above: the Chart only mounts once chartData
+      // transitions null→object on the first pipeline result. This effect
+      // runs once before that (chart null → early return); without
+      // chartData here it never re-fires at mount, so the default-on
+      // Activity/Baseline threshold lines wouldn't render until the user
+      // nudged a slider (no other dep changes at mount).
+      chartData,
       roiList,
       showBursts,
       burstResults,

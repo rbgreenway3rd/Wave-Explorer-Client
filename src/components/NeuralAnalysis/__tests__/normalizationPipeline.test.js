@@ -1,0 +1,100 @@
+/**
+ * Pipeline integration: ΔF/F₀ normalization ("detrend → F/Fo").
+ *
+ * Proves the in-pipeline step wired into runNeuralAnalysisPipeline:
+ *   - off by default (native units, no behavior change)
+ *   - when on, divides the DETRENDED signal by F₀ taken from the RAW
+ *     baseline (so it's ΔF/F₀, not a divide-by-near-zero)
+ *   - requires trend flattening (the ΔF source)
+ *   - skips dead wells with no valid F₀
+ */
+
+import { runNeuralAnalysisPipeline } from "../NeuralPipeline";
+import { makeSyntheticSignal } from "./_fixtures";
+
+const baseParams = {
+  subtractControl: false,
+  trendFlatteningEnabled: true,
+  baselineCorrection: false,
+  smoothingEnabled: false,
+  handleOutliers: false, // keep processedSignal == detrended for exact compare
+  spikeProminence: 3,
+  spikeWindow: 20,
+  spikeMinWidth: 5,
+  spikeMinDistance: 10,
+  spikeMinProminenceRatio: 0.01,
+  stdMultiplier: 1,
+  maxInterSpikeInterval: 50,
+  minSpikesPerBurst: 3,
+};
+
+function run(signal, extra) {
+  return runNeuralAnalysisPipeline({
+    rawSignal: signal,
+    controlSignal: [],
+    params: { ...baseParams, ...extra },
+    analysis: { runSpikeDetection: true, runBurstDetection: false },
+    noiseSuppressionActive: true,
+  });
+}
+
+describe("pipeline ΔF/F₀ normalization integration", () => {
+  // baseline:100 → resting brightness, so F₀ ≈ 100 (median is robust to
+  // the two sparse spikes). Reused across runs so the detrended signal is
+  // identical between the off/on comparison.
+  const signal = makeSyntheticSignal({
+    n: 800,
+    baseline: 100,
+    noiseAmp: 0.2,
+    spikes: [
+      { center: 200, amplitude: 8, sigma: 3 },
+      { center: 600, amplitude: 8, sigma: 3 },
+    ],
+  });
+
+  test("off by default → native units, not applied", () => {
+    const r = run(signal, { neuralNormalizationEnabled: false });
+    expect(r.normalization.applied).toBe(false);
+    expect(r.normalization.unitMode).toBe("native");
+  });
+
+  test("on → detrended signal divided by F₀ from the raw baseline", () => {
+    const off = run(signal, { neuralNormalizationEnabled: false });
+    const on = run(signal, { neuralNormalizationEnabled: true });
+
+    expect(on.normalization.applied).toBe(true);
+    expect(on.normalization.unitMode).toBe("dFF0");
+    // F₀ ≈ raw baseline of 100 (median ignores the two sparse spikes)
+    expect(on.normalization.thisWellFo).toBeGreaterThan(95);
+    expect(on.normalization.thisWellFo).toBeLessThan(105);
+
+    // Pointwise: normalized = detrended ÷ F₀.
+    const fo = on.normalization.thisWellFo;
+    for (let i = 0; i < off.processedSignal.length; i += 50) {
+      expect(on.processedSignal[i].y * fo).toBeCloseTo(
+        off.processedSignal[i].y,
+        6
+      );
+    }
+  });
+
+  test("requires trend flattening (the ΔF source)", () => {
+    const r = run(signal, {
+      trendFlatteningEnabled: false,
+      neuralNormalizationEnabled: true,
+    });
+    expect(r.normalization.applied).toBe(false);
+  });
+
+  test("dead well (flat zero → no valid F₀) is skipped", () => {
+    const flat = makeSyntheticSignal({
+      n: 400,
+      baseline: 0,
+      noiseAmp: 0,
+      spikes: [],
+    });
+    const r = run(flat, { neuralNormalizationEnabled: true });
+    expect(r.normalization.skipped).toBe(true);
+    expect(r.normalization.applied).toBe(false);
+  });
+});

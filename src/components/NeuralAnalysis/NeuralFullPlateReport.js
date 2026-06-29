@@ -30,6 +30,10 @@ import {
   annotateBurstsWithAuc,
   shouldComputeBursts,
 } from "./utilities/neuralReportBuilder";
+import {
+  computeControlScaleFactor,
+  scaleSpike,
+} from "./utilities/neuralReportBuilder/controlScaling";
 
 // ---- File-level header --------------------------------------------------
 
@@ -371,6 +375,47 @@ export async function GenerateFullPlateReport(
     !!processingParams?.trendFlatteningEnabled ||
     !!processingParams?.smoothingEnabled;
 
+  // ---- Control-well scaling pre-pass ----
+  // Must run BEFORE the emission loop because each well's CSV (per-spike
+  // rows + aggregates) is built inside the loop, so the scale factor k has
+  // to be known first. Reuses the SAME computeControlScaleFactor the live
+  // modal uses (NeuralResultsContext) so both paths agree. Detection here
+  // runs in native units; k is a post-detection units transform applied to
+  // each well's spikes + signal below. Requires defined global params so
+  // control and treated wells are comparable.
+  let controlScaleK = null;
+  let controlMedianPeak = null;
+  if (
+    processingParams?.controlScalingEnabled &&
+    Array.isArray(processingParams?.controlWellSet) &&
+    processingParams.controlWellSet.length > 0
+  ) {
+    const { controlMedian, k } = computeControlScaleFactor(
+      processingParams.controlWellSet,
+      { params: processingParams, controlSignal, noiseSuppressionActive }
+    );
+    controlScaleK = k;
+    controlMedianPeak = controlMedian;
+    csvChunks.push(
+      [
+        "<CONTROL_SCALING>",
+        serializeCsvRow([
+          "Control wells",
+          processingParams.controlWellSet
+            .map((w) => w.key || w.id)
+            .join(" "),
+        ]),
+        serializeCsvRow(["Control median peak height", formatMetric(controlMedianPeak)]),
+        serializeCsvRow([
+          "Scale factor",
+          k == null ? "N/A (no control peaks)" : k.toFixed(6),
+        ]),
+        serializeCsvRow(["Units", k == null ? "native" : "% of control (control median = 100)"]),
+        "</CONTROL_SCALING>",
+      ].join("\n")
+    );
+  }
+
   // ---- Per-well loop ----
   // wellData accumulates kept-spike + burst arrays per well so the
   // optional <PLATE_SUMMARY> block can run cross-ROI analysis after
@@ -426,9 +471,25 @@ export async function GenerateFullPlateReport(
         noiseSuppressionActive,
         cache: null,
       });
-      const spikes = pipelineResult.spikeResults || [];
-      const bursts = pipelineResult.burstResults || [];
-      const processedSignal = pipelineResult.processedSignal || [];
+      let spikes = pipelineResult.spikeResults || [];
+      let bursts = pipelineResult.burstResults || [];
+      let processedSignal = pipelineResult.processedSignal || [];
+
+      // Control-well scaling: detection ran in native units above; apply the
+      // plate-wide factor k as a units transform so every emitted value
+      // (per-spike rows, aggregates, plate summary) reads as % of control.
+      if (controlScaleK != null) {
+        spikes = spikes.map((s) => scaleSpike(s, controlScaleK));
+        if (bursts.length > 0) {
+          bursts = bursts.map((b) =>
+            typeof b.auc === "number" ? { ...b, auc: b.auc * controlScaleK } : b
+          );
+        }
+        processedSignal = processedSignal.map((p) => ({
+          x: p.x,
+          y: p.y * controlScaleK,
+        }));
+      }
 
       // Annotate burst.auc once here so the per-well builder sees the
       // same field Single-Well does (the builder also calls annotate

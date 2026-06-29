@@ -33,6 +33,12 @@
     border: 0.15em solid #00bcd4;
 }
 
+/* Control-set member (control-well scaling) — distinct from the single
+   noise-subtraction control well (cyan) and the selected well (yellow). */
+.well-canvas.control-set-well {
+    border: 0.15em solid #ab47bc;
+}
+
 /* Default styles for selected and hovered wells */
 .well-canvas:hover {
     border: 0.1em solid red;

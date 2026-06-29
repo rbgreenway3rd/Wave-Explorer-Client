@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   Divider,
   ListSubheader,
@@ -10,7 +16,8 @@ import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import StorageIcon from "@mui/icons-material/Storage";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import { Button, IconButton } from "../../ui";
-import { useNeuralSettings } from "../NeuralProvider";
+import { useNeuralSettings, useNeuralSelection } from "../NeuralProvider";
+import { DataContext } from "../../../providers/DataProvider";
 import {
   listTemplates,
   saveTemplate,
@@ -40,7 +47,29 @@ import {
 
 const TemplateMenu = () => {
   const { getSettingsSnapshot, applySettingsSnapshot } = useNeuralSettings();
+  const { controlWellSet, setControlWellSet } = useNeuralSelection();
+  const { wellArrays } = useContext(DataContext);
   const [anchorEl, setAnchorEl] = useState(null);
+
+  // Control-well-scaling set is a SELECTION (not a settings knob), stored
+  // alongside the template as positional keys ("A1"). Save the current
+  // keys; on apply, re-resolve them to wells in the loaded file.
+  const currentControlWellKeys = () =>
+    (controlWellSet || []).map((w) => w.key);
+
+  const applyControlWells = useCallback(
+    (template) => {
+      const keys = template?.controlWellKeys;
+      // Only touch the selection when the template actually carries control
+      // wells — so loading an older template (or one without scaling) never
+      // wipes the user's current set. Positions missing from this file
+      // (different plate layout) are silently skipped.
+      if (!Array.isArray(keys) || keys.length === 0) return;
+      const want = new Set(keys);
+      setControlWellSet((wellArrays || []).filter((w) => want.has(w.key)));
+    },
+    [wellArrays, setControlWellSet]
+  );
   const [templates, setTemplates] = useState([]);
   const fileInputRef = useRef(null);
   const open = Boolean(anchorEl);
@@ -71,7 +100,13 @@ const TemplateMenu = () => {
     handleClose();
     if (!name) return;
     try {
-      downloadTemplateFile(buildTemplatePayload(name, getSettingsSnapshot()));
+      downloadTemplateFile(
+        buildTemplatePayload(
+          name,
+          getSettingsSnapshot(),
+          currentControlWellKeys()
+        )
+      );
     } catch (err) {
       window.alert(err.message || "Failed to save template to file");
     }
@@ -93,7 +128,7 @@ const TemplateMenu = () => {
       }
     }
     try {
-      saveTemplate(name, getSettingsSnapshot());
+      saveTemplate(name, getSettingsSnapshot(), currentControlWellKeys());
       refresh();
     } catch (err) {
       window.alert(err.message || "Failed to save template to browser");
@@ -116,6 +151,7 @@ const TemplateMenu = () => {
     try {
       const template = await importTemplateFromFile(file);
       applySettingsSnapshot(template.settings);
+      applyControlWells(template);
     } catch (err) {
       window.alert(err.message || "Failed to import template");
     }
@@ -125,6 +161,7 @@ const TemplateMenu = () => {
     const t = getTemplate(name);
     if (!t) return;
     applySettingsSnapshot(t.settings);
+    applyControlWells(t);
     handleClose();
   };
 

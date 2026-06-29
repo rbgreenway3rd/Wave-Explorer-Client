@@ -256,7 +256,7 @@ const MetricItem = ({ label, value, unit = "", tooltip = "" }) => {
 const NeuralResults = () => {
   const { selectedWell } = useNeuralSelection();
   const { roiList } = useNeuralInteraction();
-  const { pipelineResults } = useNeuralResults();
+  const { pipelineResults, controlScalingActive } = useNeuralResults();
   const peakResults = pipelineResults.spikeResults;
   const burstResults = pipelineResults.burstResults;
   const processedSignal = pipelineResults.processedSignal;
@@ -313,11 +313,27 @@ const NeuralResults = () => {
     };
   }, [peakResults, burstResults, processedSignal]);
 
+  // Control-well scaling re-expresses peak height / AUC as a % of the
+  // control wells (control median peak = 100). It only affects those
+  // magnitude metrics — frequency, ISI, and width stay in native units.
+  const scaleSuffix = controlScalingActive ? " (% of control)" : "";
+  const scaleUnit = controlScalingActive ? " %" : "";
+
   return (
     <div className="neural-results">
       <h6 className="neural-results__well-title">
         Analysis Results - {selectedWell?.key || "Unknown Well"}
       </h6>
+
+      {controlScalingActive && (
+        <p
+          className="neural-results__scale-note"
+          style={{ margin: "2px 0 8px", fontSize: 12, color: "#ffd479" }}
+        >
+          Peak height &amp; AUC shown as % of control (control median peak =
+          100).
+        </p>
+      )}
 
       {/* Overall Spike Detection Summary (All Data) */}
       <section className="neural-results__section">
@@ -344,11 +360,11 @@ const NeuralResults = () => {
               </MetricCard>
             </Grid>
             <Grid item xs={12} md={6}>
-              <MetricCard title="Spike Amplitude">
-                <MetricItem label="Average Amplitude" value={formatNumber(overallMetrics.spikeAmplitude.average)} tooltip={TIPS.avgAmp} />
-                <MetricItem label="Median Amplitude" value={formatNumber(overallMetrics.spikeAmplitude.median)} tooltip={TIPS.medAmp} />
-                <MetricItem label="Min Amplitude" value={formatNumber(overallMetrics.spikeAmplitude.min)} tooltip={TIPS.minAmp} />
-                <MetricItem label="Max Amplitude" value={formatNumber(overallMetrics.spikeAmplitude.max)} tooltip={TIPS.maxAmp} />
+              <MetricCard title={`Spike Amplitude${scaleSuffix}`}>
+                <MetricItem label="Average Amplitude" value={formatNumber(overallMetrics.spikeAmplitude.average)} unit={scaleUnit} tooltip={TIPS.avgAmp} />
+                <MetricItem label="Median Amplitude" value={formatNumber(overallMetrics.spikeAmplitude.median)} unit={scaleUnit} tooltip={TIPS.medAmp} />
+                <MetricItem label="Min Amplitude" value={formatNumber(overallMetrics.spikeAmplitude.min)} unit={scaleUnit} tooltip={TIPS.minAmp} />
+                <MetricItem label="Max Amplitude" value={formatNumber(overallMetrics.spikeAmplitude.max)} unit={scaleUnit} tooltip={TIPS.maxAmp} />
               </MetricCard>
             </Grid>
             <Grid item xs={12} md={6}>
@@ -360,11 +376,11 @@ const NeuralResults = () => {
               </MetricCard>
             </Grid>
             <Grid item xs={12} md={6}>
-              <MetricCard title="Spike AUC">
-                <MetricItem label="Average AUC" value={formatNumber(overallMetrics.spikeAUC.average)} tooltip={TIPS.avgAuc} />
-                <MetricItem label="Median AUC" value={formatNumber(overallMetrics.spikeAUC.median)} tooltip={TIPS.medAuc} />
-                <MetricItem label="Min AUC" value={formatNumber(overallMetrics.spikeAUC.min)} tooltip={TIPS.minAuc} />
-                <MetricItem label="Max AUC" value={formatNumber(overallMetrics.spikeAUC.max)} tooltip={TIPS.maxAuc} />
+              <MetricCard title={`Spike AUC${scaleSuffix}`}>
+                <MetricItem label="Average AUC" value={formatNumber(overallMetrics.spikeAUC.average)} unit={scaleUnit} tooltip={TIPS.avgAuc} />
+                <MetricItem label="Median AUC" value={formatNumber(overallMetrics.spikeAUC.median)} unit={scaleUnit} tooltip={TIPS.medAuc} />
+                <MetricItem label="Min AUC" value={formatNumber(overallMetrics.spikeAUC.min)} unit={scaleUnit} tooltip={TIPS.minAuc} />
+                <MetricItem label="Max AUC" value={formatNumber(overallMetrics.spikeAUC.max)} unit={scaleUnit} tooltip={TIPS.maxAuc} />
               </MetricCard>
             </Grid>
             <Grid item xs={12} md={6}>

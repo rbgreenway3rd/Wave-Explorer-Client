@@ -53,7 +53,10 @@ const migrateLegacySnapshot = (snapshot) => {
 // already handles its own subset; this is the union.
 const DEFAULT_SETTINGS = {
   // Spike detection
-  spikeProminence: 1,
+  // spikeProminence is a FRACTION of the signal range (0–1), not absolute,
+  // so it stays meaningful across unit changes (native vs ΔF/F₀). The
+  // pipeline converts it to absolute per-run (fraction × signalRange).
+  spikeProminence: 0.1,
   spikeWindow: 20,
   spikeMinDistance: 0,
   stdMultiplier: 1.0,
@@ -74,6 +77,16 @@ const DEFAULT_SETTINGS = {
   trendFlatteningEnabled: true,
   trendFlatteningWindow: 200,
   trendFlatteningMinimums: 50,
+  // Control-well scaling — when on, peak height / AUC and the displayed
+  // signal are rescaled so the control wells' median peak height = 100
+  // (others read as a % of control). The control set itself lives in
+  // NeuralSelectionContext (well references, not persisted).
+  controlScalingEnabled: false,
+  // ΔF/F₀ normalization (detrend → F/Fo). Default OFF pending D1 domain-
+  // expert sign-off on the math; when off, the modal keeps today's
+  // filtered-data path (no behavior change). See
+  // docs/neural-fofo-normalization-plan.md.
+  neuralNormalizationEnabled: false,
   // Decimation
   decimationEnabled: false,
   decimationSamples: 200,
@@ -127,7 +140,7 @@ export const NeuralSettingsProvider = ({ children }) => {
   const { selectedWell } = useNeuralSelection();
 
   // ---- Spike detection params --------------------------------------------
-  const [spikeProminence, setSpikeProminence] = useState(1);
+  const [spikeProminence, setSpikeProminence] = useState(0.1);
   const [spikeWindow, setSpikeWindow] = useState(20);
   const [spikeMinDistance, setSpikeMinDistance] = useState(0);
   const [stdMultiplier, setStdMultiplier] = useState(1.0);
@@ -196,6 +209,16 @@ export const NeuralSettingsProvider = ({ children }) => {
   // Hardcoded as 200 / 50 historically; now exposed for per-file tuning.
   const [trendFlatteningWindow, setTrendFlatteningWindow] = useState(200);
   const [trendFlatteningMinimums, setTrendFlatteningMinimums] = useState(50);
+
+  // ---- Control-well scaling ----------------------------------------------
+  const [controlScalingEnabled, setControlScalingEnabled] = useState(false);
+
+  // ---- ΔF/F₀ normalization (detrend → F/Fo) ------------------------------
+  // Default OFF pending D1 domain-expert sign-off. When on, the neural
+  // pipeline detrends, then divides by F₀ (resting brightness, the median
+  // of the raw signal). Requires trend flattening (the ΔF source).
+  const [neuralNormalizationEnabled, setNeuralNormalizationEnabled] =
+    useState(false);
 
   // ---- Decimation --------------------------------------------------------
   const [decimationEnabled, setDecimationEnabled] = useState(false);
@@ -283,6 +306,7 @@ export const NeuralSettingsProvider = ({ children }) => {
     trendFlatteningEnabled,
     trendFlatteningWindow,
     trendFlatteningMinimums,
+    controlScalingEnabled,
     decimationEnabled,
     decimationSamples,
     handleOutliers,
@@ -303,6 +327,7 @@ export const NeuralSettingsProvider = ({ children }) => {
     useAdjustedBases,
     findPeaksWindowWidth,
     peakProminence,
+    neuralNormalizationEnabled,
   };
   // useState setters are stable across renders, so this map is too.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -327,6 +352,8 @@ export const NeuralSettingsProvider = ({ children }) => {
       trendFlatteningEnabled: setTrendFlatteningEnabled,
       trendFlatteningWindow: setTrendFlatteningWindow,
       trendFlatteningMinimums: setTrendFlatteningMinimums,
+      controlScalingEnabled: setControlScalingEnabled,
+      neuralNormalizationEnabled: setNeuralNormalizationEnabled,
       decimationEnabled: setDecimationEnabled,
       decimationSamples: setDecimationSamples,
       handleOutliers: setHandleOutliers,
@@ -380,6 +407,7 @@ export const NeuralSettingsProvider = ({ children }) => {
     trendFlatteningEnabled,
     trendFlatteningWindow,
     trendFlatteningMinimums,
+    controlScalingEnabled,
     decimationEnabled,
     decimationSamples,
     handleOutliers,
@@ -400,6 +428,7 @@ export const NeuralSettingsProvider = ({ children }) => {
     useAdjustedBases,
     findPeaksWindowWidth,
     peakProminence,
+    neuralNormalizationEnabled,
   ]);
 
   const applySettingsSnapshot = useCallback(
@@ -469,6 +498,12 @@ export const NeuralSettingsProvider = ({ children }) => {
       setTrendFlatteningWindow,
       trendFlatteningMinimums,
       setTrendFlatteningMinimums,
+      // control-well scaling
+      controlScalingEnabled,
+      setControlScalingEnabled,
+      // ΔF/F₀ normalization
+      neuralNormalizationEnabled,
+      setNeuralNormalizationEnabled,
       // decimation
       decimationEnabled,
       setDecimationEnabled,
@@ -551,6 +586,7 @@ export const NeuralSettingsProvider = ({ children }) => {
       trendFlatteningEnabled,
       trendFlatteningWindow,
       trendFlatteningMinimums,
+      controlScalingEnabled,
       decimationEnabled,
       decimationSamples,
       handleOutliers,
@@ -574,6 +610,7 @@ export const NeuralSettingsProvider = ({ children }) => {
       useAdjustedBases,
       findPeaksWindowWidth,
       peakProminence,
+      neuralNormalizationEnabled,
       getSettingsSnapshot,
       applySettingsSnapshot,
       resetAllSettings,

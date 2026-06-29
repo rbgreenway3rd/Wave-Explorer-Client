@@ -1,0 +1,18 @@
+/* The "?" help affordance — muted by default, brightens on hover so it
+ * stays unobtrusive next to control labels. */
+.neural-docs-help-btn.ui-icon-button {
+  color: #7f8c99;
+  padding: 2px;
+}
+
+.neural-docs-help-btn.ui-icon-button:hover {
+  color: #b9c6d4;
+}
+
+/* Right-aligned slot for a panel-level help button in the tweakables
+ * card's content pane. */
+.neural-docs-help-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 2px;
+}
