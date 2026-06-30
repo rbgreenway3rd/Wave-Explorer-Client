@@ -1,7 +1,9 @@
 /**
  * Real-data harness (manual / diagnostic — not a CI assertion).
  *
- * Streams a real .dat file from public/demo-files, pulls a few wells, and
+ * Streams a real .dat file from local-fixtures/ (gitignored, kept out of
+ * public/ so the 271MB capture is never bundled into the build), pulls a
+ * few wells, and
  * runs the ACTUAL pipeline functions on them so we can read real
  * input→output numbers headlessly (no browser):
  *   - raw baseline F₀ per well
@@ -27,7 +29,7 @@ import { computeControlScaleFactor } from "../utilities/neuralReportBuilder/cont
 
 const DATA_FILE = path.resolve(
   __dirname,
-  "../../../../public/demo-files/1 tip 6 1 add 7 20uL 10s+10min_Apr_28_26_111247.dat"
+  "../../../../local-fixtures/1 tip 6 1 add 7 20uL 10s+10min_Apr_28_26_111247.dat"
 );
 
 // A spread of wells across the plate; we report each and pick the most

@@ -26,7 +26,8 @@ yarn-error.log*
 # WSL "mark of the web" metadata files
 *:Zone.Identifier
 
-# Oversized real-data demo capture (271MB — exceeds GitHub's 100MB limit).
-# Kept locally for the realData.harness diagnostic test (which self-skips
-# when absent). Host it externally / use Git LFS if it must be versioned.
-public/demo-files/1 tip 6 1 add 7 20uL 10s+10min_Apr_28_26_111247.dat
+# Oversized real-data captures (271MB — exceeds GitHub's 100MB limit AND
+# must stay out of public/ so it's never bundled into the build/deploy).
+# Kept here for the realData.harness diagnostic test, which self-skips when
+# absent. Host externally / use Git LFS if it must be versioned.
+/local-fixtures/
