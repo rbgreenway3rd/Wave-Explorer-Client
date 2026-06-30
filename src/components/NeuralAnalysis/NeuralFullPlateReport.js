@@ -119,6 +119,16 @@ function emitFileHeader({
       ],
       ["NormalizationWellsSkippedNoFo", normalization?.skippedFoCount ?? 0],
       [
+        "NormalizationFoWindow",
+        !normalization?.enabled
+          ? "N/A"
+          : normalization.foWindowEnabled
+          ? `${Math.round((normalization.foWindowStartRatio ?? 0) * 100)}%–${Math.round(
+              (normalization.foWindowEndRatio ?? 1) * 100
+            )}% of trace`
+          : "whole trace",
+      ],
+      [
         "NormalizationUnits",
         !normalization?.enabled
           ? "native"
@@ -391,9 +401,13 @@ export async function GenerateFullPlateReport(
   // magnitude. Same definition the live modal uses (plateMedianFoFromWells
   // reads rawYs directly; no per-well {x,y}[] materialization). Only needed
   // when normalizing.
+  const foWindow = {
+    startRatio: processingParams?.foWindowStartRatio,
+    endRatio: processingParams?.foWindowEndRatio,
+  };
   const { medianFo: plateMedianFo, skippedCount: skippedFoCount } =
     normalizationOn
-      ? plateMedianFoFromWells(wells)
+      ? plateMedianFoFromWells(wells, foWindow)
       : { medianFo: null, skippedCount: 0 };
 
   // One param object shared by the control-scaling pre-pass AND the per-well
@@ -420,6 +434,9 @@ export async function GenerateFullPlateReport(
         rescale: effectiveParams.rescaleByMedianFo,
         plateMedianFo,
         skippedFoCount,
+        foWindowEnabled: !!processingParams?.foWindowEnabled,
+        foWindowStartRatio: processingParams?.foWindowStartRatio,
+        foWindowEndRatio: processingParams?.foWindowEndRatio,
       },
     }).join("\n")
   );

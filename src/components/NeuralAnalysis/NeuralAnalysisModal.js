@@ -209,6 +209,13 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
       // filtered signal and emitted native (un-normalized) magnitudes.
       neuralNormalizationEnabled: settings.neuralNormalizationEnabled,
       neuralRescaleByMedianFo: settings.neuralRescaleByMedianFo,
+      foWindowEnabled: settings.foWindowEnabled,
+      foWindowStartRatio: settings.foWindowEnabled
+        ? settings.foWindowStartRatio
+        : undefined,
+      foWindowEndRatio: settings.foWindowEnabled
+        ? settings.foWindowEndRatio
+        : undefined,
       baselineCorrection: settings.baselineCorrection,
       trendFlatteningEnabled: settings.trendFlatteningEnabled,
       handleOutliers: settings.handleOutliers,
@@ -243,6 +250,9 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
       settings.controlScalingEnabled,
       settings.neuralNormalizationEnabled,
       settings.neuralRescaleByMedianFo,
+      settings.foWindowEnabled,
+      settings.foWindowStartRatio,
+      settings.foWindowEndRatio,
       settings.baselineCorrection,
       settings.trendFlatteningEnabled,
       settings.handleOutliers,

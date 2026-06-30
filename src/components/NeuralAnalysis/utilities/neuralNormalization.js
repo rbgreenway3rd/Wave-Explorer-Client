@@ -60,10 +60,24 @@ export function medianOverWindow(values, start, end) {
 /**
  * F₀ for one well: robust resting fluorescence from the RAW signal.
  *
- * Estimator (D1-reviewable): the median over a baseline window of the raw
- * samples. A window should cover a quiet, pre-activity stretch so F₀
- * reflects true rest; with no window the median of the whole raw trace is
- * used as a coarse fallback (callers should prefer to pass a window).
+ * Estimator (D1, domain-expert approved): the median over a user-defined
+ * baseline window of the raw samples — a quiet, pre-activity stretch so F₀
+ * reflects true rest. With no window the median of the whole raw trace is
+ * used as a fallback (which over-estimates F₀ on active wells; the window
+ * is the point). The window is chosen on the chart as a draggable band and
+ * stored plate-wide as start/end RATIOS (0–1 of the trace), converted to
+ * per-well sample indices via `foWindowIndices` (each well has its own N).
+ *
+ * Alternative estimators considered (documented for a future redesign —
+ * the math layer can swap to any of these without touching call sites):
+ *   - "First N seconds" window: a fixed leading duration instead of a
+ *     draggable band. Simpler control; assumes recordings start at rest.
+ *   - Auto low-percentile (e.g. 20th pct of raw): no control, self-
+ *     calibrating; robust to where activity sits in the trace.
+ *   - Auto-detect quietest window (lowest rolling variance) with optional
+ *     manual override. Most flexible, most logic.
+ * Chosen: user-defined draggable window (explicit, matches the assay's
+ * "baseline then addition" structure).
  *
  * @param {number[]|Float32Array} rawYs raw (pre-detrend) samples
  * @param {{start?:number, end?:number}} [window] baseline index range
@@ -73,6 +87,32 @@ export function computeFo(rawYs, window = {}) {
   const { start, end } = window || {};
   const fo = medianOverWindow(rawYs, start, end);
   return isValidFo(fo) ? fo : null;
+}
+
+/**
+ * Convert a plate-wide F₀ window expressed as start/end RATIOS (0–1 of the
+ * trace) into half-open sample indices [start, end) for a well of length n.
+ * Ratios are clamped to [0,1] and reordered if inverted; the result always
+ * spans at least one sample. Omitted/non-finite ratios default to the whole
+ * trace (0→1), preserving the legacy whole-trace-median behavior.
+ *
+ * @param {number} n number of raw samples in the well
+ * @param {number} [startRatio]
+ * @param {number} [endRatio]
+ * @returns {{start:number, end:number}|{}} index window, or {} when n invalid
+ */
+export function foWindowIndices(n, startRatio, endRatio) {
+  if (!Number.isFinite(n) || n <= 0) return {};
+  let s = Number.isFinite(startRatio) ? startRatio : 0;
+  let e = Number.isFinite(endRatio) ? endRatio : 1;
+  s = Math.min(Math.max(s, 0), 1);
+  e = Math.min(Math.max(e, 0), 1);
+  if (e < s) [s, e] = [e, s];
+  let start = Math.floor(s * n);
+  let end = Math.ceil(e * n);
+  if (start >= n) start = n - 1;
+  if (end <= start) end = Math.min(n, start + 1);
+  return { start, end };
 }
 
 /**
@@ -112,19 +152,27 @@ export function computePlateMedianFo(perWellFo) {
  * pattern. An already-materialized `rawData` array is used if present,
  * but never triggered.
  *
+ * The F₀ window is plate-wide start/end RATIOS, converted to per-well
+ * sample indices here (each well has its own sample count).
+ *
  * @param {Array} wells well objects shaped { indicators: [{ rawYs }] }
- * @param {{start?:number, end?:number}} [foWindow] baseline window for F₀
+ * @param {{startRatio?:number, endRatio?:number}} [foWindow] plate-wide
+ *   baseline window as ratios (0–1 of the trace). Omitted → whole trace.
  * @returns {{medianFo:number|null, validCount:number, skippedCount:number}}
  */
 export function plateMedianFoFromWells(wells, foWindow = {}) {
+  const { startRatio, endRatio } = foWindow || {};
   const perWellFo = (wells || []).map((w) => {
     const ind = w?.indicators?.[0];
-    if (ind?.rawYs && ind.rawYs.length) return computeFo(ind.rawYs, foWindow);
-    if (Array.isArray(ind?.rawData) && ind.rawData.length) {
+    if (ind?.rawYs && ind.rawYs.length) {
       return computeFo(
-        ind.rawData.map((p) => p.y),
-        foWindow
+        ind.rawYs,
+        foWindowIndices(ind.rawYs.length, startRatio, endRatio)
       );
+    }
+    if (Array.isArray(ind?.rawData) && ind.rawData.length) {
+      const ys = ind.rawData.map((p) => p.y);
+      return computeFo(ys, foWindowIndices(ys.length, startRatio, endRatio));
     }
     return null;
   });

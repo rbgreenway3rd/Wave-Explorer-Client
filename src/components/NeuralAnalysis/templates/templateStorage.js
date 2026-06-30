@@ -38,6 +38,9 @@ export const PERSISTABLE_KEYS = [
   // normalization
   "neuralNormalizationEnabled",
   "neuralRescaleByMedianFo",
+  "foWindowEnabled",
+  "foWindowStartRatio",
+  "foWindowEndRatio",
   // control-well scaling (the toggle; the control WELL SET is stored
   // separately as positional keys — see TemplateMenu)
   "controlScalingEnabled",

@@ -6,6 +6,7 @@ import {
 import { savitzkyGolay } from "./utilities/savitzkyGolay";
 import {
   computeFo,
+  foWindowIndices,
   applyDeltaFOverFo,
   isValidFo,
   UNIT_MODE,
@@ -218,7 +219,18 @@ export function runNeuralAnalysisPipeline({
     // per-well. Computed across wells by the caller (NeuralResultsContext)
     // because the per-well pipeline has no plate view.
     if (params.neuralNormalizationEnabled && params.trendFlatteningEnabled) {
-      const fo = computeFo(rawSignal.map((p) => p.y));
+      // F₀ = median of the RAW signal over the user-defined baseline window
+      // (plate-wide ratios → this well's sample indices). No window ratios
+      // → whole-trace median (legacy fallback).
+      const rawYs = rawSignal.map((p) => p.y);
+      const fo = computeFo(
+        rawYs,
+        foWindowIndices(
+          rawYs.length,
+          params.foWindowStartRatio,
+          params.foWindowEndRatio
+        )
+      );
       if (fo != null) {
         const detrended = processed;
         // Only rescale when a valid plate-median F₀ scalar is supplied;

@@ -206,9 +206,9 @@ export const DOC_SECTIONS = [
     id: "param-fo-window",
     group: "parameters",
     title: "Baseline (Fo) window",
-    status: "planned",
-    what: "The stretch of time used to measure each well's resting brightness (Fo) for F/Fo normalization.",
-    why: "Fo should be measured during a quiet, pre-activity stretch so it reflects the true resting level.",
+    what: "A shaded, draggable band on the chart marking the stretch of time each well's resting brightness (Fo) is measured over. Drag its edges to cover a quiet, pre-activity period (e.g. before the addition). Fo becomes the median of the raw signal inside the band. The same window (as a fraction of the trace) applies to every well. Only shown when F/Fo normalization is on. A toggle turns the window off to revert to measuring Fo over the whole trace (the original behavior).",
+    why: "Measured over a quiet window, Fo reflects the true resting level. If you instead average the whole trace, an active well's own spikes drag Fo upward and shrink its ΔF/F₀ — so the window is what keeps wells comparable.",
+    ifWrong: "Place the band over active (post-stimulus) signal and Fo is too high, compressing that well's peaks. A window with no measurable resting brightness skips the well (left in native units).",
   },
   {
     id: "param-rescale-median-fo",

@@ -94,6 +94,17 @@ const DEFAULT_SETTINGS = {
   // dFF0×medianFo can be compared during the D1 review. No effect unless
   // neuralNormalizationEnabled is also on.
   neuralRescaleByMedianFo: true,
+  // Baseline (Fo) window — the stretch of the RAW trace F₀ is measured over,
+  // as start/end ratios (0–1 of the trace). Plate-wide; each well converts
+  // to its own sample indices. Default = first 10% (a "pre-activity baseline"
+  // for this assay's "baseline then addition" structure). Only used when
+  // neuralNormalizationEnabled is on; the band is draggable on the chart.
+  // When off, F₀ reverts to the median of the WHOLE raw trace (the
+  // pre-window behavior) and the chart band is hidden. On by default
+  // (the expert-approved windowed estimator).
+  foWindowEnabled: true,
+  foWindowStartRatio: 0.0,
+  foWindowEndRatio: 0.1,
   // Decimation
   decimationEnabled: false,
   decimationSamples: 200,
@@ -229,6 +240,12 @@ export const NeuralSettingsProvider = ({ children }) => {
   // Multiply ΔF/F₀ by the plate-wide median F₀ (client step 3). On by
   // default; only takes effect when neuralNormalizationEnabled is on.
   const [neuralRescaleByMedianFo, setNeuralRescaleByMedianFo] = useState(true);
+  // Baseline (Fo) window as start/end ratios of the trace (0–1). Default
+  // first 10%; draggable on the chart, only meaningful when normalization on.
+  // Off → whole-trace median F₀ (pre-window behavior); band hidden.
+  const [foWindowEnabled, setFoWindowEnabled] = useState(true);
+  const [foWindowStartRatio, setFoWindowStartRatio] = useState(0.0);
+  const [foWindowEndRatio, setFoWindowEndRatio] = useState(0.1);
 
   // ---- Decimation --------------------------------------------------------
   const [decimationEnabled, setDecimationEnabled] = useState(false);
@@ -339,6 +356,9 @@ export const NeuralSettingsProvider = ({ children }) => {
     peakProminence,
     neuralNormalizationEnabled,
     neuralRescaleByMedianFo,
+    foWindowEnabled,
+    foWindowStartRatio,
+    foWindowEndRatio,
   };
   // useState setters are stable across renders, so this map is too.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -366,6 +386,9 @@ export const NeuralSettingsProvider = ({ children }) => {
       controlScalingEnabled: setControlScalingEnabled,
       neuralNormalizationEnabled: setNeuralNormalizationEnabled,
       neuralRescaleByMedianFo: setNeuralRescaleByMedianFo,
+      foWindowEnabled: setFoWindowEnabled,
+      foWindowStartRatio: setFoWindowStartRatio,
+      foWindowEndRatio: setFoWindowEndRatio,
       decimationEnabled: setDecimationEnabled,
       decimationSamples: setDecimationSamples,
       handleOutliers: setHandleOutliers,
@@ -442,6 +465,9 @@ export const NeuralSettingsProvider = ({ children }) => {
     peakProminence,
     neuralNormalizationEnabled,
     neuralRescaleByMedianFo,
+    foWindowEnabled,
+    foWindowStartRatio,
+    foWindowEndRatio,
   ]);
 
   const applySettingsSnapshot = useCallback(
@@ -519,6 +545,12 @@ export const NeuralSettingsProvider = ({ children }) => {
       setNeuralNormalizationEnabled,
       neuralRescaleByMedianFo,
       setNeuralRescaleByMedianFo,
+      foWindowEnabled,
+      setFoWindowEnabled,
+      foWindowStartRatio,
+      setFoWindowStartRatio,
+      foWindowEndRatio,
+      setFoWindowEndRatio,
       // decimation
       decimationEnabled,
       setDecimationEnabled,
@@ -627,6 +659,9 @@ export const NeuralSettingsProvider = ({ children }) => {
       peakProminence,
       neuralNormalizationEnabled,
       neuralRescaleByMedianFo,
+      foWindowEnabled,
+      foWindowStartRatio,
+      foWindowEndRatio,
       getSettingsSnapshot,
       applySettingsSnapshot,
       resetAllSettings,

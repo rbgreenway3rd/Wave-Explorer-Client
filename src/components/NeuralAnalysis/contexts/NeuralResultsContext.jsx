@@ -75,6 +75,9 @@ export const NeuralResultsProvider = ({ children }) => {
     controlScalingEnabled,
     neuralNormalizationEnabled,
     neuralRescaleByMedianFo,
+    foWindowEnabled,
+    foWindowStartRatio,
+    foWindowEndRatio,
     spikeProminence,
     spikeWindow,
     spikeMinDistance,
@@ -134,8 +137,20 @@ export const NeuralResultsProvider = ({ children }) => {
       if (!neuralNormalizationEnabled) {
         return { medianFo: null, validCount: 0, skippedCount: 0 };
       }
-      return plateMedianFoFromWells(wellArrays);
-    }, [wellArrays, neuralNormalizationEnabled]);
+      // Window off → whole-trace median F₀ (pass no ratios).
+      return plateMedianFoFromWells(
+        wellArrays,
+        foWindowEnabled
+          ? { startRatio: foWindowStartRatio, endRatio: foWindowEndRatio }
+          : {}
+      );
+    }, [
+      wellArrays,
+      neuralNormalizationEnabled,
+      foWindowEnabled,
+      foWindowStartRatio,
+      foWindowEndRatio,
+    ]);
 
   // ---- Effective spike params -------------------------------------------
   // Spike prominence/window are plate-wide global parameters, like every
@@ -184,6 +199,11 @@ export const NeuralResultsProvider = ({ children }) => {
       // The pipeline guards isValidFo, but gating here keeps params honest.
       rescaleByMedianFo: neuralNormalizationEnabled && neuralRescaleByMedianFo,
       plateMedianFo,
+      // Baseline (Fo) window ratios — the pipeline converts them to this
+      // well's sample indices when computing F₀. When the window is off,
+      // pass no ratios so F₀ falls back to the whole-trace median.
+      foWindowStartRatio: foWindowEnabled ? foWindowStartRatio : undefined,
+      foWindowEndRatio: foWindowEnabled ? foWindowEndRatio : undefined,
     }),
     [
       subtractControl,
@@ -213,6 +233,9 @@ export const NeuralResultsProvider = ({ children }) => {
       neuralNormalizationEnabled,
       neuralRescaleByMedianFo,
       plateMedianFo,
+      foWindowEnabled,
+      foWindowStartRatio,
+      foWindowEndRatio,
     ]
   );
 

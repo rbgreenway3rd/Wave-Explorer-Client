@@ -422,6 +422,15 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       baselineThresholdRatio,
       baselineThresholdEnabled,
       setBaselineThresholdRatio,
+      // Baseline (Fo) window — a draggable horizontal band shown when
+      // normalization is on; defines the time range F₀ is measured over.
+      neuralNormalizationEnabled,
+      trendFlatteningEnabled,
+      foWindowEnabled,
+      foWindowStartRatio,
+      setFoWindowStartRatio,
+      foWindowEndRatio,
+      setFoWindowEndRatio,
       showPeakBases,
       markAUC,
       // Parameter-visualization overlays.
@@ -1465,6 +1474,38 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
         };
       }
 
+      // Baseline (Fo) window — a shaded full-height band over the time
+      // range F₀ is measured for ΔF/F₀ normalization. Positioned from the
+      // plate-wide start/end ratios against the FULL data x-extent (not the
+      // zoomed view), so it marks the same fraction of the trace regardless
+      // of pan/zoom. Edges are draggable (see the x-axis drag handlers).
+      const xRangeValid =
+        isFinite(localMinX) && isFinite(localMaxX) && localMaxX > localMinX;
+      if (
+        neuralNormalizationEnabled &&
+        trendFlatteningEnabled &&
+        foWindowEnabled &&
+        xRangeValid
+      ) {
+        const xr = localMaxX - localMinX;
+        allRoiAnnotations.foWindow = {
+          type: "box",
+          xMin: localMinX + (foWindowStartRatio ?? 0) * xr,
+          xMax: localMinX + (foWindowEndRatio ?? 1) * xr,
+          backgroundColor: "rgba(80, 200, 255, 0.10)",
+          borderColor: "rgba(80, 200, 255, 0.55)",
+          borderWidth: 1,
+          label: {
+            display: true,
+            content: "Fo window",
+            position: { x: "center", y: "start" },
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            color: "rgba(80, 200, 255, 0.9)",
+            font: { size: 10 },
+          },
+        };
+      }
+
       // Mutate annotations in place
       chart.options.plugins.annotation.annotations = allRoiAnnotations;
       perf.time("chart.update (annotations)", () => chart.update("none"));
@@ -1488,6 +1529,13 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       activityThresholdRatio,
       baselineThresholdEnabled,
       baselineThresholdRatio,
+      neuralNormalizationEnabled,
+      trendFlatteningEnabled,
+      foWindowEnabled,
+      foWindowStartRatio,
+      foWindowEndRatio,
+      localMinX,
+      localMaxX,
     ]);
 
     // Mouse event handlers for ROI selection (only active if defineROI is true and currentRoiIndex is set)
@@ -1624,6 +1672,24 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       },
     ].filter(Boolean);
 
+    // Fo-window edges — HORIZONTAL drag (x-axis), unlike the threshold
+    // lines above. Active only while the shaded band is shown. Each edge
+    // commits its own start/end ratio on pointerup.
+    const foWindowDrag =
+      neuralNormalizationEnabled &&
+      trendFlatteningEnabled &&
+      foWindowEnabled &&
+      isFinite(localMinX) &&
+      isFinite(localMaxX) &&
+      localMaxX > localMinX
+        ? {
+            startRatio: foWindowStartRatio ?? 0,
+            endRatio: foWindowEndRatio ?? 1,
+            commitStart: setFoWindowStartRatio,
+            commitEnd: setFoWindowEndRatio,
+          }
+        : null;
+
     // Back-compat: the chartOptions pan/zoom guards (onPanStart /
     // onZoomStart) reference `isDraggingThresholdRef` from before the
     // second line existed. Keep the ref name and have it mirror the
@@ -1675,6 +1741,48 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
           return;
         }
       }
+      // Fo-window edge hit-test (horizontal). Grab within ~8px of either
+      // vertical edge of the shaded band; whichever is closer wins.
+      if (foWindowDrag && chart) {
+        const rect = event.currentTarget.getBoundingClientRect();
+        const px = event.clientX - rect.left;
+        const xr = localMaxX - localMinX;
+        const pxStart = chart.scales.x.getPixelForValue(
+          localMinX + foWindowDrag.startRatio * xr
+        );
+        const pxEnd = chart.scales.x.getPixelForValue(
+          localMinX + foWindowDrag.endRatio * xr
+        );
+        const dStart = Math.abs(px - pxStart);
+        const dEnd = Math.abs(px - pxEnd);
+        let edge = null;
+        if (dStart <= 8 && dStart <= dEnd) edge = "start";
+        else if (dEnd <= 8) edge = "end";
+        if (edge) {
+          activeDragRef.current = {
+            axis: "x",
+            edge,
+            commit:
+              edge === "start"
+                ? foWindowDrag.commitStart
+                : foWindowDrag.commitEnd,
+            otherRatio:
+              edge === "start"
+                ? foWindowDrag.endRatio
+                : foWindowDrag.startRatio,
+          };
+          isDraggingThresholdRef.current = true;
+          draftRatioRef.current =
+            edge === "start" ? foWindowDrag.startRatio : foWindowDrag.endRatio;
+          try {
+            event.currentTarget.setPointerCapture(event.pointerId);
+          } catch (_e) {
+            // harmless — see threshold drag note above
+          }
+          event.preventDefault();
+          return;
+        }
+      }
       if (defineROI) {
         handleMouseDown(event);
       }
@@ -1690,7 +1798,33 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
         return;
       }
       const chart = neuralGraphRef.current;
-      if (!chart || !isFinite(localMinY) || !isFinite(localMaxY)) return;
+      if (!chart) return;
+      // Fo-window edge drag is horizontal — convert pointer X → ratio of
+      // the full x-extent and live-update the band edge (clamped so the
+      // dragged edge can't cross the other).
+      if (drag.axis === "x") {
+        if (!isFinite(localMinX) || !isFinite(localMaxX)) return;
+        const rect = event.currentTarget.getBoundingClientRect();
+        const px = event.clientX - rect.left;
+        const xr = localMaxX - localMinX;
+        const xVal = chart.scales.x.getValueForPixel(px);
+        let ratio = xr > 0 ? (xVal - localMinX) / xr : 0;
+        ratio = Math.max(0, Math.min(1, ratio));
+        if (drag.edge === "start") ratio = Math.min(ratio, drag.otherRatio);
+        else ratio = Math.max(ratio, drag.otherRatio);
+        draftRatioRef.current = ratio;
+        const annX = chart.options?.plugins?.annotation?.annotations;
+        const box = annX?.foWindow;
+        if (box) {
+          const startR = drag.edge === "start" ? ratio : drag.otherRatio;
+          const endR = drag.edge === "end" ? ratio : drag.otherRatio;
+          box.xMin = localMinX + startR * xr;
+          box.xMax = localMinX + endR * xr;
+          chart.update("none");
+        }
+        return;
+      }
+      if (!isFinite(localMinY) || !isFinite(localMaxY)) return;
       const rect = event.currentTarget.getBoundingClientRect();
       const py = event.clientY - rect.top;
       const absT = chart.scales.y.getValueForPixel(py);

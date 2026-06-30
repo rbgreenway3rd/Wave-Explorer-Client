@@ -28,6 +28,12 @@ const NormalizationPanel = () => {
     setNeuralNormalizationEnabled,
     neuralRescaleByMedianFo,
     setNeuralRescaleByMedianFo,
+    foWindowEnabled,
+    setFoWindowEnabled,
+    foWindowStartRatio,
+    setFoWindowStartRatio,
+    foWindowEndRatio,
+    setFoWindowEndRatio,
     trendFlatteningEnabled,
   } = useNeuralSettings();
   const { pipelineResults, plateMedianFo, plateSkippedFoCount } =
@@ -36,6 +42,20 @@ const NormalizationPanel = () => {
   const norm = pipelineResults?.normalization || {};
   const rescaled = norm.unitMode === "dFF0_x_medianFo";
   const unitLabel = rescaled ? "ΔF/F₀ × median F₀" : "ΔF/F₀";
+
+  // Baseline (Fo) window as whole-percent inputs (stored as 0–1 ratios).
+  // The draggable chart band is the primary control; these are for
+  // precision. Each edit keeps start ≤ end.
+  const startPct = Math.round((foWindowStartRatio ?? 0) * 100);
+  const endPct = Math.round((foWindowEndRatio ?? 1) * 100);
+  const onStartPct = (e) => {
+    const v = Math.min(Math.max(Number(e.target.value) || 0, 0), 100) / 100;
+    setFoWindowStartRatio(Math.min(v, foWindowEndRatio));
+  };
+  const onEndPct = (e) => {
+    const v = Math.min(Math.max(Number(e.target.value) || 0, 0), 100) / 100;
+    setFoWindowEndRatio(Math.max(v, foWindowStartRatio));
+  };
 
   return (
     <Panel variant="dark" className="neural-control-panel">
@@ -67,6 +87,55 @@ const NormalizationPanel = () => {
           }
           label="Rescale to readable units (× plate median F₀)"
         />
+      )}
+
+      {neuralNormalizationEnabled && trendFlatteningEnabled && (
+        <FormControlLabel
+          style={{ "--neural-method-accent": "var(--color-info)" }}
+          control={
+            <Switch
+              size="small"
+              checked={foWindowEnabled}
+              onChange={(_, checked) => setFoWindowEnabled(checked)}
+            />
+          }
+          label="Measure Fo over a window (off = whole trace)"
+        />
+      )}
+
+      {neuralNormalizationEnabled && trendFlatteningEnabled && foWindowEnabled && (
+        <div
+          className="neural-fo-window-controls"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            flexWrap: "wrap",
+            marginTop: 6,
+          }}
+        >
+          <span>Baseline (Fo) window:</span>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            value={startPct}
+            onChange={onStartPct}
+            aria-label="Fo window start (% of trace)"
+            style={{ width: 52 }}
+          />
+          <span>%–</span>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            value={endPct}
+            onChange={onEndPct}
+            aria-label="Fo window end (% of trace)"
+            style={{ width: 52 }}
+          />
+          <span>% of trace — or drag the shaded band on the chart</span>
+        </div>
       )}
 
       {neuralNormalizationEnabled && (

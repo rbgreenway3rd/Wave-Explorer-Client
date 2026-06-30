@@ -10,7 +10,9 @@ const {
   isValidFo,
   medianOverWindow,
   computeFo,
+  foWindowIndices,
   computePlateMedianFo,
+  plateMedianFoFromWells,
   applyDeltaFOverFo,
   normalizeWell,
   UNIT_MODE,
@@ -151,5 +153,62 @@ describe("normalizeWell (end-to-end)", () => {
     expect(res.metadata.skipped).toBe(true);
     expect(res.metadata.unitMode).toBe(UNIT_MODE.NATIVE);
     expect(res.ys).toEqual([0, 10, 20]);
+  });
+});
+
+describe("foWindowIndices (ratio → per-well sample indices)", () => {
+  test("first 10% of a 100-sample well → [0, 10)", () => {
+    expect(foWindowIndices(100, 0, 0.1)).toEqual({ start: 0, end: 10 });
+  });
+
+  test("mid window 40%–60% of 100 samples → [40, 60)", () => {
+    expect(foWindowIndices(100, 0.4, 0.6)).toEqual({ start: 40, end: 60 });
+  });
+
+  test("omitted ratios → whole trace [0, n)", () => {
+    expect(foWindowIndices(50)).toEqual({ start: 0, end: 50 });
+  });
+
+  test("inverted ratios are reordered", () => {
+    expect(foWindowIndices(100, 0.6, 0.4)).toEqual({ start: 40, end: 60 });
+  });
+
+  test("ratios clamp to [0,1]", () => {
+    expect(foWindowIndices(100, -0.5, 2)).toEqual({ start: 0, end: 100 });
+  });
+
+  test("always spans at least one sample (degenerate window)", () => {
+    const { start, end } = foWindowIndices(100, 0.5, 0.5);
+    expect(end).toBeGreaterThan(start);
+  });
+
+  test("invalid n → empty window", () => {
+    expect(foWindowIndices(0, 0, 0.1)).toEqual({});
+  });
+});
+
+describe("plateMedianFoFromWells (per-well ratio conversion)", () => {
+  // Each well: a quiet baseline (value 100) then activity (value 300+).
+  // The first-half window must yield F₀≈100, NOT the activity-inflated
+  // whole-trace median — this is the entire point of the window.
+  const makeWell = (rest, active) => ({
+    indicators: [
+      { rawYs: [rest, rest, rest, rest, active, active, active, active] },
+    ],
+  });
+  const wells = [makeWell(100, 300), makeWell(120, 360)];
+
+  test("first-half window measures the resting level (not whole-trace)", () => {
+    const res = plateMedianFoFromWells(wells, { startRatio: 0, endRatio: 0.5 });
+    // per-well F₀ = median of [rest×4] = 100 and 120 → plate median 110
+    expect(res.medianFo).toBe(110);
+    expect(res.skippedCount).toBe(0);
+  });
+
+  test("whole-trace (no window) is inflated by the activity", () => {
+    const res = plateMedianFoFromWells(wells);
+    // median of [100,100,100,100,300,300,300,300] = 200; [120..360] = 240
+    // → plate median 220, far above the true resting 110
+    expect(res.medianFo).toBe(220);
   });
 });

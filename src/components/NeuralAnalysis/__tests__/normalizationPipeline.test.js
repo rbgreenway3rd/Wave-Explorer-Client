@@ -167,3 +167,60 @@ describe("pipeline ΔF/F₀ × median F₀ rescale (well-to-well, client step 3)
     expect(rescaled.spikeResults.length).toBeGreaterThan(0);
   });
 });
+
+describe("pipeline F₀ baseline window", () => {
+  // Step trace: quiet first half rests at ~100, second half rests at ~200.
+  // The window picks WHICH half F₀ is measured over.
+  const n = 800;
+  const stepSignal = [];
+  for (let i = 0; i < n; i++) {
+    const base = i < n / 2 ? 100 : 200;
+    // deterministic tiny ripple, no RNG dependency
+    stepSignal.push({ x: i, y: base + (i % 5) * 0.1 });
+  }
+
+  test("first-half window → F₀ ≈ 100 (the resting level, not whole-trace)", () => {
+    const r = run(stepSignal, {
+      neuralNormalizationEnabled: true,
+      foWindowStartRatio: 0,
+      foWindowEndRatio: 0.5,
+    });
+    expect(r.normalization.applied).toBe(true);
+    expect(r.normalization.thisWellFo).toBeGreaterThan(99);
+    expect(r.normalization.thisWellFo).toBeLessThan(101);
+  });
+
+  test("second-half window → F₀ ≈ 200", () => {
+    const r = run(stepSignal, {
+      neuralNormalizationEnabled: true,
+      foWindowStartRatio: 0.5,
+      foWindowEndRatio: 1,
+    });
+    expect(r.normalization.thisWellFo).toBeGreaterThan(199);
+    expect(r.normalization.thisWellFo).toBeLessThan(201);
+  });
+
+  test("window choice changes F₀ (the whole point of the control)", () => {
+    const first = run(stepSignal, {
+      neuralNormalizationEnabled: true,
+      foWindowStartRatio: 0,
+      foWindowEndRatio: 0.5,
+    });
+    const second = run(stepSignal, {
+      neuralNormalizationEnabled: true,
+      foWindowStartRatio: 0.5,
+      foWindowEndRatio: 1,
+    });
+    expect(second.normalization.thisWellFo).toBeGreaterThan(
+      first.normalization.thisWellFo + 50
+    );
+  });
+
+  test("no window ratios (toggle off) → whole-trace median ≈ 150", () => {
+    // The toggle-off path passes no ratios; F₀ falls back to the median of
+    // the whole trace (half at 100, half at 200 → ~150).
+    const r = run(stepSignal, { neuralNormalizationEnabled: true });
+    expect(r.normalization.thisWellFo).toBeGreaterThan(140);
+    expect(r.normalization.thisWellFo).toBeLessThan(160);
+  });
+});
