@@ -17,16 +17,25 @@ import "./NeuralControlPanel.css";
  * docs/neural-fofo-normalization-plan.md). Requires Trend Flattening
  * (the ΔF source). The math runs in the pipeline; this panel toggles it
  * and surfaces the per-well F₀ + unit state read-only.
+ *
+ * Sub-toggle: "Rescale to readable units" multiplies ΔF/F₀ by the
+ * plate-wide median F₀ (the client's step 3) so peak height / AUC land in
+ * a sensible magnitude instead of a tiny fold-change.
  */
 const NormalizationPanel = () => {
   const {
     neuralNormalizationEnabled,
     setNeuralNormalizationEnabled,
+    neuralRescaleByMedianFo,
+    setNeuralRescaleByMedianFo,
     trendFlatteningEnabled,
   } = useNeuralSettings();
-  const { pipelineResults } = useNeuralResults();
+  const { pipelineResults, plateMedianFo, plateSkippedFoCount } =
+    useNeuralResults();
 
   const norm = pipelineResults?.normalization || {};
+  const rescaled = norm.unitMode === "dFF0_x_medianFo";
+  const unitLabel = rescaled ? "ΔF/F₀ × median F₀" : "ΔF/F₀";
 
   return (
     <Panel variant="dark" className="neural-control-panel">
@@ -46,6 +55,20 @@ const NormalizationPanel = () => {
         label="Apply F/Fo (detrend → F/Fo)"
       />
 
+      {neuralNormalizationEnabled && trendFlatteningEnabled && (
+        <FormControlLabel
+          style={{ "--neural-method-accent": "var(--color-info)" }}
+          control={
+            <Switch
+              size="small"
+              checked={neuralRescaleByMedianFo}
+              onChange={(_, checked) => setNeuralRescaleByMedianFo(checked)}
+            />
+          }
+          label="Rescale to readable units (× plate median F₀)"
+        />
+      )}
+
       {neuralNormalizationEnabled && (
         <div className="neural-control-well-info">
           {!trendFlatteningEnabled ? (
@@ -59,17 +82,33 @@ const NormalizationPanel = () => {
               native units.
             </p>
           ) : norm.applied ? (
-            <p>
-              F₀ (this well):{" "}
-              <span className="neural-control-well-info__control-key">
-                {Math.round(norm.thisWellFo)}
-              </span>{" "}
-              — signal shown as ΔF/F₀.
-            </p>
+            <>
+              <p>
+                F₀ (this well):{" "}
+                <span className="neural-control-well-info__control-key">
+                  {Math.round(norm.thisWellFo)}
+                </span>{" "}
+                — signal shown as {unitLabel}.
+              </p>
+              {rescaled && (
+                <p>
+                  Plate median F₀:{" "}
+                  <span className="neural-control-well-info__control-key">
+                    {Math.round(plateMedianFo)}
+                  </span>
+                  {plateSkippedFoCount > 0 && (
+                    <> ({plateSkippedFoCount} well(s) skipped — no valid F₀)</>
+                  )}
+                </p>
+              )}
+            </>
           ) : (
             <p>Select a well to compute F₀.</p>
           )}
-          <p>Detection runs in ΔF/F₀ units; set prominence accordingly.</p>
+          <p>
+            Prominence is a % of the signal range, so the unit choice doesn't
+            change which peaks are detected.
+          </p>
         </div>
       )}
     </Panel>

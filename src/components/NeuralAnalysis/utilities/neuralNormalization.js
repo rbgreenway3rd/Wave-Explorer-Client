@@ -103,6 +103,35 @@ export function computePlateMedianFo(perWellFo) {
 }
 
 /**
+ * Plate-wide median F₀ computed straight from well objects — the single
+ * definition of the client's "median Fo across the whole plate", shared
+ * by the live modal (NeuralResultsContext) and the full-plate report so
+ * the two paths can never drift. Reads each well's raw typed array
+ * (`indicators[0].rawYs`) directly and NEVER calls materializeRawData(),
+ * which would cache an {x,y}[] per well and recreate the full-plate OOM
+ * pattern. An already-materialized `rawData` array is used if present,
+ * but never triggered.
+ *
+ * @param {Array} wells well objects shaped { indicators: [{ rawYs }] }
+ * @param {{start?:number, end?:number}} [foWindow] baseline window for F₀
+ * @returns {{medianFo:number|null, validCount:number, skippedCount:number}}
+ */
+export function plateMedianFoFromWells(wells, foWindow = {}) {
+  const perWellFo = (wells || []).map((w) => {
+    const ind = w?.indicators?.[0];
+    if (ind?.rawYs && ind.rawYs.length) return computeFo(ind.rawYs, foWindow);
+    if (Array.isArray(ind?.rawData) && ind.rawData.length) {
+      return computeFo(
+        ind.rawData.map((p) => p.y),
+        foWindow
+      );
+    }
+    return null;
+  });
+  return computePlateMedianFo(perWellFo);
+}
+
+/**
  * Normalize a detrended (ΔF) signal by F₀, optionally rescaling by the
  * plate-wide median F₀ so values land in a readable magnitude.
  *

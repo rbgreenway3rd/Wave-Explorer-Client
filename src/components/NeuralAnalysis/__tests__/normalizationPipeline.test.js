@@ -98,3 +98,72 @@ describe("pipeline ΔF/F₀ normalization integration", () => {
     expect(r.normalization.applied).toBe(false);
   });
 });
+
+describe("pipeline ΔF/F₀ × median F₀ rescale (well-to-well, client step 3)", () => {
+  // Prominence is RELATIVE (a fraction of the signal range), matching the
+  // live pipeline — so a uniform magnitude rescale is detection-invariant.
+  const relParams = { spikeProminence: 0.1, spikeProminenceRelative: true };
+  const signal = makeSyntheticSignal({
+    n: 800,
+    baseline: 100,
+    noiseAmp: 0.2,
+    spikes: [
+      { center: 200, amplitude: 8, sigma: 3 },
+      { center: 600, amplitude: 8, sigma: 3 },
+    ],
+  });
+
+  test("rescale off (or no plate median) → bare dFF0, plateMedianFo null", () => {
+    const r = run(signal, {
+      ...relParams,
+      neuralNormalizationEnabled: true,
+      rescaleByMedianFo: false,
+      plateMedianFo: 250,
+    });
+    expect(r.normalization.unitMode).toBe("dFF0");
+    expect(r.normalization.plateMedianFo).toBeNull();
+  });
+
+  test("rescale flag on but plate median invalid → stays dFF0", () => {
+    const r = run(signal, {
+      ...relParams,
+      neuralNormalizationEnabled: true,
+      rescaleByMedianFo: true,
+      plateMedianFo: 0, // not a valid F₀
+    });
+    expect(r.normalization.unitMode).toBe("dFF0");
+    expect(r.normalization.plateMedianFo).toBeNull();
+  });
+
+  test("rescale on → dFF0 × plateMedianFo, magnitude restored, detection unchanged", () => {
+    const medianFo = 250;
+    const bare = run(signal, {
+      ...relParams,
+      neuralNormalizationEnabled: true,
+      rescaleByMedianFo: false,
+    });
+    const rescaled = run(signal, {
+      ...relParams,
+      neuralNormalizationEnabled: true,
+      rescaleByMedianFo: true,
+      plateMedianFo: medianFo,
+    });
+
+    expect(rescaled.normalization.unitMode).toBe("dFF0_x_medianFo");
+    expect(rescaled.normalization.plateMedianFo).toBe(medianFo);
+
+    // Every sample is the bare fold-change scaled by the plate median —
+    // a uniform multiply that lifts the "little-bitty" ratio into range.
+    for (let i = 0; i < bare.processedSignal.length; i += 50) {
+      expect(rescaled.processedSignal[i].y).toBeCloseTo(
+        bare.processedSignal[i].y * medianFo,
+        6
+      );
+    }
+
+    // A uniform magnitude scale with relative prominence must not move the
+    // peak set — the rescale is a reporting transform, not a detection one.
+    expect(rescaled.spikeResults.length).toBe(bare.spikeResults.length);
+    expect(rescaled.spikeResults.length).toBeGreaterThan(0);
+  });
+});

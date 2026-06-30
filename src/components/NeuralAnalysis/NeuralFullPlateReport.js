@@ -34,10 +34,17 @@ import {
   computeControlScaleFactor,
   scaleSpike,
 } from "./utilities/neuralReportBuilder/controlScaling";
+import { plateMedianFoFromWells } from "./utilities/neuralNormalization";
 
 // ---- File-level header --------------------------------------------------
 
-function emitFileHeader({ project, processingParams, wells, parameterMode }) {
+function emitFileHeader({
+  project,
+  processingParams,
+  wells,
+  parameterMode,
+  normalization,
+}) {
   const out = [];
   out.push("<SCOPE>FULL_PLATE</SCOPE>");
   out.push("<HEADER>");
@@ -99,6 +106,26 @@ function emitFileHeader({ project, processingParams, wells, parameterMode }) {
       ["ControlWell", processingParams.controlWell?.key || "None"],
       ["BaselineCorrection", processingParams.baselineCorrection],
       ["TrendFlatteningEnabled", processingParams.trendFlatteningEnabled],
+      // ΔF/F₀ normalization + well-to-well rescale (detrend → F/Fo →
+      // × plate-median Fo). `normalization` carries the resolved plate
+      // scalar + how many wells were skipped for an invalid (empty) Fo.
+      ["NeuralNormalizationEnabled", !!normalization?.enabled],
+      ["NormalizationRescaleByMedianFo", !!normalization?.rescale],
+      [
+        "NormalizationPlateMedianFo",
+        normalization?.plateMedianFo != null
+          ? Math.round(normalization.plateMedianFo)
+          : "N/A",
+      ],
+      ["NormalizationWellsSkippedNoFo", normalization?.skippedFoCount ?? 0],
+      [
+        "NormalizationUnits",
+        !normalization?.enabled
+          ? "native"
+          : normalization.rescale && normalization.plateMedianFo != null
+          ? "dFF0_x_medianFo"
+          : "dFF0",
+      ],
       ["HandleOutliers", processingParams.handleOutliers],
       ["OutlierPercentile", processingParams.outlierPercentile],
       ["OutlierMultiplier", processingParams.outlierMultiplier],
@@ -342,6 +369,44 @@ export async function GenerateFullPlateReport(
     includeROIAnalysis,
   });
 
+  // ---- Normalization setup (detrend → F/Fo → × plate-median Fo) ----
+  // When ΔF/F₀ normalization is on, the neural pipeline owns the ratio and
+  // must start from the RAW signal (feeding it the already-F/Fo'd filtered
+  // signal would double-apply it) — mirror the live modal's source switch.
+  const normalizationOn = !!processingParams?.neuralNormalizationEnabled;
+  const materializeReportSignal = (ind) => {
+    if (!ind) return [];
+    if (normalizationOn) {
+      return typeof ind.materializeRawData === "function"
+        ? ind.materializeRawData()
+        : ind.rawData || [];
+    }
+    return typeof ind.materializeFilteredData === "function"
+      ? ind.materializeFilteredData()
+      : ind.filteredData || [];
+  };
+
+  // Plate-wide median F₀ (client step 3) — the scalar the ΔF/F₀ fold-change
+  // is multiplied back up by so peak height / AUC land in a readable
+  // magnitude. Same definition the live modal uses (plateMedianFoFromWells
+  // reads rawYs directly; no per-well {x,y}[] materialization). Only needed
+  // when normalizing.
+  const { medianFo: plateMedianFo, skippedCount: skippedFoCount } =
+    normalizationOn
+      ? plateMedianFoFromWells(wells)
+      : { medianFo: null, skippedCount: 0 };
+
+  // One param object shared by the control-scaling pre-pass AND the per-well
+  // loop, so control and treated wells normalize + rescale identically. The
+  // pipeline guards isValidFo(plateMedianFo), so a null median safely falls
+  // back to bare ΔF/F₀.
+  const effectiveParams = {
+    ...processingParams,
+    rescaleByMedianFo:
+      normalizationOn && !!processingParams?.neuralRescaleByMedianFo,
+    plateMedianFo,
+  };
+
   // ---- File-level header + plate parameters ----
   const csvChunks = [];
   csvChunks.push(
@@ -350,6 +415,12 @@ export async function GenerateFullPlateReport(
       processingParams,
       wells,
       parameterMode: useDefinedSpikeParams ? "user-defined" : "per-well auto",
+      normalization: {
+        enabled: normalizationOn,
+        rescale: effectiveParams.rescaleByMedianFo,
+        plateMedianFo,
+        skippedFoCount,
+      },
     }).join("\n")
   );
 
@@ -365,10 +436,7 @@ export async function GenerateFullPlateReport(
     processingParams?.controlWell?.indicators?.[0]
   ) {
     const ind = processingParams.controlWell.indicators[0];
-    controlSignal =
-      typeof ind.materializeFilteredData === "function"
-        ? ind.materializeFilteredData()
-        : ind.filteredData || [];
+    controlSignal = materializeReportSignal(ind);
   }
 
   const noiseSuppressionActive =
@@ -392,7 +460,7 @@ export async function GenerateFullPlateReport(
   ) {
     const { controlMedian, k } = computeControlScaleFactor(
       processingParams.controlWellSet,
-      { params: processingParams, controlSignal, noiseSuppressionActive }
+      { params: effectiveParams, controlSignal, noiseSuppressionActive }
     );
     controlScaleK = k;
     controlMedianPeak = controlMedian;
@@ -433,10 +501,7 @@ export async function GenerateFullPlateReport(
 
     try {
       const ind = well.indicators[0];
-      const rawSignal =
-        typeof ind.materializeFilteredData === "function"
-          ? ind.materializeFilteredData()
-          : ind.filteredData || [];
+      const rawSignal = materializeReportSignal(ind);
 
       // Resolve per-well prominence/window — user-defined or auto.
       let prominenceForWell;
@@ -456,7 +521,7 @@ export async function GenerateFullPlateReport(
         rawSignal,
         controlSignal,
         params: {
-          ...processingParams,
+          ...effectiveParams,
           spikeProminence: prominenceForWell,
           spikeWindow: windowForWell,
         },

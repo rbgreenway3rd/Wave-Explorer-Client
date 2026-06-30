@@ -203,6 +203,12 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
       controlWell,
       controlWellSet,
       controlScalingEnabled: settings.controlScalingEnabled,
+      // ΔF/F₀ normalization + well-to-well rescale, so the full-plate
+      // report applies the same detrend → F/Fo (× plate-median Fo) the
+      // live modal does. Without these the report silently used the
+      // filtered signal and emitted native (un-normalized) magnitudes.
+      neuralNormalizationEnabled: settings.neuralNormalizationEnabled,
+      neuralRescaleByMedianFo: settings.neuralRescaleByMedianFo,
       baselineCorrection: settings.baselineCorrection,
       trendFlatteningEnabled: settings.trendFlatteningEnabled,
       handleOutliers: settings.handleOutliers,
@@ -235,6 +241,8 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
       controlWell,
       controlWellSet,
       settings.controlScalingEnabled,
+      settings.neuralNormalizationEnabled,
+      settings.neuralRescaleByMedianFo,
       settings.baselineCorrection,
       settings.trendFlatteningEnabled,
       settings.handleOutliers,

@@ -87,6 +87,13 @@ const DEFAULT_SETTINGS = {
   // filtered-data path (no behavior change). See
   // docs/neural-fofo-normalization-plan.md.
   neuralNormalizationEnabled: false,
+  // Well-to-well rescale (client step 3): after ΔF/F₀, multiply by the
+  // plate-wide median F₀ so peak height / AUC land in a readable magnitude
+  // instead of a tiny fold-change. On by default — it's the whole point of
+  // the bake-in normalization — but kept as a toggle so dFF0 vs
+  // dFF0×medianFo can be compared during the D1 review. No effect unless
+  // neuralNormalizationEnabled is also on.
+  neuralRescaleByMedianFo: true,
   // Decimation
   decimationEnabled: false,
   decimationSamples: 200,
@@ -219,6 +226,9 @@ export const NeuralSettingsProvider = ({ children }) => {
   // of the raw signal). Requires trend flattening (the ΔF source).
   const [neuralNormalizationEnabled, setNeuralNormalizationEnabled] =
     useState(false);
+  // Multiply ΔF/F₀ by the plate-wide median F₀ (client step 3). On by
+  // default; only takes effect when neuralNormalizationEnabled is on.
+  const [neuralRescaleByMedianFo, setNeuralRescaleByMedianFo] = useState(true);
 
   // ---- Decimation --------------------------------------------------------
   const [decimationEnabled, setDecimationEnabled] = useState(false);
@@ -328,6 +338,7 @@ export const NeuralSettingsProvider = ({ children }) => {
     findPeaksWindowWidth,
     peakProminence,
     neuralNormalizationEnabled,
+    neuralRescaleByMedianFo,
   };
   // useState setters are stable across renders, so this map is too.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -354,6 +365,7 @@ export const NeuralSettingsProvider = ({ children }) => {
       trendFlatteningMinimums: setTrendFlatteningMinimums,
       controlScalingEnabled: setControlScalingEnabled,
       neuralNormalizationEnabled: setNeuralNormalizationEnabled,
+      neuralRescaleByMedianFo: setNeuralRescaleByMedianFo,
       decimationEnabled: setDecimationEnabled,
       decimationSamples: setDecimationSamples,
       handleOutliers: setHandleOutliers,
@@ -429,6 +441,7 @@ export const NeuralSettingsProvider = ({ children }) => {
     findPeaksWindowWidth,
     peakProminence,
     neuralNormalizationEnabled,
+    neuralRescaleByMedianFo,
   ]);
 
   const applySettingsSnapshot = useCallback(
@@ -504,6 +517,8 @@ export const NeuralSettingsProvider = ({ children }) => {
       // ΔF/F₀ normalization
       neuralNormalizationEnabled,
       setNeuralNormalizationEnabled,
+      neuralRescaleByMedianFo,
+      setNeuralRescaleByMedianFo,
       // decimation
       decimationEnabled,
       setDecimationEnabled,
@@ -611,6 +626,7 @@ export const NeuralSettingsProvider = ({ children }) => {
       findPeaksWindowWidth,
       peakProminence,
       neuralNormalizationEnabled,
+      neuralRescaleByMedianFo,
       getSettingsSnapshot,
       applySettingsSnapshot,
       resetAllSettings,

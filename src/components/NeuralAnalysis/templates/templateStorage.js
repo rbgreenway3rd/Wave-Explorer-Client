@@ -37,6 +37,7 @@ export const PERSISTABLE_KEYS = [
   "trendFlatteningMinimums",
   // normalization
   "neuralNormalizationEnabled",
+  "neuralRescaleByMedianFo",
   // control-well scaling (the toggle; the control WELL SET is stored
   // separately as positional keys — see TemplateMenu)
   "controlScalingEnabled",

@@ -7,6 +7,7 @@ import { savitzkyGolay } from "./utilities/savitzkyGolay";
 import {
   computeFo,
   applyDeltaFOverFo,
+  isValidFo,
   UNIT_MODE,
 } from "./utilities/neuralNormalization";
 import {
@@ -162,6 +163,7 @@ export function runNeuralAnalysisPipeline({
   let normalizationMeta = {
     applied: false,
     thisWellFo: null,
+    plateMedianFo: null,
     unitMode: UNIT_MODE.NATIVE,
     skipped: false,
   };
@@ -206,15 +208,33 @@ export function runNeuralAnalysisPipeline({
     // normalized signal. Gated independently but requires trend flattening
     // (the ΔF source); default OFF pending D1 sign-off — see
     // docs/neural-fofo-normalization-plan.md.
+    //
+    // Well-to-well rescale (client step 3): when `rescaleByMedianFo` is on
+    // and the caller supplies the plate-wide `plateMedianFo` scalar, the
+    // ΔF/F₀ fold-change is multiplied back up by it so peak height / AUC
+    // land in a readable magnitude instead of a "little-bitty" ratio. The
+    // plate median is a single scalar shared by every well, so it shifts
+    // magnitude uniformly and never changes which peaks are detected
+    // per-well. Computed across wells by the caller (NeuralResultsContext)
+    // because the per-well pipeline has no plate view.
     if (params.neuralNormalizationEnabled && params.trendFlatteningEnabled) {
       const fo = computeFo(rawSignal.map((p) => p.y));
       if (fo != null) {
         const detrended = processed;
-        processed = memo("normalize", [id(detrended), fo], () =>
+        // Only rescale when a valid plate-median F₀ scalar is supplied;
+        // otherwise emit the bare ΔF/F₀ fold-change. Derived outside the
+        // memo so the unit label is correct on a cache hit too.
+        const plateMedianFo =
+          params.rescaleByMedianFo && isValidFo(params.plateMedianFo)
+            ? params.plateMedianFo
+            : null;
+        const rescaled = plateMedianFo != null;
+        processed = memo("normalize", [id(detrended), fo, plateMedianFo], () =>
           perf.time("normalize", () => {
             const { ys } = applyDeltaFOverFo(
               detrended.map((p) => p.y),
-              fo
+              fo,
+              { medianFo: plateMedianFo }
             );
             return detrended.map((p, i) => ({ x: p.x, y: ys[i] }));
           })
@@ -223,7 +243,8 @@ export function runNeuralAnalysisPipeline({
         normalizationMeta = {
           applied: true,
           thisWellFo: fo,
-          unitMode: UNIT_MODE.DFF0,
+          plateMedianFo,
+          unitMode: rescaled ? UNIT_MODE.DFF0_X_MEDIAN_FO : UNIT_MODE.DFF0,
           skipped: false,
         };
       } else {
@@ -232,6 +253,7 @@ export function runNeuralAnalysisPipeline({
         normalizationMeta = {
           applied: false,
           thisWellFo: null,
+          plateMedianFo: null,
           unitMode: UNIT_MODE.NATIVE,
           skipped: true,
         };
