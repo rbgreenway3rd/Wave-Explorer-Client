@@ -27,9 +27,8 @@ const baseParams = {
   baselineCorrection: false,
   smoothingEnabled: false,
   smoothingWindow: 5,
-  handleOutliers: true,
-  outlierPercentile: 95,
-  outlierMultiplier: 2.0,
+  handleOutliers: false,
+  outlierSensitivity: 5,
   spikeProminence: 3,
   spikeWindow: 20,
   spikeMinWidth: 5,
@@ -98,7 +97,7 @@ describe("runNeuralAnalysisPipeline", () => {
     expect(result.burstResults.length).toBe(expectedBursts);
   });
 
-  test("noiseSuppressionActive=false skips trend flattening + outlier removal", () => {
+  test("noiseSuppressionActive=false skips trend flattening", () => {
     const signal = makeSyntheticSignal({
       n: 400,
       noiseAmp: 0.1,

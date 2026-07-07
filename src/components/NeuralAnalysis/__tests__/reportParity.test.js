@@ -60,7 +60,7 @@ const STD_PARAMS = {
   maxInterSpikeInterval: 1.0,
   minSpikesPerBurst: 3,
   activityThresholdRatio: 0.5,
-  baselineThresholdRatio: 0.1,
+  baselineThresholdOffset: 0.1,
 };
 
 describe("buildWellReportSections — section presence", () => {

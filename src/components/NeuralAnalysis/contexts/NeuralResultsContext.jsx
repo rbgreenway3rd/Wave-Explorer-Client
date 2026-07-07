@@ -9,6 +9,7 @@ import React, {
 import { DataContext } from "../../../providers/DataProvider";
 import {
   makePipelineRunner,
+  makePlateRangeRunner,
   PIPELINE_STALE,
 } from "../utilities/pipelineRunner";
 import {
@@ -57,6 +58,7 @@ const EMPTY_RESULTS = Object.freeze({
       max: 0,
     }),
   }),
+  outlierRemoval: Object.freeze({ count: 0, regions: [], outlierPoints: [] }),
 });
 
 export const useNeuralResults = () => {
@@ -88,7 +90,7 @@ export const NeuralResultsProvider = ({ children }) => {
     noiseWindowSize,
     activityThresholdRatio,
     activityThresholdEnabled,
-    baselineThresholdRatio,
+    baselineThresholdOffset,
     baselineThresholdEnabled,
     noiseSuppressionActive,
     smoothingEnabled,
@@ -99,11 +101,11 @@ export const NeuralResultsProvider = ({ children }) => {
     trendFlatteningWindow,
     trendFlatteningMinimums,
     handleOutliers,
-    outlierPercentile,
-    outlierMultiplier,
+    outlierSensitivity,
     showBursts,
     maxInterSpikeInterval,
     minSpikesPerBurst,
+    yScaleMode,
   } = useNeuralSettings();
   // DataContext provides the full plate (`wellArrays`) — needed for the
   // plate-wide median F₀ that the well-to-well rescale multiplies by. The
@@ -174,8 +176,7 @@ export const NeuralResultsProvider = ({ children }) => {
       smoothingEnabled,
       smoothingWindow,
       handleOutliers,
-      outlierPercentile,
-      outlierMultiplier,
+      outlierSensitivity,
       spikeProminence: effectiveSpikeProminence,
       // Prominence is a fraction of signal range; the pipeline converts it
       // to absolute per-run so detection is scale-invariant.
@@ -189,7 +190,7 @@ export const NeuralResultsProvider = ({ children }) => {
       noiseWindowSize,
       activityThresholdRatio,
       activityThresholdEnabled,
-      baselineThresholdRatio,
+      baselineThresholdOffset,
       baselineThresholdEnabled,
       maxInterSpikeInterval,
       minSpikesPerBurst,
@@ -214,8 +215,7 @@ export const NeuralResultsProvider = ({ children }) => {
       smoothingEnabled,
       smoothingWindow,
       handleOutliers,
-      outlierPercentile,
-      outlierMultiplier,
+      outlierSensitivity,
       effectiveSpikeProminence,
       effectiveSpikeWindow,
       spikeMinWidth,
@@ -226,7 +226,7 @@ export const NeuralResultsProvider = ({ children }) => {
       noiseWindowSize,
       activityThresholdRatio,
       activityThresholdEnabled,
-      baselineThresholdRatio,
+      baselineThresholdOffset,
       baselineThresholdEnabled,
       maxInterSpikeInterval,
       minSpikesPerBurst,
@@ -244,17 +244,29 @@ export const NeuralResultsProvider = ({ children }) => {
   if (runnerRef.current === null) {
     runnerRef.current = makePipelineRunner();
   }
-  // Tear down the worker when the provider unmounts (e.g. user closes
+  // Separate worker for the Universal (whole-plate) y-scale sweep, so a
+  // multi-second plate range calc never blocks the per-well chart worker.
+  const plateRangeRunnerRef = useRef(null);
+  if (plateRangeRunnerRef.current === null) {
+    plateRangeRunnerRef.current = makePlateRangeRunner();
+  }
+  // Tear down the workers when the provider unmounts (e.g. user closes
   // the modal entirely — though under the current modal lifecycle the
   // provider stays mounted with the navbar; the dispose still matters
   // for HMR and future use).
   useEffect(() => {
     const runner = runnerRef.current;
+    const plateRunner = plateRangeRunnerRef.current;
     return () => {
       if (runner && typeof runner.dispose === "function") runner.dispose();
+      if (plateRunner && typeof plateRunner.dispose === "function")
+        plateRunner.dispose();
     };
   }, []);
   const [pipelineResults, setPipelineResults] = useState(EMPTY_RESULTS);
+  // Compute-state flags surfaced to the UI (spinners + busy cursor).
+  const [isPipelineRunning, setIsPipelineRunning] = useState(false);
+  const [isPlateRangeComputing, setIsPlateRangeComputing] = useState(false);
 
   useEffect(() => {
     if (
@@ -263,6 +275,7 @@ export const NeuralResultsProvider = ({ children }) => {
       !selectedWell.indicators[0]
     ) {
       setPipelineResults(EMPTY_RESULTS);
+      setIsPipelineRunning(false);
       return undefined;
     }
 
@@ -294,6 +307,7 @@ export const NeuralResultsProvider = ({ children }) => {
         : [];
 
     let active = true;
+    setIsPipelineRunning(true);
     runnerRef.current
       .run({
         rawSignal: selectedFilteredData,
@@ -307,8 +321,14 @@ export const NeuralResultsProvider = ({ children }) => {
       })
       .then((result) => {
         if (!active) return;
+        // A stale result means a newer run() is already in flight; leave the
+        // running flag set — that newer run will clear it when it lands.
         if (result === PIPELINE_STALE) return;
         setPipelineResults(result);
+        setIsPipelineRunning(false);
+      })
+      .catch(() => {
+        if (active) setIsPipelineRunning(false);
       });
 
     return () => {
@@ -324,6 +344,123 @@ export const NeuralResultsProvider = ({ children }) => {
     showBursts,
     noiseSuppressionActive,
   ]);
+
+  // ---- Universal (whole-plate) y-scale range ----------------------------
+  // When the Y-Scale toggle is "all" (Universal/Absolute), the chart's y-axis
+  // is fixed to the range of the PROCESSED signal across EVERY well, so well
+  // amplitudes are directly comparable. That range isn't precomputed anywhere
+  // (it depends on the neural pipeline: detrend / ΔF/F₀ / smoothing / outlier),
+  // so the pipeline runs per well with detection OFF. Three things keep this
+  // from being felt as lag:
+  //   1. CACHED by the processing params (plateScaleKey) in a ref — toggling
+  //      Relative↔Universal, or leaving and re-entering with the same params,
+  //      reuses the result instantly. Only a genuine processing-param change
+  //      recomputes.
+  //   2. OFF THE MAIN THREAD — the whole-plate sweep runs in a dedicated
+  //      Web Worker (plateRange.worker.js), so the modal never freezes; the
+  //      chart shows the relative fit until the range lands. isPlateRangeComputing
+  //      drives the spinner while it's in flight.
+  //   3. NO per-well {x,y}[] materialization — each well is flattened straight
+  //      into transferable Float64Arrays from its canonical typed arrays (never
+  //      touching materializeFilteredData, which caches on the indicator and
+  //      would OOM a big plate).
+  const [plateProcessedYRange, setPlateProcessedYRange] = useState(null);
+  const plateRangeCacheRef = useRef({ key: null, range: null });
+  const plateScaleKey = useMemo(
+    () =>
+      JSON.stringify({
+        subtractControl: pipelineParams.subtractControl,
+        tf: pipelineParams.trendFlatteningEnabled,
+        tfw: pipelineParams.trendFlatteningWindow,
+        tfm: pipelineParams.trendFlatteningMinimums,
+        bc: pipelineParams.baselineCorrection,
+        sm: pipelineParams.smoothingEnabled,
+        smw: pipelineParams.smoothingWindow,
+        ho: pipelineParams.handleOutliers,
+        os: pipelineParams.outlierSensitivity,
+        nn: pipelineParams.neuralNormalizationEnabled,
+        rs: pipelineParams.rescaleByMedianFo,
+        pmf: pipelineParams.plateMedianFo,
+        fws: pipelineParams.foWindowStartRatio,
+        fwe: pipelineParams.foWindowEndRatio,
+        nsa: noiseSuppressionActive,
+      }),
+    [pipelineParams, noiseSuppressionActive]
+  );
+  useEffect(() => {
+    if (
+      yScaleMode !== "all" ||
+      !Array.isArray(wellArrays) ||
+      wellArrays.length === 0
+    ) {
+      return undefined; // keep the cached range; Relative simply ignores it
+    }
+    // Cache hit → reuse instantly (the common Relative↔Universal toggle path).
+    if (
+      plateRangeCacheRef.current.key === plateScaleKey &&
+      plateRangeCacheRef.current.range
+    ) {
+      setPlateProcessedYRange(plateRangeCacheRef.current.range);
+      return undefined;
+    }
+    let active = true;
+    // Flatten each indicator's canonical typed arrays into fresh, transferable
+    // Float64Arrays. No {x,y}[] is materialized on the main thread — the worker
+    // rebuilds points on its side. Copy into new arrays so transferring the
+    // buffers to the worker doesn't detach the indicators' own data.
+    const useRaw = !!pipelineParams.neuralNormalizationEnabled;
+    const flatten = (ind) => {
+      if (!ind) return null;
+      const xs = useRaw ? ind.rawXs : ind.filteredXs;
+      const ys = useRaw ? ind.rawYs : ind.filteredYs;
+      if (!xs || !ys || ys.length === 0) return null;
+      return { xs: Float64Array.from(xs), ys: Float64Array.from(ys) };
+    };
+    const wells = [];
+    for (const well of wellArrays) {
+      const flat = flatten(well?.indicators?.[0]);
+      if (flat) wells.push(flat);
+    }
+    if (wells.length === 0) return undefined;
+    const control =
+      flatten(controlWell?.indicators?.[0]) || {
+        xs: new Float64Array(0),
+        ys: new Float64Array(0),
+      };
+
+    setIsPlateRangeComputing(true);
+    plateRangeRunnerRef.current
+      .run({
+        wells,
+        control,
+        params: pipelineParams,
+        noiseSuppressionActive,
+      })
+      .then((result) => {
+        if (!active) return;
+        // Stale result → a newer run is already in flight; it clears the flag.
+        if (result === PIPELINE_STALE) return;
+        if (
+          result &&
+          isFinite(result.min) &&
+          isFinite(result.max) &&
+          result.max > result.min
+        ) {
+          const range = { min: result.min, max: result.max };
+          plateRangeCacheRef.current = { key: plateScaleKey, range };
+          setPlateProcessedYRange(range);
+        }
+        setIsPlateRangeComputing(false);
+      })
+      .catch(() => {
+        if (active) setIsPlateRangeComputing(false);
+      });
+
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [yScaleMode, wellArrays, controlSignalRef, plateScaleKey]);
 
   // ---- Control-well scaling factor (k = 100 / control median peak) ------
   // Computed off the render path. Detects each control well with the SAME
@@ -423,6 +560,13 @@ export const NeuralResultsProvider = ({ children }) => {
       // invalid F₀ (empty/dead). Null/0 when normalization is off.
       plateMedianFo,
       plateSkippedFoCount,
+      // Whole-plate processed y-range for Universal scale mode; null when
+      // Relative (or not yet computed).
+      plateProcessedYRange,
+      // Compute-state flags for loading spinners + busy cursor. Selected-well
+      // pipeline (chart) and the Universal whole-plate sweep, respectively.
+      isPipelineRunning,
+      isPlateRangeComputing,
     }),
     [
       displayedResults,
@@ -434,6 +578,9 @@ export const NeuralResultsProvider = ({ children }) => {
       controlScale.controlMedian,
       plateMedianFo,
       plateSkippedFoCount,
+      plateProcessedYRange,
+      isPipelineRunning,
+      isPlateRangeComputing,
     ]
   );
 

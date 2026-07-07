@@ -7,7 +7,8 @@ import {
 import {
   WAVE_STYLE,
   PEAK_STYLE,
-  OUTLIER_PEAK_STYLE,
+  OUTLIER_REGION_STYLE,
+  OUTLIER_POINT_STYLE,
   PEAK_BASE_STYLE,
   BURST_STYLE,
   ROI_PALETTE,
@@ -31,15 +32,17 @@ const LEGEND_DESCRIPTIONS = {
     "Detected spike events on the cleaned signal. Each peak's amplitude, width, and area under the curve are recorded in the results table.",
   peakBases:
     "Left/right base points of each peak — the boundaries used to measure peak width and AUC. With Baseline Threshold enabled, these snap to where the signal crosses the baseline line.",
-  outlierPeaks:
-    "Extreme transients flagged before spike detection (default: top 5% by prominence AND at least 2× the median). They're excised from the signal so they don't skew the detection threshold, then re-added so you can verify they aren't real signal. Tune from Advanced Settings → Outlier Sliders.",
+  removedOutlierRegions:
+    "Regions where a tall outlier — a point far above the real signal that would otherwise skew the y-scale and every parameter — was removed before spike detection and the gap bridged with a straight line. Tune from Advanced Settings → Outlier Handling.",
+  removedOutlierMarkers:
+    "Each removed outlier drawn at its ORIGINAL height, so you can see how tall the removed blips were. Purely visual (toggle: Show removed outliers); it does not affect detection or the y-scale.",
   bursts:
     "Groups of closely-spaced spikes meeting the burst criteria (minimum spikes per burst within a maximum inter-spike interval). Configure in Advanced Settings → Burst Sliders.",
   roi: "Region of Interest — a user-defined time window for focused analysis. Metrics are reported separately for each ROI in the results table.",
   activityThreshold:
     "Horizontal cutoff — peaks whose apex falls below this line are filtered out before burst detection and metrics. Drag the line vertically on the chart to adjust.",
   baselineThreshold:
-    "Horizontal line at the signal's noise baseline. When enabled, peak width and AUC are measured between the line's intercepts with the signal on either side of each peak instead of from per-peak local minima. Drag vertically to adjust.",
+    "Horizontal line that auto-centers on each well's baseline noise (the robust median of its trace), so it sits in the same place relative to the noise on every well. When enabled, peak width and AUC are measured between the line's intercepts with the signal instead of from per-peak local minima. Nudge it with the Baseline Offset slider (in σ) or by dragging vertically.",
   paramVizProminence:
     "Prominence overlay — an I-beam at each detected peak. Bottom cap sits on the higher of the peak's two detection bases; top cap sits at the threshold the peak top must reach. Vertical distance = current Prominence slider value. Red peak dots above the top cap pass the gate; if the top cap rises above a dot the peak is rejected on slider release.",
   paramVizWindow:
@@ -241,6 +244,7 @@ const ChartLegend = () => {
     activityThresholdEnabled,
     baselineThresholdEnabled,
     handleOutliers,
+    showRemovedOutliers,
     showBursts,
     noiseSuppressionActive,
     showParamOverlays,
@@ -327,10 +331,21 @@ const ChartLegend = () => {
       </LegendItem>
       {handleOutliers && (
         <LegendItem
-          label="Outlier Peaks"
-          description={LEGEND_DESCRIPTIONS.outlierPeaks}
+          label="Removed Outliers"
+          description={LEGEND_DESCRIPTIONS.removedOutlierRegions}
         >
-          <RingSwatch border={OUTLIER_PEAK_STYLE.border} />
+          <BoxSwatch
+            fill={OUTLIER_REGION_STYLE.fill}
+            border={OUTLIER_REGION_STYLE.edge}
+          />
+        </LegendItem>
+      )}
+      {handleOutliers && showRemovedOutliers && (
+        <LegendItem
+          label="Outlier (original height)"
+          description={LEGEND_DESCRIPTIONS.removedOutlierMarkers}
+        >
+          <RingSwatch border={OUTLIER_POINT_STYLE.border} />
         </LegendItem>
       )}
       {hasRoi && (

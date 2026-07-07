@@ -87,8 +87,7 @@ function emitFileHeader({ project, processingParams, selectedWell }) {
       ["BaselineCorrection", processingParams.baselineCorrection],
       ["TrendFlatteningEnabled", processingParams.trendFlatteningEnabled],
       ["HandleOutliers", processingParams.handleOutliers],
-      ["OutlierPercentile", processingParams.outlierPercentile],
-      ["OutlierMultiplier", processingParams.outlierMultiplier],
+      ["OutlierSensitivity", processingParams.outlierSensitivity],
       ["SpikeProminence", processingParams.spikeProminence],
       ["SpikeWindow", processingParams.spikeWindow],
       ["SpikeMinWidth", processingParams.spikeMinWidth],
@@ -100,7 +99,7 @@ function emitFileHeader({ project, processingParams, selectedWell }) {
       ["ActivityThresholdEnabled", processingParams.activityThresholdEnabled],
       ["ActivityThresholdRatio", processingParams.activityThresholdRatio],
       ["BaselineThresholdEnabled", processingParams.baselineThresholdEnabled],
-      ["BaselineThresholdRatio", processingParams.baselineThresholdRatio],
+      ["BaselineThresholdOffset", processingParams.baselineThresholdOffset],
       ["ShowBursts", processingParams.showBursts],
       ["MaxInterSpikeInterval", processingParams.maxInterSpikeInterval],
       ["MinSpikesPerBurst", processingParams.minSpikesPerBurst],
@@ -184,6 +183,7 @@ export const GenerateNeuralCSV = (
       includeROIAnalysis: true,
       ...options,
     },
+    outlierCount: options.outlierCount ?? 0,
   });
   csvLines.push(...wellLines);
 

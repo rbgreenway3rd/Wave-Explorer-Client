@@ -25,7 +25,7 @@ export const PERSISTABLE_KEYS = [
   // thresholds
   "activityThresholdRatio",
   "activityThresholdEnabled",
-  "baselineThresholdRatio",
+  "baselineThresholdOffset",
   "baselineThresholdEnabled",
   // noise / smoothing
   "smoothingEnabled",
@@ -47,10 +47,10 @@ export const PERSISTABLE_KEYS = [
   // decimation
   "decimationEnabled",
   "decimationSamples",
-  // outlier
+  // outlier handling
   "handleOutliers",
-  "outlierPercentile",
-  "outlierMultiplier",
+  "outlierSensitivity",
+  "showRemovedOutliers",
   // burst
   "showBursts",
   "maxInterSpikeInterval",

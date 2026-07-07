@@ -38,10 +38,17 @@ export const NeuralSettingsContext = createContext(null);
 // be re-saved manually.
 const migrateLegacySnapshot = (snapshot) => {
   if (!snapshot || typeof snapshot !== "object") return snapshot;
+
+  // maxInterSpikeInterval: legacy ms → seconds (see note above).
   const v = snapshot.maxInterSpikeInterval;
   if (typeof v === "number" && v > 30) {
     return { ...snapshot, maxInterSpikeInterval: v / 1000 };
   }
+
+  // Older outlier-handling numeric keys (outlierPercentile / outlierMultiplier)
+  // have no current equivalent; applySettingsSnapshot simply ignores any key
+  // without a setter, so no explicit mapping is needed. The on/off flag is
+  // still `handleOutliers`, so it loads as-is.
   return snapshot;
 };
 
@@ -67,7 +74,10 @@ const DEFAULT_SETTINGS = {
   // Thresholds
   activityThresholdRatio: 0.5,
   activityThresholdEnabled: true,
-  baselineThresholdRatio: 0.1,
+  // Baseline line auto-centers on the noise (median). This is an OFFSET from
+  // that center in robust σ units — 0 = at the noise center. Scale-free so a
+  // manual nudge applies uniformly across wells.
+  baselineThresholdOffset: 0,
   baselineThresholdEnabled: true,
   // Noise / smoothing / baseline
   smoothingEnabled: true,
@@ -108,14 +118,21 @@ const DEFAULT_SETTINGS = {
   // Decimation
   decimationEnabled: false,
   decimationSamples: 200,
-  // Outlier detection
+  // Outlier handling (removes tall outliers far above the real signal)
   handleOutliers: false,
-  outlierPercentile: 95,
-  outlierMultiplier: 2.0,
+  outlierSensitivity: 5,
+  showRemovedOutliers: false,
   // Burst detection
   showBursts: false,
   maxInterSpikeInterval: 1.0,
   minSpikesPerBurst: 3,
+  // Y-scale mode: "selected" = auto-fit the chart's y-axis to the selected
+  // well (relative), "all" = fix it to the whole-plate processed range
+  // (universal/absolute) so well amplitudes are directly comparable.
+  // Defaults to "all" (Universal) so amplitudes are comparable out of the box;
+  // the range is computed async + cached (see NeuralResultsContext), so the
+  // default doesn't cost a blocking compute on open.
+  yScaleMode: "all",
   // Display toggles
   showPeakBases: true,
   markAUC: false,
@@ -183,13 +200,11 @@ export const NeuralSettingsProvider = ({ children }) => {
   // overrides per-peak base detection so peak width and AUC are
   // measured between the line's intercepts with the signal on either
   // side of each peak (per client request from the Neural modal UI
-  // review). Stored as a ratio (0–1) of each well's Y range so the
-  // line stays in range across well switches with different amplitudes,
-  // mirroring activityThresholdRatio above. Default ratio 0.1 reads as
-  // "near the bottom of the signal range"; NeuralGraph seeds a more
-  // accurate noise-median value the first time the toggle is flipped
-  // on for a given well (see baselineSeededWellRef there).
-  const [baselineThresholdRatio, setBaselineThresholdRatio] = useState(0.1);
+  // review). The line AUTO-CENTERS on each well's baseline noise (the
+  // robust median of its trace); this value is the manual OFFSET from
+  // that center, in robust σ units, so a nudge applies uniformly across
+  // wells regardless of amplitude. 0 = at the noise center.
+  const [baselineThresholdOffset, setBaselineThresholdOffset] = useState(0);
   const [baselineThresholdEnabled, setBaselineThresholdEnabled] =
     useState(true);
 
@@ -251,10 +266,10 @@ export const NeuralSettingsProvider = ({ children }) => {
   const [decimationEnabled, setDecimationEnabled] = useState(false);
   const [decimationSamples, setDecimationSamples] = useState(200);
 
-  // ---- Outlier detection -------------------------------------------------
+  // ---- Outlier handling --------------------------------------------------
   const [handleOutliers, setHandleOutliers] = useState(false);
-  const [outlierPercentile, setOutlierPercentile] = useState(95);
-  const [outlierMultiplier, setOutlierMultiplier] = useState(2.0);
+  const [outlierSensitivity, setOutlierSensitivity] = useState(5);
+  const [showRemovedOutliers, setShowRemovedOutliers] = useState(false);
 
   // ---- Burst detection ---------------------------------------------------
   const [showBursts, setShowBursts] = useState(false);
@@ -271,6 +286,9 @@ export const NeuralSettingsProvider = ({ children }) => {
   // doesn't affect detection or metric values.
   const [showPeakBases, setShowPeakBases] = useState(true);
   const [markAUC, setMarkAUC] = useState(false);
+  // "selected" (relative, auto-fit to the current well) or "all"
+  // (universal, fixed to the whole-plate processed range).
+  const [yScaleMode, setYScaleMode] = useState("all");
 
   // ---- Parameter-visualization overlays ----------------------------------
   // Master toggle (`showParamOverlays`) gates the three sub-toggles. The
@@ -324,7 +342,7 @@ export const NeuralSettingsProvider = ({ children }) => {
     noiseWindowSize,
     activityThresholdRatio,
     activityThresholdEnabled,
-    baselineThresholdRatio,
+    baselineThresholdOffset,
     baselineThresholdEnabled,
     smoothingEnabled,
     smoothingWindow,
@@ -337,13 +355,14 @@ export const NeuralSettingsProvider = ({ children }) => {
     decimationEnabled,
     decimationSamples,
     handleOutliers,
-    outlierPercentile,
-    outlierMultiplier,
+    outlierSensitivity,
+    showRemovedOutliers,
     showBursts,
     maxInterSpikeInterval,
     minSpikesPerBurst,
     showPeakBases,
     markAUC,
+    yScaleMode,
     showParamOverlays,
     showProminenceOverlay,
     showWindowOverlay,
@@ -374,7 +393,7 @@ export const NeuralSettingsProvider = ({ children }) => {
       noiseWindowSize: setNoiseWindowSize,
       activityThresholdRatio: setActivityThresholdRatio,
       activityThresholdEnabled: setActivityThresholdEnabled,
-      baselineThresholdRatio: setBaselineThresholdRatio,
+      baselineThresholdOffset: setBaselineThresholdOffset,
       baselineThresholdEnabled: setBaselineThresholdEnabled,
       smoothingEnabled: setSmoothingEnabled,
       smoothingWindow: setSmoothingWindow,
@@ -392,13 +411,14 @@ export const NeuralSettingsProvider = ({ children }) => {
       decimationEnabled: setDecimationEnabled,
       decimationSamples: setDecimationSamples,
       handleOutliers: setHandleOutliers,
-      outlierPercentile: setOutlierPercentile,
-      outlierMultiplier: setOutlierMultiplier,
+      outlierSensitivity: setOutlierSensitivity,
+      showRemovedOutliers: setShowRemovedOutliers,
       showBursts: setShowBursts,
       maxInterSpikeInterval: setMaxInterSpikeInterval,
       minSpikesPerBurst: setMinSpikesPerBurst,
       showPeakBases: setShowPeakBases,
       markAUC: setMarkAUC,
+      yScaleMode: setYScaleMode,
       showParamOverlays: setShowParamOverlays,
       showProminenceOverlay: setShowProminenceOverlay,
       showWindowOverlay: setShowWindowOverlay,
@@ -433,7 +453,7 @@ export const NeuralSettingsProvider = ({ children }) => {
     noiseWindowSize,
     activityThresholdRatio,
     activityThresholdEnabled,
-    baselineThresholdRatio,
+    baselineThresholdOffset,
     baselineThresholdEnabled,
     smoothingEnabled,
     smoothingWindow,
@@ -446,13 +466,14 @@ export const NeuralSettingsProvider = ({ children }) => {
     decimationEnabled,
     decimationSamples,
     handleOutliers,
-    outlierPercentile,
-    outlierMultiplier,
+    outlierSensitivity,
+    showRemovedOutliers,
     showBursts,
     maxInterSpikeInterval,
     minSpikesPerBurst,
     showPeakBases,
     markAUC,
+    yScaleMode,
     showParamOverlays,
     showProminenceOverlay,
     showWindowOverlay,
@@ -514,8 +535,8 @@ export const NeuralSettingsProvider = ({ children }) => {
       setActivityThresholdRatio,
       activityThresholdEnabled,
       setActivityThresholdEnabled,
-      baselineThresholdRatio,
-      setBaselineThresholdRatio,
+      baselineThresholdOffset,
+      setBaselineThresholdOffset,
       baselineThresholdEnabled,
       setBaselineThresholdEnabled,
       handleSpikeProminenceChange,
@@ -556,13 +577,13 @@ export const NeuralSettingsProvider = ({ children }) => {
       setDecimationEnabled,
       decimationSamples,
       setDecimationSamples,
-      // outlier
+      // outlier handling
       handleOutliers,
       setHandleOutliers,
-      outlierPercentile,
-      setOutlierPercentile,
-      outlierMultiplier,
-      setOutlierMultiplier,
+      outlierSensitivity,
+      setOutlierSensitivity,
+      showRemovedOutliers,
+      setShowRemovedOutliers,
       // burst
       showBursts,
       setShowBursts,
@@ -575,6 +596,8 @@ export const NeuralSettingsProvider = ({ children }) => {
       setShowPeakBases,
       markAUC,
       setMarkAUC,
+      yScaleMode,
+      setYScaleMode,
       // parameter-visualization overlays
       showParamOverlays,
       setShowParamOverlays,
@@ -620,7 +643,7 @@ export const NeuralSettingsProvider = ({ children }) => {
       noiseWindowSize,
       activityThresholdRatio,
       activityThresholdEnabled,
-      baselineThresholdRatio,
+      baselineThresholdOffset,
       baselineThresholdEnabled,
       handleSpikeProminenceChange,
       handleSpikeWindowChange,
@@ -637,13 +660,14 @@ export const NeuralSettingsProvider = ({ children }) => {
       decimationEnabled,
       decimationSamples,
       handleOutliers,
-      outlierPercentile,
-      outlierMultiplier,
+      outlierSensitivity,
+      showRemovedOutliers,
       showBursts,
       maxInterSpikeInterval,
       minSpikesPerBurst,
       showPeakBases,
       markAUC,
+      yScaleMode,
       showParamOverlays,
       showProminenceOverlay,
       showWindowOverlay,

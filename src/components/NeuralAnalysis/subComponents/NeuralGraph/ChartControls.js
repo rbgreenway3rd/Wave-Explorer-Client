@@ -16,14 +16,13 @@ import AdvancedTweakablesCard from "./AdvancedTweakablesCard";
  * Sliders, Burst Sliders, Noise Suppression, Control Well, Data
  * Decimation). The old Advanced ▾ trigger button is gone.
  *
- * Each child control panel still self-subscribes to its relevant
- * context; ChartControls passes only `resetZoom` (an imperative ref
- * handle into NeuralGraph) down to PanZoomControls, and threads the
- * accordion-open state of the Advanced Tweakables card up to the modal
- * so it can adjust the chart-row height to compensate.
+ * Each child control panel self-subscribes to its relevant context.
+ * ChartControls threads the accordion-open state of the Advanced Tweakables
+ * card up to the modal so it can adjust the chart-row height to compensate.
+ * (Reset Zoom no longer lives here — it moved to the always-visible legend
+ * strip above the chart so it survives this bar collapsing.)
  */
 const ChartControls = ({
-  resetZoom,
   expandedTweakableSection,
   onExpandedTweakableChange,
 }) => {
@@ -51,7 +50,7 @@ const ChartControls = ({
       onClick={handleBarClick}
     >
       <ActivityThresholdControls />
-      <PanZoomControls resetZoom={resetZoom} />
+      <PanZoomControls />
       <ROIControls />
       <AdvancedTweakablesCard
         expandedSection={expandedTweakableSection}

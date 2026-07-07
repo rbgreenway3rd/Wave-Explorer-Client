@@ -5,9 +5,10 @@ import { useNeuralSettings } from "../../../NeuralProvider";
 import "./NeuralToggle.css";
 
 /**
- * HandleOutliersToggle — ON/OFF switch for outlier detection. Reads its
- * own state from NeuralSettingsContext directly so parent routers don't
- * thread `handleOutliers` / `setHandleOutliers`.
+ * HandleOutliersToggle — ON/OFF switch for outlier handling (removes tall
+ * outliers far above the real signal). Reads its own state from
+ * NeuralSettingsContext directly so parent routers don't thread
+ * `handleOutliers` / `setHandleOutliers`.
  */
 const HandleOutliersToggle = () => {
   const { handleOutliers, setHandleOutliers } = useNeuralSettings();

@@ -24,7 +24,8 @@ import zoomPlugin from "chartjs-plugin-zoom";
 import {
   WAVE_STYLE,
   PEAK_STYLE,
-  OUTLIER_PEAK_STYLE,
+  OUTLIER_REGION_STYLE,
+  OUTLIER_POINT_STYLE,
   PEAK_BASE_STYLE,
   BURST_STYLE,
   ROI_PALETTE,
@@ -41,6 +42,7 @@ import {
   GATE_KEPT,
   TIER_MARGINAL_FAIL,
   TIER_CLEAR_PASS,
+  computeSignalStats,
 } from "../../utilities/peakGeometry";
 
 // Cap on samples drawn along the top edge of each peak's AUC polygon.
@@ -419,9 +421,9 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       activityThresholdRatio,
       activityThresholdEnabled,
       setActivityThresholdRatio,
-      baselineThresholdRatio,
+      baselineThresholdOffset,
       baselineThresholdEnabled,
-      setBaselineThresholdRatio,
+      setBaselineThresholdOffset,
       // Baseline (Fo) window — a draggable horizontal band shown when
       // normalization is on; defines the time range F₀ is measured over.
       neuralNormalizationEnabled,
@@ -433,6 +435,7 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       setFoWindowEndRatio,
       showPeakBases,
       markAUC,
+      yScaleMode,
       // Parameter-visualization overlays.
       showParamOverlays,
       showProminenceOverlay,
@@ -446,6 +449,8 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       showRejectedCandidates,
       candidateShowAllRejections,
       candidateHighlightGate,
+      // Outlier handling — overlay removed outliers at their original height.
+      showRemovedOutliers,
     } = useNeuralSettings();
     const {
       defineROI,
@@ -461,12 +466,15 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       pipelineResults,
       effectiveSpikeProminenceAbs,
       effectiveSpikeWindow,
+      plateProcessedYRange,
     } = useNeuralResults();
     const { selectCandidate } = useNeuralInspector();
     const processedSignal = pipelineResults.processedSignal;
     const peakResults = pipelineResults.spikeResults;
     const burstResults = pipelineResults.burstResults;
     const candidateDiagnostics = pipelineResults.candidateDiagnostics;
+    const outlierRegions = pipelineResults.outlierRemoval?.regions;
+    const outlierPoints = pipelineResults.outlierRemoval?.outlierPoints;
     const { globalMaxY } = useContext(DataContext);
     const [chartData, setChartData] = useState(null);
     // ROI selection state. roiEnd / annotationKey are set during click-drag
@@ -507,6 +515,23 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       localMinY = 0;
     }
 
+    // Baseline-noise center + robust spread for the auto-centering baseline
+    // line. `median` sits at the center of the baseline noise (spikes are a
+    // minority, above it); `sigma` (robust σ) scales the manual offset so it
+    // means the same across wells. computeSignalStats is WeakMap-cached, and
+    // the SAME function drives the pipeline's baselineY — so the on-chart
+    // line and the value detection measures widths/AUC to always match.
+    const baselineNoise = useMemo(() => {
+      if (!Array.isArray(processedSignal) || processedSignal.length === 0) {
+        return { median: 0, sigma: 0 };
+      }
+      const s = computeSignalStats(processedSignal);
+      return { median: s.medianY, sigma: s.robustStd };
+    }, [processedSignal]);
+    // Absolute Y of the baseline line = noise center + offset·σ (offset in σ).
+    const baselineAbsY =
+      baselineNoise.median + baselineThresholdOffset * baselineNoise.sigma;
+
     // Padded scale bounds — visual breathing room around the signal so
     // peaks don't sit flush against the chart border. `chart.js`'s
     // `grace` option is ignored when min/max are explicit (and they
@@ -516,15 +541,24 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
     // scale gets padding.
     const Y_SCALE_PAD = 0.05; // 5% headroom top and bottom
     const X_SCALE_PAD = 0.01; // 1% gutter left and right
-    const yRange = localMaxY - localMinY;
+    // Which y-range the DISPLAYED axis uses: Universal ("all") fixes it to the
+    // whole-plate processed range so wells are directly comparable; Relative
+    // ("selected", default) auto-fits the current well. Threshold/baseline math
+    // below always stays on the selected well's localMin/Max — only the visible
+    // axis extent changes with the mode.
+    const useUniversal =
+      yScaleMode === "all" &&
+      plateProcessedYRange &&
+      isFinite(plateProcessedYRange.min) &&
+      isFinite(plateProcessedYRange.max) &&
+      plateProcessedYRange.max > plateProcessedYRange.min;
+    const axisMinY = useUniversal ? plateProcessedYRange.min : localMinY;
+    const axisMaxY = useUniversal ? plateProcessedYRange.max : localMaxY;
+    const yRange = axisMaxY - axisMinY;
     const paddedYMin =
-      isFinite(localMinY) && yRange > 0
-        ? localMinY - yRange * Y_SCALE_PAD
-        : localMinY;
+      isFinite(axisMinY) && yRange > 0 ? axisMinY - yRange * Y_SCALE_PAD : axisMinY;
     const paddedYMax =
-      isFinite(localMaxY) && yRange > 0
-        ? localMaxY + yRange * Y_SCALE_PAD
-        : localMaxY;
+      isFinite(axisMaxY) && yRange > 0 ? axisMaxY + yRange * Y_SCALE_PAD : axisMaxY;
 
     // X extents — memoized on processedSignal reference. Critical: even
     // when the user toggles noise suppression and the pipeline produces
@@ -609,15 +643,10 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
             : [];
         const initialPeakScatter =
           Array.isArray(peakResults) && peakResults.length > 0
-            ? peakResults
-                .filter((pk) => !pk.isOutlier)
-                .map((pk) => ({ x: pk.peakCoords.x, y: pk.peakCoords.y }))
-            : [];
-        const initialOutlierScatter =
-          Array.isArray(peakResults) && peakResults.length > 0
-            ? peakResults
-                .filter((pk) => pk.isOutlier)
-                .map((pk) => ({ x: pk.peakCoords.x, y: pk.peakCoords.y }))
+            ? peakResults.map((pk) => ({
+                x: pk.peakCoords.x,
+                y: pk.peakCoords.y,
+              }))
             : [];
 
         const datasets = [];
@@ -628,8 +657,9 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
         // (order, _idx) ascending and then draws via reverse iteration
         // (chart.cjs `_drawDatasets`: `for (let i = length-1; i >= 0; --i)`).
         // So lower-index datasets draw LAST → on TOP. Build the array
-        // top-down: Bases, Detected Spikes, Outlier Spikes, then the
-        // signal Line at the bottom of the stack.
+        // top-down: Bases, Detected Spikes, then the signal Line at the
+        // bottom of the stack. (Removed-outlier regions are drawn as
+        // annotation bands, not a scatter dataset — see the annotation effect.)
         if (showPeakBases && initialBaseScatter.length > 0) {
           datasets.push({
             type: "scatter",
@@ -652,19 +682,6 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
             pointRadius: PEAK_STYLE.radius,
             showLine: false,
             borderWidth: PEAK_STYLE.borderWidth,
-          });
-        }
-        if (initialOutlierScatter.length > 0) {
-          datasets.push({
-            type: "scatter",
-            label: "Outlier Spikes",
-            data: initialOutlierScatter,
-            pointBackgroundColor: OUTLIER_PEAK_STYLE.fill,
-            pointBorderColor: OUTLIER_PEAK_STYLE.border,
-            pointRadius: OUTLIER_PEAK_STYLE.radius,
-            pointStyle: "circle",
-            showLine: false,
-            borderWidth: OUTLIER_PEAK_STYLE.borderWidth,
           });
         }
         datasets.push({
@@ -710,27 +727,11 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
     // diagnostics record without re-scanning by coordinates.
     const peakScatter = useMemo(
       () =>
-        sortedPeakResults
-          .filter((pk) => !pk.isOutlier)
-          .map((pk) => ({
-            x: pk.peakCoords.x,
-            y: pk.peakCoords.y,
-            _candidateIndex: pk.index,
-          })),
-      [sortedPeakResults]
-    );
-    // Outlier spikes — re-added by the outlier-removal stage with
-    // isOutlier:true. Drawn as orange hollow rings so the Outlier
-    // Handling sliders have a visible effect on the chart.
-    const outlierScatter = useMemo(
-      () =>
-        sortedPeakResults
-          .filter((pk) => pk.isOutlier)
-          .map((pk) => ({
-            x: pk.peakCoords.x,
-            y: pk.peakCoords.y,
-            _candidateIndex: pk.index,
-          })),
+        sortedPeakResults.map((pk) => ({
+          x: pk.peakCoords.x,
+          y: pk.peakCoords.y,
+          _candidateIndex: pk.index,
+        })),
       [sortedPeakResults]
     );
     // Bases need their own chronological re-sort: each peak contributes
@@ -937,8 +938,9 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       // (order, _idx) ascending and then draws via reverse iteration
       // (chart.cjs `_drawDatasets`: `for (let i = length-1; i >= 0; --i)`).
       // So the FIRST dataset in this array draws LAST — i.e., on TOP.
-      // Stack top→bottom: Bases, Detected Spikes, Outlier Spikes,
-      // Rejected Candidates, then the signal Line at the bottom.
+      // Stack top→bottom: Bases, Detected Spikes, Rejected Candidates,
+      // then the signal Line at the bottom. (Removed-outlier regions are
+      // annotation bands, not a dataset — see the annotation effect.)
       // This puts the red peak markers above the cyan signal line where
       // the eye expects to find them, and keeps "kept peaks win z-order
       // over rejected candidates" actually true under chart.js's reverse
@@ -972,21 +974,6 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
               },
             ]
           : []),
-        ...(outlierScatter.length > 0
-          ? [
-              {
-                type: "scatter",
-                label: "Outlier Spikes",
-                data: outlierScatter,
-                pointBackgroundColor: OUTLIER_PEAK_STYLE.fill,
-                pointBorderColor: OUTLIER_PEAK_STYLE.border,
-                pointRadius: OUTLIER_PEAK_STYLE.radius,
-                pointStyle: "circle",
-                showLine: false,
-                borderWidth: OUTLIER_PEAK_STYLE.borderWidth,
-              },
-            ]
-          : []),
         ...(candidateScatter.length > 0
           ? [
               {
@@ -998,6 +985,26 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
                 pointRadius: CANDIDATE_MARKER_STYLE.radius,
                 showLine: false,
                 borderWidth: CANDIDATE_MARKER_STYLE.borderWidth,
+              },
+            ]
+          : []),
+        // Removed-outlier markers at their ORIGINAL height — optional, shown
+        // only when "Show removed outliers" is on. Lets the user see how tall
+        // the removed blips were without letting them skew the y-scale.
+        ...(showRemovedOutliers &&
+        Array.isArray(outlierPoints) &&
+        outlierPoints.length > 0
+          ? [
+              {
+                type: "scatter",
+                label: "Removed Outliers",
+                data: outlierPoints,
+                pointBackgroundColor: OUTLIER_POINT_STYLE.fill,
+                pointBorderColor: OUTLIER_POINT_STYLE.border,
+                pointRadius: OUTLIER_POINT_STYLE.radius,
+                pointStyle: "circle",
+                showLine: false,
+                borderWidth: OUTLIER_POINT_STYLE.borderWidth,
               },
             ]
           : []),
@@ -1021,7 +1028,6 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       processedSignal,
       noiseSuppressionActive,
       peakScatter,
-      outlierScatter,
       baseScatter,
       chartData,
       showPeakBases,
@@ -1029,6 +1035,8 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       candidateScatterColors,
       keptPeakBorders,
       keptPeakBorderWidths,
+      showRemovedOutliers,
+      outlierPoints,
     ]);
 
     // Memoize chartOptions - recalculate when processedSignal changes to update axis ranges
@@ -1087,8 +1095,8 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
                 // datasets; fall back to the dataset label if anything
                 // else (e.g., a future scatter type) sneaks through.
                 if (label === "Detected Spikes") return "Peak";
-                if (label === "Outlier Spikes") return "Outlier Peak";
                 if (label === "Spike Bases") return "Peak Base";
+                if (label === "Removed Outliers") return "Outlier";
                 return label || "";
               },
               label: (context) => {
@@ -1418,6 +1426,29 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
         });
       }
 
+      // Removed-outlier bands — a shaded span over each region where a tall
+      // outlier was removed before detection, so the user can see exactly
+      // what was taken out. Regions only exist when Handle Outliers is on and
+      // something was removed. A narrow blip has startX === endX; pad by half
+      // a sample so the band is visible instead of a zero-width box.
+      if (Array.isArray(outlierRegions) && outlierRegions.length > 0) {
+        const sampleDx =
+          Array.isArray(processedSignal) && processedSignal.length > 1
+            ? processedSignal[1].x - processedSignal[0].x
+            : 0;
+        const pad = sampleDx / 2;
+        outlierRegions.forEach((r, idx) => {
+          allRoiAnnotations[`outlier${idx + 1}`] = {
+            type: "box",
+            xMin: r.startX - pad,
+            xMax: r.endX + pad,
+            backgroundColor: OUTLIER_REGION_STYLE.fill,
+            borderColor: OUTLIER_REGION_STYLE.edge,
+            borderWidth: OUTLIER_REGION_STYLE.edgeWidth,
+          };
+        });
+      }
+
       // Add the currently drawn ROI (if any)
       if (roiAnnotation) {
         allRoiAnnotations[`roiCurrent`] = roiAnnotation;
@@ -1449,13 +1480,16 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
         };
       }
 
-      // Baseline Threshold line — same drag mechanics as Activity, but
-      // its Y value also feeds peak base detection (see findBases'
-      // baseline mode in detectSpikes). Different color/dash so the two
-      // lines are distinguishable when both are enabled.
+      // Baseline Threshold line — auto-centered on the baseline noise
+      // (median), nudged by the manual σ-offset. Its Y also feeds peak base
+      // detection (see findBases' baseline mode in detectSpikes). Different
+      // color/dash so the two lines are distinguishable when both are enabled.
       if (baselineThresholdEnabled && yRangeValid) {
-        const absBaseline =
-          localMinY + baselineThresholdRatio * (localMaxY - localMinY);
+        const absBaseline = baselineAbsY;
+        const offLabel =
+          baselineThresholdOffset === 0
+            ? "baseline"
+            : `baseline ${baselineThresholdOffset > 0 ? "+" : ""}${baselineThresholdOffset.toFixed(1)}σ`;
         allRoiAnnotations.baselineThreshold = {
           type: "line",
           yMin: absBaseline,
@@ -1465,7 +1499,7 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
           borderDash: BASELINE_THRESHOLD_STYLE.dash,
           label: {
             display: true,
-            content: `baseline ${Math.round(baselineThresholdRatio * 100)}%`,
+            content: offLabel,
             position: "start",
             backgroundColor: "rgba(0, 0, 0, 0.6)",
             color: BASELINE_THRESHOLD_STYLE.color,
@@ -1521,6 +1555,8 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       roiList,
       showBursts,
       burstResults,
+      outlierRegions,
+      processedSignal,
       roiAnnotation,
       roiColors,
       localMaxY,
@@ -1528,7 +1564,8 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       activityThresholdEnabled,
       activityThresholdRatio,
       baselineThresholdEnabled,
-      baselineThresholdRatio,
+      baselineThresholdOffset,
+      baselineAbsY,
       neuralNormalizationEnabled,
       trendFlatteningEnabled,
       foWindowEnabled,
@@ -1650,25 +1687,44 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
     // the absolute on-chart line position varies, because the ratio is
     // mapped onto each well's Y range.
 
-    // Drag descriptors — one per threshold line. Each describes the
-    // annotation it targets and the setter that commits the final ratio
-    // on pointerup. Centralizing here keeps the down/move/up handlers
-    // generic so adding more horizontal-line controls in the future is
-    // just another descriptor.
+    // Drag descriptors — one per threshold line. Each is self-describing:
+    // `getAbs()` is the line's current absolute Y; `absToValue`/`valueToAbs`
+    // convert between a pointer position and the value that gets committed;
+    // `commit` stores it on pointerup. This lets the two lines use different
+    // value models — Activity is a 0–1 ratio of the well's Y range, Baseline
+    // is a σ-offset from the auto noise center — through one generic handler.
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    const dragYRange = localMaxY - localMinY;
+    const BASELINE_OFFSET_LIMIT = 5; // matches the slider range (±5σ)
     const thresholdDrags = [
       activityThresholdEnabled && {
         key: "activity",
         annotationKey: "activityThreshold",
-        ratio: activityThresholdRatio,
+        getAbs: () => localMinY + activityThresholdRatio * dragYRange,
+        absToValue: (abs) =>
+          clamp(dragYRange > 0 ? (abs - localMinY) / dragYRange : 0.5, 0, 1),
+        valueToAbs: (r) => localMinY + r * dragYRange,
         commit: setActivityThresholdRatio,
         label: (r) => `≥ ${Math.round(r * 100)}%`,
       },
       baselineThresholdEnabled && {
         key: "baseline",
         annotationKey: "baselineThreshold",
-        ratio: baselineThresholdRatio,
-        commit: setBaselineThresholdRatio,
-        label: (r) => `baseline ${Math.round(r * 100)}%`,
+        getAbs: () => baselineAbsY,
+        absToValue: (abs) =>
+          baselineNoise.sigma > 0
+            ? clamp(
+                (abs - baselineNoise.median) / baselineNoise.sigma,
+                -BASELINE_OFFSET_LIMIT,
+                BASELINE_OFFSET_LIMIT
+              )
+            : 0,
+        valueToAbs: (off) => baselineNoise.median + off * baselineNoise.sigma,
+        commit: setBaselineThresholdOffset,
+        label: (off) =>
+          off === 0
+            ? "baseline"
+            : `baseline ${off > 0 ? "+" : ""}${off.toFixed(1)}σ`,
       },
     ].filter(Boolean);
 
@@ -1714,11 +1770,10 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       ) {
         const rect = event.currentTarget.getBoundingClientRect();
         const py = event.clientY - rect.top;
-        const range = localMaxY - localMinY;
         let best = null;
         let bestDist = 8;
         for (const drag of thresholdDrags) {
-          const absT = localMinY + drag.ratio * range;
+          const absT = drag.getAbs();
           const linePy = chart.scales.y.getPixelForValue(absT);
           const dist = Math.abs(py - linePy);
           if (dist < bestDist) {
@@ -1828,20 +1883,20 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       const rect = event.currentTarget.getBoundingClientRect();
       const py = event.clientY - rect.top;
       const absT = chart.scales.y.getValueForPixel(py);
-      const range = localMaxY - localMinY;
-      const rawRatio = range > 0 ? (absT - localMinY) / range : 0.5;
-      const ratio = Math.max(0, Math.min(1, rawRatio));
-      draftRatioRef.current = ratio;
+      // Convert the pointer's absolute Y to this line's value model (ratio for
+      // Activity, σ-offset for Baseline).
+      const value = drag.absToValue(absT);
+      draftRatioRef.current = value;
       // Live-update the line annotation imperatively. Avoid calling the
       // committer during drag — committing on pointerup means the
       // pipeline only re-runs once, after release.
       const ann = chart.options?.plugins?.annotation?.annotations;
       const a = ann?.[drag.annotationKey];
       if (a) {
-        const newAbs = localMinY + ratio * range;
+        const newAbs = drag.valueToAbs(value);
         a.yMin = newAbs;
         a.yMax = newAbs;
-        if (a.label) a.label.content = drag.label(ratio);
+        if (a.label) a.label.content = drag.label(value);
         chart.update("none");
       }
     };

@@ -54,6 +54,7 @@ const NeuralReportModal = ({
   roiMetrics,
   roiList,
   processingParams,
+  outlierCount = 0,
 }) => {
   const [options, setOptions] = useState({
     includeProcessedSignal: true,
@@ -80,7 +81,7 @@ const NeuralReportModal = ({
         roiMetrics || {},
         roiList || [],
         processingParams,
-        options
+        { ...options, outlierCount }
       );
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);

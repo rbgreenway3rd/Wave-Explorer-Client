@@ -8,23 +8,22 @@ import { useDraftSlider } from "../../../utilities/useDraftSlider";
 import "./NeuralControlPanel.css";
 
 const DEFAULT_ACTIVITY_THRESHOLD_RATIO = 0.5;
-const DEFAULT_BASELINE_THRESHOLD_RATIO = 0.1;
+const DEFAULT_BASELINE_THRESHOLD_OFFSET = 0;
 
 /**
  * ActivityThresholdControls — toggles + sliders for the chart's two
  * horizontal threshold lines:
  *   1. Activity Threshold (orange) — filters out peaks whose apex Y
- *      falls below the line. The threshold the client praised in the
- *      Neural modal UI review.
- *   2. Baseline Threshold (cyan) — when enabled, overrides per-peak
- *      base detection. Peak width + AUC are then measured between
- *      the line's intercepts with the signal on either side of each
- *      peak. Added per the same UI review.
+ *      falls below the line. Stored as a 0–1 ratio of each well's Y range.
+ *   2. Baseline Threshold (cyan) — when enabled, overrides per-peak base
+ *      detection (peak width + AUC measured between the line's intercepts
+ *      with the signal). It AUTO-CENTERS on each well's baseline noise; this
+ *      slider is the manual OFFSET from that center in robust σ units
+ *      (0 = at the noise center), scale-free so it applies uniformly across
+ *      wells.
  *
- * Both ratios are stored 0–1 of each well's processed-signal Y range
- * so each line stays in range across well switches. Both lines are
- * also draggable on the chart itself (see NeuralGraph.js); the chart
- * and these sliders sync on commit (release).
+ * Both lines are also draggable on the chart itself (see NeuralGraph.js);
+ * the chart and these sliders sync on commit (release).
  */
 const ActivityThresholdControls = () => {
   const {
@@ -32,8 +31,8 @@ const ActivityThresholdControls = () => {
     setActivityThresholdRatio,
     activityThresholdEnabled,
     setActivityThresholdEnabled,
-    baselineThresholdRatio,
-    setBaselineThresholdRatio,
+    baselineThresholdOffset,
+    setBaselineThresholdOffset,
     baselineThresholdEnabled,
     setBaselineThresholdEnabled,
   } = useNeuralSettings();
@@ -42,20 +41,22 @@ const ActivityThresholdControls = () => {
     activityThresholdRatio,
     setActivityThresholdRatio,
   );
-  const baselineRatio = useDraftSlider(
-    baselineThresholdRatio,
-    setBaselineThresholdRatio,
+  const baselineOffset = useDraftSlider(
+    baselineThresholdOffset,
+    setBaselineThresholdOffset,
   );
 
   const handleResetActivity = () => {
     setActivityThresholdRatio(DEFAULT_ACTIVITY_THRESHOLD_RATIO);
   };
   const handleResetBaseline = () => {
-    setBaselineThresholdRatio(DEFAULT_BASELINE_THRESHOLD_RATIO);
+    setBaselineThresholdOffset(DEFAULT_BASELINE_THRESHOLD_OFFSET);
   };
 
   const activityPct = `${Math.round(Number(activityRatio.value) * 100)}%`;
-  const baselinePct = `${Math.round(Number(baselineRatio.value) * 100)}%`;
+  const baselineOffsetLabel = `${
+    Number(baselineOffset.value) > 0 ? "+" : ""
+  }${Number(baselineOffset.value).toFixed(1)}σ`;
 
   return (
     <Panel variant="dark" className="neural-control-panel">
@@ -134,7 +135,7 @@ const ActivityThresholdControls = () => {
             label="Baseline"
             sx={{ marginLeft: 0 }}
           />
-          <Tooltip title="Reset Baseline to 10%" placement="top">
+          <Tooltip title="Reset Baseline to noise center (0σ)" placement="top">
             <span>
               <IconButton
                 variant="subtle"
@@ -151,26 +152,32 @@ const ActivityThresholdControls = () => {
 
         <div className="neural-control-panel__field">
           <div className="neural-control-panel__field-header">
-            <span className="neural-control-panel__field-label">
-              Position
-            </span>
+            <span className="neural-control-panel__field-label">Offset</span>
             <span className="neural-control-panel__field-value">
-              {baselinePct}
+              {baselineOffsetLabel}
             </span>
           </div>
           <Slider
-            value={Number(baselineRatio.value) || 0}
+            value={Number(baselineOffset.value) || 0}
             onChange={(e, v) => {
-              perf.count("slider.baselineThresholdRatio");
-              baselineRatio.onChange(e, v);
+              perf.count("slider.baselineThresholdOffset");
+              baselineOffset.onChange(e, v);
             }}
-            onChangeCommitted={baselineRatio.onChangeCommitted}
-            min={0}
-            max={1}
-            step={0.01}
+            onChangeCommitted={baselineOffset.onChangeCommitted}
+            min={-5}
+            max={5}
+            step={0.5}
+            marks={[
+              { value: -5, label: "-5" },
+              { value: 0, label: "0" },
+              { value: 5, label: "+5" },
+            ]}
             disabled={!baselineThresholdEnabled}
           />
         </div>
+        <p className="neural-control-panel__hint">
+          Auto-centers on the baseline noise; offset in σ nudges it up/down.
+        </p>
       </div>
     </Panel>
   );
