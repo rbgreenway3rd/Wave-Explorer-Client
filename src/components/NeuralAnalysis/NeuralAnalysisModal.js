@@ -6,7 +6,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Tooltip } from "@mui/material";
+import { Tooltip, CircularProgress } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import DescriptionIcon from "@mui/icons-material/Description";
 import DashboardIcon from "@mui/icons-material/Dashboard";
@@ -29,6 +29,7 @@ import Distributions from "./subComponents/Distributions";
 import NeuralGraph from "./subComponents/NeuralGraph/NeuralGraph";
 import ChartLegend from "./subComponents/NeuralGraph/ChartLegend";
 import ChartDisplayToggles from "./subComponents/NeuralGraph/ChartDisplayToggles";
+import YScaleToggle from "./subComponents/NeuralGraph/controls/YScaleToggle";
 import NeuralReportModal from "./NeuralReportModal";
 import NeuralFullPlateReportModal from "./NeuralFullPlateReportModal";
 import TemplateMenu from "./templates/TemplateMenu";
@@ -65,8 +66,17 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
   const { project, wellArrays } = useContext(DataContext);
   const settings = useNeuralSettings();
   const { roiList } = useNeuralInteraction();
-  const { pipelineResults, effectiveSpikeProminence, effectiveSpikeWindow } =
-    useNeuralResults();
+  const {
+    pipelineResults,
+    effectiveSpikeProminence,
+    effectiveSpikeWindow,
+    isPipelineRunning,
+    isPlateRangeComputing,
+  } = useNeuralResults();
+
+  // Any compute in flight → busy cursor on the whole modal (catch-all for the
+  // small controls that can't host their own spinner). Does NOT disable them.
+  const isBusy = isPipelineRunning || isPlateRangeComputing;
 
   // Ref forwarded to NeuralGraph so the chart instance is reachable from
   // ChartControls' Reset Zoom button.
@@ -281,7 +291,9 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
       open={open}
       onClose={null}
       fullScreen
-      className="neural-analysis-modal"
+      className={`neural-analysis-modal${
+        isBusy ? " neural-analysis-modal--busy" : ""
+      }`}
     >
       <Modal.Header className="neural-analysis-modal__header">
         <Tooltip title="Exit Neural Analysis" arrow>
@@ -371,7 +383,10 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
                     </span>
                   </Tooltip>
                 </div>
-                <TemplateMenu />
+                <div className="neural-analysis-modal__report-actions-right">
+                  <YScaleToggle />
+                  <TemplateMenu />
+                </div>
               </div>
             </div>
             <ChartControls
@@ -423,7 +438,18 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
                   </Button>
                 </div>
               </div>
-              <NeuralGraph className="neural-graph" ref={neuralGraphRef} />
+              <div className="neural-graph-wrap">
+                <NeuralGraph className="neural-graph" ref={neuralGraphRef} />
+                {isPipelineRunning && selectedWell && (
+                  <div
+                    className="neural-graph-spinner-overlay"
+                    aria-live="polite"
+                  >
+                    <CircularProgress size={18} thickness={5} />
+                    <span>Updating…</span>
+                  </div>
+                )}
+              </div>
             </section>
             <section className="selector-and-average-graph">
               <CollapsibleSection

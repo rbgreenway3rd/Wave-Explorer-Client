@@ -126,6 +126,13 @@ const DEFAULT_SETTINGS = {
   showBursts: false,
   maxInterSpikeInterval: 1.0,
   minSpikesPerBurst: 3,
+  // Y-scale mode: "selected" = auto-fit the chart's y-axis to the selected
+  // well (relative), "all" = fix it to the whole-plate processed range
+  // (universal/absolute) so well amplitudes are directly comparable.
+  // Defaults to "all" (Universal) so amplitudes are comparable out of the box;
+  // the range is computed async + cached (see NeuralResultsContext), so the
+  // default doesn't cost a blocking compute on open.
+  yScaleMode: "all",
   // Display toggles
   showPeakBases: true,
   markAUC: false,
@@ -279,6 +286,9 @@ export const NeuralSettingsProvider = ({ children }) => {
   // doesn't affect detection or metric values.
   const [showPeakBases, setShowPeakBases] = useState(true);
   const [markAUC, setMarkAUC] = useState(false);
+  // "selected" (relative, auto-fit to the current well) or "all"
+  // (universal, fixed to the whole-plate processed range).
+  const [yScaleMode, setYScaleMode] = useState("all");
 
   // ---- Parameter-visualization overlays ----------------------------------
   // Master toggle (`showParamOverlays`) gates the three sub-toggles. The
@@ -352,6 +362,7 @@ export const NeuralSettingsProvider = ({ children }) => {
     minSpikesPerBurst,
     showPeakBases,
     markAUC,
+    yScaleMode,
     showParamOverlays,
     showProminenceOverlay,
     showWindowOverlay,
@@ -407,6 +418,7 @@ export const NeuralSettingsProvider = ({ children }) => {
       minSpikesPerBurst: setMinSpikesPerBurst,
       showPeakBases: setShowPeakBases,
       markAUC: setMarkAUC,
+      yScaleMode: setYScaleMode,
       showParamOverlays: setShowParamOverlays,
       showProminenceOverlay: setShowProminenceOverlay,
       showWindowOverlay: setShowWindowOverlay,
@@ -461,6 +473,7 @@ export const NeuralSettingsProvider = ({ children }) => {
     minSpikesPerBurst,
     showPeakBases,
     markAUC,
+    yScaleMode,
     showParamOverlays,
     showProminenceOverlay,
     showWindowOverlay,
@@ -583,6 +596,8 @@ export const NeuralSettingsProvider = ({ children }) => {
       setShowPeakBases,
       markAUC,
       setMarkAUC,
+      yScaleMode,
+      setYScaleMode,
       // parameter-visualization overlays
       showParamOverlays,
       setShowParamOverlays,
@@ -652,6 +667,7 @@ export const NeuralSettingsProvider = ({ children }) => {
       minSpikesPerBurst,
       showPeakBases,
       markAUC,
+      yScaleMode,
       showParamOverlays,
       showProminenceOverlay,
       showWindowOverlay,

@@ -323,3 +323,46 @@
     margin-left: auto;
     margin-right: auto;
 }
+
+/* ── Stacked layout (opt-in via .neural-control-panel--stacked) ──────
+ * The right pane defaults to a 2-column grid so dense multi-field
+ * sections pack tightly. A panel that marks itself `--stacked` (Burst
+ * Detection) opts into a SINGLE column: each field spans the full width
+ * (one slider per row) and the sliders widen to the full pane so their
+ * log-decade marks have room to show more values. Selectors carry the
+ * full `.neural-control-panel.ui-panel.ui-panel--dark` chain (plus
+ * `--stacked`) so they outrank the 2-column base rules above. */
+.neural-advanced-tweakables-card__right
+    > .neural-control-panel.neural-control-panel--stacked.ui-panel.ui-panel--dark
+    > .neural-control-panel__field {
+    grid-column: 1 / -1;
+}
+
+/* Single-column divider fix: the 2-column rule drops the border on the
+ * last TWO fields (the bottom row). Stacked has one field per row, so
+ * restore the second-to-last field's separator and drop only the last. */
+.neural-advanced-tweakables-card__right
+    > .neural-control-panel.neural-control-panel--stacked.ui-panel.ui-panel--dark
+    > .neural-control-panel__field:nth-last-child(-n + 2) {
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.28);
+}
+.neural-advanced-tweakables-card__right
+    > .neural-control-panel.neural-control-panel--stacked.ui-panel.ui-panel--dark
+    > .neural-control-panel__field:last-child {
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+/* Full-width sliders + headers for the stacked pane (vs the 75% cap the
+ * dense 2-column sections use), so the ISI slider's marks breathe. */
+.neural-advanced-tweakables-card__right
+    > .neural-control-panel.neural-control-panel--stacked.ui-panel.ui-panel--dark
+    .MuiSlider-root {
+    max-width: 100%;
+}
+.neural-advanced-tweakables-card__right
+    > .neural-control-panel.neural-control-panel--stacked.ui-panel.ui-panel--dark
+    .neural-control-panel__field-header {
+    max-width: 100%;
+}

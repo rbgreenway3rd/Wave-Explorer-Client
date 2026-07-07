@@ -128,6 +128,49 @@
   grid-template-rows: auto minmax(0, 1fr);
 }
 
+/* Wrapper around <NeuralGraph> that hosts the loading overlay. It is the
+ * grid's 1fr row (was the chart canvas before), so it must stay
+ * dimensionally bounded and hand its full height to the canvas — chart.js
+ * is `responsive; maintainAspectRatio:false` and sizes to this parent. */
+.neural-analysis-modal .neural-graph-wrap {
+  position: relative;
+  min-height: 0;
+  min-width: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+/* Small translucent "working" chip pinned to the chart's top-right. Sits
+ * over the canvas while the selected-well pipeline recomputes; the prior
+ * trace stays visible underneath (semi-responsive). pointer-events:none so
+ * it never intercepts chart drags/clicks. */
+.neural-analysis-modal .neural-graph-spinner-overlay {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-family: var(--font-family);
+  font-size: 0.75rem;
+  pointer-events: none;
+}
+
+/* Busy cursor — global feedback for the many small controls (sliders,
+ * toggles, dropdowns) that can't host their own spinner. Applied while any
+ * compute is in flight. Does NOT disable anything: inputs still register and
+ * coalesce through the pipeline runner. `* !important` is needed because
+ * interactive elements set their own cursor. */
+.neural-analysis-modal--busy,
+.neural-analysis-modal--busy * {
+  cursor: progress !important;
+}
+
 /* Right column is a vertical flex stack of CollapsibleSection wrappers
  * (Wells at top, Results below; later phases add Funnel and Peak
  * Inspector). Each section's own CSS handles its expanded/collapsed
@@ -159,6 +202,11 @@
    * content height exceeds the 14rem header allotment. */
   min-height: 0;
   overflow-y: auto;
+  /* Hold enough width for the 2×2 report-actions grid (two CSV buttons |
+   * Y-Scale toggle + Templates) so the wide Universal/Relative toggle isn't
+   * clipped. The chart-controls bar beside it shrinks to absorb this. */
+  flex-shrink: 0;
+  min-width: 18.5rem;
 }
 
 /* Tighten the default browser margins on the heading elements stacked
@@ -187,38 +235,46 @@
   color: var(--color-text);
   text-decoration: underline;
   text-align: center;
-  margin-top: var(--space-1);
+  margin-top: 0;
   margin-bottom: var(--space-1);
 }
 
-/* Report actions sit as a horizontal row: the two CSV buttons stack
- * vertically in their own group on the left, and the Templates dropdown
- * sits to the right of that group. `flex: 1` lets the row consume the
- * remaining vertical space in the flex-column parent so it's centered
- * between the "Generate Report" label and the bottom border. */
+/* Report actions form a 2×2 grid: the two CSV buttons stack in the left
+ * column, and the Y-Scale toggle + Templates dropdown stack in the right
+ * column. `flex: 1` lets the block consume the remaining vertical space in the
+ * flex-column parent so it's centered between the "Generate Report" label and
+ * the bottom border. */
 .neural-analysis-modal__report-actions {
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
   flex: 1;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
-/* CSV buttons stay stacked vertically inside the row. */
+/* Left column — CSV buttons stacked. */
 .neural-analysis-modal__report-actions-csv-group {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: var(--space-2);
+  gap: var(--space-1);
+}
+
+/* Right column — Y-Scale toggle over the Templates dropdown. */
+.neural-analysis-modal__report-actions-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
 }
 
 /* Tighter padding + smaller font on the CSV buttons so they don't push
  * the header column wider than the chart-controls bar sibling. */
 .neural-analysis-modal__report-actions-csv-group .ui-button.MuiButton-root {
   font-size: 0.75rem;
-  line-height: 1.2;
-  padding: 0.25rem 0.6rem;
+  line-height: 1.15;
+  padding: 0.15rem 0.6rem;
   min-width: 0;
   white-space: nowrap;
 }

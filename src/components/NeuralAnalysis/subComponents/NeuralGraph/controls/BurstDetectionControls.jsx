@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useContext, useEffect, useMemo } from "react";
 import { Slider, Tooltip } from "@mui/material";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import { Panel, IconButton } from "../../../../ui";
+import { DataContext } from "../../../../../providers/DataProvider";
 import { useNeuralSettings } from "../../../NeuralProvider";
 import { perf } from "../../../utilities/perfLogger";
 import { useDraftSlider } from "../../../utilities/useDraftSlider";
@@ -16,28 +17,25 @@ import "./NeuralControlPanel.css";
  *
  * The ISI slider is LOG-scaled so a single control can cover the full
  * realistic burst-timescale range: 5 ms (single-unit electrophys) up
- * to 30 s (slow Ca²⁺ events on minute-long recordings sampled at a
- * few Hz). A linear 0–30 s slider would make the sub-second sub-range
- * unreachable in practice; log scale puts equal-pixel-distance =
- * equal-log-distance, so 0.01 ↔ 0.1 ↔ 1 ↔ 10 are all the same drag.
+ * to the recording-relative ceiling below. A linear slider would make
+ * the sub-second sub-range unreachable in practice; log scale puts
+ * equal-pixel-distance = equal-log-distance, so 0.01 ↔ 0.1 ↔ 1 ↔ 10
+ * are all the same drag.
+ *
+ * The MAX end scales with the recording: an inter-spike interval can't
+ * meaningfully exceed the run's own span, and long (10-min+) recordings
+ * need far more than the old hardcoded 30 s. We cap the slider at HALF
+ * the recording duration — enough headroom for real bursts on any
+ * length of run, while keeping the log slider's resolution focused
+ * where bursts actually live rather than on the useless top decade that
+ * would lump the whole trace into one burst.
  */
 const ISI_MIN_S = 0.005;
-const ISI_MAX_S = 30;
-const ISI_LOG_MIN = Math.log(ISI_MIN_S);
-const ISI_LOG_RANGE = Math.log(ISI_MAX_S) - ISI_LOG_MIN;
+// Ceiling used before any file is loaded (or on degenerate/empty time
+// data). Once a recording is present the ceiling is half its duration.
+const FALLBACK_MAX_S = 30;
 // Slider internal position space — finer than 1000 isn't perceptible.
 const ISI_POSITION_MAX = 1000;
-const positionFromIsi = (s) => {
-  if (!(s > 0)) return 0;
-  const clamped = Math.max(ISI_MIN_S, Math.min(ISI_MAX_S, s));
-  return Math.round(
-    ((Math.log(clamped) - ISI_LOG_MIN) / ISI_LOG_RANGE) * ISI_POSITION_MAX
-  );
-};
-const isiFromPosition = (p) => {
-  const t = Math.max(0, Math.min(ISI_POSITION_MAX, p)) / ISI_POSITION_MAX;
-  return Math.exp(ISI_LOG_MIN + t * ISI_LOG_RANGE);
-};
 // Snap to a display-friendly precision per decade so the readout
 // doesn't show 1.2837492 s. Stored value also uses the snapped form
 // because the burst gate is a `≤` comparison and tiny ULP noise has
@@ -57,6 +55,24 @@ const formatIsi = (s) => {
   return String(Math.round(s));
 };
 
+// Normalize DataContext.extractedIndicatorTimes (plain array / typed
+// array / object-of-values) to a flat time array, mirroring ROIControls.
+const normalizeTimes = (times) => {
+  if (!times) return null;
+  if (Array.isArray(times) || ArrayBuffer.isView(times)) return times;
+  if (typeof times === "object") {
+    const values = Object.values(times);
+    if (
+      values.length > 0 &&
+      (Array.isArray(values[0]) || ArrayBuffer.isView(values[0]))
+    ) {
+      return values[0];
+    }
+    return values;
+  }
+  return null;
+};
+
 const BurstDetectionControls = () => {
   const {
     showBursts,
@@ -65,10 +81,52 @@ const BurstDetectionControls = () => {
     minSpikesPerBurst,
     setMinSpikesPerBurst,
   } = useNeuralSettings();
+  const { extractedIndicatorTimes } = useContext(DataContext);
   // Sensible Ca²⁺ default — the prior 0.05 s default essentially
   // disabled burst detection on slow-sampled recordings.
   const DEFAULT_MAX_INTERVAL = 1.0;
   const DEFAULT_MIN_SPIKES = 3;
+
+  // Recording-relative ISI ceiling = half the recording duration (see
+  // the header note). Falls back to 30 s before any file is loaded.
+  const isiMax = useMemo(() => {
+    const timeArray = normalizeTimes(extractedIndicatorTimes);
+    if (!timeArray || timeArray.length < 2) return FALLBACK_MAX_S;
+    const duration = timeArray[timeArray.length - 1] - timeArray[0];
+    if (!(duration > 0)) return FALLBACK_MAX_S;
+    return duration / 2;
+  }, [extractedIndicatorTimes]);
+
+  // Log-scale converters, rebuilt whenever the ceiling changes. The
+  // slider's value/marks/step live in position space [0, ISI_POSITION_MAX];
+  // useDraftSlider stores/commits the SECONDS value.
+  const { positionFromIsi, isiFromPosition } = useMemo(() => {
+    const logMin = Math.log(ISI_MIN_S);
+    const logRange = Math.log(isiMax) - logMin;
+    return {
+      positionFromIsi: (s) => {
+        if (!(s > 0)) return 0;
+        const clamped = Math.max(ISI_MIN_S, Math.min(isiMax, s));
+        return Math.round(
+          ((Math.log(clamped) - logMin) / logRange) * ISI_POSITION_MAX
+        );
+      },
+      isiFromPosition: (p) => {
+        const t = Math.max(0, Math.min(ISI_POSITION_MAX, p)) / ISI_POSITION_MAX;
+        return Math.exp(logMin + t * logRange);
+      },
+    };
+  }, [isiMax]);
+
+  // When the ceiling shrinks (a shorter recording is loaded, or a template
+  // saved on a long experiment is applied to a short one), pull the stored
+  // value down so the thumb and readout stay in range.
+  useEffect(() => {
+    if (maxInterSpikeInterval > isiMax) {
+      setMaxInterSpikeInterval(snapIsi(isiMax));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isiMax]);
 
   const interval = useDraftSlider(
     maxInterSpikeInterval,
@@ -77,15 +135,11 @@ const BurstDetectionControls = () => {
   const minSpikes = useDraftSlider(minSpikesPerBurst, setMinSpikesPerBurst);
 
   const handleReset = () => {
-    setMaxInterSpikeInterval(DEFAULT_MAX_INTERVAL);
+    // Clamp the default to the ceiling for ultra-short clips (isiMax < 1 s).
+    setMaxInterSpikeInterval(Math.min(DEFAULT_MAX_INTERVAL, snapIsi(isiMax)));
     setMinSpikesPerBurst(DEFAULT_MIN_SPIKES);
   };
 
-  // Log-scaled slider plumbing: position ↔ seconds via exponential.
-  // useDraftSlider stores/commits the SECONDS value; the slider's
-  // value/marks/step live in position space. Mark labels intentionally
-  // round to clean log-decade anchors (0.01, 0.1, 1, 10) so the user
-  // has familiar reference points.
   const intervalPosition = positionFromIsi(interval.value);
   const handleIntervalChange = (e, position) => {
     perf.count("slider.maxInterSpikeInterval");
@@ -96,18 +150,28 @@ const BurstDetectionControls = () => {
     const seconds = snapIsi(isiFromPosition(position));
     interval.onChangeCommitted(e, seconds);
   };
-  const intervalMarks = [
-    { value: positionFromIsi(0.01), label: "0.01s" },
-    { value: positionFromIsi(0.1), label: "0.1s" },
-    { value: positionFromIsi(1), label: "1s" },
-    { value: positionFromIsi(10), label: "10s" },
-    { value: positionFromIsi(30), label: "30s" },
-  ];
+  // Log-decade anchors (0.01, 0.1, 1, 10, 100, …) up to the ceiling, plus a
+  // final mark at the exact ceiling so the user sees the recording-relative
+  // top value. De-dupe if the ceiling lands on a decade.
+  const intervalMarks = useMemo(() => {
+    const marks = [];
+    for (let decade = 0.01; decade < isiMax; decade *= 10) {
+      marks.push({
+        value: positionFromIsi(decade),
+        label: `${formatIsi(decade)}s`,
+      });
+    }
+    const topLabel = `${formatIsi(isiMax)}s`;
+    if (!marks.length || marks[marks.length - 1].label !== topLabel) {
+      marks.push({ value: positionFromIsi(isiMax), label: topLabel });
+    }
+    return marks;
+  }, [isiMax, positionFromIsi]);
 
   return (
     <Panel
       variant="dark"
-      className={`neural-control-panel ${
+      className={`neural-control-panel neural-control-panel--stacked ${
         showBursts ? "" : "neural-control-panel--disabled"
       }`}
     >

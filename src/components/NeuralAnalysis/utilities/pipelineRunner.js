@@ -47,14 +47,13 @@ const yieldToBrowser = () =>
 const liveRunners = new Set();
 
 if (typeof module !== "undefined" && module.hot) {
-  module.hot.accept(
-    "../../../workers/neuralPipeline.worker.js",
-    () => {
-      // Mark every live runner stale; ensureWorker() will recycle on the
-      // next run().
-      for (const r of liveRunners) r.markWorkerStale();
-    }
-  );
+  const recycleAll = () => {
+    // Mark every live runner stale; ensureWorker() will recycle on the
+    // next run().
+    for (const r of liveRunners) r.markWorkerStale();
+  };
+  module.hot.accept("../../../workers/neuralPipeline.worker.js", recycleAll);
+  module.hot.accept("../../../workers/plateRange.worker.js", recycleAll);
 }
 
 // Build typed-array views over a {x,y}[] for Transferable posting.
@@ -241,6 +240,130 @@ export function makePipelineRunner() {
     },
 
     /** Tear down the worker (e.g. on provider unmount). */
+    dispose() {
+      if (worker) {
+        worker.terminate();
+        worker = null;
+      }
+      for (const [, entry] of pending) entry.reject(new Error("disposed"));
+      pending.clear();
+      liveRunners.delete(api);
+    },
+  };
+  liveRunners.add(api);
+  return api;
+}
+
+/**
+ * makePlateRangeRunner — async wrapper around plateRange.worker.js, which
+ * computes the Universal (whole-plate) y-scale range off the main thread.
+ *
+ * Same stale discipline as makePipelineRunner: each run() bumps a reqId,
+ * yields once before posting (coalescing rapid param bursts), and ignores
+ * results from superseded requests. One worker instance, lazily created,
+ * recycled on HMR alongside the pipeline worker.
+ *
+ * `run({ wells, control, params, noiseSuppressionActive })` takes wells as
+ * an array of already-built `{ xs, ys }` Float64Array pairs (the caller
+ * flattens straight from the indicators' canonical typed arrays, so no
+ * {x,y}[] is materialized on the main thread). All buffers are Transferable.
+ * Resolves to `{ min, max }` (either null when the plate is empty) or the
+ * STALE sentinel.
+ */
+export function makePlateRangeRunner() {
+  let activeReqId = 0;
+  let worker = null;
+  let workerStale = false;
+  const pending = new Map();
+
+  function ensureWorker() {
+    if (worker && !workerStale) return worker;
+    if (worker && workerStale) {
+      try {
+        worker.terminate();
+      } catch (_e) {
+        // ignore
+      }
+      worker = null;
+      workerStale = false;
+    }
+    worker = new Worker(
+      new URL("../../../workers/plateRange.worker.js", import.meta.url)
+    );
+    worker.onmessage = (event) => {
+      const msg = event.data;
+      if (!msg) return;
+      const entry = pending.get(msg.reqId);
+      if (!entry) return;
+      pending.delete(msg.reqId);
+      if (msg.type === "plateRange")
+        entry.resolve({ min: msg.min, max: msg.max });
+      else if (msg.type === "error") entry.reject(new Error(msg.message));
+    };
+    worker.onerror = (event) => {
+      for (const [, entry] of pending) entry.reject(event.error || event);
+      pending.clear();
+    };
+    return worker;
+  }
+
+  const api = {
+    markWorkerStale() {
+      workerStale = true;
+      activeReqId++;
+      for (const [, entry] of pending)
+        entry.reject(new Error("worker recycled"));
+      pending.clear();
+    },
+
+    async run(inputs) {
+      const reqId = ++activeReqId;
+
+      // Yield once so a burst of param changes coalesces to the latest.
+      await yieldToBrowser();
+      if (reqId !== activeReqId) return STALE;
+
+      const wells = Array.isArray(inputs.wells) ? inputs.wells : [];
+      const control = inputs.control || { xs: new Float64Array(0), ys: new Float64Array(0) };
+
+      const transferList = [];
+      for (const w of wells) {
+        if (w?.xs?.buffer) transferList.push(w.xs.buffer);
+        if (w?.ys?.buffer) transferList.push(w.ys.buffer);
+      }
+      if (control.xs?.buffer?.byteLength > 0)
+        transferList.push(control.xs.buffer, control.ys.buffer);
+
+      const w = ensureWorker();
+      let result;
+      try {
+        result = await new Promise((resolve, reject) => {
+          pending.set(reqId, { resolve, reject });
+          w.postMessage(
+            {
+              type: "runPlateRange",
+              reqId,
+              wells,
+              control,
+              params: inputs.params,
+              noiseSuppressionActive: inputs.noiseSuppressionActive,
+            },
+            transferList
+          );
+        });
+      } catch (err) {
+        if (reqId !== activeReqId) return STALE;
+        throw err;
+      }
+
+      if (reqId !== activeReqId) return STALE;
+      return result;
+    },
+
+    cancel() {
+      activeReqId++;
+    },
+
     dispose() {
       if (worker) {
         worker.terminate();

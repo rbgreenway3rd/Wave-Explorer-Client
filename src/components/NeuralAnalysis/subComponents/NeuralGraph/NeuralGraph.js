@@ -435,6 +435,7 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       setFoWindowEndRatio,
       showPeakBases,
       markAUC,
+      yScaleMode,
       // Parameter-visualization overlays.
       showParamOverlays,
       showProminenceOverlay,
@@ -465,6 +466,7 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
       pipelineResults,
       effectiveSpikeProminenceAbs,
       effectiveSpikeWindow,
+      plateProcessedYRange,
     } = useNeuralResults();
     const { selectCandidate } = useNeuralInspector();
     const processedSignal = pipelineResults.processedSignal;
@@ -539,15 +541,24 @@ const NeuralGraph = forwardRef(({ className }, ref) => {
     // scale gets padding.
     const Y_SCALE_PAD = 0.05; // 5% headroom top and bottom
     const X_SCALE_PAD = 0.01; // 1% gutter left and right
-    const yRange = localMaxY - localMinY;
+    // Which y-range the DISPLAYED axis uses: Universal ("all") fixes it to the
+    // whole-plate processed range so wells are directly comparable; Relative
+    // ("selected", default) auto-fits the current well. Threshold/baseline math
+    // below always stays on the selected well's localMin/Max — only the visible
+    // axis extent changes with the mode.
+    const useUniversal =
+      yScaleMode === "all" &&
+      plateProcessedYRange &&
+      isFinite(plateProcessedYRange.min) &&
+      isFinite(plateProcessedYRange.max) &&
+      plateProcessedYRange.max > plateProcessedYRange.min;
+    const axisMinY = useUniversal ? plateProcessedYRange.min : localMinY;
+    const axisMaxY = useUniversal ? plateProcessedYRange.max : localMaxY;
+    const yRange = axisMaxY - axisMinY;
     const paddedYMin =
-      isFinite(localMinY) && yRange > 0
-        ? localMinY - yRange * Y_SCALE_PAD
-        : localMinY;
+      isFinite(axisMinY) && yRange > 0 ? axisMinY - yRange * Y_SCALE_PAD : axisMinY;
     const paddedYMax =
-      isFinite(localMaxY) && yRange > 0
-        ? localMaxY + yRange * Y_SCALE_PAD
-        : localMaxY;
+      isFinite(axisMaxY) && yRange > 0 ? axisMaxY + yRange * Y_SCALE_PAD : axisMaxY;
 
     // X extents — memoized on processedSignal reference. Critical: even
     // when the user toggles noise suppression and the pipeline produces
