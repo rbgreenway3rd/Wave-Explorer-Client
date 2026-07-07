@@ -15,10 +15,22 @@ export const PEAK_STYLE = {
   borderWidth: 0,
 };
 
-export const OUTLIER_PEAK_STYLE = {
+// Removed-outlier region band — a shaded full-height span drawn over each
+// stretch of trace where a tall outlier was removed before detection, so
+// the user can see exactly what was taken out. Translucent warm orange.
+export const OUTLIER_REGION_STYLE = {
+  fill: "rgba(255, 152, 0, 0.18)",
+  edge: "rgba(255, 152, 0, 0.75)",
+  edgeWidth: 1,
+};
+
+// Removed-outlier marker — an orange ring plotted at each outlier's ORIGINAL
+// height, shown only when the "Show removed outliers" toggle is on, so the
+// user can see how tall the removed blips actually were.
+export const OUTLIER_POINT_STYLE = {
   fill: "rgba(255, 152, 0, 0)",
   border: "#ff9800",
-  radius: 6,
+  radius: 5,
   borderWidth: 2,
 };
 

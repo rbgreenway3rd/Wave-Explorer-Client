@@ -12,12 +12,13 @@ import "./NeuralControlPanel.css";
 
 /**
  * PanZoomControls — switches for chart-interaction mode (pan/zoom vs.
- * ROI-definition, mutually exclusive) plus a Reset Zoom action and a
- * pill that shows the currently active mode. Reads interaction state
- * from NeuralInteractionContext; only the imperative `resetZoom` handler
- * (a ref into NeuralGraph) is passed as a prop.
+ * ROI-definition, mutually exclusive), a Reset All Settings action, and a
+ * pill that shows the currently active mode. Reads interaction state from
+ * NeuralInteractionContext. (Reset Zoom moved to the always-visible legend
+ * strip above the chart — see NeuralAnalysisModal — so it stays reachable
+ * when this card collapses behind an expanded control set.)
  */
-const PanZoomControls = ({ resetZoom }) => {
+const PanZoomControls = () => {
   const {
     defineROI,
     setDefineROI,
@@ -99,16 +100,6 @@ const PanZoomControls = ({ resetZoom }) => {
           }
         />
       </FormGroup>
-
-      <Button
-        variant="secondary"
-        block
-        startIcon={<RestartAltIcon />}
-        onClick={resetZoom}
-        className="reset-zoom-button"
-      >
-        Reset Zoom
-      </Button>
 
       <Button
         variant="secondary"

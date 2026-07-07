@@ -7,9 +7,9 @@
  * Conventions:
  *   - All slider values stay inside the actual UI ranges (no out-of-band
  *     test values).
- *   - Spike-detection tests set handleOutliers:false so re-added outlier
- *     spikes don't mask the filter under test. Outlier-handling tests
- *     explicitly set handleOutliers:true.
+ *   - Spike/burst tests set handleOutliers:false so outlier removal doesn't
+ *     alter the input the filter under test cares about. Outlier-handling
+ *     tests explicitly set handleOutliers:true.
  *   - Each call creates a fresh makePipelineCache() so cache hits from a
  *     prior call can't contaminate the next one.
  *   - Every test isolates the variable under test by holding every
@@ -22,7 +22,7 @@ import { makePipelineCache } from "../utilities/pipelineCache";
 import {
   makeSyntheticSignal,
   makeBurstingSignal,
-  makeOutlierSignal,
+  makeSignalWithOutliers,
 } from "./_fixtures";
 
 // Matches the pattern in pipeline.test.js, plus the two newer spike params
@@ -36,9 +36,8 @@ const baseParams = {
   baselineCorrection: false,
   smoothingEnabled: false,
   smoothingWindow: 5,
-  handleOutliers: true,
-  outlierPercentile: 95,
-  outlierMultiplier: 2.0,
+  handleOutliers: false,
+  outlierSensitivity: 5,
   spikeProminence: 3,
   spikeWindow: 20,
   spikeMinWidth: 5,
@@ -61,8 +60,7 @@ const permissiveSpikeParams = {
   // the "tall neighbor's shadow" that produces asymmetric prominences.
   trendFlatteningEnabled: false,
   smoothingEnabled: false,
-  // Outlier path off — re-added outlier spikes would otherwise mask the
-  // filters under test.
+  // Outlier handling off — removal would otherwise alter the filters' input.
   handleOutliers: false,
   // Every spike-detection filter at its most permissive setting.
   spikeProminence: 0.5,
@@ -75,7 +73,12 @@ const permissiveSpikeParams = {
   noiseWindowSize: 0,
 };
 
-function runPipeline(rawSignal, params, analysisOverrides = {}) {
+function runPipeline(
+  rawSignal,
+  params,
+  analysisOverrides = {},
+  noiseSuppressionActive = true
+) {
   return runNeuralAnalysisPipeline({
     rawSignal,
     controlSignal: [],
@@ -85,13 +88,18 @@ function runPipeline(rawSignal, params, analysisOverrides = {}) {
       runBurstDetection: false,
       ...analysisOverrides,
     },
-    noiseSuppressionActive: true,
+    noiseSuppressionActive,
     cache: makePipelineCache(),
   });
 }
 
-const countOutliers = (r) =>
-  r.spikeResults.filter((s) => s.isOutlier).length;
+const outlierCount = (r) => r.outlierRemoval?.count ?? 0;
+const maxProcessedY = (r) =>
+  (r.processedSignal || []).reduce((m, p) => (p.y > m ? p.y : m), -Infinity);
+
+// Spikes detected within `tol` samples of index `idx`.
+const hasSpikeNear = (r, idx, tol = 3) =>
+  r.spikeResults.some((s) => Math.abs(s.index - idx) <= tol);
 
 const spikePositions = (r) =>
   r.spikeResults
@@ -100,76 +108,68 @@ const spikePositions = (r) =>
     .join(",");
 
 // ---------------------------------------------------------------------------
-// Outlier Handling (3 params)
+// Outlier Handling — toggle + sensitivity
 // ---------------------------------------------------------------------------
 
 describe("Outlier Handling parameter sensitivity", () => {
-  test("handleOutliers: off → no isOutlier spikes; on → at least one", () => {
-    const { signal } = makeOutlierSignal({
-      n: 1500,
-      outlierCenters: [300, 700, 1200],
-      outlierAmplitude: 30,
-      outlierSigma: 3,
+  // A noisy baseline with small real events plus one tall outlier far above.
+  const withOutlier = () =>
+    makeSignalWithOutliers({
+      n: 3000,
+      realEvents: [{ center: 800, amplitude: 250, sigma: 8 }],
+      outliers: [{ center: 2000, amplitude: 3000, width: 3 }],
     });
+
+  test("handleOutliers: off → outlier skews the trace; on → removed, count > 0, y-scale drops", () => {
+    const { signal, outlierCenters, outlierApex, realEventApex } =
+      withOutlier();
     const off = runPipeline(signal, { ...baseParams, handleOutliers: false });
     const on = runPipeline(signal, { ...baseParams, handleOutliers: true });
-    expect(countOutliers(off)).toBe(0);
-    expect(countOutliers(on)).toBeGreaterThan(0);
+
+    // Off: the outlier dominates the processed trace and no removal happens.
+    expect(outlierCount(off)).toBe(0);
+    expect(maxProcessedY(off)).toBeGreaterThan(outlierApex * 0.7);
+    // On: the outlier is gone, not detected as a spike, and the y-scale now
+    // reflects the real signal (a fraction of the outlier's height).
+    expect(outlierCount(on)).toBeGreaterThan(0);
+    expect(hasSpikeNear(on, outlierCenters[0])).toBe(false);
+    expect(maxProcessedY(on)).toBeLessThan(realEventApex * 2);
   });
 
-  // The 2026-05-26 pipeline restructure changed the semantics of
-  // "flagged outliers" — outliers now must also pass detectSpikes to
-  // make it into the result (no more guaranteed re-injection via the
-  // old readdOutliersAsSpikes glue-on). On this synthetic signal the
-  // 3 real outliers have prominence (~30) that's 100× the noise (~0.3),
-  // so they ALL pass detectSpikes regardless of how strict the outlier
-  // identification params are — meaning both loose and strict produce
-  // the same flagged count (3). The qualitative invariant we can still
-  // assert is "loose flags at least as many as strict"; the prior
-  // strict-greater-than assertion is no longer reachable on this kind
-  // of signal under the new pipeline.
-  test("outlierPercentile: 50 flags at least as many outliers as 99 (with multiplier neutralized to 0.5)", () => {
-    const { signal } = makeOutlierSignal({
-      n: 1500,
-      outlierCenters: [300, 700, 1200],
-      outlierAmplitude: 30,
-      outlierSigma: 3,
-    });
-    const loose = runPipeline(signal, {
-      ...baseParams,
-      handleOutliers: true,
-      outlierPercentile: 50,
-      outlierMultiplier: 0.5,
-    });
-    const strict = runPipeline(signal, {
-      ...baseParams,
-      handleOutliers: true,
-      outlierPercentile: 99,
-      outlierMultiplier: 0.5,
-    });
-    expect(countOutliers(loose)).toBeGreaterThanOrEqual(countOutliers(strict));
+  test("decoupled from noiseSuppressionActive: removes the outlier with smoothing & detrend off", () => {
+    const { signal, outlierCenters } = withOutlier();
+    const on = runPipeline(
+      signal,
+      {
+        ...baseParams,
+        handleOutliers: true,
+        trendFlatteningEnabled: false,
+        smoothingEnabled: false,
+      },
+      {},
+      /* noiseSuppressionActive */ false
+    );
+    expect(outlierCount(on)).toBeGreaterThan(0);
+    expect(hasSpikeNear(on, outlierCenters[0])).toBe(false);
   });
 
-  test("outlierMultiplier: 0.5 flags at least as many outliers as 5.0 (with percentile neutralized to 50)", () => {
-    const { signal } = makeOutlierSignal({
-      n: 1500,
-      outlierCenters: [300, 700, 1200],
-      outlierAmplitude: 30,
-      outlierSigma: 3,
-    });
-    const loose = runPipeline(signal, {
+  test("outlierSensitivity: lower (3σ) removes at least as much as higher (12σ)", () => {
+    const { signal } = withOutlier();
+    const aggressive = runPipeline(signal, {
       ...baseParams,
       handleOutliers: true,
-      outlierPercentile: 50,
-      outlierMultiplier: 0.5,
+      outlierSensitivity: 3,
     });
-    const strict = runPipeline(signal, {
+    const conservative = runPipeline(signal, {
       ...baseParams,
       handleOutliers: true,
-      outlierPercentile: 50,
-      outlierMultiplier: 5.0,
+      outlierSensitivity: 12,
     });
-    expect(countOutliers(loose)).toBeGreaterThanOrEqual(countOutliers(strict));
+    expect(outlierCount(aggressive)).toBeGreaterThanOrEqual(
+      outlierCount(conservative)
+    );
+    // The far-above outlier is caught at both settings.
+    expect(outlierCount(conservative)).toBeGreaterThan(0);
   });
 });
 

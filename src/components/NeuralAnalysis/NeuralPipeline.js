@@ -22,11 +22,7 @@ import {
   GATE_ACTIVITY,
 } from "./utilities/peakGeometry";
 import { detectBursts } from "./utilities/burstDetection";
-import {
-  identifyOutlierSpikes,
-  preserveOutliersInSmoothed,
-  flagOutliersOnDetectedPeaks,
-} from "./utilities/outlierRemoval";
+import { removeOutliers } from "./utilities/outlierRemoval";
 import { perf } from "./utilities/perfLogger";
 
 // Auto-suggest helpers live in their own module so the live pipeline,
@@ -144,21 +140,45 @@ export function runNeuralAnalysisPipeline({
       )
   );
 
-  // 2. Apply trend flattening FIRST (before outlier identification).
-  // Outliers are included in trend flattening — the `rollingMinMedian`
-  // tracker naturally ignores tall peaks (they're never among the K
-  // smallest in any window) so their presence doesn't bias the
-  // baseline.
+  // 1b. Outlier handling. Runs whenever the toggle is on, DECOUPLED from
+  // noiseSuppressionActive, and BEFORE trend flattening / ΔF/F₀ / smoothing /
+  // detection — a tall outlier left in the trace inflates globalMax /
+  // signalRange and skews every relative threshold and auto-suggested
+  // parameter downstream. Detection is global (anchored to the real signal's
+  // height); each above-cutoff run is replaced by a straight line. Removal
+  // (not source mutation) keeps array length and x-values, so all integer
+  // sample indices and identity-keyed memos stay valid. When nothing is
+  // removed, `removeOutliers` returns the same array reference so downstream
+  // memo identity is unchanged.
+  let outlierMeta = { count: 0, regions: [], outlierPoints: [] };
+  if (params.handleOutliers) {
+    const outlierResult = memo(
+      "removeOutliers",
+      [id(processed), params.outlierSensitivity ?? 1.5],
+      () =>
+        perf.time("removeOutliers", () =>
+          removeOutliers(processed, {
+            sensitivity: params.outlierSensitivity ?? 1.5,
+          })
+        )
+    );
+    processed = outlierResult.cleanedSignal;
+    outlierMeta = {
+      count: outlierResult.regions.length,
+      regions: outlierResult.regions,
+      outlierPoints: outlierResult.outlierPoints,
+    };
+  }
+
+  // 2. Apply trend flattening (before smoothing/detection). Outliers are
+  // included in trend flattening — the `rollingMinMedian` tracker naturally
+  // ignores tall peaks (they're never among the K smallest in any window) so
+  // their presence doesn't bias the baseline.
   let processedForDetection = processed;
   // Snapshot of the signal BEFORE Savitzky-Golay smoothing (when SG is
   // enabled). Used as the noise reference for the noise-floor σ estimate
-  // in detectSpikes — see step 4 below — and as the source for outlier
-  // sample-region restoration in step 2b.
+  // in detectSpikes — see step 4 below.
   let preSmoothingSignal = null;
-  // Identified outlier spikes; captured during step 2b so the
-  // post-detection flag pass (step 5) can mark matching detectSpikes
-  // results with isOutlier=true. Empty when handleOutliers is off.
-  let pipelineOutlierSpikes = [];
   // ΔF/F₀ normalization outcome, surfaced on the result for the panel
   // readout + unit labeling. Default = not applied (native units).
   let normalizationMeta = {
@@ -272,34 +292,6 @@ export function runNeuralAnalysisPipeline({
       }
     }
 
-    // 2b. Identify outliers BEFORE smoothing on the trend-flattened
-    // (but not yet smoothed) signal — that's the most faithful
-    // amplitude reference for classification. Runs whenever
-    // handleOutliers is on; the result is used for two things:
-    //   (1) preserve outlier sample regions through SG smoothing
-    //       (only matters when smoothing is also on)
-    //   (2) post-detectSpikes flag pass to mark `isOutlier=true` on
-    //       matching peaks (for the orange-ring chart distinction).
-    if (params.handleOutliers) {
-      const outlierResult = memo(
-        "identifyOutliers",
-        [
-          id(processed),
-          params.outlierPercentile || 95,
-          params.outlierMultiplier || 2.0,
-        ],
-        () =>
-          perf.time("identifyOutliers", () =>
-            identifyOutlierSpikes(processed, {
-              percentile: params.outlierPercentile || 95,
-              multiplier: params.outlierMultiplier || 2.0,
-              slopeThreshold: 0.1,
-            })
-          )
-      );
-      pipelineOutlierSpikes = outlierResult.outlierSpikes;
-    }
-
     if (params.smoothingEnabled) {
       const sgWindow = params.smoothingWindow ?? 5;
       // Snapshot pre-smoothing as the noise reference for residual-based
@@ -313,30 +305,11 @@ export function runNeuralAnalysisPipeline({
         () =>
           perf.time("smoothing", () => savitzkyGolay(processed, sgWindow))
       );
-
-      // Restore outlier sample regions from the pre-smoothing signal
-      // so SG doesn't flatten the user's biggest peaks. Whole spike
-      // region preserved (startIdx → endIdx), not just the apex —
-      // keeps both amplitude AND width intact through smoothing.
-      if (pipelineOutlierSpikes.length > 0) {
-        processed = memo(
-          "preserveOutliers",
-          [id(processed), id(preSmoothingSignal), id(pipelineOutlierSpikes)],
-          () =>
-            perf.time("preserveOutliers", () =>
-              preserveOutliersInSmoothed(
-                processed,
-                preSmoothingSignal,
-                pipelineOutlierSpikes
-              )
-            )
-        );
-      }
       processedForDetection = processed;
     }
   }
 
-  // 4. Spike detection (on cleaned signal without outliers)
+  // 4. Spike detection (on the outlier-cleaned signal)
   let spikeResults = [];
   // Hoisted outside the `if (runSpikeDetection)` block so the pipeline's
   // final return can read it whether detection runs or not. Empty Map
@@ -378,24 +351,21 @@ export function runNeuralAnalysisPipeline({
     // relative to where the signal crosses that absolute Y value, not
     // the lowest local minimum near each peak.
     //
-    // Compute the absolute Y once from the rendered signal's range so
-    // it matches the on-chart line exactly. Done outside the memo so
-    // the cache key can be a simple primitive (`baselineY`) rather
-    // than dragging the whole signal in.
+    // Auto-center the baseline on the trace's noise: median = center of the
+    // baseline noise (spikes are a minority, above it), robust σ scales the
+    // manual offset. Uses the SAME computeSignalStats the chart uses, so the
+    // value detection measures widths/AUC to matches the on-chart line
+    // exactly. Computed outside the memo so the cache key stays a simple
+    // primitive (`baselineY`).
     let baselineY = null;
     if (
       params.baselineThresholdEnabled &&
-      typeof params.baselineThresholdRatio === "number"
+      typeof params.baselineThresholdOffset === "number" &&
+      processed.length > 0
     ) {
-      let yMin = Infinity;
-      let yMax = -Infinity;
-      for (let i = 0; i < processed.length; i++) {
-        const y = processed[i].y;
-        if (y < yMin) yMin = y;
-        if (y > yMax) yMax = y;
-      }
-      if (isFinite(yMin) && isFinite(yMax) && yMax > yMin) {
-        baselineY = yMin + params.baselineThresholdRatio * (yMax - yMin);
+      const { medianY, robustStd } = computeSignalStats(processed);
+      if (isFinite(medianY) && isFinite(robustStd)) {
+        baselineY = medianY + params.baselineThresholdOffset * robustStd;
       }
     }
 
@@ -438,11 +408,6 @@ export function runNeuralAnalysisPipeline({
         params.stdMultiplier,
         params.noiseFloorMultiplier,
         baselineY,
-        // Outlier-set identity. `id(pipelineOutlierSpikes)` returns a
-        // stable hash for the same outlier-list reference, so the cache
-        // hits when the outlier list hasn't changed and misses when it
-        // has (e.g., on outlier slider drags).
-        id(pipelineOutlierSpikes),
       ],
       () =>
         perf.time("detectSpikes", () => {
@@ -467,16 +432,6 @@ export function runNeuralAnalysisPipeline({
             candidateProminencesOut: candProms,
             useBaselineForBases: baselineY !== null,
             baselineY: baselineY ?? undefined,
-            // Outlier spike structures (with start/peak/end indices)
-            // are passed in so detectSpikes can: (a) preserve outlier
-            // apex peaks through window-grouping and k-means; (b) drop
-            // any normal peak whose sample index falls within an
-            // outlier's spike structure — those are noise wiggles on
-            // the same event, not separate events. The shadow zone is
-            // each spike's actual start/end range, so the suppression
-            // radius adapts to spike width regardless of signal type
-            // or sample rate.
-            outlierSpikes: pipelineOutlierSpikes,
           });
           // Bin the raw prominences into 50 linear bins between 0 and
           // max. Compact wire form: ~600 B for the binEdges + counts
@@ -492,23 +447,6 @@ export function runNeuralAnalysisPipeline({
     spikeResults = detectResult.spikes;
     candidateDiagnostics = detectResult.diagnostics;
     candidateDistributions = detectResult.distributions;
-
-    // 5. Flag detected peaks that match the identified outlier set
-    // with isOutlier=true. Pure visual classification — every peak's
-    // metric values (auc, width, amplitude) are already computed by
-    // NeuralPeak. The flag is what drives the orange-ring rendering
-    // in NeuralGraph; detection has already preserved these peaks via
-    // the `outlierIndices` bypass above.
-    if (pipelineOutlierSpikes.length > 0) {
-      spikeResults = memo(
-        "flagOutliers",
-        [id(spikeResults), id(pipelineOutlierSpikes)],
-        () =>
-          perf.time("flagOutliers", () =>
-            flagOutliersOnDetectedPeaks(spikeResults, pipelineOutlierSpikes)
-          )
-      );
-    }
 
     // 5b. Activity Threshold — drop peaks whose apex Y falls below the
     // user-defined line. Ratio (0–1) is mapped to absolute Y using the
@@ -697,6 +635,7 @@ export function runNeuralAnalysisPipeline({
     },
     candidateDistributions,
     normalization: normalizationMeta,
+    outlierRemoval: outlierMeta,
   };
 }
 

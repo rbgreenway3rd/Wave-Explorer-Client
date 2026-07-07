@@ -83,6 +83,53 @@ export function makeBurstingSignal({
 }
 
 /**
+ * Build a trace that mimics real oscillation/spiking data for outlier-removal
+ * tests: a noisy baseline carrying small REAL events (a few σ above noise,
+ * which must survive) plus one or more TALL, narrow OUTLIER blips that sit far
+ * above everything (many σ up, which must be removed and their gaps bridged).
+ *
+ * Amplitudes are absolute. Defaults: baseline 250, noise ±150 (≈111 robust σ),
+ * real events +250 (≈+2σ apex), outliers +2750 (≈+25σ apex) — a clear gap.
+ * Returns the signal plus planted centers so tests can assert what survives.
+ */
+export function makeSignalWithOutliers({
+  n = 6000,
+  baseline = 250,
+  noiseAmp = 150,
+  realEvents = [
+    { center: 1000, amplitude: 250, sigma: 8 },
+    { center: 4500, amplitude: 250, sigma: 8 },
+  ],
+  outliers = [{ center: 3000, amplitude: 2750, width: 3 }],
+  seed = 31,
+}) {
+  const rng = mulberry32(seed);
+  const out = new Array(n);
+  for (let i = 0; i < n; i++) {
+    let y = baseline + (rng() - 0.5) * 2 * noiseAmp;
+    for (const e of realEvents) {
+      const dx = i - e.center;
+      y += e.amplitude * Math.exp(-(dx * dx) / (2 * e.sigma * e.sigma));
+    }
+    out[i] = { x: i, y };
+  }
+  for (const o of outliers) {
+    const half = Math.max(0, Math.floor((o.width ?? 1) / 2));
+    for (let i = o.center - half; i <= o.center + half; i++) {
+      if (i >= 0 && i < n) out[i].y += o.amplitude;
+    }
+  }
+  return {
+    signal: out,
+    baseline,
+    realEventCenters: realEvents.map((e) => e.center),
+    realEventApex: baseline + (realEvents[0]?.amplitude ?? 0),
+    outlierCenters: outliers.map((o) => o.center),
+    outlierApex: baseline + Math.max(...outliers.map((o) => o.amplitude), 0),
+  };
+}
+
+/**
  * Build a flat noisy baseline with a few clearly-isolated tall spikes.
  * Useful for outlier-detection round-trip tests.
  */

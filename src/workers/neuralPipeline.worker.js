@@ -171,6 +171,11 @@ self.onmessage = (event) => {
         metrics: result.metrics || {},
         candidateDiagnostics,
         candidateDistributions,
+        outlierRemoval: result.outlierRemoval || {
+          count: 0,
+          regions: [],
+          outlierPoints: [],
+        },
       },
       [processedXs.buffer, processedYs.buffer]
     );

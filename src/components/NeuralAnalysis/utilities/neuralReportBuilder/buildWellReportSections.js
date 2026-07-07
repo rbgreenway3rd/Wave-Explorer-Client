@@ -24,6 +24,7 @@ import {
   runReportBurstDetection,
   annotateBurstsWithAuc,
 } from "./burstReportUtils";
+import { computeSignalStats } from "../peakGeometry";
 
 // ---- Section writers ----------------------------------------------------
 
@@ -103,7 +104,7 @@ function pushSpikeMetricsBody({ out, freq, amp, width, auc, maxY }) {
   out.push(serializeCsvRow(["Max Spike Signal", formatMetric(maxY), "units"]));
 }
 
-function pushOverallSpikeMetrics(out, spikes, window) {
+function pushOverallSpikeMetrics(out, spikes, window, outlierCount) {
   out.push("<SPIKE_METRICS>");
   out.push(serializeCsvRow(["Metric", "Value", "Unit"]));
   const freq = calculateSpikeFrequency(spikes, window);
@@ -112,6 +113,7 @@ function pushOverallSpikeMetrics(out, spikes, window) {
   const auc = calculateSpikeAUC(spikes);
   const maxY = calculateMaxSpikeSignal(spikes);
   pushSpikeMetricsBody({ out, freq, amp, width, auc, maxY });
+  out.push(serializeCsvRow(["Outliers Removed", outlierCount ?? 0, "count"]));
   out.push("</SPIKE_METRICS>");
   out.push("");
 }
@@ -280,10 +282,25 @@ function pushWellParameters(out, ctx) {
       ratioToY(processingParams?.activityThresholdRatio),
     ])
   );
+  // Baseline line auto-centers on the noise (median) and is nudged by a
+  // σ-offset: BaselineThresholdY = median + offset·robustσ. Same formula the
+  // pipeline/chart use, so the reported Y matches what detection measured to.
+  const baselineOffsetToY = (off) => {
+    if (
+      typeof off !== "number" ||
+      !Array.isArray(processedSignal) ||
+      processedSignal.length === 0
+    ) {
+      return "N/A";
+    }
+    const { medianY, robustStd } = computeSignalStats(processedSignal);
+    if (!Number.isFinite(medianY) || !Number.isFinite(robustStd)) return "N/A";
+    return medianY + off * robustStd;
+  };
   out.push(
     serializeCsvRow([
       "BaselineThresholdY",
-      ratioToY(processingParams?.baselineThresholdRatio),
+      baselineOffsetToY(processingParams?.baselineThresholdOffset),
     ])
   );
   out.push("</WELL_PARAMETERS>");
@@ -322,6 +339,7 @@ export function buildWellReportSections({
   processingParams,
   resolvedParams,
   options,
+  outlierCount = 0,
 }) {
   const out = [];
   const opts = options || {};
@@ -374,7 +392,7 @@ export function buildWellReportSections({
     pushSpikeData(out, spikeArr);
   }
   if (opts.includeOverallMetrics) {
-    pushOverallSpikeMetrics(out, spikeArr, overallWindow);
+    pushOverallSpikeMetrics(out, spikeArr, overallWindow, outlierCount);
   }
   if (opts.includeBurstData) {
     pushBurstData(out, burstArr, spikeArr);

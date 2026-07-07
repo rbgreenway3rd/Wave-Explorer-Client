@@ -46,7 +46,7 @@ const SECTIONS = [
   },
   {
     key: "outliers",
-    label: "Outlier Sliders",
+    label: "Outlier Handling",
     Component: HandleOutlierControls,
     docId: "step-outliers",
   },

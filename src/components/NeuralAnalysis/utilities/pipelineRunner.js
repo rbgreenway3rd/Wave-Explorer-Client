@@ -227,6 +227,11 @@ export function makePipelineRunner() {
               max: 0,
             },
           },
+        outlierRemoval: workerResult.outlierRemoval || {
+          count: 0,
+          regions: [],
+          outlierPoints: [],
+        },
       };
     },
 

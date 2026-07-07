@@ -11,6 +11,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import DescriptionIcon from "@mui/icons-material/Description";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import NeuralResults, {
   calculateSpikeFrequency,
   calculateSpikeAmplitude,
@@ -219,8 +220,7 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
       baselineCorrection: settings.baselineCorrection,
       trendFlatteningEnabled: settings.trendFlatteningEnabled,
       handleOutliers: settings.handleOutliers,
-      outlierPercentile: settings.outlierPercentile,
-      outlierMultiplier: settings.outlierMultiplier,
+      outlierSensitivity: settings.outlierSensitivity,
       spikeProminence: effectiveSpikeProminence,
       // Prominence is a fraction of signal range — reports convert it to
       // absolute per-well, same as the live modal.
@@ -235,7 +235,7 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
       activityThresholdEnabled: settings.activityThresholdEnabled,
       activityThresholdRatio: settings.activityThresholdRatio,
       baselineThresholdEnabled: settings.baselineThresholdEnabled,
-      baselineThresholdRatio: settings.baselineThresholdRatio,
+      baselineThresholdOffset: settings.baselineThresholdOffset,
       showBursts: settings.showBursts,
       maxInterSpikeInterval: settings.maxInterSpikeInterval,
       minSpikesPerBurst: settings.minSpikesPerBurst,
@@ -256,8 +256,7 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
       settings.baselineCorrection,
       settings.trendFlatteningEnabled,
       settings.handleOutliers,
-      settings.outlierPercentile,
-      settings.outlierMultiplier,
+      settings.outlierSensitivity,
       effectiveSpikeProminence,
       effectiveSpikeWindow,
       settings.spikeMinWidth,
@@ -269,7 +268,7 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
       settings.activityThresholdEnabled,
       settings.activityThresholdRatio,
       settings.baselineThresholdEnabled,
-      settings.baselineThresholdRatio,
+      settings.baselineThresholdOffset,
       settings.showBursts,
       settings.maxInterSpikeInterval,
       settings.minSpikesPerBurst,
@@ -376,7 +375,6 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
               </div>
             </div>
             <ChartControls
-              resetZoom={resetZoom}
               expandedTweakableSection={expandedTweakableSection}
               onExpandedTweakableChange={setExpandedTweakableSection}
             />
@@ -400,7 +398,30 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
                 }}
               >
                 <ChartLegend />
-                <ChartDisplayToggles />
+                {/* Right group: view toggles + an always-visible Reset Zoom.
+                  * Reset Zoom lives here (not in the Chart Interaction card)
+                  * so it stays reachable when a control set is expanded and
+                  * collapses that card. */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    paddingRight: "10px",
+                  }}
+                >
+                  <ChartDisplayToggles />
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    startIcon={<RestartAltIcon fontSize="small" />}
+                    onClick={resetZoom}
+                    className="reset-zoom-button"
+                  >
+                    Reset Zoom
+                  </Button>
+                </div>
               </div>
               <NeuralGraph className="neural-graph" ref={neuralGraphRef} />
             </section>
@@ -461,6 +482,7 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
         roiMetrics={roiMetricsForReport}
         roiList={roiList}
         processingParams={processingParams}
+        outlierCount={pipelineResults.outlierRemoval?.count ?? 0}
       />
       <NeuralFullPlateReportModal
         open={fullPlateModalOpen}

@@ -85,9 +85,10 @@ export const DOC_SECTIONS = [
     id: "step-outliers",
     group: "pipeline",
     title: "5. Outlier handling",
-    what: "Finds unusually tall, sharp blips and marks them, so the smoothing step in between doesn't accidentally shrink your biggest real peaks.",
-    why: "Smoothing averages neighboring points; without protection it would flatten genuine tall spikes.",
-    analogy: "Like flagging the tallest mountains on a map before you blur it, so they stay visible.",
+    what: "Finds points that sit FAR ABOVE the real signal — tall blips that would otherwise skew the y-scale and every calculated parameter — and removes them from the graphed trace before spike detection, bridging each gap with a straight line. Detection is global: the cutoff is anchored to the real signal's own height, so ordinary noise and genuine spikes are never touched, only points well above them. Removed stretches are shaded on the chart, and an optional toggle re-draws the removed outliers at their original height.",
+    why: "A single tall outlier can dominate the y-axis and inflate the range every threshold and auto-parameter is measured against — removing it first makes detection and metrics reflect the real signal.",
+    analogy: "Like cropping one freakishly tall bar out of a chart so you can actually see the real bars.",
+    ifWrong: "Too aggressive (low Sensitivity) can clip a genuinely tall spike; too high leaves an outlier in. The shaded bands, the removed-outlier markers, and the removed count let you check.",
   },
   {
     id: "step-smoothing",
@@ -197,10 +198,10 @@ export const DOC_SECTIONS = [
     why: "Larger windows remove only very slow drift; smaller windows remove faster wobbles too.",
   },
   {
-    id: "param-outlier-percentile",
+    id: "param-outlier-sensitivity",
     group: "parameters",
-    title: "Outlier percentile",
-    what: "How extreme a bump has to be (relative to the rest) before it's flagged as an outlier to protect during smoothing.",
+    title: "Outlier sensitivity",
+    what: "How far above baseline a point must rise to count as an outlier, measured in robust standard deviations (σ) of the trace. At 5σ, only points more than 5× the baseline noise above baseline are removed — real events that sit a couple σ up are kept, while blips many σ up are removed whole. Lower removes more (can start catching real events); higher keeps everything but the most extreme blips.",
   },
   {
     id: "param-fo-window",

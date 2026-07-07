@@ -137,8 +137,7 @@ function emitFileHeader({
           : "dFF0",
       ],
       ["HandleOutliers", processingParams.handleOutliers],
-      ["OutlierPercentile", processingParams.outlierPercentile],
-      ["OutlierMultiplier", processingParams.outlierMultiplier],
+      ["OutlierSensitivity", processingParams.outlierSensitivity],
       // SpikeProminence / SpikeWindow are emitted per-well inside
       // <WELL_PARAMETERS> (resolved per well from auto-suggest or
       // user-defined); skip here so plate-global vs per-well sources
@@ -152,7 +151,7 @@ function emitFileHeader({
       ["ActivityThresholdEnabled", processingParams.activityThresholdEnabled],
       ["ActivityThresholdRatio", processingParams.activityThresholdRatio],
       ["BaselineThresholdEnabled", processingParams.baselineThresholdEnabled],
-      ["BaselineThresholdRatio", processingParams.baselineThresholdRatio],
+      ["BaselineThresholdOffset", processingParams.baselineThresholdOffset],
       ["ShowBursts", processingParams.showBursts],
       ["MaxInterSpikeInterval", processingParams.maxInterSpikeInterval],
       ["MinSpikesPerBurst", processingParams.minSpikesPerBurst],
@@ -612,6 +611,7 @@ export async function GenerateFullPlateReport(
           includeBurstMetrics,
           includeROIAnalysis,
         },
+        outlierCount: pipelineResult.outlierRemoval?.count ?? 0,
       });
       csvChunks.push(wellLines.join("\n"));
 
