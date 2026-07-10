@@ -110,11 +110,20 @@ const DEFAULT_SETTINGS = {
   // for this assay's "baseline then addition" structure). Only used when
   // neuralNormalizationEnabled is on; the band is draggable on the chart.
   // When off, F₀ reverts to the median of the WHOLE raw trace (the
-  // pre-window behavior) and the chart band is hidden. On by default
-  // (the expert-approved windowed estimator).
-  foWindowEnabled: true,
+  // pre-window behavior) and the chart band is hidden. Off by default —
+  // F₀ over the whole trace unless the user opts into a baseline window.
+  foWindowEnabled: false,
   foWindowStartRatio: 0.0,
   foWindowEndRatio: 0.1,
+  // F/Fo well exclusion — when on, wells the user picks (foExcludedWellSet,
+  // held in NeuralSelectionContext) are dropped from BOTH the plate-wide F₀
+  // median (the × median F₀ rescale) and the Universal y-scale sweep, so
+  // flat/dim edge wells can't skew the normalization or stretch the shared
+  // axis. Off by default; only meaningful when neuralNormalizationEnabled is
+  // on. This is the persistable master toggle; the well set itself is not
+  // persisted (well refs are plate-specific). On by default so flat/dim
+  // edge wells are excludable out of the box (the user still picks which).
+  foExclusionEnabled: true,
   // Decimation
   decimationEnabled: false,
   decimationSamples: 200,
@@ -258,9 +267,13 @@ export const NeuralSettingsProvider = ({ children }) => {
   // Baseline (Fo) window as start/end ratios of the trace (0–1). Default
   // first 10%; draggable on the chart, only meaningful when normalization on.
   // Off → whole-trace median F₀ (pre-window behavior); band hidden.
-  const [foWindowEnabled, setFoWindowEnabled] = useState(true);
+  const [foWindowEnabled, setFoWindowEnabled] = useState(false);
   const [foWindowStartRatio, setFoWindowStartRatio] = useState(0.0);
   const [foWindowEndRatio, setFoWindowEndRatio] = useState(0.1);
+  // F/Fo well exclusion master toggle (the well set lives in
+  // NeuralSelectionContext). Off by default; only affects the plate-wide F₀
+  // median + Universal sweep when neuralNormalizationEnabled is also on.
+  const [foExclusionEnabled, setFoExclusionEnabled] = useState(true);
 
   // ---- Decimation --------------------------------------------------------
   const [decimationEnabled, setDecimationEnabled] = useState(false);
@@ -378,6 +391,7 @@ export const NeuralSettingsProvider = ({ children }) => {
     foWindowEnabled,
     foWindowStartRatio,
     foWindowEndRatio,
+    foExclusionEnabled,
   };
   // useState setters are stable across renders, so this map is too.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -408,6 +422,7 @@ export const NeuralSettingsProvider = ({ children }) => {
       foWindowEnabled: setFoWindowEnabled,
       foWindowStartRatio: setFoWindowStartRatio,
       foWindowEndRatio: setFoWindowEndRatio,
+      foExclusionEnabled: setFoExclusionEnabled,
       decimationEnabled: setDecimationEnabled,
       decimationSamples: setDecimationSamples,
       handleOutliers: setHandleOutliers,
@@ -489,6 +504,7 @@ export const NeuralSettingsProvider = ({ children }) => {
     foWindowEnabled,
     foWindowStartRatio,
     foWindowEndRatio,
+    foExclusionEnabled,
   ]);
 
   const applySettingsSnapshot = useCallback(
@@ -572,6 +588,8 @@ export const NeuralSettingsProvider = ({ children }) => {
       setFoWindowStartRatio,
       foWindowEndRatio,
       setFoWindowEndRatio,
+      foExclusionEnabled,
+      setFoExclusionEnabled,
       // decimation
       decimationEnabled,
       setDecimationEnabled,
@@ -686,6 +704,7 @@ export const NeuralSettingsProvider = ({ children }) => {
       foWindowEnabled,
       foWindowStartRatio,
       foWindowEndRatio,
+      foExclusionEnabled,
       getSettingsSnapshot,
       applySettingsSnapshot,
       resetAllSettings,

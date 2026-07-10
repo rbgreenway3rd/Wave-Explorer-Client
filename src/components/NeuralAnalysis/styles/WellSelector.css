@@ -39,6 +39,14 @@
     border: 0.15em solid #ab47bc;
 }
 
+/* F/Fo-excluded well — dropped from the plate F₀ median + universal scale.
+   Dashed red + dimmed to read as "removed", distinct from the solid-border
+   selection states above. */
+.well-canvas.fo-excluded-well {
+    border: 0.15em dashed #e53935;
+    opacity: 0.4;
+}
+
 /* Default styles for selected and hovered wells */
 .well-canvas:hover {
     border: 0.1em solid red;

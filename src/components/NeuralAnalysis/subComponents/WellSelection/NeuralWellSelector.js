@@ -26,6 +26,9 @@ const NeuralWellSelector = () => {
     controlWellSet,
     selectingControlSet,
     toggleControlSetWell,
+    foExcludedWellSet,
+    selectingFoExclusion,
+    toggleFoExcludedWell,
   } = useNeuralSelection();
   const { noiseSuppressionActive } = useNeuralSettings();
   const [globalYMin, setGlobalYMin] = useState(null);
@@ -195,12 +198,16 @@ const NeuralWellSelector = () => {
                 maxWidth: cellWidth / 1.5,
                 opacity: selectingControl && !controlWell ? 0.7 : 1,
                 cursor:
-                  selectingControl || selectingControlSet
+                  selectingControl || selectingControlSet || selectingFoExclusion
                     ? "pointer"
                     : "default",
               }}
               onClick={() => {
-                if (selectingControlSet) {
+                if (selectingFoExclusion) {
+                  // Multi-select: toggle this well's exclusion from the plate
+                  // F₀ median; stay armed so several wells can be picked.
+                  toggleFoExcludedWell(well);
+                } else if (selectingControlSet) {
                   // Multi-select: toggle membership, stay in select mode so
                   // the user can pick several wells without re-arming.
                   toggleControlSetWell(well);
@@ -224,6 +231,11 @@ const NeuralWellSelector = () => {
                   controlWellSet &&
                   controlWellSet.some((w) => w.id === well.id)
                     ? " control-set-well"
+                    : ""
+                }${
+                  foExcludedWellSet &&
+                  foExcludedWellSet.some((w) => w.id === well.id)
+                    ? " fo-excluded-well"
                     : ""
                 }`}
                 data={getChartData(well)}

@@ -1,7 +1,13 @@
-import React from "react";
-import { FormControlLabel, Switch } from "@mui/material";
+import React, { useContext } from "react";
+import { FormControlLabel, Switch, Button } from "@mui/material";
 import { Panel } from "../../../../ui";
-import { useNeuralSettings, useNeuralResults } from "../../../NeuralProvider";
+import { DataContext } from "../../../../../providers/DataProvider";
+import {
+  useNeuralSettings,
+  useNeuralResults,
+  useNeuralSelection,
+} from "../../../NeuralProvider";
+import { computeEdgeWells } from "../../../utilities/neuralWellExclusion";
 import "./NeuralControlPanel.css";
 
 /**
@@ -34,10 +40,50 @@ const NormalizationPanel = () => {
     setFoWindowStartRatio,
     foWindowEndRatio,
     setFoWindowEndRatio,
+    foExclusionEnabled,
+    setFoExclusionEnabled,
     trendFlatteningEnabled,
   } = useNeuralSettings();
   const { pipelineResults, plateMedianFo, plateSkippedFoCount } =
     useNeuralResults();
+  const {
+    foExcludedWellSet,
+    setFoExcludedWellSet,
+    selectingFoExclusion,
+    setSelectingFoExclusion,
+    clearFoExcluded,
+    setSelectingControl,
+    setSelectingControlSet,
+  } = useNeuralSelection();
+  const { wellArrays } = useContext(DataContext);
+
+  const excludedCount = foExcludedWellSet.length;
+  // Arm "click wells to exclude" mode, disarming the other grid modes so
+  // only one selection intent is live at a time.
+  const toggleExclusionSelecting = () => {
+    setSelectingFoExclusion((prev) => {
+      const next = !prev;
+      if (next) {
+        setSelectingControl(false);
+        setSelectingControlSet(false);
+      }
+      return next;
+    });
+  };
+  // One-click "outer ring" pick: every well in the first/last row or
+  // column. Derived from actual min/max row & column so it's correct
+  // regardless of plate size or 0-/1-based indexing.
+  const selectEdgeWells = () => {
+    const edge = computeEdgeWells(wellArrays);
+    if (edge.length > 0) setFoExcludedWellSet(edge);
+  };
+  // All valid wells excluded → no plate median → rescale silently falls back
+  // to bare ΔF/F₀. Warn so the user understands why the × median F₀ did nothing.
+  const exclusionEmptiedMedian =
+    foExclusionEnabled &&
+    neuralRescaleByMedianFo &&
+    excludedCount > 0 &&
+    plateMedianFo == null;
 
   const norm = pipelineResults?.normalization || {};
   const rescaled = norm.unitMode === "dFF0_x_medianFo";
@@ -138,6 +184,68 @@ const NormalizationPanel = () => {
         </div>
       )}
 
+      {neuralNormalizationEnabled &&
+        trendFlatteningEnabled &&
+        neuralRescaleByMedianFo && (
+          <>
+            <FormControlLabel
+              style={{ "--neural-method-accent": "var(--color-info)" }}
+              control={
+                <Switch
+                  size="small"
+                  checked={foExclusionEnabled}
+                  onChange={(_, checked) => setFoExclusionEnabled(checked)}
+                />
+              }
+              label="Exclude wells from plate F₀ (& universal scale)"
+            />
+
+            {foExclusionEnabled && (
+              <div
+                className="neural-fo-exclusion-controls"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  flexWrap: "wrap",
+                  marginTop: 6,
+                }}
+              >
+                <Button
+                  size="small"
+                  variant={selectingFoExclusion ? "contained" : "outlined"}
+                  onClick={toggleExclusionSelecting}
+                >
+                  {selectingFoExclusion
+                    ? "Done selecting"
+                    : "Select wells to exclude"}
+                </Button>
+                <Button size="small" variant="outlined" onClick={selectEdgeWells}>
+                  Select all edge wells
+                </Button>
+                <Button
+                  size="small"
+                  variant="text"
+                  onClick={clearFoExcluded}
+                  disabled={excludedCount === 0}
+                >
+                  Clear
+                </Button>
+                <span>
+                  {excludedCount} well{excludedCount === 1 ? "" : "s"} excluded
+                </span>
+              </div>
+            )}
+
+            {foExclusionEnabled && selectingFoExclusion && (
+              <p className="neural-control-well-info__hint">
+                Click wells in the grid to toggle their exclusion from the
+                plate F₀ median.
+              </p>
+            )}
+          </>
+        )}
+
       {neuralNormalizationEnabled && (
         <div className="neural-control-well-info">
           {!trendFlatteningEnabled ? (
@@ -173,6 +281,12 @@ const NormalizationPanel = () => {
             </>
           ) : (
             <p>Select a well to compute F₀.</p>
+          )}
+          {exclusionEmptiedMedian && (
+            <p className="neural-control-well-info__warning">
+              Every well with a valid F₀ is excluded — no plate median F₀, so
+              the signal falls back to bare ΔF/F₀ (no × median F₀ rescale).
+            </p>
           )}
           <p>
             Prominence is a % of the signal range, so the unit choice doesn't

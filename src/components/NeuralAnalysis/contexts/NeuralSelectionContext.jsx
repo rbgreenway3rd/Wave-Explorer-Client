@@ -48,6 +48,14 @@ export const NeuralSelectionProvider = ({ children }) => {
   const [controlWellSet, setControlWellSet] = useState([]);
   const [selectingControlSet, setSelectingControlSet] = useState(false);
 
+  // F/Fo well exclusion: a set of wells (by reference) the user drops from
+  // the plate-wide F₀ median AND the Universal y-scale sweep — e.g. flat
+  // edge wells whose baseline would skew the normalization. Separate from
+  // the control set (different purpose, different math). Not persisted
+  // (well refs are plate-specific); the on/off toggle lives in Settings.
+  const [foExcludedWellSet, setFoExcludedWellSet] = useState([]);
+  const [selectingFoExclusion, setSelectingFoExclusion] = useState(false);
+
   // Toggle a well's membership in the control set, matched by id (the
   // grid passes the same Well objects, but match by id to be robust to
   // wellArrays being rebuilt with fresh shallow copies after a filter run).
@@ -59,6 +67,16 @@ export const NeuralSelectionProvider = ({ children }) => {
     });
   }, []);
   const clearControlSet = useCallback(() => setControlWellSet([]), []);
+
+  // Same toggle-by-id membership for the F/Fo exclusion set.
+  const toggleFoExcludedWell = useCallback((well) => {
+    if (!well) return;
+    setFoExcludedWellSet((prev) => {
+      const exists = prev.some((w) => w.id === well.id);
+      return exists ? prev.filter((w) => w.id !== well.id) : [...prev, well];
+    });
+  }, []);
+  const clearFoExcluded = useCallback(() => setFoExcludedWellSet([]), []);
 
   const value = useMemo(
     () => ({
@@ -74,6 +92,12 @@ export const NeuralSelectionProvider = ({ children }) => {
       setSelectingControlSet,
       toggleControlSetWell,
       clearControlSet,
+      foExcludedWellSet,
+      setFoExcludedWellSet,
+      selectingFoExclusion,
+      setSelectingFoExclusion,
+      toggleFoExcludedWell,
+      clearFoExcluded,
     }),
     [
       selectedWell,
@@ -83,6 +107,10 @@ export const NeuralSelectionProvider = ({ children }) => {
       selectingControlSet,
       toggleControlSetWell,
       clearControlSet,
+      foExcludedWellSet,
+      selectingFoExclusion,
+      toggleFoExcludedWell,
+      clearFoExcluded,
     ]
   );
 

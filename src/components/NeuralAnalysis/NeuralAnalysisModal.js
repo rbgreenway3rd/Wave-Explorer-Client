@@ -62,7 +62,8 @@ Chart.register(zoomPlugin);
  *     rendered out of this component.
  */
 export const NeuralAnalysisModal = ({ open, onClose }) => {
-  const { selectedWell, controlWell, controlWellSet } = useNeuralSelection();
+  const { selectedWell, controlWell, controlWellSet, foExcludedWellSet } =
+    useNeuralSelection();
   const { project, wellArrays } = useContext(DataContext);
   const settings = useNeuralSettings();
   const { roiList } = useNeuralInteraction();
@@ -227,6 +228,19 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
       foWindowEndRatio: settings.foWindowEnabled
         ? settings.foWindowEndRatio
         : undefined,
+      // F/Fo well exclusion — the report drops these wells from the plate-
+      // wide F₀ median (not the per-well loop, so they still get rows). Pass
+      // ids for the filter and keys for the CSV readout. Empty unless the
+      // feature toggle is on so the report matches the live modal exactly.
+      foExclusionEnabled: settings.foExclusionEnabled,
+      foExcludedWellIds:
+        settings.foExclusionEnabled && settings.neuralNormalizationEnabled
+          ? foExcludedWellSet.map((w) => w.id)
+          : [],
+      foExcludedWellKeys:
+        settings.foExclusionEnabled && settings.neuralNormalizationEnabled
+          ? foExcludedWellSet.map((w) => w.key || w.label || w.id)
+          : [],
       baselineCorrection: settings.baselineCorrection,
       trendFlatteningEnabled: settings.trendFlatteningEnabled,
       handleOutliers: settings.handleOutliers,
@@ -263,6 +277,8 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
       settings.foWindowEnabled,
       settings.foWindowStartRatio,
       settings.foWindowEndRatio,
+      settings.foExclusionEnabled,
+      foExcludedWellSet,
       settings.baselineCorrection,
       settings.trendFlatteningEnabled,
       settings.handleOutliers,

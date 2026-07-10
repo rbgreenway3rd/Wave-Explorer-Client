@@ -35,6 +35,7 @@ import {
   scaleSpike,
 } from "./utilities/neuralReportBuilder/controlScaling";
 import { plateMedianFoFromWells } from "./utilities/neuralNormalization";
+import { excludeWellsById } from "./utilities/neuralWellExclusion";
 
 // ---- File-level header --------------------------------------------------
 
@@ -118,6 +119,16 @@ function emitFileHeader({
           : "N/A",
       ],
       ["NormalizationWellsSkippedNoFo", normalization?.skippedFoCount ?? 0],
+      // F/Fo well exclusion — wells the user dropped from the plate F₀
+      // median (they still appear in the per-well sections below).
+      ["NormalizationWellExclusionEnabled", !!normalization?.foExclusionEnabled],
+      [
+        "NormalizationExcludedWells",
+        normalization?.foExclusionEnabled &&
+        normalization?.foExcludedWellKeys?.length
+          ? normalization.foExcludedWellKeys.join(";")
+          : "None",
+      ],
       [
         "NormalizationFoWindow",
         !normalization?.enabled
@@ -404,9 +415,19 @@ export async function GenerateFullPlateReport(
     startRatio: processingParams?.foWindowStartRatio,
     endRatio: processingParams?.foWindowEndRatio,
   };
+  // F/Fo well exclusion — drop the user's excluded wells from the plate-wide
+  // F₀ median (and only the median; the per-well loop below still processes
+  // every well, so excluded wells keep their own rows). Mirrors the live
+  // modal's wellsForPlate filter so the two paths compute the same scalar.
+  const foExclusionOn =
+    normalizationOn && !!processingParams?.foExclusionEnabled;
+  const foExcludedIds = new Set(
+    foExclusionOn ? processingParams?.foExcludedWellIds || [] : []
+  );
+  const wellsForMedian = excludeWellsById(wells, foExcludedIds);
   const { medianFo: plateMedianFo, skippedCount: skippedFoCount } =
     normalizationOn
-      ? plateMedianFoFromWells(wells, foWindow)
+      ? plateMedianFoFromWells(wellsForMedian, foWindow)
       : { medianFo: null, skippedCount: 0 };
 
   // One param object shared by the control-scaling pre-pass AND the per-well
@@ -436,6 +457,10 @@ export async function GenerateFullPlateReport(
         foWindowEnabled: !!processingParams?.foWindowEnabled,
         foWindowStartRatio: processingParams?.foWindowStartRatio,
         foWindowEndRatio: processingParams?.foWindowEndRatio,
+        foExclusionEnabled: foExclusionOn,
+        foExcludedWellKeys: foExclusionOn
+          ? processingParams?.foExcludedWellKeys || []
+          : [],
       },
     }).join("\n")
   );

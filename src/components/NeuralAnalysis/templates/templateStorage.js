@@ -41,6 +41,9 @@ export const PERSISTABLE_KEYS = [
   "foWindowEnabled",
   "foWindowStartRatio",
   "foWindowEndRatio",
+  // F/Fo well-exclusion master toggle (the excluded WELL SET itself is not
+  // persisted — well refs are plate-specific, like the control set).
+  "foExclusionEnabled",
   // control-well scaling (the toggle; the control WELL SET is stored
   // separately as positional keys — see TemplateMenu)
   "controlScalingEnabled",

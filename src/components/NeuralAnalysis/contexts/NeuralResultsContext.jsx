@@ -17,6 +17,7 @@ import {
   scaleReportedMetrics,
 } from "../utilities/neuralReportBuilder/controlScaling";
 import { plateMedianFoFromWells } from "../utilities/neuralNormalization";
+import { excludeWellsById } from "../utilities/neuralWellExclusion";
 import { useNeuralSelection } from "./NeuralSelectionContext";
 import { useNeuralSettings } from "./NeuralSettingsContext";
 
@@ -72,7 +73,8 @@ export const useNeuralResults = () => {
 };
 
 export const NeuralResultsProvider = ({ children }) => {
-  const { selectedWell, controlWell, controlWellSet } = useNeuralSelection();
+  const { selectedWell, controlWell, controlWellSet, foExcludedWellSet } =
+    useNeuralSelection();
   const {
     controlScalingEnabled,
     neuralNormalizationEnabled,
@@ -80,6 +82,7 @@ export const NeuralResultsProvider = ({ children }) => {
     foWindowEnabled,
     foWindowStartRatio,
     foWindowEndRatio,
+    foExclusionEnabled,
     spikeProminence,
     spikeWindow,
     spikeMinDistance,
@@ -123,6 +126,38 @@ export const NeuralResultsProvider = ({ children }) => {
   const selectedSignalRef = selectedWell?.indicators?.[0]?.filteredYs;
   const controlSignalRef = controlWell?.indicators?.[0]?.filteredYs;
 
+  // ---- F/Fo well exclusion ----------------------------------------------
+  // Wells the user drops from the two plate-wide pooled computations (the
+  // F₀ median below and the Universal y-scale sweep further down) so flat/
+  // dim edge wells can't skew the normalization or stretch the shared axis.
+  // Matched by id (robust to wellArrays being rebuilt after a filter run).
+  // Only active when the feature toggle AND normalization are both on.
+  const foExclusionActive =
+    foExclusionEnabled && neuralNormalizationEnabled && foExcludedWellSet.length > 0;
+  const foExcludedIds = useMemo(
+    () => new Set((foExcludedWellSet || []).map((w) => w.id)),
+    [foExcludedWellSet]
+  );
+  // Stable membership key so effects/memos don't refire on unrelated renders.
+  const foExcludedKey = useMemo(
+    () =>
+      (foExcludedWellSet || [])
+        .map((w) => w.id)
+        .sort()
+        .join(","),
+    [foExcludedWellSet]
+  );
+  // The plate list with excluded wells removed — the single input both the
+  // F₀ median and the Universal sweep pool over. When inactive it's the
+  // untouched wellArrays reference (no filtering cost, no new identity).
+  const wellsForPlate = useMemo(
+    () =>
+      foExclusionActive
+        ? excludeWellsById(wellArrays, foExcludedIds)
+        : wellArrays,
+    [foExclusionActive, wellArrays, foExcludedIds]
+  );
+
   // ---- Plate-wide median F₀ (well-to-well rescale) ----------------------
   // The client's "median Fo across the whole plate" — the scalar the ΔF/F₀
   // fold-change is multiplied back up by so peak height / AUC read in a
@@ -139,15 +174,16 @@ export const NeuralResultsProvider = ({ children }) => {
       if (!neuralNormalizationEnabled) {
         return { medianFo: null, validCount: 0, skippedCount: 0 };
       }
-      // Window off → whole-trace median F₀ (pass no ratios).
+      // Window off → whole-trace median F₀ (pass no ratios). Excluded wells
+      // (wellsForPlate) are already filtered out so they don't drag the median.
       return plateMedianFoFromWells(
-        wellArrays,
+        wellsForPlate,
         foWindowEnabled
           ? { startRatio: foWindowStartRatio, endRatio: foWindowEndRatio }
           : {}
       );
     }, [
-      wellArrays,
+      wellsForPlate,
       neuralNormalizationEnabled,
       foWindowEnabled,
       foWindowStartRatio,
@@ -383,9 +419,13 @@ export const NeuralResultsProvider = ({ children }) => {
         pmf: pipelineParams.plateMedianFo,
         fws: pipelineParams.foWindowStartRatio,
         fwe: pipelineParams.foWindowEndRatio,
+        // Excluded wells drop out of the sweep too — key on membership so
+        // toggling exclusions invalidates the cached range even when the
+        // median F₀ didn't move (e.g. rescale off).
+        fex: foExclusionActive ? foExcludedKey : "",
         nsa: noiseSuppressionActive,
       }),
-    [pipelineParams, noiseSuppressionActive]
+    [pipelineParams, noiseSuppressionActive, foExclusionActive, foExcludedKey]
   );
   useEffect(() => {
     if (
@@ -416,8 +456,10 @@ export const NeuralResultsProvider = ({ children }) => {
       if (!xs || !ys || ys.length === 0) return null;
       return { xs: Float64Array.from(xs), ys: Float64Array.from(ys) };
     };
+    // wellsForPlate has F/Fo-excluded wells already removed, so a flat/dim
+    // edge well can't stretch the Universal (whole-plate) y-axis either.
     const wells = [];
-    for (const well of wellArrays) {
+    for (const well of wellsForPlate) {
       const flat = flatten(well?.indicators?.[0]);
       if (flat) wells.push(flat);
     }

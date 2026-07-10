@@ -576,6 +576,20 @@
   font-weight: var(--font-weight-bold);
 }
 
+/* Inline hint under the F/Fo exclusion controls while the user is arming
+   grid selection. */
+.neural-control-well-info__hint {
+  margin: var(--space-1) 0 0 0;
+  font-size: 0.72rem;
+  font-style: italic;
+  opacity: 0.8;
+}
+/* "All valid wells excluded" fallback warning. */
+.neural-control-well-info__warning {
+  color: var(--color-warning, #e0a000);
+  font-weight: var(--font-weight-medium);
+}
+
 /* The per-card "Advanced" `<details>` block (formerly used inside
  * NoiseSuppressionControls) is gone — those sliders moved to the
  * unified Advanced Tweakables tab strip. CSS rules removed. */

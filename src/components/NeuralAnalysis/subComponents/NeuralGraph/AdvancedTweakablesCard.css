@@ -71,6 +71,16 @@
     width: 8rem;
 }
 
+/* Open: the card height is hard-capped at 14rem (the chart-controls row),
+ * and the narrow rail can't always stack the title + toggles + all eight
+ * section buttons within it. Pin the title so it never gets shrunk to a
+ * sliver or overlapped by the body below it. */
+.neural-advanced-tweakables-card--open
+    .neural-advanced-tweakables-card__left
+    .neural-control-panel__header {
+    flex: 0 0 auto;
+}
+
 /* --- Body row: section buttons + toggles -------------------------- */
 
 /* CLOSED: side-by-side. Buttons take the bulk of the width; toggles
@@ -112,10 +122,13 @@
     flex: 0 0 auto;
 }
 
-/* OPEN: horizontal pair like before so they fit in the narrow rail. */
+/* OPEN: horizontal pair like before so they fit in the narrow rail. Pin
+ * them at natural height so the scrollable button list below absorbs any
+ * vertical shortfall instead of the toggles overlapping the title. */
 .neural-advanced-tweakables-card--open
     .neural-advanced-tweakables-card__toggles {
     flex-direction: row;
+    flex: 0 0 auto;
 }
 
 /* Compact label-stacked-over-switch form for each toggle panel — same
@@ -154,6 +167,42 @@
 .neural-advanced-tweakables-card:not(.neural-advanced-tweakables-card--open)
     .neural-advanced-tweakables-card__section-list {
     flex: 1 1 0;
+}
+
+/* OPEN: the button grid is the flexible child of the narrow rail — it
+ * takes the space left under the pinned title + toggles and divides it
+ * into four equal rows (eight buttons / two columns) that share the
+ * available height. No overflow, no scrollbar: the buttons compress to
+ * fit whatever height the 14rem-capped card leaves them. `container-type:
+ * size` makes this a query container so each button's font can scale to
+ * the rail's height (see the button rule below). */
+.neural-advanced-tweakables-card--open
+    .neural-advanced-tweakables-card__section-list {
+    flex: 1 1 0;
+    min-height: 0;
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+    overflow: hidden;
+    container-type: size;
+}
+
+/* OPEN: each button fills its (equal-share) cell and its label shrinks
+ * with the container height so all eight always fit without clipping or a
+ * scrollbar. `9cqh` = 9% of the section-list's height; the clamp keeps the
+ * text legible on short rails and from ballooning on tall ones. Browsers
+ * without container-query units fall back to the fixed 0.6875rem on the
+ * base rule. Flex-center + overflow:hidden keep any wrapped label neatly
+ * inside the button. */
+.neural-advanced-tweakables-card--open
+    .neural-advanced-tweakables-card__section-button {
+    min-height: 0;
+    height: 100%;
+    padding: 0.25rem;
+    font-size: clamp(0.5rem, 9cqh, 0.75rem);
+    line-height: 1.05;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
 }
 
 .neural-advanced-tweakables-card__section-button {
