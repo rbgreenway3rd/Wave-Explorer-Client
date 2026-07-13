@@ -10,12 +10,10 @@ import { DataContext } from "../../../providers/DataProvider";
 import {
   makePipelineRunner,
   makePlateRangeRunner,
+  makeControlScaleRunner,
   PIPELINE_STALE,
 } from "../utilities/pipelineRunner";
-import {
-  computeControlScaleFactor,
-  scaleReportedMetrics,
-} from "../utilities/neuralReportBuilder/controlScaling";
+import { scaleReportedMetrics } from "../utilities/neuralReportBuilder/controlScaling";
 import { plateMedianFoFromWells } from "../utilities/neuralNormalization";
 import { excludeWellsById } from "../utilities/neuralWellExclusion";
 import { useNeuralSelection } from "./NeuralSelectionContext";
@@ -286,6 +284,13 @@ export const NeuralResultsProvider = ({ children }) => {
   if (plateRangeRunnerRef.current === null) {
     plateRangeRunnerRef.current = makePlateRangeRunner();
   }
+  // Separate worker for the control-well scale factor, so detecting the
+  // control set never blocks the main thread (it used to run the full
+  // pipeline synchronously, once per control well).
+  const controlScaleRunnerRef = useRef(null);
+  if (controlScaleRunnerRef.current === null) {
+    controlScaleRunnerRef.current = makeControlScaleRunner();
+  }
   // Tear down the workers when the provider unmounts (e.g. user closes
   // the modal entirely — though under the current modal lifecycle the
   // provider stays mounted with the navbar; the dispose still matters
@@ -293,16 +298,23 @@ export const NeuralResultsProvider = ({ children }) => {
   useEffect(() => {
     const runner = runnerRef.current;
     const plateRunner = plateRangeRunnerRef.current;
+    const controlRunner = controlScaleRunnerRef.current;
     return () => {
       if (runner && typeof runner.dispose === "function") runner.dispose();
       if (plateRunner && typeof plateRunner.dispose === "function")
         plateRunner.dispose();
+      if (controlRunner && typeof controlRunner.dispose === "function")
+        controlRunner.dispose();
     };
   }, []);
   const [pipelineResults, setPipelineResults] = useState(EMPTY_RESULTS);
   // Compute-state flags surfaced to the UI (spinners + busy cursor).
   const [isPipelineRunning, setIsPipelineRunning] = useState(false);
   const [isPlateRangeComputing, setIsPlateRangeComputing] = useState(false);
+  // Non-null when the last selected-well run failed in a way the user should
+  // see (currently: the worker watchdog fired). The modal surfaces this
+  // instead of leaving an infinite spinner. Cleared when a new run starts.
+  const [pipelineError, setPipelineError] = useState(null);
 
   useEffect(() => {
     if (
@@ -312,6 +324,7 @@ export const NeuralResultsProvider = ({ children }) => {
     ) {
       setPipelineResults(EMPTY_RESULTS);
       setIsPipelineRunning(false);
+      setPipelineError(null);
       return undefined;
     }
 
@@ -344,6 +357,7 @@ export const NeuralResultsProvider = ({ children }) => {
 
     let active = true;
     setIsPipelineRunning(true);
+    setPipelineError(null);
     runnerRef.current
       .run({
         rawSignal: selectedFilteredData,
@@ -363,8 +377,19 @@ export const NeuralResultsProvider = ({ children }) => {
         setPipelineResults(result);
         setIsPipelineRunning(false);
       })
-      .catch(() => {
-        if (active) setIsPipelineRunning(false);
+      .catch((err) => {
+        if (!active) return;
+        setIsPipelineRunning(false);
+        // Worker watchdog fired (or the worker died): show an empty chart
+        // plus an actionable message instead of an endless spinner. Other
+        // errors clear the spinner silently as before.
+        if (err && err.code === "PIPELINE_TIMEOUT") {
+          setPipelineResults(EMPTY_RESULTS);
+          setPipelineError(
+            "Analysis stopped — this trace is too noisy or the parameters " +
+              "are too permissive to finish. Try raising the spike prominence."
+          );
+        }
       });
 
     return () => {
@@ -505,11 +530,12 @@ export const NeuralResultsProvider = ({ children }) => {
   }, [yScaleMode, wellArrays, controlSignalRef, plateScaleKey]);
 
   // ---- Control-well scaling factor (k = 100 / control median peak) ------
-  // Computed off the render path. Detects each control well with the SAME
-  // params, takes its median peak height, then the median of those (see
-  // computeControlScaleFactor). Only runs when scaling is enabled and a
-  // control set exists; control sets are small, so the synchronous detection
-  // is acceptable (mirrors the synchronous full-plate report loop).
+  // Detects each control well with the SAME params, takes its median peak
+  // height, then the median of those. Runs OFF the main thread in a
+  // dedicated worker (makeControlScaleRunner) — it used to run the full
+  // pipeline synchronously once per control well, freezing the modal on
+  // large plates. Only fires when scaling is enabled and a control set
+  // exists.
   const [controlScale, setControlScale] = useState({
     controlMedian: null,
     k: null,
@@ -528,27 +554,70 @@ export const NeuralResultsProvider = ({ children }) => {
       controlWellSet.length === 0
     ) {
       setControlScale({ controlMedian: null, k: null });
-      return;
+      return undefined;
     }
     // Match the selected-well source: raw when normalization is on (the
     // control-set pipeline also normalizes), else filtered.
+    const useRaw = !!neuralNormalizationEnabled;
+    const pointsFor = (ind) => {
+      if (!ind) return [];
+      if (useRaw) {
+        return typeof ind.materializeRawData === "function"
+          ? ind.materializeRawData()
+          : ind.rawData || [];
+      }
+      return typeof ind.materializeFilteredData === "function"
+        ? ind.materializeFilteredData()
+        : ind.filteredData || [];
+    };
+    // Flatten {x,y}[] into fresh transferable Float64Arrays (fresh copies,
+    // so transferring their buffers to the worker doesn't detach the
+    // indicators' own data).
+    const flattenPoints = (points) => {
+      const n = points ? points.length : 0;
+      const xs = new Float64Array(n);
+      const ys = new Float64Array(n);
+      for (let i = 0; i < n; i++) {
+        xs[i] = points[i].x;
+        ys[i] = points[i].y;
+      }
+      return { xs, ys };
+    };
+    const wells = [];
+    for (const well of controlWellSet) {
+      const pts = pointsFor(well?.indicators?.[0]);
+      if (pts && pts.length > 0) wells.push(flattenPoints(pts));
+    }
+    if (wells.length === 0) {
+      setControlScale({ controlMedian: null, k: null });
+      return undefined;
+    }
     const controlInd =
       controlWell && controlWell.indicators && controlWell.indicators[0];
-    const controlFilteredData = !controlInd
-      ? []
-      : neuralNormalizationEnabled
-      ? (typeof controlInd.materializeRawData === "function"
-          ? controlInd.materializeRawData()
-          : controlInd.rawData) || []
-      : (typeof controlInd.materializeFilteredData === "function"
-          ? controlInd.materializeFilteredData()
-          : controlInd.filteredData) || [];
-    const { controlMedian, k } = computeControlScaleFactor(controlWellSet, {
-      params: pipelineParams,
-      controlSignal: controlFilteredData,
-      noiseSuppressionActive,
-    });
-    setControlScale({ controlMedian, k });
+    const control = flattenPoints(pointsFor(controlInd));
+
+    let active = true;
+    controlScaleRunnerRef.current
+      .run({
+        wells,
+        control,
+        params: pipelineParams,
+        noiseSuppressionActive,
+      })
+      .then((result) => {
+        if (!active || result === PIPELINE_STALE) return;
+        setControlScale({
+          controlMedian: result.controlMedian,
+          k: result.k,
+        });
+      })
+      .catch(() => {
+        if (active) setControlScale({ controlMedian: null, k: null });
+      });
+
+    return () => {
+      active = false;
+    };
     // controlSetKey captures membership; per-control-well signal tokens are
     // omitted for simplicity (recompute on set / params / control changes).
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -609,6 +678,9 @@ export const NeuralResultsProvider = ({ children }) => {
       // pipeline (chart) and the Universal whole-plate sweep, respectively.
       isPipelineRunning,
       isPlateRangeComputing,
+      // Non-null when the selected-well run failed (watchdog timeout); the
+      // modal surfaces it in place of the chart.
+      pipelineError,
     }),
     [
       displayedResults,
@@ -623,6 +695,7 @@ export const NeuralResultsProvider = ({ children }) => {
       plateProcessedYRange,
       isPipelineRunning,
       isPlateRangeComputing,
+      pipelineError,
     ]
   );
 

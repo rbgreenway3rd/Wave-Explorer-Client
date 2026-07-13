@@ -73,6 +73,7 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
     effectiveSpikeWindow,
     isPipelineRunning,
     isPlateRangeComputing,
+    pipelineError,
   } = useNeuralResults();
 
   // Any compute in flight → busy cursor on the whole modal (catch-all for the
@@ -463,6 +464,15 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
                   >
                     <CircularProgress size={18} thickness={5} />
                     <span>Updating…</span>
+                  </div>
+                )}
+                {!isPipelineRunning && pipelineError && selectedWell && (
+                  <div
+                    className="neural-graph-error-overlay"
+                    role="alert"
+                    aria-live="assertive"
+                  >
+                    <span>{pipelineError}</span>
                   </div>
                 )}
               </div>

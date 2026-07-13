@@ -28,6 +28,16 @@ import { perf } from "./perfLogger";
 
 const STALE = Symbol("stale");
 
+// Watchdog for a wedged worker. A pathological detection (e.g. a very
+// noisy trace flooding the k-means / NMS stages) can leave the worker
+// computing far longer than any legitimate run — the promise would never
+// settle and the "Updating…" spinner would spin forever. If the worker
+// hasn't replied within this budget we treat it as wedged: reject the
+// request(s) and recycle the worker. Set well above a cold-cache run on a
+// 250K-sample signal (normally sub-second to low-seconds), so a real run
+// never trips it.
+const PIPELINE_TIMEOUT_MS = 30000;
+
 const yieldToBrowser = () =>
   new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -109,21 +119,56 @@ export function makePipelineRunner() {
       const entry = pending.get(msg.reqId);
       if (!entry) return; // already considered stale on main side
       pending.delete(msg.reqId);
+      if (entry.timer) clearTimeout(entry.timer);
       if (msg.type === "result") entry.resolve(msg);
       else if (msg.type === "error") entry.reject(new Error(msg.message));
     };
     worker.onerror = (event) => {
       // Worker-level error: reject everything in flight.
-      for (const [, entry] of pending) entry.reject(event.error || event);
+      for (const [, entry] of pending) {
+        if (entry.timer) clearTimeout(entry.timer);
+        entry.reject(event.error || event);
+      }
       pending.clear();
     };
     return worker;
   }
 
+  // Watchdog fired: the worker is presumed wedged. Terminate it (a single
+  // instance runs everything single-threaded, so every queued request is
+  // stuck behind the runaway one) and reject all in-flight requests with a
+  // tagged timeout so callers surface an error state instead of an infinite
+  // spinner. ensureWorker() builds a fresh worker on the next run().
+  function recycleWorkerAndFail() {
+    if (worker) {
+      try {
+        worker.terminate();
+      } catch (_e) {
+        // ignore
+      }
+    }
+    worker = null;
+    workerStale = false;
+    perf.count("pipelineRunner.workerTimeout");
+    for (const [, entry] of pending) {
+      if (entry.timer) clearTimeout(entry.timer);
+      entry.reject(
+        Object.assign(new Error("pipeline timeout"), {
+          code: "PIPELINE_TIMEOUT",
+        })
+      );
+    }
+    pending.clear();
+  }
+
   function postAndAwait(reqId, payload, transferList) {
     const w = ensureWorker();
     return new Promise((resolve, reject) => {
-      pending.set(reqId, { resolve, reject });
+      const timer = setTimeout(() => {
+        if (!pending.has(reqId)) return;
+        recycleWorkerAndFail();
+      }, PIPELINE_TIMEOUT_MS);
+      pending.set(reqId, { resolve, reject, timer });
       w.postMessage(payload, transferList);
     });
   }
@@ -135,7 +180,10 @@ export function makePipelineRunner() {
       // Cancel anything in flight — those results would come from the
       // stale worker and are no longer trusted.
       activeReqId++;
-      for (const [, entry] of pending) entry.reject(new Error("worker recycled"));
+      for (const [, entry] of pending) {
+        if (entry.timer) clearTimeout(entry.timer);
+        entry.reject(new Error("worker recycled"));
+      }
       pending.clear();
     },
     /**
@@ -245,7 +293,10 @@ export function makePipelineRunner() {
         worker.terminate();
         worker = null;
       }
-      for (const [, entry] of pending) entry.reject(new Error("disposed"));
+      for (const [, entry] of pending) {
+        if (entry.timer) clearTimeout(entry.timer);
+        entry.reject(new Error("disposed"));
+      }
       pending.clear();
       liveRunners.delete(api);
     },
@@ -342,6 +393,133 @@ export function makePlateRangeRunner() {
           w.postMessage(
             {
               type: "runPlateRange",
+              reqId,
+              wells,
+              control,
+              params: inputs.params,
+              noiseSuppressionActive: inputs.noiseSuppressionActive,
+            },
+            transferList
+          );
+        });
+      } catch (err) {
+        if (reqId !== activeReqId) return STALE;
+        throw err;
+      }
+
+      if (reqId !== activeReqId) return STALE;
+      return result;
+    },
+
+    cancel() {
+      activeReqId++;
+    },
+
+    dispose() {
+      if (worker) {
+        worker.terminate();
+        worker = null;
+      }
+      for (const [, entry] of pending) entry.reject(new Error("disposed"));
+      pending.clear();
+      liveRunners.delete(api);
+    },
+  };
+  liveRunners.add(api);
+  return api;
+}
+
+/**
+ * makeControlScaleRunner — async wrapper around neuralPipeline.worker.js's
+ * "controlScale" path, which detects each control well and derives the
+ * scale factor (k = 100 / median control peak height) OFF the main thread.
+ * Previously computeControlScaleFactor ran the full pipeline synchronously
+ * on the main thread once per control well, freezing the modal on large
+ * plates.
+ *
+ * Its own worker instance + reqId so control-scale runs never mark the
+ * selected-well pipeline's in-flight request stale. Same stale discipline
+ * as the sibling runners. `run({ wells, control, params,
+ * noiseSuppressionActive })` takes wells as an array of `{ xs, ys }`
+ * Float64Array pairs (Transferable). Resolves to
+ * `{ controlMedian, k, usedWellCount }` or the STALE sentinel.
+ */
+export function makeControlScaleRunner() {
+  let activeReqId = 0;
+  let worker = null;
+  let workerStale = false;
+  const pending = new Map();
+
+  function ensureWorker() {
+    if (worker && !workerStale) return worker;
+    if (worker && workerStale) {
+      try {
+        worker.terminate();
+      } catch (_e) {
+        // ignore
+      }
+      worker = null;
+      workerStale = false;
+    }
+    worker = new Worker(
+      new URL("../../../workers/neuralPipeline.worker.js", import.meta.url)
+    );
+    worker.onmessage = (event) => {
+      const msg = event.data;
+      if (!msg) return;
+      const entry = pending.get(msg.reqId);
+      if (!entry) return;
+      pending.delete(msg.reqId);
+      if (msg.type === "controlScale")
+        entry.resolve({
+          controlMedian: msg.controlMedian,
+          k: msg.k,
+          usedWellCount: msg.usedWellCount,
+        });
+      else if (msg.type === "error") entry.reject(new Error(msg.message));
+    };
+    worker.onerror = (event) => {
+      for (const [, entry] of pending) entry.reject(event.error || event);
+      pending.clear();
+    };
+    return worker;
+  }
+
+  const api = {
+    markWorkerStale() {
+      workerStale = true;
+      activeReqId++;
+      for (const [, entry] of pending)
+        entry.reject(new Error("worker recycled"));
+      pending.clear();
+    },
+
+    async run(inputs) {
+      const reqId = ++activeReqId;
+
+      await yieldToBrowser();
+      if (reqId !== activeReqId) return STALE;
+
+      const wells = Array.isArray(inputs.wells) ? inputs.wells : [];
+      const control =
+        inputs.control || { xs: new Float64Array(0), ys: new Float64Array(0) };
+
+      const transferList = [];
+      for (const w of wells) {
+        if (w?.xs?.buffer) transferList.push(w.xs.buffer);
+        if (w?.ys?.buffer) transferList.push(w.ys.buffer);
+      }
+      if (control.xs?.buffer?.byteLength > 0)
+        transferList.push(control.xs.buffer, control.ys.buffer);
+
+      const w = ensureWorker();
+      let result;
+      try {
+        result = await new Promise((resolve, reject) => {
+          pending.set(reqId, { resolve, reject });
+          w.postMessage(
+            {
+              type: "controlScale",
               reqId,
               wells,
               control,

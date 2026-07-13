@@ -161,6 +161,28 @@
   pointer-events: none;
 }
 
+/* Watchdog error state — centered over the (now empty) chart when a
+ * selected-well run is aborted (worker timeout) instead of leaving an
+ * endless "Updating…" chip. Non-interactive; the user recovers by
+ * adjusting parameters or re-selecting a well. */
+.neural-analysis-modal .neural-graph-error-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  max-width: 22rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  background: rgba(120, 20, 20, 0.85);
+  color: #fff;
+  font-family: var(--font-family);
+  font-size: 0.8rem;
+  line-height: 1.35;
+  text-align: center;
+  pointer-events: none;
+}
+
 /* Busy cursor — global feedback for the many small controls (sliders,
  * toggles, dropdowns) that can't host their own spinner. Applied while any
  * compute is in flight. Does NOT disable anything: inputs still register and

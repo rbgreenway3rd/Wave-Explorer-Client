@@ -25,6 +25,7 @@
  */
 
 import { runNeuralAnalysisPipeline } from "../components/NeuralAnalysis/NeuralPipeline";
+import { computeControlScaleFromSignals } from "../components/NeuralAnalysis/utilities/neuralReportBuilder/controlScaling";
 import { makePipelineCache } from "../components/NeuralAnalysis/utilities/pipelineCache";
 import { perf } from "../components/NeuralAnalysis/utilities/perfLogger";
 
@@ -84,9 +85,45 @@ function stripSpike(p) {
   };
 }
 
+// Control-well scale factor, off the main thread. `wells` is an array of
+// { xs, ys } typed-array pairs (one per control well); `control` is the
+// optional noise-subtraction signal. Runs the same per-well detection +
+// median-of-medians as the synchronous computeControlScaleFactor and posts
+// back { controlMedian, k, usedWellCount }. Keeps the modal's main thread
+// free when control scaling is enabled on large plates.
+function handleControlScale(msg) {
+  const { reqId, wells, control, params, noiseSuppressionActive } = msg;
+  try {
+    const signals = (wells || []).map((w) => materialize(w.xs, w.ys));
+    const controlSignal = materialize(control?.xs, control?.ys);
+    const { controlMedian, k, usedWellCount } = computeControlScaleFromSignals(
+      signals,
+      { params, controlSignal, noiseSuppressionActive }
+    );
+    self.postMessage({
+      type: "controlScale",
+      reqId,
+      controlMedian,
+      k,
+      usedWellCount,
+    });
+  } catch (err) {
+    self.postMessage({
+      type: "error",
+      reqId,
+      message: err && err.message ? err.message : String(err),
+    });
+  }
+}
+
 self.onmessage = (event) => {
   const msg = event.data;
-  if (!msg || msg.type !== "run") return;
+  if (!msg) return;
+  if (msg.type === "controlScale") {
+    handleControlScale(msg);
+    return;
+  }
+  if (msg.type !== "run") return;
   const {
     reqId,
     signal,

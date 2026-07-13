@@ -20,6 +20,15 @@ import {
   TIER_MARGINAL_FAIL,
 } from "./peakGeometry.js";
 
+// Hard ceiling on how many Gate-1 survivors are turned into NeuralPeaks and
+// fed to the superlinear NMS / metric stages. The prominence σ-floor in
+// NeuralPipeline keeps a flat/noisy trace from ever producing this many real
+// candidates, so this is defense-in-depth: on any pathological input we keep
+// the top-N by detection prominence (slope/noise candidates have detection
+// prominence ≈ 0, real apexes rank high) and drop the rest, bounding cost.
+// Set well above any plausible real spike count so good traces never hit it.
+const MAX_CANDIDATES = 20000;
+
 // Pushes a gate-result entry into the candidate's diagnostic record
 // when a `diagnostics` Map has been supplied. Records accumulate as a
 // candidate survives gates; for rejected candidates, this is the final
@@ -554,16 +563,45 @@ function findTrueSpikes(
     // spike counts (≤ a few thousand) a linear scan over accepted peaks
     // would also be fine; the binary search keeps it well-behaved on
     // pathological-density inputs.
-    const accepted = []; // { peak, start, end }
-    // Find the suppressing peak (first accepted footprint that
-    // contains idx) so we can attribute NMS rejections to a specific
-    // suppressor for the Inspector's "suppressed by peak at t=X" line.
+    const accepted = []; // peaks, in priority-accept order (final output)
+    // Fixed-radius NMS lookup. Every footprint spans exactly ±spikeWindow,
+    // so a candidate at `idx` is suppressed iff an accepted center `c`
+    // satisfies |idx - c| <= spikeWindow. Bucketing accepted centers by
+    // floor(center / bucketSize) turns that into a constant-time neighbor
+    // check — an accepted center within spikeWindow of `idx` must live in
+    // `idx`'s bucket or an adjacent one — replacing the previous
+    // O(candidates × accepted) linear scan with O(candidates + accepted).
+    // The suppression decision is identical; only the attributed suppressor
+    // changes from "first inserted" to "nearest center" (a better label for
+    // the Inspector's "suppressed by peak at t=X" line).
+    const bucketSize = Math.max(1, spikeWindow);
+    const buckets = new Map(); // bucketKey -> [{ center, peak }]
     const suppressorFor = (idx) => {
-      for (let i = 0; i < accepted.length; i++) {
-        const f = accepted[i];
-        if (idx >= f.start && idx <= f.end) return f.peak;
+      const b = Math.floor(idx / bucketSize);
+      let best = null;
+      let bestDist = Infinity;
+      for (let k = b - 1; k <= b + 1; k++) {
+        const list = buckets.get(k);
+        if (!list) continue;
+        for (const item of list) {
+          const d = Math.abs(idx - item.center);
+          if (d <= spikeWindow && d < bestDist) {
+            bestDist = d;
+            best = item.peak;
+          }
+        }
       }
-      return null;
+      return best;
+    };
+    const addAccepted = (peak) => {
+      accepted.push(peak);
+      const b = Math.floor(peak.index / bucketSize);
+      let list = buckets.get(b);
+      if (!list) {
+        list = [];
+        buckets.set(b, list);
+      }
+      list.push({ center: peak.index, peak });
     };
     for (const p of sortedByPriority) {
       const suppressor = suppressorFor(p.index);
@@ -605,13 +643,9 @@ function findTrueSpikes(
         }
         continue;
       }
-      accepted.push({
-        peak: p,
-        start: p.index - spikeWindow,
-        end: p.index + spikeWindow,
-      });
+      addAccepted(p);
     }
-    filteredPeaks = accepted.map((a) => a.peak);
+    filteredPeaks = accepted;
   }
   perf.count(`spikeFilter.afterNMS=${filteredPeaks.length}`);
 
@@ -1010,7 +1044,24 @@ export function detectSpikes(data, options = {}) {
   // supersedes the old chain-of-first-peak heuristic that lived here.
   // We pass every gate-survivor through unchanged so NMS has the full
   // candidate set to choose from.
-  const finalFilteredPeakIndices = zoneFilteredPeakIndices;
+  // Defense-in-depth cap: if a pathological trace still yields more
+  // survivors than any real recording could, keep the top MAX_CANDIDATES by
+  // detection prominence and drop the rest before the superlinear NMS /
+  // per-peak metric stages. detectionBasesFor is WeakMap-cached and the
+  // prominence histogram was already collected over the full candidate set
+  // above, so it stays unbiased. With the σ-floor upstream this never fires
+  // on a normal trace.
+  let finalFilteredPeakIndices = zoneFilteredPeakIndices;
+  if (finalFilteredPeakIndices.length > MAX_CANDIDATES) {
+    perf.count(
+      `spikeFilter.candidateCapApplied=${finalFilteredPeakIndices.length}`
+    );
+    finalFilteredPeakIndices = [...finalFilteredPeakIndices]
+      .sort(
+        (a, b) => detectionBasesFor(b).prominence - detectionBasesFor(a).prominence
+      )
+      .slice(0, MAX_CANDIDATES);
+  }
 
   let peaks = [];
   for (let peakIdx of finalFilteredPeakIndices) {

@@ -25,6 +25,16 @@ import { detectBursts } from "./utilities/burstDetection";
 import { removeOutliers } from "./utilities/outlierRemoval";
 import { perf } from "./utilities/perfLogger";
 
+// Floor for the relative-prominence bar, in robust-σ units. When the
+// prominence is given as a fraction of the signal range, a flat/noisy
+// trace collapses that range to the noise band, so `fraction × range`
+// drops to a sub-noise value and tens of thousands of noise wiggles pass
+// Gate 1 — enough to wedge the downstream k-means / NMS. Requiring a
+// candidate to rise at least this many robust σ above its base rejects
+// noise (~1σ) while never binding on a real trace, where `fraction ×
+// range` dominates. See docs / neural freeze investigation.
+const PROM_SIGMA_FLOOR = 3;
+
 // Auto-suggest helpers live in their own module so the live pipeline,
 // full-plate report, and report worker all agree. Re-exported here
 // because existing call sites import them from this file.
@@ -387,11 +397,20 @@ export function runNeuralAnalysisPipeline({
         Math.max(params.spikeProminence ?? 0, 0),
         1
       );
-      const detSignalRange =
+      const detStats =
         processedForDetection.length > 0
-          ? computeSignalStats(processedForDetection).signalRange
+          ? computeSignalStats(processedForDetection)
+          : null;
+      const detSignalRange = detStats ? detStats.signalRange : 0;
+      // Floor the bar at PROM_SIGMA_FLOOR robust σ so a flat/noisy trace
+      // (range ≈ noise band) can't collapse it and flood detection with
+      // noise wiggles. On a real trace `promFraction × range` dominates,
+      // so the floor never binds and no true events are dropped.
+      const sigmaFloor =
+        detStats && isFinite(detStats.robustStd)
+          ? PROM_SIGMA_FLOOR * detStats.robustStd
           : 0;
-      absoluteProminence = promFraction * detSignalRange;
+      absoluteProminence = Math.max(promFraction * detSignalRange, sigmaFloor);
     }
 
     const detectResult = memo(

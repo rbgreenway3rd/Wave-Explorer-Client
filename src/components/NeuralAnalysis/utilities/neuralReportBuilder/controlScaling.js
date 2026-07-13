@@ -69,9 +69,35 @@ export function computeControlScaleFactor(
   if (!Array.isArray(controlWells) || controlWells.length === 0) {
     return { controlMedian: null, k: null, usedWellCount: 0 };
   }
+  const signals = controlWells
+    .map((well) =>
+      materializeWellSignal(well, !!params?.neuralNormalizationEnabled)
+    )
+    .filter((sig) => Array.isArray(sig) && sig.length > 0);
+  return computeControlScaleFromSignals(signals, {
+    params,
+    controlSignal,
+    noiseSuppressionActive,
+  });
+}
+
+/**
+ * Core of the control-scale computation, decoupled from well objects: takes
+ * already-materialized control-well signals ({x,y}[] each) and runs the same
+ * per-well detection + median-of-medians as computeControlScaleFactor. Shared
+ * by the synchronous main-thread path (reports/tests, via
+ * computeControlScaleFactor) and the worker path (neuralPipeline.worker.js),
+ * so both yield an identical scale factor for the same inputs.
+ *
+ * @param {Array<Array<{x:number,y:number}>>} signals per-control-well signals
+ * @returns {{controlMedian: number|null, k: number|null, usedWellCount: number}}
+ */
+export function computeControlScaleFromSignals(
+  signals,
+  { params, controlSignal = [], noiseSuppressionActive = false } = {}
+) {
   const perWellMedians = [];
-  for (const well of controlWells) {
-    const rawSignal = materializeWellSignal(well, !!params?.neuralNormalizationEnabled);
+  for (const rawSignal of signals || []) {
     if (!rawSignal || rawSignal.length === 0) continue;
     const result = runNeuralAnalysisPipeline({
       rawSignal,
