@@ -312,8 +312,9 @@ export const NeuralResultsProvider = ({ children }) => {
   const [isPipelineRunning, setIsPipelineRunning] = useState(false);
   const [isPlateRangeComputing, setIsPlateRangeComputing] = useState(false);
   // Non-null when the last selected-well run failed in a way the user should
-  // see (currently: the worker watchdog fired). The modal surfaces this
-  // instead of leaving an infinite spinner. Cleared when a new run starts.
+  // see (currently: the worker crashed / ran out of memory). The modal
+  // surfaces this instead of leaving an infinite spinner. Cleared when a new
+  // run starts.
   const [pipelineError, setPipelineError] = useState(null);
 
   useEffect(() => {
@@ -380,14 +381,17 @@ export const NeuralResultsProvider = ({ children }) => {
       .catch((err) => {
         if (!active) return;
         setIsPipelineRunning(false);
-        // Worker watchdog fired (or the worker died): show an empty chart
-        // plus an actionable message instead of an endless spinner. Other
-        // errors clear the spinner silently as before.
-        if (err && err.code === "PIPELINE_TIMEOUT") {
+        // There is no longer a time-based abort — a run takes as long as it
+        // takes. We only land here if the worker actually died (e.g. it
+        // crashed or ran out of memory). Show an empty chart plus a neutral
+        // message instead of an endless spinner; a plain "worker recycled"
+        // (HMR / superseded run) is not surfaced.
+        if (err && err.message !== "worker recycled") {
           setPipelineResults(EMPTY_RESULTS);
           setPipelineError(
-            "Analysis stopped — this trace is too noisy or the parameters " +
-              "are too permissive to finish. Try raising the spike prominence."
+            "Analysis could not finish — the browser stopped the computation, " +
+              "which usually means it ran out of memory. Try closing other " +
+              "tabs or applications and running the well again."
           );
         }
       });

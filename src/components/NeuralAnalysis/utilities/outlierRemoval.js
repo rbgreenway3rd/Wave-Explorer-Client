@@ -39,37 +39,34 @@ function median(sortedAsc) {
 }
 
 /**
- * @param {Array<{x: number, y: number}>} signal
- * @param {Object} [options]
- * @param {number} [options.sensitivity=5] - robust-σ multiplier. Cutoff is
- *   `median + sensitivity × (1.4826·MAD)`. Lower removes more; higher keeps
- *   all but the most extreme.
- * @returns {{
- *   cleanedSignal: Array<{x,y}>,
- *   removedIndices: number[],
- *   regions: Array<{startIdx,endIdx,startX,endX}>,
- *   outlierPoints: Array<{x,y}>,   // per-region apex at ORIGINAL height
- *   cutoff: number | null
- * }}
- *   When nothing is removed, `cleanedSignal` is the original array reference.
+ * Typed core: detect + excise tall outliers from `ys` (matched to `xs` for the
+ * reported region/point x-values). Returns `cleanedYs` as a new Float64Array,
+ * or the SAME `ys` reference when nothing is removed (no allocation, memo
+ * identity preserved). The neural pipeline calls this directly so the outlier
+ * stage never round-trips through a {x,y}[]; `removeOutliers` below wraps it
+ * for {x,y}[] callers and tests. Arithmetic matches the wrapper bit-for-bit.
+ *
+ * @returns {{cleanedYs:Float64Array, removedIndices:number[],
+ *   regions:Array<{startIdx,endIdx,startX,endX}>, outlierPoints:Array<{x,y}>,
+ *   cutoff:number|null}}
  */
-export function removeOutliers(signal, options = {}) {
+export function removeOutliersYs(xs, ys, options = {}) {
   const sensitivity = options.sensitivity ?? 5;
   const empty = {
-    cleanedSignal: signal,
+    cleanedYs: ys,
     removedIndices: [],
     regions: [],
     outlierPoints: [],
     cutoff: null,
   };
-  const n = Array.isArray(signal) ? signal.length : 0;
+  const n = ys.length;
   if (n < 3) return empty;
 
-  const ys = new Array(n);
-  for (let i = 0; i < n; i++) ys[i] = signal[i].y;
-
-  const baseline = median([...ys].sort((a, b) => a - b));
-  const absDev = ys.map((y) => Math.abs(y - baseline)).sort((a, b) => a - b);
+  const sortedYs = Float64Array.from(ys).sort((a, b) => a - b);
+  const baseline = median(sortedYs);
+  const absDev = new Float64Array(n);
+  for (let i = 0; i < n; i++) absDev[i] = Math.abs(ys[i] - baseline);
+  absDev.sort((a, b) => a - b);
   let scale = 1.4826 * median(absDev);
   // Fallback for degenerate MAD (e.g. >50% identical samples): use stddev.
   if (!(scale > 0)) {
@@ -108,7 +105,7 @@ export function removeOutliers(signal, options = {}) {
   }
   if (regions.length === 0) return empty;
 
-  const cleanedSignal = signal.slice();
+  const cleanedYs = Float64Array.from(ys);
   const removedIndices = [];
   const outlierPoints = [];
   for (const r of regions) {
@@ -124,12 +121,62 @@ export function removeOutliers(signal, options = {}) {
       if (ys[k] > ys[peakIdx]) peakIdx = k;
       removedIndices.push(k);
       const t = span > 0 ? (k - aL) / span : 0;
-      cleanedSignal[k] = { x: signal[k].x, y: yL + t * (yR - yL) };
+      cleanedYs[k] = yL + t * (yR - yL);
     }
-    r.startX = signal[a].x;
-    r.endX = signal[b].x;
-    outlierPoints.push({ x: signal[peakIdx].x, y: ys[peakIdx] });
+    r.startX = xs[a];
+    r.endX = xs[b];
+    outlierPoints.push({ x: xs[peakIdx], y: ys[peakIdx] });
   }
 
-  return { cleanedSignal, removedIndices, regions, outlierPoints, cutoff };
+  return { cleanedYs, removedIndices, regions, outlierPoints, cutoff };
+}
+
+/**
+ * @param {Array<{x: number, y: number}>} signal
+ * @param {Object} [options]
+ * @param {number} [options.sensitivity=5] - robust-σ multiplier. Cutoff is
+ *   `median + sensitivity × (1.4826·MAD)`. Lower removes more; higher keeps
+ *   all but the most extreme.
+ * @returns {{
+ *   cleanedSignal: Array<{x,y}>,
+ *   removedIndices: number[],
+ *   regions: Array<{startIdx,endIdx,startX,endX}>,
+ *   outlierPoints: Array<{x,y}>,   // per-region apex at ORIGINAL height
+ *   cutoff: number | null
+ * }}
+ *   When nothing is removed, `cleanedSignal` is the original array reference.
+ */
+export function removeOutliers(signal, options = {}) {
+  const empty = {
+    cleanedSignal: signal,
+    removedIndices: [],
+    regions: [],
+    outlierPoints: [],
+    cutoff: null,
+  };
+  const n = Array.isArray(signal) ? signal.length : 0;
+  if (n < 3) return empty;
+
+  const xs = new Float64Array(n);
+  const ys = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    xs[i] = signal[i].x;
+    ys[i] = signal[i].y;
+  }
+
+  const r = removeOutliersYs(xs, ys, options);
+  // Nothing removed → return the original array reference (memo identity).
+  if (r.cleanedYs === ys) return empty;
+
+  const cleanedSignal = new Array(n);
+  for (let i = 0; i < n; i++) {
+    cleanedSignal[i] = { x: signal[i].x, y: r.cleanedYs[i] };
+  }
+  return {
+    cleanedSignal,
+    removedIndices: r.removedIndices,
+    regions: r.regions,
+    outlierPoints: r.outlierPoints,
+    cutoff: r.cutoff,
+  };
 }

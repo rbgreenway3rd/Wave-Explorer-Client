@@ -42,18 +42,6 @@ function materialize(xs, ys) {
   return out;
 }
 
-// Convert {x, y}[] back to parallel typed arrays for Transferable post.
-function flatten(points) {
-  const n = points ? points.length : 0;
-  const xs = new Float64Array(n);
-  const ys = new Float64Array(n);
-  for (let i = 0; i < n; i++) {
-    xs[i] = points[i].x;
-    ys[i] = points[i].y;
-  }
-  return { xs, ys };
-}
-
 // Strip the `data` reference from each spike before posting back. The
 // `data` field on NeuralPeak / readded outlier spikes is a reference to
 // the 250K-element processedSignal array — structured clone would
@@ -139,8 +127,14 @@ self.onmessage = (event) => {
   perf.setEnabled(perfMode === true);
 
   try {
-    const rawSignal = materialize(signal.xs, signal.ys);
-    const controlSignal = materialize(control?.xs, control?.ys);
+    // Pass the transferred typed arrays straight into the pipeline — it now
+    // accepts an { xs, ys } pair and threads typed arrays internally, so no
+    // {x,y}[] object array is ever built for the input (the largest per-run
+    // allocation). Empty { xs, ys } (length-0) means "no control".
+    const rawSignal = { xs: signal.xs, ys: signal.ys };
+    const controlSignal = control
+      ? { xs: control.xs, ys: control.ys }
+      : [];
 
     // One-shot diagnostic: prints the per-call signal size + the keys
     // present on `analysis` and `params`. Lets us see immediately
@@ -149,7 +143,7 @@ self.onmessage = (event) => {
     if (perf.enabled) {
       // eslint-disable-next-line no-console
       console.log(
-        `[worker] run reqId=${reqId} rawSignal.length=${rawSignal.length} controlSignal.length=${controlSignal.length} analysis=${JSON.stringify(
+        `[worker] run reqId=${reqId} rawSignal.length=${signal.ys?.length ?? 0} controlSignal.length=${control?.ys?.length ?? 0} analysis=${JSON.stringify(
           analysis
         )} params.spikeProminence=${params?.spikeProminence} params.smoothingEnabled=${params?.smoothingEnabled}`
       );
@@ -171,7 +165,19 @@ self.onmessage = (event) => {
       );
     }
 
-    const { xs: processedXs, ys: processedYs } = flatten(result.processedSignal);
+    // The pipeline already exposes the processed signal as typed arrays (the
+    // shared X + final-stage Y) — transfer them directly instead of flattening
+    // the {x,y}[] back into typed arrays. `slice()` detaches from any buffer
+    // that was transferred IN (the input xs/ys) so we never post a
+    // double-transferred or aliased buffer.
+    const processedXs =
+      result.processedXs instanceof Float64Array
+        ? result.processedXs.slice()
+        : new Float64Array(0);
+    const processedYs =
+      result.processedYs instanceof Float64Array
+        ? result.processedYs.slice()
+        : new Float64Array(0);
     const wireSpikes = (result.spikeResults || []).map(stripSpike);
 
     // Candidate diagnostics for the Decision Explanation Layer. Records

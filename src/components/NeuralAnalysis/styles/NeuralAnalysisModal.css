@@ -161,10 +161,10 @@
   pointer-events: none;
 }
 
-/* Watchdog error state — centered over the (now empty) chart when a
- * selected-well run is aborted (worker timeout) instead of leaving an
- * endless "Updating…" chip. Non-interactive; the user recovers by
- * adjusting parameters or re-selecting a well. */
+/* Worker-failure error state — centered over the (now empty) chart when a
+ * selected-well run cannot finish because the worker crashed / ran out of
+ * memory, instead of leaving an endless "Updating…" chip. Non-interactive;
+ * the user recovers by freeing memory and re-selecting a well. */
 .neural-analysis-modal .neural-graph-error-overlay {
   position: absolute;
   top: 50%;

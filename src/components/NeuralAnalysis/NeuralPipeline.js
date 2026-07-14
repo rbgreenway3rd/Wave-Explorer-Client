@@ -1,13 +1,12 @@
-import { suppressNoise } from "./utilities/noiseSuppression";
+import { suppressNoiseYs } from "./utilities/noiseSuppression";
 import {
-  trendFlattening,
-  baselineCorrected,
+  trendFlatteningYs,
+  baselineCorrectedYs,
 } from "./utilities/neuralSmoothing";
-import { savitzkyGolay } from "./utilities/savitzkyGolay";
+import { savitzkyGolayYs } from "./utilities/savitzkyGolay";
 import {
   computeFo,
   foWindowIndices,
-  applyDeltaFOverFo,
   isValidFo,
   UNIT_MODE,
 } from "./utilities/neuralNormalization";
@@ -22,7 +21,7 @@ import {
   GATE_ACTIVITY,
 } from "./utilities/peakGeometry";
 import { detectBursts } from "./utilities/burstDetection";
-import { removeOutliers } from "./utilities/outlierRemoval";
+import { removeOutliersYs } from "./utilities/outlierRemoval";
 import { perf } from "./utilities/perfLogger";
 
 // Floor for the relative-prominence bar, in robust-σ units. When the
@@ -120,6 +119,29 @@ function binLinearProminences(values, nBins) {
 
 // --- Main Pipeline ---
 
+// Normalize a signal input to parallel typed arrays { xs, ys }. Accepts a
+// {x,y}[] object array (legacy callers: reports, control scaling, tests) or a
+// pre-built { xs, ys } typed-array pair (the worker fast path, which already
+// holds the transferred buffers — no per-sample object array is ever built).
+// Always returns Float64Arrays (length 0 for empty/invalid input) so the
+// stage chain can index `.length`/`[i]` unconditionally.
+function toTyped(sig) {
+  if (sig && ArrayBuffer.isView(sig.xs) && ArrayBuffer.isView(sig.ys)) {
+    return { xs: sig.xs, ys: sig.ys };
+  }
+  if (Array.isArray(sig)) {
+    const n = sig.length;
+    const xs = new Float64Array(n);
+    const ys = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      xs[i] = sig[i].x;
+      ys[i] = sig[i].y;
+    }
+    return { xs, ys };
+  }
+  return { xs: new Float64Array(0), ys: new Float64Array(0) };
+}
+
 export function runNeuralAnalysisPipeline({
   rawSignal,
   controlSignal,
@@ -138,15 +160,36 @@ export function runNeuralAnalysisPipeline({
   const id = cache ? cache.idOf : () => "_";
 
   perf.group("pipeline");
-  // 1. Noise suppression (control subtraction)
-  let processed = memo(
+
+  // The pipeline transforms Y only — X is invariant across every stage — so we
+  // thread parallel typed arrays (one shared `xs`, a fresh `ys` Float64Array
+  // per stage) and materialize a {x,y}[] exactly ONCE, at the detection
+  // boundary below. This avoids allocating a full N-element object array
+  // between every stage — the dominant GC/memory cost on 250K-sample traces.
+  // Input is accepted as {x,y}[] (legacy callers) or {xs, ys} (worker path).
+  const rawTyped = toTyped(rawSignal);
+  const xs = rawTyped.xs;
+  const rawYs = rawTyped.ys; // original signal's Y — the F₀ source for ΔF/F₀
+  const controlTyped = toTyped(controlSignal);
+
+  // 1. Noise suppression (control subtraction). Returns the same `ys`
+  //    reference when there is nothing to subtract. Keyed on the STABLE input
+  //    identities (`rawSignal`/`controlSignal`), not the freshly-extracted
+  //    typed arrays — so repeat runs with the same input hit the cache and the
+  //    whole downstream chain (and the materialized processedSignal) stays a
+  //    stable reference for slider-drag reuse.
+  let ys = memo(
     "suppressNoise",
     [id(rawSignal), id(controlSignal), params.subtractControl ? "1" : "0"],
     () =>
       perf.time("suppressNoise", () =>
-        suppressNoise(rawSignal, controlSignal, {
-          subtractControl: params.subtractControl,
-        })
+        suppressNoiseYs(
+          xs,
+          rawYs,
+          controlTyped.xs,
+          controlTyped.ys,
+          params.subtractControl
+        )
       )
   );
 
@@ -158,21 +201,21 @@ export function runNeuralAnalysisPipeline({
   // height); each above-cutoff run is replaced by a straight line. Removal
   // (not source mutation) keeps array length and x-values, so all integer
   // sample indices and identity-keyed memos stay valid. When nothing is
-  // removed, `removeOutliers` returns the same array reference so downstream
-  // memo identity is unchanged.
+  // removed, `removeOutliersYs` returns the same y-array reference so
+  // downstream memo identity is unchanged.
   let outlierMeta = { count: 0, regions: [], outlierPoints: [] };
   if (params.handleOutliers) {
     const outlierResult = memo(
       "removeOutliers",
-      [id(processed), params.outlierSensitivity ?? 1.5],
+      [id(ys), params.outlierSensitivity ?? 1.5],
       () =>
         perf.time("removeOutliers", () =>
-          removeOutliers(processed, {
+          removeOutliersYs(xs, ys, {
             sensitivity: params.outlierSensitivity ?? 1.5,
           })
         )
     );
-    processed = outlierResult.cleanedSignal;
+    ys = outlierResult.cleanedYs;
     outlierMeta = {
       count: outlierResult.regions.length,
       regions: outlierResult.regions,
@@ -184,11 +227,10 @@ export function runNeuralAnalysisPipeline({
   // included in trend flattening — the `rollingMinMedian` tracker naturally
   // ignores tall peaks (they're never among the K smallest in any window) so
   // their presence doesn't bias the baseline.
-  let processedForDetection = processed;
-  // Snapshot of the signal BEFORE Savitzky-Golay smoothing (when SG is
-  // enabled). Used as the noise reference for the noise-floor σ estimate
-  // in detectSpikes — see step 4 below.
-  let preSmoothingSignal = null;
+  //
+  // Snapshot of the Y BEFORE Savitzky-Golay smoothing (when SG is enabled).
+  // Used as the noise reference for the noise-floor σ estimate in detectSpikes.
+  let preSmoothingYs = null;
   // ΔF/F₀ normalization outcome, surfaced on the result for the panel
   // readout + unit labeling. Default = not applied (native units).
   let normalizationMeta = {
@@ -204,30 +246,28 @@ export function runNeuralAnalysisPipeline({
     const tfMinimums = params.trendFlatteningMinimums ?? 50;
 
     if (params.trendFlatteningEnabled) {
-      processed = memo(
+      ys = memo(
         "trendFlattening",
-        [id(processed), tfWindow, tfMinimums],
+        [id(ys), tfWindow, tfMinimums],
         () =>
           perf.time("trendFlattening", () =>
-            trendFlattening(processed, {
+            trendFlatteningYs(xs, ys, {
               windowSize: tfWindow,
               numMinimums: tfMinimums,
             })
           )
       );
-      processedForDetection = processed;
     }
 
     if (params.baselineCorrection) {
-      processed = memo(
+      ys = memo(
         "baselineCorrected",
-        [id(processed), tfWindow, tfMinimums],
+        [id(ys), tfWindow, tfMinimums],
         () =>
           perf.time("baselineCorrected", () =>
-            baselineCorrected(processed, tfWindow, tfMinimums)
+            baselineCorrectedYs(ys, tfWindow, tfMinimums)
           )
       );
-      processedForDetection = processed;
     }
 
     // ΔF/F₀ normalization (the client's "detrend → F/Fo"). Runs right
@@ -251,8 +291,8 @@ export function runNeuralAnalysisPipeline({
     if (params.neuralNormalizationEnabled && params.trendFlatteningEnabled) {
       // F₀ = median of the RAW signal over the user-defined baseline window
       // (plate-wide ratios → this well's sample indices). No window ratios
-      // → whole-trace median (legacy fallback).
-      const rawYs = rawSignal.map((p) => p.y);
+      // → whole-trace median (legacy fallback). `rawYs` is the original
+      // typed Y array — no extra allocation.
       const fo = computeFo(
         rawYs,
         foWindowIndices(
@@ -262,7 +302,7 @@ export function runNeuralAnalysisPipeline({
         )
       );
       if (fo != null) {
-        const detrended = processed;
+        const detrendedYs = ys;
         // Only rescale when a valid plate-median F₀ scalar is supplied;
         // otherwise emit the bare ΔF/F₀ fold-change. Derived outside the
         // memo so the unit label is correct on a cache hit too.
@@ -271,17 +311,20 @@ export function runNeuralAnalysisPipeline({
             ? params.plateMedianFo
             : null;
         const rescaled = plateMedianFo != null;
-        processed = memo("normalize", [id(detrended), fo, plateMedianFo], () =>
+        ys = memo("normalize", [id(detrendedYs), fo, plateMedianFo], () =>
           perf.time("normalize", () => {
-            const { ys } = applyDeltaFOverFo(
-              detrended.map((p) => p.y),
-              fo,
-              { medianFo: plateMedianFo }
-            );
-            return detrended.map((p, i) => ({ x: p.x, y: ys[i] }));
+            // ΔF/F₀ (× plate-median F₀ when rescaling) in a single pass.
+            // Equivalent to applyDeltaFOverFo's
+            // `y = src * ((rescale ? medianFo : 1) / fo)` — fo is validated
+            // non-null here.
+            const factor = (plateMedianFo != null ? plateMedianFo : 1) / fo;
+            const out = new Float64Array(detrendedYs.length);
+            for (let i = 0; i < detrendedYs.length; i++) {
+              out[i] = detrendedYs[i] * factor;
+            }
+            return out;
           })
         );
-        processedForDetection = processed;
         normalizationMeta = {
           applied: true,
           thisWellFo: fo,
@@ -308,16 +351,36 @@ export function runNeuralAnalysisPipeline({
       // σ. Lets the noise-floor slider's "× σ" threshold reflect the
       // actual noise (data − smoothed) regardless of how aggressive the
       // smoother is.
-      preSmoothingSignal = processed;
-      processed = memo(
+      preSmoothingYs = ys;
+      ys = memo(
         "smoothing",
-        [id(processed), sgWindow],
-        () =>
-          perf.time("smoothing", () => savitzkyGolay(processed, sgWindow))
+        [id(ys), sgWindow],
+        () => perf.time("smoothing", () => savitzkyGolayYs(ys, sgWindow))
       );
-      processedForDetection = processed;
     }
   }
+
+  // Materialize the {x,y}[] that detection / metrics / reports / the chart
+  // consume — ONCE, at the boundary. `processed` and `processedForDetection`
+  // are identical (every stage advanced Y together), so a single
+  // materialization serves both. Memoized on the final `ys` identity so a
+  // detection-only slider drag (upstream `ys` unchanged) reuses the same
+  // {x,y}[] reference and the detection memo keys stay stable.
+  const materializeXY = (ysArr) => {
+    const n = ysArr.length;
+    const out = new Array(n);
+    for (let i = 0; i < n; i++) out[i] = { x: xs[i], y: ysArr[i] };
+    return out;
+  };
+  const processed = memo("materialize", [id(ys)], () =>
+    perf.time("materialize", () => materializeXY(ys))
+  );
+  const processedForDetection = processed;
+  const preSmoothingSignal = preSmoothingYs
+    ? memo("materializePreSmoothing", [id(preSmoothingYs)], () =>
+        perf.time("materialize", () => materializeXY(preSmoothingYs))
+      )
+    : null;
 
   // 4. Spike detection (on the outlier-cleaned signal)
   let spikeResults = [];
@@ -482,13 +545,12 @@ export function runNeuralAnalysisPipeline({
         ],
         () =>
           perf.time("activityThreshold", () => {
-            let yMin = Infinity;
-            let yMax = -Infinity;
-            for (let i = 0; i < processed.length; i++) {
-              const y = processed[i].y;
-              if (y < yMin) yMin = y;
-              if (y > yMax) yMax = y;
-            }
+            // Envelope of the rendered processed signal. computeSignalStats
+            // is WeakMap-cached on the array identity and detection already
+            // populated it for this same array, so this is a free lookup
+            // rather than a second full-N min/max scan.
+            const { globalMin: yMin, globalMax: yMax } =
+              computeSignalStats(processed);
             if (!isFinite(yMin) || !isFinite(yMax) || yMax === yMin) {
               return { spikes: spikeResults, demoted: [] };
             }
@@ -642,8 +704,15 @@ export function runNeuralAnalysisPipeline({
 
   // Return the processed signal for display
   // Outliers have been removed from detection but will be marked as spikes
+  //
+  // `processedXs`/`processedYs` are the pipeline's internal typed arrays (the
+  // shared X and the final-stage Y) — the SAME data as `processedSignal`, at
+  // zero extra allocation. The worker transfers these directly instead of
+  // re-flattening the {x,y}[], saving a full pass on every run.
   return {
     processedSignal: processed,
+    processedXs: xs,
+    processedYs: ys,
     spikeResults,
     burstResults,
     metrics,
