@@ -29,43 +29,37 @@
 
 import { runNeuralAnalysisPipeline } from "../components/NeuralAnalysis/NeuralPipeline";
 
-// Materialize a {x, y}[] view from parallel typed arrays. One allocation
-// for the array of objects; the underlying typed arrays were transferred
-// (no copy on receipt).
-function materialize(xs, ys) {
-  if (!xs || !ys || ys.length === 0) return [];
-  const n = ys.length;
-  const out = new Array(n);
-  for (let i = 0; i < n; i++) out[i] = { x: xs[i], y: ys[i] };
-  return out;
-}
-
 self.onmessage = (event) => {
   const msg = event.data;
   if (!msg || msg.type !== "runPlateRange") return;
   const { reqId, wells, control, params, noiseSuppressionActive } = msg;
 
   try {
-    const controlSignal = materialize(control?.xs, control?.ys);
+    // Pass the transferred typed arrays straight into the pipeline — it accepts
+    // an { xs, ys } pair and never builds a per-well {x,y}[] for the input.
+    // Across 96–384 wells that removes one full-N object array per well.
+    const controlSignal = control
+      ? { xs: control.xs, ys: control.ys }
+      : [];
 
     let min = Infinity;
     let max = -Infinity;
     const list = Array.isArray(wells) ? wells : [];
     for (let w = 0; w < list.length; w++) {
       const well = list[w];
-      const rawSignal = materialize(well?.xs, well?.ys);
-      if (rawSignal.length === 0) continue;
+      if (!well || !well.ys || well.ys.length === 0) continue;
       const res = runNeuralAnalysisPipeline({
-        rawSignal,
+        rawSignal: { xs: well.xs, ys: well.ys },
         controlSignal,
         params,
         analysis: { runSpikeDetection: false, runBurstDetection: false },
         noiseSuppressionActive,
         cache: null,
       });
-      const ps = res.processedSignal || [];
-      for (let i = 0; i < ps.length; i++) {
-        const y = ps[i].y;
+      // Read the processed Y straight off the typed array the pipeline exposes.
+      const ys = res.processedYs || [];
+      for (let i = 0; i < ys.length; i++) {
+        const y = ys[i];
         if (y < min) min = y;
         if (y > max) max = y;
       }

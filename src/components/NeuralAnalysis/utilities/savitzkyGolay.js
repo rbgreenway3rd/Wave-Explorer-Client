@@ -15,8 +15,12 @@ function reflect(idx, n) {
   return idx;
 }
 
-export function savitzkyGolay(signal, windowSize = 5) {
-  if (!Array.isArray(signal) || signal.length === 0) return [];
+// Typed core: convolve a Float64Array of y-values, return a new Float64Array.
+// The neural pipeline calls this directly so smoothing never allocates a
+// {x,y}[] between stages; the wrapper below keeps the original signature.
+export function savitzkyGolayYs(ys, windowSize = 5) {
+  const n = ys.length;
+  if (n === 0) return new Float64Array(0);
 
   let cfg = SG_COEFFS[windowSize];
   if (!cfg) {
@@ -27,9 +31,8 @@ export function savitzkyGolay(signal, windowSize = 5) {
     cfg = SG_COEFFS[5];
   }
 
-  const n = signal.length;
   const half = (cfg.coeffs.length - 1) >> 1;
-  const out = new Array(n);
+  const out = new Float64Array(n);
   const norm = cfg.norm;
   const c = cfg.coeffs;
 
@@ -37,9 +40,20 @@ export function savitzkyGolay(signal, windowSize = 5) {
     let acc = 0;
     for (let k = -half; k <= half; k++) {
       const idx = reflect(i + k, n);
-      acc += signal[idx].y * c[k + half];
+      acc += ys[idx] * c[k + half];
     }
-    out[i] = { x: signal[i].x, y: acc / norm };
+    out[i] = acc / norm;
   }
   return out;
+}
+
+export function savitzkyGolay(signal, windowSize = 5) {
+  if (!Array.isArray(signal) || signal.length === 0) return [];
+  const n = signal.length;
+  const ys = new Float64Array(n);
+  for (let i = 0; i < n; i++) ys[i] = signal[i].y;
+  const out = savitzkyGolayYs(ys, windowSize);
+  const result = new Array(n);
+  for (let i = 0; i < n; i++) result[i] = { x: signal[i].x, y: out[i] };
+  return result;
 }

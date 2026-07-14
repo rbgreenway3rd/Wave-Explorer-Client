@@ -28,16 +28,12 @@ import { perf } from "./perfLogger";
 
 const STALE = Symbol("stale");
 
-// Watchdog for a wedged worker. A pathological detection (e.g. a very
-// noisy trace flooding the k-means / NMS stages) can leave the worker
-// computing far longer than any legitimate run — the promise would never
-// settle and the "Updating…" spinner would spin forever. If the worker
-// hasn't replied within this budget we treat it as wedged: reject the
-// request(s) and recycle the worker. Set well above a cold-cache run on a
-// 250K-sample signal (normally sub-second to low-seconds), so a real run
-// never trips it.
-const PIPELINE_TIMEOUT_MS = 30000;
-
+// No wall-clock watchdog on the worker. A run takes as long as it takes —
+// on slower hardware a heavy trace can legitimately compute for many
+// seconds, and we would rather leave the "Updating…" spinner up than abort
+// a run that would have completed. A genuinely dead worker (crash / OOM)
+// still surfaces via the worker `onerror` path below, which rejects any
+// in-flight requests; only time-based aborts are gone.
 const yieldToBrowser = () =>
   new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -119,14 +115,12 @@ export function makePipelineRunner() {
       const entry = pending.get(msg.reqId);
       if (!entry) return; // already considered stale on main side
       pending.delete(msg.reqId);
-      if (entry.timer) clearTimeout(entry.timer);
       if (msg.type === "result") entry.resolve(msg);
       else if (msg.type === "error") entry.reject(new Error(msg.message));
     };
     worker.onerror = (event) => {
       // Worker-level error: reject everything in flight.
       for (const [, entry] of pending) {
-        if (entry.timer) clearTimeout(entry.timer);
         entry.reject(event.error || event);
       }
       pending.clear();
@@ -134,41 +128,10 @@ export function makePipelineRunner() {
     return worker;
   }
 
-  // Watchdog fired: the worker is presumed wedged. Terminate it (a single
-  // instance runs everything single-threaded, so every queued request is
-  // stuck behind the runaway one) and reject all in-flight requests with a
-  // tagged timeout so callers surface an error state instead of an infinite
-  // spinner. ensureWorker() builds a fresh worker on the next run().
-  function recycleWorkerAndFail() {
-    if (worker) {
-      try {
-        worker.terminate();
-      } catch (_e) {
-        // ignore
-      }
-    }
-    worker = null;
-    workerStale = false;
-    perf.count("pipelineRunner.workerTimeout");
-    for (const [, entry] of pending) {
-      if (entry.timer) clearTimeout(entry.timer);
-      entry.reject(
-        Object.assign(new Error("pipeline timeout"), {
-          code: "PIPELINE_TIMEOUT",
-        })
-      );
-    }
-    pending.clear();
-  }
-
   function postAndAwait(reqId, payload, transferList) {
     const w = ensureWorker();
     return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        if (!pending.has(reqId)) return;
-        recycleWorkerAndFail();
-      }, PIPELINE_TIMEOUT_MS);
-      pending.set(reqId, { resolve, reject, timer });
+      pending.set(reqId, { resolve, reject });
       w.postMessage(payload, transferList);
     });
   }
@@ -181,7 +144,6 @@ export function makePipelineRunner() {
       // stale worker and are no longer trusted.
       activeReqId++;
       for (const [, entry] of pending) {
-        if (entry.timer) clearTimeout(entry.timer);
         entry.reject(new Error("worker recycled"));
       }
       pending.clear();
@@ -294,7 +256,6 @@ export function makePipelineRunner() {
         worker = null;
       }
       for (const [, entry] of pending) {
-        if (entry.timer) clearTimeout(entry.timer);
         entry.reject(new Error("disposed"));
       }
       pending.clear();

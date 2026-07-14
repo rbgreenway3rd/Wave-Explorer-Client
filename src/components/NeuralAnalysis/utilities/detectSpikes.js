@@ -127,7 +127,22 @@ export function computeLocalRobustStd(data, reference, windowSize) {
 //
 // Returns the data-only robustStd when `reference` is null/undefined or
 // length-mismatched.
+//
+// Memoized on (data, reference) identity — the live pipeline computes the
+// SAME residual σ twice per run (once in detectSpikes, once in the metrics
+// stage), each an O(n log n) sort pair with two full-n allocations. On an
+// 86K-sample well that recompute is ~a third of the whole run; the cache
+// collapses the second call to a lookup. WeakMap-keyed so it can't leak.
+const residualStdCache = new WeakMap(); // data → { reference, value }
 export function computeResidualRobustStd(data, reference) {
+  const cached = residualStdCache.get(data);
+  if (cached && cached.reference === reference) return cached.value;
+  const value = computeResidualRobustStdUncached(data, reference);
+  residualStdCache.set(data, { reference, value });
+  return value;
+}
+
+function computeResidualRobustStdUncached(data, reference) {
   if (
     !reference ||
     !Array.isArray(reference) ||

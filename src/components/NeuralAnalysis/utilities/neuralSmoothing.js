@@ -1,17 +1,26 @@
 import { rollingMinMedian } from "./rollingWindow";
 
-// Combined trend flattening and minimum-median baseline correction
-export function trendFlattening(signal, options = {}) {
-  if (!Array.isArray(signal) || signal.length === 0) return [];
-  // Linear regression (least squares) to fit y = a*x + b
-  const n = signal.length;
+// Combined trend flattening + minimum-median baseline correction.
+//
+// Typed core: operates on parallel Float64Arrays (xs, ys) and returns a new
+// Float64Array of processed y-values. The neural pipeline threads typed arrays
+// stage-to-stage (one shared `xs`, a fresh `ys` per stage) so it never
+// allocates a full {x,y}[] object array between stages — a large GC/memory
+// reduction on 250K-sample traces. The {x,y}[] wrapper below preserves the
+// original signature for callers outside the pipeline (e.g. the report worker).
+
+export function trendFlatteningYs(xs, ys, options = {}) {
+  const n = ys.length;
+  if (n === 0) return new Float64Array(0);
+
+  // Linear regression (least squares) to fit y = a*x + b.
   let sumX = 0,
     sumY = 0,
     sumXY = 0,
     sumXX = 0;
   for (let i = 0; i < n; i++) {
-    const x = signal[i].x;
-    const y = signal[i].y;
+    const x = xs[i];
+    const y = ys[i];
     sumX += x;
     sumY += y;
     sumXY += x * y;
@@ -25,37 +34,48 @@ export function trendFlattening(signal, options = {}) {
     b = (sumY * sumXX - sumX * sumXY) / denominator;
   }
 
-  // Subtract linear trend AND extract the y-values into a flat array
-  // for the rolling baseline below — combining the loops avoids one
-  // full-signal allocation on top of `detrended`.
-  const detrended = new Array(n);
-  const detrendedYs = new Array(n);
+  // Subtract the linear trend.
+  const detrendedYs = new Float64Array(n);
   for (let i = 0; i < n; i++) {
-    const x = signal[i].x;
-    const y = signal[i].y - (a * x + b);
-    detrended[i] = { x, y };
-    detrendedYs[i] = y;
+    detrendedYs[i] = ys[i] - (a * xs[i] + b);
   }
 
-  // Minimum-median baseline correction via rolling sorted window.
-  // Replaces a per-sample slice + map + sort + slice (O(W log W) +
-  // 4 allocations per sample) with one binary insert + one binary
-  // remove per sample on a single shared sorted-array structure.
+  // Minimum-median baseline correction via the rolling sorted-window helper.
   const windowSize = options.windowSize || 200;
   const numMinimums = options.numMinimums || 50;
   const effectiveWindowSize = Math.min(windowSize, Math.floor(n / 2));
-  const baseline = rollingMinMedian(
-    detrendedYs,
-    effectiveWindowSize,
-    numMinimums
-  );
+  const baseline = rollingMinMedian(detrendedYs, effectiveWindowSize, numMinimums);
 
-  // Subtract baseline from detrended
-  const out = new Array(n);
-  for (let i = 0; i < n; i++) {
-    out[i] = { x: detrended[i].x, y: detrended[i].y - baseline[i] };
-  }
+  const out = new Float64Array(n);
+  for (let i = 0; i < n; i++) out[i] = detrendedYs[i] - baseline[i];
   return out;
+}
+
+export function baselineCorrectedYs(ys, windowSize = 200, numMinimums = 50) {
+  const n = ys.length;
+  if (n === 0) return new Float64Array(0);
+  const effectiveWindowSize = Math.min(windowSize, Math.floor(n / 2));
+  const baseline = rollingMinMedian(ys, effectiveWindowSize, numMinimums);
+  const out = new Float64Array(n);
+  for (let i = 0; i < n; i++) out[i] = ys[i] - baseline[i];
+  return out;
+}
+
+// ---- {x,y}[] wrappers (unchanged public API) ---------------------------
+
+export function trendFlattening(signal, options = {}) {
+  if (!Array.isArray(signal) || signal.length === 0) return [];
+  const n = signal.length;
+  const xs = new Float64Array(n);
+  const ys = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    xs[i] = signal[i].x;
+    ys[i] = signal[i].y;
+  }
+  const out = trendFlatteningYs(xs, ys, options);
+  const result = new Array(n);
+  for (let i = 0; i < n; i++) result[i] = { x: signal[i].x, y: out[i] };
+  return result;
 }
 
 /**
@@ -68,20 +88,12 @@ export function trendFlattening(signal, options = {}) {
 export function baselineCorrected(signal, windowSize = 200, numMinimums = 50) {
   if (!Array.isArray(signal) || signal.length === 0) return [];
   const n = signal.length;
-  const effectiveWindowSize = Math.min(windowSize, Math.floor(n / 2));
-
-  // Extract y's into a flat array, then run the rolling sorted-window
-  // helper. Same numerical result as the previous slice-map-sort loop
-  // but at ~7–10× the throughput on the modal's typical signal sizes.
-  const ys = new Array(n);
+  const ys = new Float64Array(n);
   for (let i = 0; i < n; i++) ys[i] = signal[i].y;
-  const baseline = rollingMinMedian(ys, effectiveWindowSize, numMinimums);
-
-  const out = new Array(n);
-  for (let i = 0; i < n; i++) {
-    out[i] = { x: signal[i].x, y: signal[i].y - baseline[i] };
-  }
-  return out;
+  const out = baselineCorrectedYs(ys, windowSize, numMinimums);
+  const result = new Array(n);
+  for (let i = 0; i < n; i++) result[i] = { x: signal[i].x, y: out[i] };
+  return result;
 }
 
 // The former `baselineSmoothed` helper (a per-sample slice-map-sort
