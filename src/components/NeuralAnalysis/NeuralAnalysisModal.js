@@ -22,6 +22,7 @@ import NeuralResults, {
 } from "./subComponents/NeuralResults/NeuralResults";
 import ChartControls from "./subComponents/NeuralGraph/ChartControls";
 import NeuralWellSelector from "./subComponents/WellSelection/NeuralWellSelector";
+import WellLegend from "./subComponents/WellSelection/WellLegend";
 import CollapsibleSection from "./subComponents/CollapsibleSection";
 import DetectionFunnel from "./subComponents/DetectionFunnel";
 import PeakInspector from "./subComponents/PeakInspector";
@@ -482,6 +483,7 @@ export const NeuralAnalysisModal = ({ open, onClose }) => {
                 title="Wells"
                 expanded={rightColumnExpanded.wells}
                 onToggle={() => toggleRightSection("wells")}
+                headerRight={<WellLegend />}
               >
                 <NeuralWellSelector />
               </CollapsibleSection>

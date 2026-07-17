@@ -1,18 +1,18 @@
 import React, { useEffect, useMemo, useState, useContext } from "react";
 import { DataContext } from "../../../../providers/DataProvider";
-import {
-  useNeuralSelection,
-  useNeuralSettings,
-} from "../../NeuralProvider";
+import { useNeuralSelection } from "../../NeuralProvider";
 import { Line } from "react-chartjs-2";
 import Tooltip from "@mui/material/Tooltip";
 import "../../styles/WellSelector.css";
 
 /**
  * NeuralWellSelector — well grid in the right column of the Neural
- * modal. Reads selection + control-well state directly from
- * NeuralSelectionContext and the noise-suppression flag from
- * NeuralSettingsContext, so the modal passes no props.
+ * modal. Its sole interaction is choosing the DISPLAYED well; the
+ * parameter/setting well selections (control well, control set, F/Fo
+ * exclusion) are made in NeuralWellPickerModal, opened from their panels.
+ * This grid still renders read-only highlights for those designated wells
+ * so the user can see them in context. Reads selection state directly from
+ * NeuralSelectionContext, so the modal passes no props.
  */
 const NeuralWellSelector = () => {
   const { project, wellArrays } = useContext(DataContext);
@@ -20,17 +20,9 @@ const NeuralWellSelector = () => {
     selectedWell,
     setSelectedWell,
     controlWell,
-    setControlWell,
-    selectingControl,
-    setSelectingControl,
     controlWellSet,
-    selectingControlSet,
-    toggleControlSetWell,
     foExcludedWellSet,
-    selectingFoExclusion,
-    toggleFoExcludedWell,
   } = useNeuralSelection();
-  const { noiseSuppressionActive } = useNeuralSettings();
   const [globalYMin, setGlobalYMin] = useState(null);
   const [globalYMax, setGlobalYMax] = useState(null);
 
@@ -196,28 +188,9 @@ const NeuralWellSelector = () => {
                 height: "100%",
                 maxHeight: cellHeight / 1.5,
                 maxWidth: cellWidth / 1.5,
-                opacity: selectingControl && !controlWell ? 0.7 : 1,
-                cursor:
-                  selectingControl || selectingControlSet || selectingFoExclusion
-                    ? "pointer"
-                    : "default",
+                cursor: "pointer",
               }}
-              onClick={() => {
-                if (selectingFoExclusion) {
-                  // Multi-select: toggle this well's exclusion from the plate
-                  // F₀ median; stay armed so several wells can be picked.
-                  toggleFoExcludedWell(well);
-                } else if (selectingControlSet) {
-                  // Multi-select: toggle membership, stay in select mode so
-                  // the user can pick several wells without re-arming.
-                  toggleControlSetWell(well);
-                } else if (selectingControl && noiseSuppressionActive) {
-                  setControlWell(well);
-                  setSelectingControl(false);
-                } else if (!selectingControl) {
-                  handleSelectWell(well);
-                }
-              }}
+              onClick={() => handleSelectWell(well)}
             >
               <Line
                 type="line"

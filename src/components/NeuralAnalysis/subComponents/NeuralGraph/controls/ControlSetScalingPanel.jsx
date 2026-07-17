@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { FormControlLabel, Switch } from "@mui/material";
 import { Panel, Button } from "../../../../ui";
 import {
@@ -6,6 +6,7 @@ import {
   useNeuralSettings,
   useNeuralResults,
 } from "../../../NeuralProvider";
+import NeuralWellPickerModal from "../../WellSelection/NeuralWellPickerModal";
 import "./NeuralControlPanel.css";
 
 /**
@@ -23,16 +24,13 @@ import "./NeuralControlPanel.css";
  * surfaced here read-only for transparency.
  */
 const ControlSetScalingPanel = () => {
-  const {
-    controlWellSet,
-    selectingControlSet,
-    setSelectingControlSet,
-    clearControlSet,
-  } = useNeuralSelection();
+  const { controlWellSet, setControlWellSet, clearControlSet } =
+    useNeuralSelection();
   const { controlScalingEnabled, setControlScalingEnabled } =
     useNeuralSettings();
   const { controlScalingActive, controlScaleFactor, controlMedianPeakHeight } =
     useNeuralResults();
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const count = controlWellSet?.length || 0;
 
@@ -48,7 +46,6 @@ const ControlSetScalingPanel = () => {
 
   const handleToggleEnabled = (_, checked) => {
     setControlScalingEnabled(checked);
-    if (!checked) setSelectingControlSet(false);
   };
 
   return (
@@ -75,15 +72,11 @@ const ControlSetScalingPanel = () => {
       <Button
         variant="secondary"
         block
-        className={`neural-control-well-button ${
-          selectingControlSet ? "neural-control-well-button--selecting" : ""
-        }`.trim()}
-        onClick={() => setSelectingControlSet(!selectingControlSet)}
+        className="neural-control-well-button"
+        onClick={() => setPickerOpen(true)}
         disabled={!controlScalingEnabled}
       >
-        {selectingControlSet
-          ? "Click wells to toggle — done when finished"
-          : count > 0
+        {count > 0
           ? `Control wells: ${count} selected`
           : "Select Control Wells"}
       </Button>
@@ -129,6 +122,16 @@ const ControlSetScalingPanel = () => {
           )}
         </div>
       )}
+
+      <NeuralWellPickerModal
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        title="Select Control Wells (scaling)"
+        multiSelect
+        accentColor="#ab47bc"
+        initialSelectedIds={controlWellSet.map((w) => w.id)}
+        onConfirm={(wells) => setControlWellSet(wells)}
+      />
     </Panel>
   );
 };

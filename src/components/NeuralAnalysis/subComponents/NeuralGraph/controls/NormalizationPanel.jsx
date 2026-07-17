@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { FormControlLabel, Switch, Button } from "@mui/material";
 import { Panel } from "../../../../ui";
 import { DataContext } from "../../../../../providers/DataProvider";
@@ -8,6 +8,7 @@ import {
   useNeuralSelection,
 } from "../../../NeuralProvider";
 import { computeEdgeWells } from "../../../utilities/neuralWellExclusion";
+import NeuralWellPickerModal from "../../WellSelection/NeuralWellPickerModal";
 import "./NeuralControlPanel.css";
 
 /**
@@ -46,37 +47,12 @@ const NormalizationPanel = () => {
   } = useNeuralSettings();
   const { pipelineResults, plateMedianFo, plateSkippedFoCount } =
     useNeuralResults();
-  const {
-    foExcludedWellSet,
-    setFoExcludedWellSet,
-    selectingFoExclusion,
-    setSelectingFoExclusion,
-    clearFoExcluded,
-    setSelectingControl,
-    setSelectingControlSet,
-  } = useNeuralSelection();
+  const { foExcludedWellSet, setFoExcludedWellSet, clearFoExcluded } =
+    useNeuralSelection();
   const { wellArrays } = useContext(DataContext);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const excludedCount = foExcludedWellSet.length;
-  // Arm "click wells to exclude" mode, disarming the other grid modes so
-  // only one selection intent is live at a time.
-  const toggleExclusionSelecting = () => {
-    setSelectingFoExclusion((prev) => {
-      const next = !prev;
-      if (next) {
-        setSelectingControl(false);
-        setSelectingControlSet(false);
-      }
-      return next;
-    });
-  };
-  // One-click "outer ring" pick: every well in the first/last row or
-  // column. Derived from actual min/max row & column so it's correct
-  // regardless of plate size or 0-/1-based indexing.
-  const selectEdgeWells = () => {
-    const edge = computeEdgeWells(wellArrays);
-    if (edge.length > 0) setFoExcludedWellSet(edge);
-  };
   // All valid wells excluded → no plate median → rescale silently falls back
   // to bare ΔF/F₀. Warn so the user understands why the × median F₀ did nothing.
   const exclusionEmptiedMedian =
@@ -213,15 +189,10 @@ const NormalizationPanel = () => {
               >
                 <Button
                   size="small"
-                  variant={selectingFoExclusion ? "contained" : "outlined"}
-                  onClick={toggleExclusionSelecting}
+                  variant="outlined"
+                  onClick={() => setPickerOpen(true)}
                 >
-                  {selectingFoExclusion
-                    ? "Done selecting"
-                    : "Select wells to exclude"}
-                </Button>
-                <Button size="small" variant="outlined" onClick={selectEdgeWells}>
-                  Select all edge wells
+                  Select wells to exclude
                 </Button>
                 <Button
                   size="small"
@@ -235,13 +206,6 @@ const NormalizationPanel = () => {
                   {excludedCount} well{excludedCount === 1 ? "" : "s"} excluded
                 </span>
               </div>
-            )}
-
-            {foExclusionEnabled && selectingFoExclusion && (
-              <p className="neural-control-well-info__hint">
-                Click wells in the grid to toggle their exclusion from the
-                plate F₀ median.
-              </p>
             )}
           </>
         )}
@@ -294,6 +258,22 @@ const NormalizationPanel = () => {
           </p>
         </div>
       )}
+
+      <NeuralWellPickerModal
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        title="Select Wells to Exclude from Plate F₀"
+        multiSelect
+        accentColor="#e53935"
+        initialSelectedIds={foExcludedWellSet.map((w) => w.id)}
+        extraActions={[
+          {
+            label: "Select all edge wells",
+            onClick: () => computeEdgeWells(wellArrays).map((w) => w.id),
+          },
+        ]}
+        onConfirm={(wells) => setFoExcludedWellSet(wells)}
+      />
     </Panel>
   );
 };

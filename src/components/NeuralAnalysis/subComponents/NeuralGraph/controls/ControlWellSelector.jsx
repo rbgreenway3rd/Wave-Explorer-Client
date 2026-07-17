@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { FormControlLabel, Switch } from "@mui/material";
 import { Panel, Button } from "../../../../ui";
 import {
   useNeuralSelection,
   useNeuralSettings,
 } from "../../../NeuralProvider";
+import NeuralWellPickerModal from "../../WellSelection/NeuralWellPickerModal";
 import "./NeuralControlPanel.css";
 
 /**
@@ -21,23 +22,16 @@ import "./NeuralControlPanel.css";
  * the rest of the modal's actions.
  */
 const ControlWellSelector = ({ disabled = false }) => {
-  const {
-    selectedWell,
-    controlWell,
-    setControlWell,
-    selectingControl,
-    setSelectingControl,
-  } = useNeuralSelection();
+  const { selectedWell, controlWell, setControlWell } = useNeuralSelection();
   const { subtractControl, setSubtractControl } = useNeuralSettings();
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const handleButtonClick = () => {
-    if (disabled || controlWell) return;
-    setSelectingControl(!selectingControl);
+    if (disabled) return;
+    setPickerOpen(true);
   };
 
-  const stateClass = selectingControl
-    ? "neural-control-well-button--selecting"
-    : controlWell
+  const stateClass = controlWell
     ? "neural-control-well-button--selected"
     : "";
 
@@ -71,16 +65,12 @@ const ControlWellSelector = ({ disabled = false }) => {
         block
         className={`neural-control-well-button ${stateClass}`.trim()}
         onClick={handleButtonClick}
-        disabled={disabled || (!selectingControl && !!controlWell)}
+        disabled={disabled}
       >
-        {selectingControl
-          ? "Click a well to set as Control"
-          : controlWell
-          ? `Control: ${controlWell.key}`
-          : "Select Control Well"}
+        {controlWell ? `Control: ${controlWell.key}` : "Select Control Well"}
       </Button>
 
-      {controlWell && !selectingControl && (
+      {controlWell && (
         <Button
           variant="danger"
           block
@@ -111,6 +101,16 @@ const ControlWellSelector = ({ disabled = false }) => {
           )}
         </div>
       )}
+
+      <NeuralWellPickerModal
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        title="Select Control Well"
+        multiSelect={false}
+        accentColor="#00bcd4"
+        initialSelectedIds={controlWell ? [controlWell.id] : []}
+        onConfirm={(wells) => setControlWell(wells[0] ?? null)}
+      />
     </Panel>
   );
 };

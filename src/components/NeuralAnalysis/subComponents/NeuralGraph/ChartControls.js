@@ -37,6 +37,14 @@ const ChartControls = ({
   // handler, but `closest()` matches and we early-return.
   const handleBarClick = (e) => {
     if (!open) return;
+    // Ignore clicks that originate from portaled content (e.g. the
+    // well-selection modal, which mounts under document.body). React
+    // events bubble through the React tree even across a portal, so a
+    // click inside that modal would otherwise reach here, fail the
+    // DOM-based `closest()` check, and wrongly collapse the section —
+    // unmounting the panel and the open modal with it. Only real
+    // clicks within this bar's DOM subtree should collapse.
+    if (!e.currentTarget.contains(e.target)) return;
     if (e.target.closest(".neural-advanced-tweakables-card")) return;
     onExpandedTweakableChange(null);
   };

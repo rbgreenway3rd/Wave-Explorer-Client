@@ -12,14 +12,16 @@ import React, {
  *   - selectedWell      → the well currently displayed in the graph
  *   - controlWell       → optional well used as the control signal for
  *                         noise subtraction
- *   - selectingControl  → true while the user is in "click a well to set
- *                         it as the control" mode
  *   - controlWellSet    → the set of wells designated as "control" for
  *                         control-well scaling (% of control). Distinct
  *                         from `controlWell` (noise subtraction) — different
  *                         purpose, so it's a separate multi-select.
- *   - selectingControlSet → true while the user is multi-selecting the
- *                         control set in the grid.
+ *   - foExcludedWellSet → the set of wells dropped from the plate-wide F₀
+ *                         median and Universal y-scale sweep.
+ *
+ * The control/exclusion sets are populated via NeuralWellPickerModal (a
+ * dedicated well-selection dialog), so this context only holds the picked
+ * results — there's no in-grid "selecting mode" flag anymore.
  *
  * Kept narrow on purpose: changing a slider in the Settings context must
  * NOT re-render NeuralWellSelector. NeuralWellSelector subscribes only
@@ -41,12 +43,10 @@ export const useNeuralSelection = () => {
 export const NeuralSelectionProvider = ({ children }) => {
   const [selectedWell, setSelectedWell] = useState(null);
   const [controlWell, setControlWell] = useState(null);
-  const [selectingControl, setSelectingControl] = useState(false);
 
   // Control-well scaling: a set of wells (by reference) the user picks as
   // the "control" baseline. Kept separate from the single `controlWell`.
   const [controlWellSet, setControlWellSet] = useState([]);
-  const [selectingControlSet, setSelectingControlSet] = useState(false);
 
   // F/Fo well exclusion: a set of wells (by reference) the user drops from
   // the plate-wide F₀ median AND the Universal y-scale sweep — e.g. flat
@@ -54,7 +54,6 @@ export const NeuralSelectionProvider = ({ children }) => {
   // the control set (different purpose, different math). Not persisted
   // (well refs are plate-specific); the on/off toggle lives in Settings.
   const [foExcludedWellSet, setFoExcludedWellSet] = useState([]);
-  const [selectingFoExclusion, setSelectingFoExclusion] = useState(false);
 
   // Toggle a well's membership in the control set, matched by id (the
   // grid passes the same Well objects, but match by id to be robust to
@@ -84,31 +83,22 @@ export const NeuralSelectionProvider = ({ children }) => {
       setSelectedWell,
       controlWell,
       setControlWell,
-      selectingControl,
-      setSelectingControl,
       controlWellSet,
       setControlWellSet,
-      selectingControlSet,
-      setSelectingControlSet,
       toggleControlSetWell,
       clearControlSet,
       foExcludedWellSet,
       setFoExcludedWellSet,
-      selectingFoExclusion,
-      setSelectingFoExclusion,
       toggleFoExcludedWell,
       clearFoExcluded,
     }),
     [
       selectedWell,
       controlWell,
-      selectingControl,
       controlWellSet,
-      selectingControlSet,
       toggleControlSetWell,
       clearControlSet,
       foExcludedWellSet,
-      selectingFoExclusion,
       toggleFoExcludedWell,
       clearFoExcluded,
     ]

@@ -8,7 +8,7 @@ import { NeuralInspectorProvider } from "./contexts/NeuralInspectorContext";
 /**
  * NeuralProvider — composes the four narrower Neural-modal contexts.
  *
- *   NeuralSelectionProvider  → selectedWell / controlWell / selectingControl
+ *   NeuralSelectionProvider  → selectedWell / controlWell / control + F/Fo well sets
  *   NeuralSettingsProvider   → every analysis slider/toggle (depends on selection)
  *   NeuralInteractionProvider → ROI list + pan/zoom mode (UI state)
  *   NeuralResultsProvider    → pipelineResults computed from selection + settings
