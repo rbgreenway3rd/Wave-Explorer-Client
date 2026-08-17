@@ -97,9 +97,11 @@ const BatchProcessing = ({ open, onClose }) => {
         const file = uploadedFiles[i];
         setCurrentFileName(file.name);
         setProgress(Math.round(((i + 1) / uploadedFiles.length) * 100));
-        const content = await file.text();
-        // Parse the .DAT file using extractAllData
-        const result = await extractAllData(content);
+        // Pass the File straight through so the worker streams it (avoids
+        // materializing the whole DAT as a string — 2-3× file size in RAM).
+        // commitToState: false — batch only reads the returned result and
+        // must not push every file's parse into app-wide state.
+        const result = await extractAllData(file, { commitToState: false });
         // --- Well label logic ---
         let wellLabels =
           Array.isArray(result.rowLabels) &&

@@ -383,25 +383,27 @@ export const FileUploader = ({ setWellArraysUpdated, setFile }) => {
     handleMainMenuClose();
   };
 
-  // Handle demo file selection and reading
+  // Handle demo file selection and reading. Fetched as a Blob so the
+  // extractWorker streams it, same as a user-selected .dat File — never as
+  // a full responseText string on the main thread.
   const handleDemoFileSelect = async (event) => {
     const demoFileName = event.target.value;
 
     if (demoFileName) {
       const demoFileURL = `${process.env.PUBLIC_URL}/demo-files/${demoFileName}`;
-      console.log(demoFileURL); // Check the URL
-      const xhr = new XMLHttpRequest();
-      xhr.open("GET", demoFileURL, true);
-      xhr.onreadystatechange = () => {
-        if (xhr.readyState === 4 && xhr.status === 200) {
-          const fileContent = xhr.responseText;
-          console.log(fileContent); // Log file content for debugging
-          extractAllData(fileContent); // Process the content
-          setFileType("dat");
-          setDataExtracted(true); // Trigger data extraction
+      try {
+        const resp = await fetch(demoFileURL);
+        if (!resp.ok) {
+          throw new Error(`Failed to fetch demo file: ${resp.status}`);
         }
-      };
-      xhr.send();
+        const blob = await resp.blob();
+        await extractAllData(blob);
+        setFileType("dat");
+        setDataExtracted(true);
+      } catch (error) {
+        console.error("Error loading demo file:", error);
+        alert(`Could not load demo file "${demoFileName}".`);
+      }
     }
     handleMainMenuClose();
   };

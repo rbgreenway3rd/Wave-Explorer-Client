@@ -207,11 +207,11 @@ export function runNeuralAnalysisPipeline({
   if (params.handleOutliers) {
     const outlierResult = memo(
       "removeOutliers",
-      [id(ys), params.outlierSensitivity ?? 1.5],
+      [id(ys), params.outlierSensitivity ?? 5],
       () =>
         perf.time("removeOutliers", () =>
           removeOutliersYs(xs, ys, {
-            sensitivity: params.outlierSensitivity ?? 1.5,
+            sensitivity: params.outlierSensitivity ?? 5,
           })
         )
     );

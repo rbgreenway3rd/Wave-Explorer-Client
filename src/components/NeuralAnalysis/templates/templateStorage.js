@@ -1,12 +1,14 @@
 // localStorage-backed store for Neural Analysis templates.
 //
 // On-disk shape:
-//   { schemaVersion: 1, templates: [ { name, createdAt, settings } ] }
+//   { schemaVersion: 1,
+//     templates: [ { name, createdAt, settings, controlWellKeys, roiList } ] }
 //
 // `settings` mirrors the persistable subset of NeuralSettingsContext —
-// see PERSISTABLE_KEYS. ROI list, selected well, and control well are
-// intentionally excluded: templates describe *how* to analyze, not
-// *what* to analyze.
+// see PERSISTABLE_KEYS. Selected well and control well SET are
+// intentionally excluded (well refs are plate-specific); the control
+// wells' positional keys and the ROI list are carried as top-level
+// fields alongside `settings`.
 
 const STORAGE_KEY = "waveexplorer.neural.templates";
 export const CURRENT_SCHEMA_VERSION = 1;
@@ -104,6 +106,23 @@ const sanitizeSettings = (settings) => {
 const sanitizeControlWellKeys = (keys) =>
   Array.isArray(keys) ? keys.filter((k) => typeof k === "string") : [];
 
+// ROI x-bounds are absolute seconds (neural time is seconds end-to-end), so
+// a saved ROI only lines up on recordings of comparable length. y-bounds are
+// intentionally dropped: NeuralGraph ignores stored y and spans the live
+// chart scale, and typed-entry ROIs are created with yMin/yMax null.
+// Kept as a top-level template field for the same reason as
+// controlWellKeys: it's a selection, not a knob, and sanitizeSettings
+// would strip it. A template whose roiList is absent (pre-feature) is
+// distinct from one whose roiList is [] — loaders must not conflate them.
+const MAX_TEMPLATE_ROIS = 6; // keep in sync with MAX_ROIS in ROIControls.jsx
+const sanitizeRoiList = (list) =>
+  (Array.isArray(list) ? list : [])
+    .map((r) => ({ xMin: Number(r?.xMin), xMax: Number(r?.xMax) }))
+    .filter(
+      (r) => Number.isFinite(r.xMin) && Number.isFinite(r.xMax) && r.xMin < r.xMax
+    )
+    .slice(0, MAX_TEMPLATE_ROIS);
+
 export const listTemplates = () => {
   const store = readStore();
   return [...store.templates].sort((a, b) =>
@@ -116,7 +135,12 @@ export const getTemplate = (name) => {
   return store.templates.find((t) => t.name === name) || null;
 };
 
-export const saveTemplate = (name, settings, controlWellKeys = []) => {
+export const saveTemplate = (
+  name,
+  settings,
+  controlWellKeys = [],
+  roiList = []
+) => {
   const trimmed = (name || "").trim();
   if (!trimmed) {
     throw new Error("Template name cannot be empty");
@@ -129,6 +153,7 @@ export const saveTemplate = (name, settings, controlWellKeys = []) => {
     createdAt: new Date().toISOString(),
     settings: sanitized,
     controlWellKeys: sanitizeControlWellKeys(controlWellKeys),
+    roiList: sanitizeRoiList(roiList),
   };
   if (existingIdx >= 0) {
     store.templates[existingIdx] = entry;
@@ -174,12 +199,18 @@ const sanitizeFilename = (name) =>
     .replace(/\s+/g, "-")
     .trim() || "template";
 
-export const buildTemplatePayload = (name, settings, controlWellKeys = []) => ({
+export const buildTemplatePayload = (
+  name,
+  settings,
+  controlWellKeys = [],
+  roiList = []
+) => ({
   name: (name || "").trim(),
   createdAt: new Date().toISOString(),
   schemaVersion: CURRENT_SCHEMA_VERSION,
   settings: sanitizeSettings(settings),
   controlWellKeys: sanitizeControlWellKeys(controlWellKeys),
+  roiList: sanitizeRoiList(roiList),
 });
 
 export const downloadTemplateFile = (template) => {
@@ -220,7 +251,7 @@ export const importTemplateFromFile = async (file) => {
     throw new Error("Invalid template file: missing 'settings' object");
   }
   const fallbackName = (file.name || "").replace(/\.json$/i, "") || "imported";
-  return {
+  const template = {
     name: typeof parsed.name === "string" && parsed.name.trim()
       ? parsed.name.trim()
       : fallbackName,
@@ -235,4 +266,11 @@ export const importTemplateFromFile = async (file) => {
     settings: sanitizeSettings(parsed.settings),
     controlWellKeys: sanitizeControlWellKeys(parsed.controlWellKeys),
   };
+  // Only carry roiList when the file actually has one: a pre-feature
+  // template (key absent) must stay distinguishable from a template that
+  // deliberately captures "no ROIs" ([] — clears on apply).
+  if (Array.isArray(parsed.roiList)) {
+    template.roiList = sanitizeRoiList(parsed.roiList);
+  }
+  return template;
 };

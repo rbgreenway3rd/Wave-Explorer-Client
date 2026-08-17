@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   FormGroup,
   FormControlLabel,
@@ -9,6 +9,7 @@ import {
   FormLabel,
   Radio,
   RadioGroup,
+  TextField,
   Tooltip,
 } from "@mui/material";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
@@ -79,23 +80,35 @@ const NeuralFullPlateReportModal = ({
     // "auto" stays available behind the radio for users who want a
     // per-well auto-suggested prominence instead.
     parameterMode: "defined",
+    // Min-spike well exclusion: drop wells with fewer than minSpikeCount
+    // detected spikes from the report (per-well blocks + plate summary).
+    excludeLowSpikeWells: false,
+    minSpikeCount: 5,
   });
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentWellIndex, setCurrentWellIndex] = useState(0);
   const [totalWells, setTotalWells] = useState(0);
   const [isCancelled, setIsCancelled] = useState(false);
+  // Cancellation is read inside the async generate loop, where the
+  // `isCancelled` state is a stale closure — the ref is the source of
+  // truth for logic; the state only drives the UI.
+  const isCancelledRef = useRef(false);
 
   const handleOptionChange = (key) => (event) => {
     setOptions({ ...options, [key]: event.target.checked });
   };
 
-  const handleCancelProcessing = () => setIsCancelled(true);
+  const handleCancelProcessing = () => {
+    isCancelledRef.current = true;
+    setIsCancelled(true);
+  };
 
   const handleGenerate = async () => {
     try {
       setIsProcessing(true);
       setIsCancelled(false);
+      isCancelledRef.current = false;
       setCurrentWellIndex(0);
 
       // Wells store filtered data as typed-array primary storage
@@ -123,7 +136,7 @@ const NeuralFullPlateReportModal = ({
       setTotalWells(allWells.length);
 
       const handleProgress = (wellIndex) => {
-        if (isCancelled) return;
+        if (isCancelledRef.current) return;
         setCurrentWellIndex(wellIndex);
       };
 
@@ -138,10 +151,11 @@ const NeuralFullPlateReportModal = ({
         processingParams,
         options,
         handleProgress,
-        roiList
+        roiList,
+        () => isCancelledRef.current
       );
 
-      if (isCancelled) {
+      if (isCancelledRef.current) {
         alert("Report generation cancelled.");
         setIsProcessing(false);
         setIsCancelled(false);
@@ -258,6 +272,57 @@ const NeuralFullPlateReportModal = ({
                     </div>
                   }
                 />
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                  }}
+                >
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={options.excludeLowSpikeWells}
+                        onChange={handleOptionChange("excludeLowSpikeWells")}
+                        color="primary"
+                      />
+                    }
+                    label={
+                      <div>
+                        <div className="report-modal__option-title">
+                          Exclude Low-Spike Wells
+                        </div>
+                        <span className="report-modal__option-caption">
+                          Omit wells with fewer detected spikes than the
+                          threshold from the report
+                        </span>
+                      </div>
+                    }
+                  />
+                  <TextField
+                    label="Min spikes"
+                    type="number"
+                    size="small"
+                    value={options.minSpikeCount}
+                    disabled={!options.excludeLowSpikeWells}
+                    inputProps={{ min: 1, max: 1000, step: 1 }}
+                    onChange={(e) =>
+                      setOptions({
+                        ...options,
+                        minSpikeCount: Math.min(
+                          1000,
+                          Math.max(1, Math.round(Number(e.target.value) || 1))
+                        ),
+                      })
+                    }
+                    // Enter must never submit/close the modal.
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.preventDefault();
+                    }}
+                    sx={{ width: "6.5rem", flexShrink: 0 }}
+                  />
+                </div>
               </FormGroup>
             </section>
 

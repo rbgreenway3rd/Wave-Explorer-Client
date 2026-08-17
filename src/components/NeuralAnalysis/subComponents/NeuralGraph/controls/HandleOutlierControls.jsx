@@ -66,13 +66,14 @@ const HandleOutlierControls = () => {
           onChangeCommitted={sensitivity.onChangeCommitted}
           disabled={!handleOutliers}
           min={2}
-          max={15}
+          max={50}
           step={0.5}
           marks={[
             { value: 2, label: "2" },
             { value: 5, label: "5" },
             { value: 10, label: "10" },
-            { value: 15, label: "15" },
+            { value: 25, label: "25" },
+            { value: 50, label: "50" },
           ]}
         />
         <p className="neural-control-panel__hint">

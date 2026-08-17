@@ -16,7 +16,11 @@ import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import StorageIcon from "@mui/icons-material/Storage";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import { Button, IconButton } from "../../ui";
-import { useNeuralSettings, useNeuralSelection } from "../NeuralProvider";
+import {
+  useNeuralSettings,
+  useNeuralSelection,
+  useNeuralInteraction,
+} from "../NeuralProvider";
 import { DataContext } from "../../../providers/DataProvider";
 import {
   listTemplates,
@@ -48,6 +52,7 @@ import {
 const TemplateMenu = () => {
   const { getSettingsSnapshot, applySettingsSnapshot } = useNeuralSettings();
   const { controlWellSet, setControlWellSet } = useNeuralSelection();
+  const { roiList, setRoiList } = useNeuralInteraction();
   const { wellArrays } = useContext(DataContext);
   const [anchorEl, setAnchorEl] = useState(null);
 
@@ -69,6 +74,26 @@ const TemplateMenu = () => {
       setControlWellSet((wellArrays || []).filter((w) => want.has(w.key)));
     },
     [wellArrays, setControlWellSet]
+  );
+
+  const applyRois = useCallback(
+    (template) => {
+      // Absent roiList (pre-feature template) → leave current ROIs alone.
+      // Present-but-empty [] → the template captured "no ROIs": clear.
+      const rois = template?.roiList;
+      if (!Array.isArray(rois)) return;
+      setRoiList(
+        rois.map((r) => ({
+          xMin: r.xMin,
+          xMax: r.xMax,
+          // y-bounds are not persisted; the graph spans the live chart
+          // scale, same as typed-entry ROIs.
+          yMin: null,
+          yMax: null,
+        }))
+      );
+    },
+    [setRoiList]
   );
   const [templates, setTemplates] = useState([]);
   const fileInputRef = useRef(null);
@@ -104,7 +129,8 @@ const TemplateMenu = () => {
         buildTemplatePayload(
           name,
           getSettingsSnapshot(),
-          currentControlWellKeys()
+          currentControlWellKeys(),
+          roiList
         )
       );
     } catch (err) {
@@ -128,7 +154,12 @@ const TemplateMenu = () => {
       }
     }
     try {
-      saveTemplate(name, getSettingsSnapshot(), currentControlWellKeys());
+      saveTemplate(
+        name,
+        getSettingsSnapshot(),
+        currentControlWellKeys(),
+        roiList
+      );
       refresh();
     } catch (err) {
       window.alert(err.message || "Failed to save template to browser");
@@ -152,6 +183,7 @@ const TemplateMenu = () => {
       const template = await importTemplateFromFile(file);
       applySettingsSnapshot(template.settings);
       applyControlWells(template);
+      applyRois(template);
     } catch (err) {
       window.alert(err.message || "Failed to import template");
     }
@@ -162,6 +194,7 @@ const TemplateMenu = () => {
     if (!t) return;
     applySettingsSnapshot(t.settings);
     applyControlWells(t);
+    applyRois(t);
     handleClose();
   };
 

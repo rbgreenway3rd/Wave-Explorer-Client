@@ -15,7 +15,6 @@ import { getFirestore } from "firebase/firestore";
 
 // Import the functions you need from the SDKs you need
 // import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -35,4 +34,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-export const analytics = getAnalytics(app);
+// Analytics deliberately not initialized: getAnalytics(app) at module scope
+// throws under Firefox Enhanced Tracking Protection / ad blockers, which
+// white-screens the app before React mounts. Re-add behind
+// isSupported() from "firebase/analytics" if analytics is ever wanted.

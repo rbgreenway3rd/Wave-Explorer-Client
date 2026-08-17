@@ -1,4 +1,10 @@
-import React, { createContext, useState, useReducer, useEffect } from "react";
+import React, {
+  createContext,
+  useState,
+  useReducer,
+  useEffect,
+  useRef,
+} from "react";
 
 // Create context for data
 export const DataContext = createContext();
@@ -461,48 +467,78 @@ export const DataProvider = ({ children }) => {
     return { indicatorTimes, analysisData };
   };
 
-  // Import the worker (Vite/CRA: use new URL)
-  const extractWorker = new Worker(
-    new URL("../workers/extractWorker.js", import.meta.url)
-  );
+  // One extract worker per in-flight extractAllData call, terminated when
+  // the call settles. A single worker used to be created on every render of
+  // this provider and never terminated — Firefox caps dedicated workers per
+  // origin (then silently queues new ones, hanging file loads forever) and
+  // Chromium leaks the threads until the tab dies.
+  const extractWorkersRef = useRef(new Set());
 
-  // Accepts either a string (legacy / demo-file XHR path) or a File/Blob
-  // (preferred — streamed in the worker). The worker handles both shapes
-  // and returns the same result format. Float64Array fields in the result
-  // are zero-copy transferred when the input is a Blob.
-  function extractAllData(input) {
+  useEffect(() => {
+    const workers = extractWorkersRef.current;
+    return () => {
+      workers.forEach((w) => w.terminate());
+      workers.clear();
+    };
+  }, []);
+
+  // Accepts either a string (legacy path) or a File/Blob (preferred —
+  // streamed in the worker). The worker handles both shapes and returns the
+  // same result format. Float64Array fields in the result are zero-copy
+  // transferred when the input is a Blob.
+  //
+  // commitToState: false skips the provider-wide setState calls — batch
+  // processing consumes only the returned result and must not push each
+  // file's full parse into app state.
+  function extractAllData(input, { commitToState = true } = {}) {
     return new Promise((resolve, reject) => {
-      extractWorker.onmessage = (e) => {
+      const worker = new Worker(
+        new URL("../workers/extractWorker.js", import.meta.url)
+      );
+      extractWorkersRef.current.add(worker);
+      const finish = () => {
+        extractWorkersRef.current.delete(worker);
+        worker.terminate();
+      };
+      worker.onmessage = (e) => {
         const result = e.data;
         if (result && result.__error) {
+          finish();
           reject(new Error(result.message || "extractWorker error"));
           return;
         }
-        setExtractedIndicators(result.extractedIndicators);
-        setExtractedLines(result.extractedLines);
-        setExtractedRows(result.extractedRows);
-        setRowLabels(result.rowLabels);
-        setExtractedColumns(result.extractedColumns);
-        setExtractedProjectTitle(result.extractedProjectTitle);
-        setExtractedProjectDate(result.extractedProjectDate);
-        setExtractedProjectTime(result.extractedProjectTime);
-        setExtractedProjectInstrument(result.extractedProjectInstrument);
-        setExtractedProjectProtocol(result.extractedProjectProtocol);
-        setExtractedAssayPlateBarcode(result.extractedAssayPlateBarcode);
-        setExtractedAddPlateBarcode(result.extractedAddPlateBarcode);
-        setExtractedBinning(result.extractedBinning);
-        setExtractedIndicatorConfigurations(
-          result.extractedIndicatorConfigurations
-        );
-        setExtractedOperator(result.extractedOperator);
-        setExtractedIndicatorTimes(result.extractedIndicatorTimes);
-        setAnalysisData(result.analysisData);
+        if (commitToState) {
+          setExtractedIndicators(result.extractedIndicators);
+          setExtractedLines(result.extractedLines);
+          setExtractedRows(result.extractedRows);
+          setRowLabels(result.rowLabels);
+          setExtractedColumns(result.extractedColumns);
+          setExtractedProjectTitle(result.extractedProjectTitle);
+          setExtractedProjectDate(result.extractedProjectDate);
+          setExtractedProjectTime(result.extractedProjectTime);
+          setExtractedProjectInstrument(result.extractedProjectInstrument);
+          setExtractedProjectProtocol(result.extractedProjectProtocol);
+          setExtractedAssayPlateBarcode(result.extractedAssayPlateBarcode);
+          setExtractedAddPlateBarcode(result.extractedAddPlateBarcode);
+          setExtractedBinning(result.extractedBinning);
+          setExtractedIndicatorConfigurations(
+            result.extractedIndicatorConfigurations
+          );
+          setExtractedOperator(result.extractedOperator);
+          setExtractedIndicatorTimes(result.extractedIndicatorTimes);
+          setAnalysisData(result.analysisData);
+        }
+        finish();
         resolve(result);
       };
+      worker.onerror = (event) => {
+        finish();
+        reject(new Error(event.message || "extractWorker crashed"));
+      };
       if (input && typeof input.stream === "function") {
-        extractWorker.postMessage({ file: input });
+        worker.postMessage({ file: input });
       } else {
-        extractWorker.postMessage({ content: input });
+        worker.postMessage({ content: input });
       }
     });
   }

@@ -45,6 +45,7 @@ function emitFileHeader({
   wells,
   parameterMode,
   normalization,
+  minSpikeExclusion,
 }) {
   const out = [];
   out.push("<SCOPE>FULL_PLATE</SCOPE>");
@@ -147,6 +148,16 @@ function emitFileHeader({
           ? "dFF0_x_medianFo"
           : "dFF0",
       ],
+      // Min-spike well exclusion (report-modal option). Rows appear only
+      // when enabled so default-off output stays byte-identical to before.
+      // The excluded well KEYS are only known after detection, so they're
+      // emitted post-loop in a standalone <MIN_SPIKE_EXCLUSION> block.
+      ...(minSpikeExclusion?.enabled
+        ? [
+            ["MinSpikeExclusionEnabled", true],
+            ["MinSpikeThreshold", minSpikeExclusion.threshold],
+          ]
+        : []),
       ["HandleOutliers", processingParams.handleOutliers],
       ["OutlierSensitivity", processingParams.outlierSensitivity],
       // SpikeProminence / SpikeWindow are emitted per-well inside
@@ -362,6 +373,7 @@ function buildPlateSummary({ wells, wellData, roiList, processingParams }) {
  * @param {Object} options report-modal options
  * @param {Function} onProgress (wellIndex, totalWells) progress callback
  * @param {Array} roiList ROI definitions
+ * @param {Function} shouldCancel polled between wells; return true to stop
  * @returns {Promise<string[]>} array of CSV chunks for Blob construction
  */
 export async function GenerateFullPlateReport(
@@ -370,7 +382,8 @@ export async function GenerateFullPlateReport(
   processingParams,
   options = {},
   onProgress = null,
-  roiList = []
+  roiList = [],
+  shouldCancel = () => false
 ) {
   const {
     includeProcessedSignal = false,
@@ -381,6 +394,8 @@ export async function GenerateFullPlateReport(
     includeROIAnalysis = false,
     includePlateSummary = true,
     parameterMode = "auto",
+    excludeLowSpikeWells = false,
+    minSpikeCount = 0,
   } = options;
   const useDefinedSpikeParams = parameterMode === "defined";
   const wantsBursts = shouldComputeBursts({
@@ -462,6 +477,10 @@ export async function GenerateFullPlateReport(
           ? processingParams?.foExcludedWellKeys || []
           : [],
       },
+      minSpikeExclusion: {
+        enabled: excludeLowSpikeWells,
+        threshold: minSpikeCount,
+      },
     }).join("\n")
   );
 
@@ -530,8 +549,10 @@ export async function GenerateFullPlateReport(
   // optional <PLATE_SUMMARY> block can run cross-ROI analysis after
   // the loop without rerunning the pipeline.
   const wellData = {};
+  const minSpikeExcludedKeys = [];
 
   for (let wellIndex = 0; wellIndex < wells.length; wellIndex++) {
+    if (shouldCancel()) break;
     const well = wells[wellIndex];
     if (onProgress) onProgress(wellIndex + 1, wells.length);
     // Yield to the event loop so the progress popup re-renders and
@@ -580,6 +601,15 @@ export async function GenerateFullPlateReport(
       let spikes = pipelineResult.spikeResults || [];
       let bursts = pipelineResult.burstResults || [];
       let processedSignal = pipelineResult.processedSignal || [];
+
+      // Min-spike exclusion: drop the well from the report entirely (no
+      // <WELL> block, no plate-summary entry) when it has fewer than the
+      // threshold's TOTAL detected spikes. Runs before control scaling —
+      // scaling transforms amplitudes, never the spike count.
+      if (excludeLowSpikeWells && spikes.length < minSpikeCount) {
+        minSpikeExcludedKeys.push(wellKey);
+        continue;
+      }
 
       // Control-well scaling: detection ran in native units above; apply the
       // plate-wide factor k as a units transform so every emitted value
@@ -684,6 +714,29 @@ export async function GenerateFullPlateReport(
         ].join("\n")
       );
     }
+  }
+
+  // ---- Min-spike exclusion summary ----
+  // Post-loop by necessity: the excluded set is only known after detection,
+  // and the file-header chunk has already been pushed above.
+  if (excludeLowSpikeWells) {
+    csvChunks.push(
+      [
+        "<MIN_SPIKE_EXCLUSION>",
+        serializeCsvRow(["MinSpikeThreshold", minSpikeCount]),
+        serializeCsvRow(["AttemptedWellCount", wells.length]),
+        serializeCsvRow([
+          "IncludedWellCount",
+          wells.length - minSpikeExcludedKeys.length,
+        ]),
+        serializeCsvRow(["ExcludedWellCount", minSpikeExcludedKeys.length]),
+        serializeCsvRow([
+          "MinSpikesExcludedWells",
+          minSpikeExcludedKeys.length ? minSpikeExcludedKeys.join(";") : "None",
+        ]),
+        "</MIN_SPIKE_EXCLUSION>",
+      ].join("\n")
+    );
   }
 
   // ---- Optional <PLATE_SUMMARY> ----
